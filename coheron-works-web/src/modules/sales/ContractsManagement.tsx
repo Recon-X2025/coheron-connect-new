@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Plus, FileText, Calendar, DollarSign, RefreshCw, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Plus, FileText, Calendar, DollarSign, RefreshCw, CheckCircle, XCircle, Clock, PenTool } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { salesService, type Contract, type Subscription } from '../../services/salesService';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
+import { CreateDocumentModal } from '../esignature/components/CreateDocumentModal';
 import './ContractsManagement.css';
 
 export const ContractsManagement = () => {
@@ -14,6 +15,8 @@ export const ContractsManagement = () => {
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showESignModal, setShowESignModal] = useState(false);
+  const [contractForSigning, setContractForSigning] = useState<Contract | null>(null);
 
   useEffect(() => {
     loadData();
@@ -173,6 +176,20 @@ export const ContractsManagement = () => {
                     <span className="sla-count">{contract.slas.length} SLA(s)</span>
                   </div>
                 )}
+                {contract.status === 'draft' && (
+                  <div className="card-actions">
+                    <button
+                      className="action-btn-primary"
+                      onClick={() => {
+                        setContractForSigning(contract);
+                        setShowESignModal(true);
+                      }}
+                    >
+                      <PenTool size={16} />
+                      Send for Signature
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -313,6 +330,24 @@ export const ContractsManagement = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {showESignModal && contractForSigning && (
+          <CreateDocumentModal
+            isOpen={showESignModal}
+            onClose={() => {
+              setShowESignModal(false);
+              setContractForSigning(null);
+            }}
+            onSuccess={async () => {
+              setShowESignModal(false);
+              // Reload contracts to show updated status
+              await loadData();
+              setContractForSigning(null);
+            }}
+            relatedRecordType="contract"
+            relatedRecordId={contractForSigning.id}
+          />
         )}
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BarChart3, TrendingUp, Calendar } from 'lucide-react';
+import { BarChart3, TrendingUp } from 'lucide-react';
 import { projectService } from '../../services/projectService';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import './ProjectAnalytics.css';

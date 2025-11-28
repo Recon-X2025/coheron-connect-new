@@ -4,6 +4,7 @@ import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { rbacService, type Role } from '../../services/rbacService';
+import { showToast } from '../../components/Toast';
 import './RBACManagement.css';
 
 interface RolesManagementProps {
@@ -54,7 +55,7 @@ export const RolesManagement: React.FC<RolesManagementProps> = ({ onRoleSelect }
       resetForm();
       loadRoles();
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to create role');
+      showToast(error.response?.data?.error || 'Failed to create role', 'error');
     }
   };
 
@@ -66,21 +67,21 @@ export const RolesManagement: React.FC<RolesManagementProps> = ({ onRoleSelect }
       resetForm();
       loadRoles();
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to update role');
+      showToast(error.response?.data?.error || 'Failed to update role', 'error');
     }
   };
 
   const handleDelete = async (role: Role) => {
     if (!confirm(`Are you sure you want to delete role "${role.name}"?`)) return;
     if (role.is_system_role) {
-      alert('Cannot delete system roles');
+      showToast('Cannot delete system roles', 'warning');
       return;
     }
     try {
       await rbacService.deleteRole(role.id);
       loadRoles();
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to delete role');
+      showToast(error.response?.data?.error || 'Failed to delete role', 'error');
     }
   };
 
@@ -198,7 +199,7 @@ export const RolesManagement: React.FC<RolesManagementProps> = ({ onRoleSelect }
             <div className="role-actions">
               <Button
                 variant="ghost"
-                size="small"
+                size="sm"
                 onClick={() => {
                   openEditModal(role);
                   onRoleSelect?.(role);
@@ -210,7 +211,7 @@ export const RolesManagement: React.FC<RolesManagementProps> = ({ onRoleSelect }
               {!role.is_system_role && (
                 <Button
                   variant="ghost"
-                  size="small"
+                  size="sm"
                   onClick={() => handleDelete(role)}
                   className="danger"
                 >

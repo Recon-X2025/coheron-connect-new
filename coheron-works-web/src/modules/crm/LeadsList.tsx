@@ -6,7 +6,10 @@ import { apiService } from '../../services/apiService';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { AdvancedFilter } from '../../shared/components/AdvancedFilter';
 import { BulkActions, createCommonBulkActions } from '../../shared/components/BulkActions';
+import { BulkActionModal } from '../../shared/components/BulkActionModal';
 import { LeadConversion } from './components/LeadConversion';
+import { LeadForm } from './components/LeadForm';
+import { showToast } from '../../components/Toast';
 import type { Lead, Partner } from '../../types/odoo';
 import './LeadsList.css';
 
@@ -21,6 +24,11 @@ export const LeadsList = () => {
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [filterDomain, setFilterDomain] = useState<any[]>([]);
     const [convertingLead, setConvertingLead] = useState<Lead | null>(null);
+    const [showLeadForm, setShowLeadForm] = useState(false);
+    const [editingLead, setEditingLead] = useState<Lead | null>(null);
+    const [showBulkUpdateModal, setShowBulkUpdateModal] = useState(false);
+    const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
+    const [bulkActionIds, setBulkActionIds] = useState<number[]>([]);
 
     useEffect(() => {
         loadData();
@@ -49,20 +57,70 @@ export const LeadsList = () => {
         if (window.confirm(`Are you sure you want to delete ${ids.length} lead(s)?`)) {
             try {
                 await leadService.delete(ids[0]); // For now, delete one at a time
+                showToast('Lead deleted successfully', 'success');
                 await loadData();
                 setSelectedIds([]);
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Failed to delete lead:', error);
+                showToast(error?.message || 'Failed to delete lead. Please try again.', 'error');
             }
         }
     };
 
+    const handleNewLead = () => {
+        setEditingLead(null);
+        setShowLeadForm(true);
+    };
+
+    const handleEditLead = (lead: Lead) => {
+        setEditingLead(lead);
+        setShowLeadForm(true);
+    };
+
+    const handleLeadSaved = () => {
+        loadData();
+    };
+
     const handleBulkUpdate = async (ids: number[]) => {
-        console.log('Bulk update for:', ids);
+        setBulkActionIds(ids);
+        setShowBulkUpdateModal(true);
+    };
+
+    const handleBulkUpdateConfirm = async (newStage: string) => {
+        try {
+            for (const id of bulkActionIds) {
+                await apiService.update('/leads', id, { stage: newStage });
+            }
+            await loadData();
+            setSelectedIds([]);
+            setShowBulkUpdateModal(false);
+            setBulkActionIds([]);
+            showToast(`${bulkActionIds.length} lead(s) updated successfully`, 'success');
+        } catch (error: any) {
+            console.error('Failed to bulk update leads:', error);
+            showToast(error?.message || 'Failed to update leads', 'error');
+        }
     };
 
     const handleBulkAssign = async (ids: number[]) => {
-        console.log('Bulk assign for:', ids);
+        setBulkActionIds(ids);
+        setShowBulkAssignModal(true);
+    };
+
+    const handleBulkAssignConfirm = async (userId: string) => {
+        try {
+            for (const id of bulkActionIds) {
+                await apiService.update('/leads', id, { user_id: parseInt(userId) });
+            }
+            await loadData();
+            setSelectedIds([]);
+            setShowBulkAssignModal(false);
+            setBulkActionIds([]);
+            showToast(`${bulkActionIds.length} lead(s) assigned successfully`, 'success');
+        } catch (error: any) {
+            console.error('Failed to bulk assign leads:', error);
+            showToast(error?.message || 'Failed to assign leads', 'error');
+        }
     };
 
     const handleStageChange = async (leadId: number, newStage: string) => {
@@ -159,7 +217,7 @@ export const LeadsList = () => {
                         <h1>Leads</h1>
                         <p className="leads-subtitle">{filteredLeads.length} leads found</p>
                     </div>
-                    <Button icon={<Plus size={20} />}>New Lead</Button>
+                    <Button icon={<Plus size={20} />} onClick={handleNewLead}>New Lead</Button>
                 </div>
 
                 {/* Filters */}
@@ -314,7 +372,7 @@ export const LeadsList = () => {
                                             >
                                                 <CheckCircle size={16} />
                                             </button>
-                                            <button className="action-btn" title="Edit">
+                                            <button className="action-btn" title="Edit" onClick={() => handleEditLead(lead)}>
                                                 <Edit size={16} />
                                             </button>
                                             <button
@@ -339,6 +397,50 @@ export const LeadsList = () => {
                         onSuccess={handleConvertSuccess}
                     />
                 )}
+
+                {showLeadForm && (
+                    <LeadForm
+                        lead={editingLead || undefined}
+                        onClose={() => {
+                            setShowLeadForm(false);
+                            setEditingLead(null);
+                        }}
+                        onSave={handleLeadSaved}
+                    />
+                )}
+
+                <BulkActionModal
+                    isOpen={showBulkUpdateModal}
+                    onClose={() => {
+                        setShowBulkUpdateModal(false);
+                        setBulkActionIds([]);
+                    }}
+                    onConfirm={handleBulkUpdateConfirm}
+                    title={`Update ${bulkActionIds.length} Lead(s)`}
+                    label="New Stage"
+                    type="select"
+                    options={[
+                        { value: 'new', label: 'New' },
+                        { value: 'qualified', label: 'Qualified' },
+                        { value: 'proposition', label: 'Proposition' },
+                        { value: 'won', label: 'Won' },
+                        { value: 'lost', label: 'Lost' },
+                    ]}
+                    confirmText="Update Leads"
+                />
+
+                <BulkActionModal
+                    isOpen={showBulkAssignModal}
+                    onClose={() => {
+                        setShowBulkAssignModal(false);
+                        setBulkActionIds([]);
+                    }}
+                    onConfirm={handleBulkAssignConfirm}
+                    title={`Assign ${bulkActionIds.length} Lead(s)`}
+                    label="User ID"
+                    placeholder="Enter user ID"
+                    confirmText="Assign Leads"
+                />
             </div>
         </div>
     );

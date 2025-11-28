@@ -3,6 +3,7 @@ import { Search, Plus, FileText, CheckCircle, Clock, Eye, Edit, Send, DollarSign
 import { Button } from '../../components/Button';
 import { accountsPayableService } from '../../services/accountingService';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
+import { showToast } from '../../components/Toast';
 import './AccountsPayable.css';
 
 interface Bill {
@@ -54,61 +55,57 @@ export const AccountsPayable = () => {
     .reduce((sum, b) => sum + b.amount_residual, 0);
 
   const handleViewBill = async (billId: number) => {
-    console.log('View bill clicked:', billId);
     try {
       const bill = bills.find(b => b.id === billId);
       if (bill) {
         setSelectedBill(bill);
         setShowViewModal(true);
       } else {
-        alert('Bill not found');
+        showToast('Bill not found', 'error');
       }
     } catch (error: any) {
       console.error('Failed to load bill:', error);
-      alert(error?.userMessage || error?.message || 'Failed to load bill details');
+      showToast(error?.userMessage || error?.message || 'Failed to load bill details', 'error');
     }
   };
 
   const handleEditBill = (billId: number) => {
-    console.log('Edit bill clicked:', billId);
     const bill = bills.find(b => b.id === billId);
     if (bill) {
       setEditingBill(bill);
       setShowEditModal(true);
     } else {
-      alert('Bill not found');
+      showToast('Bill not found', 'error');
     }
   };
 
   const handlePostBill = async (billId: number) => {
-    console.log('Post bill clicked:', billId);
     if (!window.confirm('Are you sure you want to post this bill? This action cannot be undone.')) {
       return;
     }
 
     try {
       await accountsPayableService.postBill(billId);
-      await loadBills(); // Reload bills
-      alert('Bill posted successfully');
+      await loadBills();
+      showToast('Bill posted successfully', 'success');
     } catch (error: any) {
       console.error('Failed to post bill:', error);
-      alert(error?.userMessage || error?.message || 'Failed to post bill. Please try again.');
+      showToast(error?.userMessage || error?.message || 'Failed to post bill. Please try again.', 'error');
     }
   };
 
   const handleSaveEdit = async () => {
-    console.log('Save edit clicked, bill:', editingBill);
     if (!editingBill) return;
 
     try {
       await accountsPayableService.updateBill(editingBill.id, editingBill);
-      await loadBills(); // Reload bills
+      await loadBills();
       setShowEditModal(false);
       setEditingBill(null);
-      alert('Bill updated successfully');
+      showToast('Bill updated successfully', 'success');
     } catch (error: any) {
       console.error('Failed to update bill:', error);
-      alert(error?.userMessage || error?.message || 'Failed to update bill. Please try again.');
+      showToast(error?.userMessage || error?.message || 'Failed to update bill. Please try again.', 'error');
     }
   };
 
@@ -202,18 +199,12 @@ export const AccountsPayable = () => {
                       </span>
                     </td>
                     <td>
-                      <div className="action-buttons" onClick={(e) => e.stopPropagation()}>
+                      <div className="action-buttons">
                         <button 
                           type="button"
                           className="action-btn" 
                           title="View" 
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            console.log('=== VIEW BILL BUTTON CLICKED ===', bill.id);
-                            alert('View bill button clicked! Bill ID: ' + bill.id);
-                            handleViewBill(bill.id);
-                          }}
+                          onClick={() => handleViewBill(bill.id)}
                         >
                           <Eye size={16} />
                         </button>
@@ -223,13 +214,7 @@ export const AccountsPayable = () => {
                               type="button"
                               className="action-btn" 
                               title="Edit" 
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                console.log('=== EDIT BILL BUTTON CLICKED ===', bill.id);
-                                alert('Edit bill button clicked! Bill ID: ' + bill.id);
-                                handleEditBill(bill.id);
-                              }}
+                              onClick={() => handleEditBill(bill.id)}
                             >
                               <Edit size={16} />
                             </button>
@@ -237,13 +222,7 @@ export const AccountsPayable = () => {
                               type="button"
                               className="action-btn post" 
                               title="Post" 
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                console.log('=== POST BILL BUTTON CLICKED ===', bill.id);
-                                alert('Post bill button clicked! Bill ID: ' + bill.id);
-                                handlePostBill(bill.id);
-                              }}
+                              onClick={() => handlePostBill(bill.id)}
                             >
                               <Send size={16} />
                             </button>
@@ -276,7 +255,11 @@ export const AccountsPayable = () => {
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h2>Bill Details</h2>
-                <button className="modal-close" onClick={() => setShowViewModal(false)}>
+                <button 
+                  type="button"
+                  className="modal-close" 
+                  onClick={() => setShowViewModal(false)}
+                >
                   <X size={20} />
                 </button>
               </div>
@@ -325,7 +308,11 @@ export const AccountsPayable = () => {
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h2>Edit Bill</h2>
-                <button className="modal-close" onClick={() => { setShowEditModal(false); setEditingBill(null); }}>
+                <button 
+                  type="button"
+                  className="modal-close" 
+                  onClick={() => { setShowEditModal(false); setEditingBill(null); }}
+                >
                   <X size={20} />
                 </button>
               </div>

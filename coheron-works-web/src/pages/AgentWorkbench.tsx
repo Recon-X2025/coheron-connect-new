@@ -1,22 +1,16 @@
 import { useState, useEffect } from 'react';
 import {
   Search,
-  Filter,
   MessageSquare,
-  Clock,
-  CheckCircle,
   AlertCircle,
   User,
   Users,
-  Zap,
-  FileText,
   BarChart3,
   Settings,
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
 import { Button } from '../components/Button';
-import { Card } from '../components/Card';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { supportDeskService, type SupportTicket, type CannedResponse } from '../services/supportDeskService';
 import './AgentWorkbench.css';
@@ -35,7 +29,7 @@ export const AgentWorkbench: React.FC = () => {
   const [showCannedResponses, setShowCannedResponses] = useState(false);
   const [newNote, setNewNote] = useState('');
   const [noteType, setNoteType] = useState<'public' | 'private' | 'internal'>('public');
-  const [selectedCannedResponse, setSelectedCannedResponse] = useState<CannedResponse | null>(null);
+  const [, setSelectedCannedResponse] = useState<CannedResponse | null>(null);
 
   useEffect(() => {
     loadTickets();
@@ -134,19 +128,6 @@ export const AgentWorkbench: React.FC = () => {
     }
   };
 
-  const getStatusIcon = (status: SupportTicket['status']) => {
-    switch (status) {
-      case 'resolved':
-      case 'closed':
-        return <CheckCircle size={16} className="status-icon resolved" />;
-      case 'in_progress':
-        return <Clock size={16} className="status-icon in-progress" />;
-      case 'open':
-        return <AlertCircle size={16} className="status-icon open" />;
-      default:
-        return <MessageSquare size={16} />;
-    }
-  };
 
   const getPriorityColor = (priority: SupportTicket['priority']) => {
     const colors: Record<string, string> = {
@@ -164,8 +145,9 @@ export const AgentWorkbench: React.FC = () => {
   };
 
   const getSlaStatus = (ticket: SupportTicket) => {
-    if (!ticket.sla_resolution_deadline) return null;
-    const deadline = new Date(ticket.sla_resolution_deadline);
+    const slaDeadline = (ticket as any).sla_resolution_deadline || (ticket as any).sla_deadline;
+    if (!slaDeadline) return null;
+    const deadline = new Date(slaDeadline);
     const now = new Date();
     const hoursLeft = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60);
     
@@ -195,10 +177,10 @@ export const AgentWorkbench: React.FC = () => {
           <p className="workbench-subtitle">Manage and resolve support tickets</p>
         </div>
         <div className="workbench-actions">
-          <Button variant="outline" icon={<BarChart3 size={18} />}>
+          <Button variant="secondary" icon={<BarChart3 size={18} />}>
             Analytics
           </Button>
-          <Button variant="outline" icon={<Settings size={18} />}>
+          <Button variant="secondary" icon={<Settings size={18} />}>
             Settings
           </Button>
         </div>

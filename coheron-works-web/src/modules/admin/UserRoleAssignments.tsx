@@ -3,8 +3,9 @@ import { Users, UserPlus, X, Calendar, Search } from 'lucide-react';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
-import { rbacService, type Role, type UserRole, type UserPermissions } from '../../services/rbacService';
+import { rbacService, type Role, type UserPermissions } from '../../services/rbacService';
 import { apiService } from '../../services/apiService';
+import { showToast } from '../../components/Toast';
 import './RBACManagement.css';
 
 interface User {
@@ -44,7 +45,10 @@ export const UserRoleAssignments: React.FC = () => {
         apiService.get<User[]>('/partners').catch(() => []),
         rbacService.getRoles()
       ]);
-      setUsers(usersData);
+      const usersArray = Array.isArray(usersData) 
+        ? (Array.isArray(usersData[0]) ? [] : usersData) 
+        : [];
+      setUsers(usersArray as unknown as User[]);
       setRoles(rolesData);
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -75,7 +79,7 @@ export const UserRoleAssignments: React.FC = () => {
       setAssignFormData({ role_id: '', expires_at: '', notes: '' });
       loadUserRoles(selectedUser.id);
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to assign role');
+      showToast(error.response?.data?.error || 'Failed to assign role', 'error');
     }
   };
 
@@ -85,7 +89,7 @@ export const UserRoleAssignments: React.FC = () => {
       await rbacService.removeRoleFromUser(userId, roleId);
       loadUserRoles(userId);
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to remove role');
+      showToast(error.response?.data?.error || 'Failed to remove role', 'error');
     }
   };
 
@@ -124,12 +128,15 @@ export const UserRoleAssignments: React.FC = () => {
           </div>
           <div className="users-scroll">
             {filteredUsers.map(user => (
-              <Card
+              <div
                 key={user.id}
-                className={`user-card ${selectedUser?.id === user.id ? 'selected' : ''}`}
                 onClick={() => setSelectedUser(user)}
+                style={{ cursor: 'pointer' }}
               >
-                <div className="user-info">
+                <Card
+                  className={`user-card ${selectedUser?.id === user.id ? 'selected' : ''}`}
+                >
+                  <div className="user-info">
                   <div className="user-avatar">{user.name.charAt(0).toUpperCase()}</div>
                   <div>
                     <h4>{user.name}</h4>
@@ -140,6 +147,7 @@ export const UserRoleAssignments: React.FC = () => {
                   {getUserRoles(user.id).length} role{getUserRoles(user.id).length !== 1 ? 's' : ''}
                 </div>
               </Card>
+              </div>
             ))}
           </div>
         </div>
@@ -186,7 +194,7 @@ export const UserRoleAssignments: React.FC = () => {
                         <div className="role-actions">
                           <Button
                             variant="ghost"
-                            size="small"
+                            size="sm"
                             onClick={() => handleRemoveRole(selectedUser.id, role.id)}
                             className="danger"
                           >

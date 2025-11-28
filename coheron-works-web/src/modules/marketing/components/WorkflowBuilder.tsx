@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { X, Save, Plus, Play, Pause, Trash2, ArrowRight, Clock, CheckCircle, Mail, User, Bell } from 'lucide-react';
+import { X, Save, Trash2, ArrowRight, Clock, CheckCircle, Mail, User, Bell } from 'lucide-react';
 import { Button } from '../../../components/Button';
 import { apiService } from '../../../services/apiService';
-import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import './WorkflowBuilder.css';
 
 interface WorkflowBuilderProps {
@@ -118,9 +117,9 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
       };
 
       if (workflow.id) {
-        await apiService.put(`/marketing/workflows/${workflow.id}`, workflowData);
+        await apiService.update('/marketing/workflows', workflow.id, workflowData);
       } else {
-        await apiService.post('/marketing/workflows', workflowData);
+        await apiService.create('/marketing/workflows', workflowData);
       }
 
       onSuccess();

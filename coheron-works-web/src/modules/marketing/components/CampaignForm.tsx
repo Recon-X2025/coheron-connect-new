@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Target, Users, DollarSign, Calendar, FileText, Image, Link as LinkIcon } from 'lucide-react';
+import { X, Save, Target, Users, DollarSign, FileText } from 'lucide-react';
 import { Button } from '../../../components/Button';
 import { apiService } from '../../../services/apiService';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
@@ -57,17 +57,18 @@ export const CampaignForm: React.FC<CampaignFormProps> = ({
   const loadCampaign = async () => {
     try {
       setLoading(true);
-      const campaign = await apiService.get<any>(`/campaigns/${campaignId}`);
+      const response = await apiService.get<any>(`/campaigns/${campaignId}`);
+      const campaign = Array.isArray(response) ? response[0] : response;
       setFormData({
-        name: campaign.name || '',
-        campaign_type: campaign.campaign_type || 'email',
-        objective: campaign.objective || 'leads',
-        start_date: campaign.start_date || '',
-        end_date: campaign.end_date || '',
-        budget: campaign.budget || 0,
-        budget_limit: campaign.budget_limit || 0,
-        target_kpis: campaign.target_kpis || {},
-        description: campaign.description || '',
+        name: campaign?.name || '',
+        campaign_type: campaign?.campaign_type || 'email',
+        objective: campaign?.objective || 'leads',
+        start_date: campaign?.start_date || '',
+        end_date: campaign?.end_date || '',
+        budget: campaign?.budget || 0,
+        budget_limit: campaign?.budget_limit || 0,
+        target_kpis: campaign?.target_kpis || {},
+        description: campaign?.description || '',
       });
     } catch (err: any) {
       setError(err.message || 'Failed to load campaign');
@@ -97,9 +98,9 @@ export const CampaignForm: React.FC<CampaignFormProps> = ({
 
     try {
       if (campaignId) {
-        await apiService.put(`/campaigns/${campaignId}`, formData);
+        await apiService.update('/campaigns', campaignId, formData);
       } else {
-        await apiService.post('/campaigns', {
+        await apiService.create('/campaigns', {
           ...formData,
           state: 'draft',
         });

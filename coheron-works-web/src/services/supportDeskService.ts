@@ -246,19 +246,19 @@ class SupportDeskService {
   }
 
   async createTicket(data: Partial<SupportTicket>): Promise<SupportTicket> {
-    return apiService.post<SupportTicket>('support-tickets', data);
+    return apiService.create<SupportTicket>('support-tickets', data);
   }
 
   async updateTicket(id: number, data: Partial<SupportTicket>): Promise<SupportTicket> {
-    return apiService.put<SupportTicket>(`support-tickets/${id}`, data);
+    return apiService.update<SupportTicket>('support-tickets', id, data);
   }
 
   async deleteTicket(id: number): Promise<void> {
-    return apiService.delete(`support-tickets/${id}`);
+    return apiService.delete('support-tickets', id);
   }
 
   async mergeTickets(ticketId: number, mergeIntoId: number, mergedBy?: number): Promise<void> {
-    return apiService.post(`support-tickets/${ticketId}/merge`, {
+    return apiService.create(`support-tickets/${ticketId}/merge`, {
       merge_into_ticket_id: mergeIntoId,
       merged_by: mergedBy,
     });
@@ -269,29 +269,29 @@ class SupportDeskService {
     subjects: string[],
     descriptions: string[]
   ): Promise<{ message: string; child_tickets: SupportTicket[] }> {
-    return apiService.post(`support-tickets/${ticketId}/split`, { subjects, descriptions });
+    return apiService.create(`support-tickets/${ticketId}/split`, { subjects, descriptions });
   }
 
   async transferTicket(
     ticketId: number,
     data: { assigned_team_id?: number; assigned_agent_id?: number; reason?: string; transferred_by?: number }
   ): Promise<SupportTicket> {
-    return apiService.post(`support-tickets/${ticketId}/transfer`, data);
+    return apiService.create<SupportTicket>(`support-tickets/${ticketId}/transfer`, data);
   }
 
   async addNote(
     ticketId: number,
     data: { note_type?: string; content: string; created_by?: number; is_pinned?: boolean }
   ): Promise<TicketNote> {
-    return apiService.post(`support-tickets/${ticketId}/notes`, data);
+    return apiService.create<TicketNote>(`support-tickets/${ticketId}/notes`, data);
   }
 
   async addWatcher(ticketId: number, userId: number): Promise<TicketWatcher> {
-    return apiService.post(`support-tickets/${ticketId}/watchers`, { user_id: userId });
+    return apiService.create<TicketWatcher>(`support-tickets/${ticketId}/watchers`, { user_id: userId });
   }
 
   async removeWatcher(ticketId: number, userId: number): Promise<void> {
-    return apiService.delete(`support-tickets/${ticketId}/watchers/${userId}`);
+    return apiService.getAxiosInstance().delete(`support-tickets/${ticketId}/watchers/${userId}`);
   }
 
   // ============================================
@@ -307,11 +307,11 @@ class SupportDeskService {
   }
 
   async createTeam(data: Partial<SupportTeam>): Promise<SupportTeam> {
-    return apiService.post<SupportTeam>('support-teams', data);
+    return apiService.create<SupportTeam>('support-teams', data);
   }
 
   async updateTeam(id: number, data: Partial<SupportTeam>): Promise<SupportTeam> {
-    return apiService.put<SupportTeam>(`support-teams/${id}`, data);
+    return apiService.update<SupportTeam>('support-teams', id, data);
   }
 
   async getAgents(): Promise<SupportAgent[]> {
@@ -319,11 +319,11 @@ class SupportDeskService {
   }
 
   async createAgent(data: Partial<SupportAgent>): Promise<SupportAgent> {
-    return apiService.post<SupportAgent>('support-teams/agents', data);
+    return apiService.create<SupportAgent>('support-teams/agents', data);
   }
 
   async updateAgent(id: number, data: Partial<SupportAgent>): Promise<SupportAgent> {
-    return apiService.put<SupportAgent>(`support-teams/agents/${id}`, data);
+    return apiService.update<SupportAgent>('support-teams/agents', id, data);
   }
 
   // ============================================
@@ -339,15 +339,15 @@ class SupportDeskService {
   }
 
   async createSLAPolicy(data: Partial<SLAPolicy>): Promise<SLAPolicy> {
-    return apiService.post<SLAPolicy>('sla-policies', data);
+    return apiService.create<SLAPolicy>('sla-policies', data);
   }
 
   async updateSLAPolicy(id: number, data: Partial<SLAPolicy>): Promise<SLAPolicy> {
-    return apiService.put<SLAPolicy>(`sla-policies/${id}`, data);
+    return apiService.update<SLAPolicy>('sla-policies', id, data);
   }
 
   async deleteSLAPolicy(id: number): Promise<void> {
-    return apiService.delete(`sla-policies/${id}`);
+    return apiService.delete('sla-policies', id);
   }
 
   // ============================================
@@ -363,15 +363,15 @@ class SupportDeskService {
   }
 
   async createAutomationRule(data: Partial<AutomationRule>): Promise<AutomationRule> {
-    return apiService.post<AutomationRule>('support-automation', data);
+    return apiService.create<AutomationRule>('support-automation', data);
   }
 
   async updateAutomationRule(id: number, data: Partial<AutomationRule>): Promise<AutomationRule> {
-    return apiService.put<AutomationRule>(`support-automation/${id}`, data);
+    return apiService.update<AutomationRule>('support-automation', id, data);
   }
 
   async deleteAutomationRule(id: number): Promise<void> {
-    return apiService.delete(`support-automation/${id}`);
+    return apiService.delete('support-automation', id);
   }
 
   // ============================================
@@ -389,19 +389,24 @@ class SupportDeskService {
   }
 
   async getKBArticle(identifier: string | number): Promise<KBArticle> {
-    return apiService.getById<KBArticle>('knowledge-base/articles', identifier);
+    const id = typeof identifier === 'string' ? parseInt(identifier) : identifier;
+    return apiService.getById<KBArticle>('knowledge-base/articles', id);
   }
 
   async createKBArticle(data: Partial<KBArticle>): Promise<KBArticle> {
-    return apiService.post<KBArticle>('knowledge-base/articles', data);
+    return apiService.create<KBArticle>('knowledge-base/articles', data);
   }
 
   async updateKBArticle(id: number, data: Partial<KBArticle>): Promise<KBArticle> {
-    return apiService.put<KBArticle>(`knowledge-base/articles/${id}`, data);
+    return apiService.update<KBArticle>('knowledge-base/articles', id, data);
+  }
+
+  async deleteKBArticle(id: number): Promise<void> {
+    return apiService.getAxiosInstance().delete(`knowledge-base/articles/${id}`);
   }
 
   async rateKBArticle(id: number, isHelpful: boolean): Promise<void> {
-    return apiService.post(`knowledge-base/articles/${id}/rate`, { is_helpful: isHelpful });
+    return apiService.create(`knowledge-base/articles/${id}/rate`, { is_helpful: isHelpful });
   }
 
   async getChannels(): Promise<any[]> {
@@ -421,37 +426,39 @@ class SupportDeskService {
     assigned_agent_id?: number;
     channel?: string;
   }): Promise<ChatSession[]> {
-    return apiService.get<ChatSession>('support-chat/sessions', params);
+    const result = await apiService.get<ChatSession>('support-chat/sessions', params);
+    return Array.isArray(result) ? result : [];
   }
 
   async getChatSession(sessionId: string): Promise<ChatSession> {
-    return apiService.getById<ChatSession>('support-chat/sessions', sessionId);
+    const result = await apiService.get<ChatSession>(`support-chat/sessions/${sessionId}`);
+    return (Array.isArray(result) ? result[0] : result) as ChatSession;
   }
 
   async createChatSession(data: Partial<ChatSession>): Promise<ChatSession> {
-    return apiService.post<ChatSession>('support-chat/sessions', data);
+    return apiService.create<ChatSession>('support-chat/sessions', data);
   }
 
   async sendChatMessage(
     sessionId: string,
     data: { content: string; message_type?: string; sender_id?: number }
   ): Promise<ChatMessage> {
-    return apiService.post<ChatMessage>(`support-chat/sessions/${sessionId}/messages`, data);
+    return apiService.create<ChatMessage>(`support-chat/sessions/${sessionId}/messages`, data);
   }
 
   async assignChatAgent(sessionId: string, agentId: number): Promise<ChatSession> {
-    return apiService.post(`support-chat/sessions/${sessionId}/assign`, { assigned_agent_id: agentId });
+    return apiService.create(`support-chat/sessions/${sessionId}/assign`, { assigned_agent_id: agentId });
   }
 
   async endChatSession(sessionId: string): Promise<ChatSession> {
-    return apiService.post(`support-chat/sessions/${sessionId}/end`, {});
+    return apiService.create(`support-chat/sessions/${sessionId}/end`, {});
   }
 
   async createTicketFromChat(
     sessionId: string,
     data: { subject?: string; description?: string; priority?: string; category_id?: number }
   ): Promise<SupportTicket> {
-    return apiService.post<SupportTicket>(`support-chat/sessions/${sessionId}/create-ticket`, data);
+    return apiService.create<SupportTicket>(`support-chat/sessions/${sessionId}/create-ticket`, data);
   }
 
   // ============================================
@@ -467,18 +474,22 @@ class SupportDeskService {
   }
 
   async createSurvey(data: Partial<Survey>): Promise<Survey> {
-    return apiService.post<Survey>('support-surveys', data);
+    return apiService.create<Survey>('support-surveys', data);
   }
 
   async updateSurvey(id: number, data: Partial<Survey>): Promise<Survey> {
-    return apiService.put<Survey>(`support-surveys/${id}`, data);
+    return apiService.update<Survey>('support-surveys', id, data);
+  }
+
+  async deleteSurvey(id: number): Promise<void> {
+    return apiService.getAxiosInstance().delete(`support-surveys/${id}`);
   }
 
   async submitSurveyResponse(
     surveyId: number,
     data: { ticket_id?: number; partner_id?: number; responses: any; score?: number; feedback?: string }
   ): Promise<SurveyResponse> {
-    return apiService.post<SurveyResponse>(`support-surveys/${surveyId}/responses`, data);
+    return apiService.create<SurveyResponse>(`support-surveys/${surveyId}/responses`, data);
   }
 
   async getSurveyResponses(surveyId: number): Promise<SurveyResponse[]> {
@@ -507,19 +518,19 @@ class SupportDeskService {
   }
 
   async createCannedResponse(data: Partial<CannedResponse>): Promise<CannedResponse> {
-    return apiService.post<CannedResponse>('canned-responses', data);
+    return apiService.create<CannedResponse>('canned-responses', data);
   }
 
   async updateCannedResponse(id: number, data: Partial<CannedResponse>): Promise<CannedResponse> {
-    return apiService.put<CannedResponse>(`canned-responses/${id}`, data);
+    return apiService.update<CannedResponse>('canned-responses', id, data);
   }
 
   async useCannedResponse(id: number): Promise<CannedResponse> {
-    return apiService.post(`canned-responses/${id}/use`, {});
+    return apiService.create(`canned-responses/${id}/use`, {});
   }
 
   async deleteCannedResponse(id: number): Promise<void> {
-    return apiService.delete(`canned-responses/${id}`);
+    return apiService.delete(`canned-responses/${id}`, id);
   }
 
   // ============================================
@@ -567,11 +578,11 @@ class SupportDeskService {
   }
 
   async createIncident(data: any): Promise<any> {
-    return apiService.post('itsm/incidents', data);
+    return apiService.create('itsm/incidents', data);
   }
 
   async updateIncident(id: number, data: any): Promise<any> {
-    return apiService.put(`itsm/incidents/${id}`, data);
+    return apiService.update('itsm/incidents', id, data);
   }
 
   async getProblems(params?: { status?: string; priority?: string }): Promise<any[]> {
@@ -579,11 +590,11 @@ class SupportDeskService {
   }
 
   async createProblem(data: any): Promise<any> {
-    return apiService.post('itsm/problems', data);
+    return apiService.create('itsm/problems', data);
   }
 
   async updateProblem(id: number, data: any): Promise<any> {
-    return apiService.put(`itsm/problems/${id}`, data);
+    return apiService.update('itsm/problems', id, data);
   }
 
   async getChanges(params?: { status?: string; change_type?: string; priority?: string }): Promise<any[]> {
@@ -591,19 +602,19 @@ class SupportDeskService {
   }
 
   async createChange(data: any): Promise<any> {
-    return apiService.post('itsm/changes', data);
+    return apiService.create('itsm/changes', data);
   }
 
   async updateChange(id: number, data: any): Promise<any> {
-    return apiService.put(`itsm/changes/${id}`, data);
+    return apiService.update('itsm/changes', id, data);
   }
 
   async addCABMember(changeId: number, data: { user_id: number; role?: string }): Promise<any> {
-    return apiService.post(`itsm/changes/${changeId}/cab`, data);
+    return apiService.create(`itsm/changes/${changeId}/cab`, data);
   }
 
   async approveChange(changeId: number, memberId: number, data: { approval_status: string; comments?: string }): Promise<any> {
-    return apiService.post(`itsm/changes/${changeId}/cab/${memberId}/approve`, data);
+    return apiService.create(`itsm/changes/${changeId}/cab/${memberId}/approve`, data);
   }
 }
 

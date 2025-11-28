@@ -4,6 +4,7 @@ import { Button } from '../../../components/Button';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import { inventoryService, type StockAdjustment, type StockAdjustmentLine } from '../../../services/inventoryService';
 import { apiService } from '../../../services/apiService';
+import { showToast } from '../../../components/Toast';
 import './AdjustmentForm.css';
 
 interface AdjustmentFormProps {
@@ -25,8 +26,8 @@ export const AdjustmentForm = ({ adjustment, onClose, onSuccess }: AdjustmentFor
     reason_description: adjustment?.reason_description || '',
     notes: adjustment?.notes || '',
   });
-  const [lines, setLines] = useState<Partial<StockAdjustmentLine>[]>(
-    adjustment?.lines || [{ product_id: '', physical_qty: 0 }]
+  const [lines, setLines] = useState<Array<Partial<StockAdjustmentLine> & { product_id?: string | number; physical_qty?: number }>>(
+    adjustment?.lines || [{ product_id: '', physical_qty: 0 }] as any
   );
 
   useEffect(() => {
@@ -50,7 +51,7 @@ export const AdjustmentForm = ({ adjustment, onClose, onSuccess }: AdjustmentFor
   };
 
   const handleAddLine = () => {
-    setLines([...lines, { product_id: '', physical_qty: 0 }]);
+    setLines([...lines, { product_id: '', physical_qty: 0 } as any]);
   };
 
   const handleRemoveLine = (index: number) => {
@@ -77,12 +78,12 @@ export const AdjustmentForm = ({ adjustment, onClose, onSuccess }: AdjustmentFor
         })),
       };
 
-      await inventoryService.createAdjustment(adjustmentData);
+      await inventoryService.createAdjustment(adjustmentData as any);
       onSuccess();
       onClose();
     } catch (error) {
       console.error('Failed to save adjustment:', error);
-      alert('Failed to save adjustment. Please check all fields and try again.');
+      showToast('Failed to save adjustment. Please check all fields and try again.', 'error');
     } finally {
       setLoading(false);
     }
@@ -178,7 +179,7 @@ export const AdjustmentForm = ({ adjustment, onClose, onSuccess }: AdjustmentFor
         <div className="form-section">
           <div className="section-header">
             <h3>Items to Adjust</h3>
-            <Button type="button" variant="secondary" size="small" icon={<Plus size={16} />} onClick={handleAddLine}>
+            <Button type="button" variant="secondary" size="sm" icon={<Plus size={16} />} onClick={handleAddLine}>
               Add Item
             </Button>
           </div>

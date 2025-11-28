@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  Kanban, 
   List, 
   BarChart3, 
   BookOpen, 
   Bug, 
   Calendar,
-  Users,
   Settings
 } from 'lucide-react';
 import { projectService, type Project } from '../services/projectService';

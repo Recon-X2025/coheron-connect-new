@@ -2,16 +2,15 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { 
   Globe, 
-  FileText, 
   Image, 
   ShoppingCart, 
   Package, 
   Tag, 
   Settings,
   BarChart3,
-  Layout
+  Layout,
+  CreditCard
 } from 'lucide-react';
-import { Pages } from './Pages';
 import { MediaLibrary } from './components/MediaLibrary';
 import { ProductCatalog } from './components/ProductCatalog';
 import { CartCheckout } from './components/CartCheckout';
@@ -19,16 +18,17 @@ import { Promotions } from './components/Promotions';
 import { SiteSettings } from './components/SiteSettings';
 import { WebsiteAnalytics } from './components/WebsiteAnalytics';
 import { PageBuilder } from './components/PageBuilder';
+import { PaymentGateways } from './components/PaymentGateways';
 import './Website.css';
 
 type WebsiteTab = 
   | 'dashboard' 
-  | 'pages' 
   | 'builder' 
   | 'media' 
   | 'products' 
   | 'cart' 
   | 'promotions' 
+  | 'payments'
   | 'analytics' 
   | 'settings';
 
@@ -38,7 +38,7 @@ export const Website = () => {
   const [activeTab, setActiveTab] = useState<WebsiteTab>(tabFromUrl || 'dashboard');
 
   useEffect(() => {
-    if (tabFromUrl && ['dashboard', 'pages', 'builder', 'media', 'products', 'cart', 'promotions', 'analytics', 'settings'].includes(tabFromUrl)) {
+    if (tabFromUrl && ['dashboard', 'builder', 'media', 'products', 'cart', 'promotions', 'analytics', 'settings'].includes(tabFromUrl)) {
       setActiveTab(tabFromUrl);
     }
   }, [tabFromUrl]);
@@ -50,12 +50,12 @@ export const Website = () => {
 
   const tabs = [
     { id: 'dashboard' as WebsiteTab, label: 'Dashboard', icon: <BarChart3 size={18} /> },
-    { id: 'pages' as WebsiteTab, label: 'Pages', icon: <FileText size={18} /> },
     { id: 'builder' as WebsiteTab, label: 'Page Builder', icon: <Layout size={18} /> },
     { id: 'media' as WebsiteTab, label: 'Media Library', icon: <Image size={18} /> },
     { id: 'products' as WebsiteTab, label: 'Products', icon: <Package size={18} /> },
     { id: 'cart' as WebsiteTab, label: 'Cart & Checkout', icon: <ShoppingCart size={18} /> },
     { id: 'promotions' as WebsiteTab, label: 'Promotions', icon: <Tag size={18} /> },
+    { id: 'payments' as WebsiteTab, label: 'Payment Gateways', icon: <CreditCard size={18} /> },
     { id: 'analytics' as WebsiteTab, label: 'Analytics', icon: <BarChart3 size={18} /> },
     { id: 'settings' as WebsiteTab, label: 'Settings', icon: <Settings size={18} /> },
   ];
@@ -64,8 +64,6 @@ export const Website = () => {
     switch (activeTab) {
       case 'dashboard':
         return <WebsiteDashboard />;
-      case 'pages':
-        return <Pages onNewPage={() => handleTabChange('builder')} />;
       case 'builder':
         return <PageBuilder />;
       case 'media':
@@ -76,6 +74,8 @@ export const Website = () => {
         return <CartCheckout />;
       case 'promotions':
         return <Promotions />;
+      case 'payments':
+        return <PaymentGateways />;
       case 'analytics':
         return <WebsiteAnalytics />;
       case 'settings':

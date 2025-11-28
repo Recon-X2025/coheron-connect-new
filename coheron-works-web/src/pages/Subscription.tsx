@@ -3,6 +3,7 @@ import { Check, CreditCard, Zap, TrendingUp, Building2, Crown } from 'lucide-rea
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { showToast } from '../components/Toast';
 import './Subscription.css';
 
 interface Plan {
@@ -118,7 +119,7 @@ export const Subscription: React.FC = () => {
     // Simulate subscription process
     setTimeout(() => {
       setLoading(false);
-      alert(`Subscription to ${plans.find((p) => p.id === planId)?.name} plan initiated!`);
+      showToast(`Subscription to ${plans.find((p) => p.id === planId)?.name} plan initiated!`, 'success');
     }, 1500);
   };
 

@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Users, Trophy, TrendingUp, Award, BarChart3, Target } from 'lucide-react';
+import { Users, Trophy, Award, BarChart3 } from 'lucide-react';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
-import { salesService, type SalesTeam, type SalesActivityKPI } from '../../services/salesService';
-import { formatInLakhsCompact } from '../../utils/currencyFormatter';
+import { salesService, type SalesTeam } from '../../services/salesService';
 import './SalesTeamPerformance.css';
 
 export const SalesTeamPerformance = () => {

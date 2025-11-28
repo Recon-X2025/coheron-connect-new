@@ -229,6 +229,22 @@ export interface StockLot {
   updated_at?: string;
 }
 
+export interface StockSerial {
+  id: number;
+  name: string;
+  product_id: number;
+  product_name?: string;
+  product_code?: string;
+  lot_id?: number;
+  lot_name?: string;
+  warranty_start_date?: string;
+  warranty_end_date?: string;
+  notes?: string;
+  state?: 'available' | 'reserved' | 'in_use' | 'scrapped';
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface ReorderSuggestion {
   id: number;
   product_id: number;
@@ -250,6 +266,96 @@ export interface ReorderSuggestion {
   purchase_order_id?: number;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface StockIssue {
+  id: number;
+  issue_number: string;
+  issue_type: 'production' | 'project' | 'job' | 'work_order' | 'ad_hoc' | 'sample' | 'internal_consumption';
+  from_warehouse_id: number;
+  from_warehouse_name?: string;
+  from_location_id?: number;
+  to_production_id?: number;
+  to_project_id?: number;
+  to_job_id?: number;
+  to_work_order_id?: number;
+  to_reference?: string;
+  issue_date: string;
+  state: 'draft' | 'pending_approval' | 'approved' | 'issued' | 'done' | 'cancel';
+  issued_by?: number;
+  issued_by_name?: string;
+  approved_by?: number;
+  approved_by_name?: string;
+  picking_strategy?: 'fifo' | 'lifo' | 'fefo' | 'closest' | 'least_packages';
+  notes?: string;
+  lines?: StockIssueLine[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface StockIssueLine {
+  id: number;
+  issue_id: number;
+  product_id: number;
+  product_name?: string;
+  product_code?: string;
+  product_uom_id?: number;
+  quantity: number;
+  quantity_done: number;
+  lot_id?: number;
+  lot_name?: string;
+  serial_numbers?: string[];
+  unit_cost?: number;
+  notes?: string;
+}
+
+export interface StockReturn {
+  id: number;
+  return_number: string;
+  return_type: 'purchase_return' | 'sales_return' | 'internal_return';
+  original_transaction_type: 'grn' | 'sale' | 'transfer' | 'issue';
+  original_transaction_id: number;
+  original_transaction_ref?: string;
+  warehouse_id: number;
+  warehouse_name?: string;
+  location_id?: number;
+  return_date: string;
+  state: 'draft' | 'pending_approval' | 'approved' | 'received' | 'qc_pending' | 'qc_passed' | 'qc_failed' | 'restocked' | 'done' | 'cancel';
+  return_reason: string;
+  restocking_rule?: 'original_location' | 'quarantine' | 'damage_area';
+  qc_status?: 'pending' | 'passed' | 'failed' | 'partial';
+  qc_inspector_id?: number;
+  qc_inspector_name?: string;
+  qc_date?: string;
+  qc_remarks?: string;
+  returned_by?: number;
+  returned_by_name?: string;
+  approved_by?: number;
+  approved_by_name?: string;
+  credit_note_id?: number;
+  credit_note_number?: string;
+  notes?: string;
+  lines?: StockReturnLine[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface StockReturnLine {
+  id: number;
+  return_id: number;
+  product_id: number;
+  product_name?: string;
+  product_code?: string;
+  product_uom_id?: number;
+  quantity: number;
+  quantity_received: number;
+  quantity_restocked: number;
+  lot_id?: number;
+  lot_name?: string;
+  serial_numbers?: string[];
+  unit_cost?: number;
+  return_reason?: string;
+  notes?: string;
 }
 
 export interface StockLedger {
@@ -385,12 +491,114 @@ class InventoryService {
     return apiService.create<StockLot>('/inventory/lots', data);
   }
 
+  async updateLot(id: number, data: Partial<StockLot>): Promise<StockLot> {
+    return apiService.update<StockLot>('/inventory/lots', id, data);
+  }
+
+  async deleteLot(id: number): Promise<void> {
+    return apiService.delete('/inventory/lots', id);
+  }
+
+  async getSerials(params?: { product_id?: number; name?: string }): Promise<StockSerial[]> {
+    return apiService.get<StockSerial>('/inventory/serials', params);
+  }
+
+  async createSerial(data: Partial<StockSerial>): Promise<StockSerial> {
+    return apiService.create<StockSerial>('/inventory/serials', data);
+  }
+
+  async updateSerial(id: number, data: Partial<StockSerial>): Promise<StockSerial> {
+    return apiService.update<StockSerial>('/inventory/serials', id, data);
+  }
+
+  async deleteSerial(id: number): Promise<void> {
+    return apiService.delete('/inventory/serials', id);
+  }
+
   // Reorder Suggestions
   async getReorderSuggestions(params?: {
     warehouse_id?: number;
     state?: string;
   }): Promise<ReorderSuggestion[]> {
     return apiService.get<ReorderSuggestion>('/inventory/reorder-suggestions', params);
+  }
+
+  // Stock Issues
+  async getStockIssues(params?: {
+    state?: string;
+    issue_type?: string;
+    from_warehouse_id?: number;
+    start_date?: string;
+    end_date?: string;
+  }): Promise<StockIssue[]> {
+    return apiService.get<StockIssue>('/inventory/stock-issues', params);
+  }
+
+  async getStockIssue(id: number): Promise<StockIssue> {
+    return apiService.getById<StockIssue>('/inventory/stock-issues', id);
+  }
+
+  async createStockIssue(data: Partial<StockIssue>): Promise<StockIssue> {
+    return apiService.create<StockIssue>('/inventory/stock-issues', data);
+  }
+
+  async updateStockIssue(id: number, data: Partial<StockIssue>): Promise<StockIssue> {
+    return apiService.update<StockIssue>('/inventory/stock-issues', id, data);
+  }
+
+  async approveStockIssue(id: number): Promise<StockIssue> {
+    return apiService.getAxiosInstance().post(`/inventory/stock-issues/${id}/approve`);
+  }
+
+  async issueStockIssue(id: number): Promise<StockIssue> {
+    return apiService.getAxiosInstance().post(`/inventory/stock-issues/${id}/issue`);
+  }
+
+  async deleteStockIssue(id: number): Promise<void> {
+    return apiService.delete('/inventory/stock-issues', id);
+  }
+
+  // Stock Returns
+  async getStockReturns(params?: {
+    state?: string;
+    return_type?: string;
+    warehouse_id?: number;
+    start_date?: string;
+    end_date?: string;
+  }): Promise<StockReturn[]> {
+    return apiService.get<StockReturn>('/inventory/stock-returns', params);
+  }
+
+  async getStockReturn(id: number): Promise<StockReturn> {
+    return apiService.getById<StockReturn>('/inventory/stock-returns', id);
+  }
+
+  async createStockReturn(data: Partial<StockReturn>): Promise<StockReturn> {
+    return apiService.create<StockReturn>('/inventory/stock-returns', data);
+  }
+
+  async updateStockReturn(id: number, data: Partial<StockReturn>): Promise<StockReturn> {
+    return apiService.update<StockReturn>('/inventory/stock-returns', id, data);
+  }
+
+  async approveStockReturn(id: number): Promise<StockReturn> {
+    return apiService.getAxiosInstance().post(`/inventory/stock-returns/${id}/approve`);
+  }
+
+  async receiveStockReturn(id: number): Promise<StockReturn> {
+    return apiService.getAxiosInstance().post(`/inventory/stock-returns/${id}/receive`);
+  }
+
+  async qcStockReturn(id: number, qcData: { status: string; remarks?: string }): Promise<StockReturn> {
+    return apiService.getAxiosInstance().post(`/inventory/stock-returns/${id}/qc`, qcData);
+  }
+
+  async restockStockReturn(id: number): Promise<StockReturn> {
+    return apiService.getAxiosInstance().post(`/inventory/stock-returns/${id}/restock`);
+  }
+
+  async deleteStockReturn(id: number): Promise<void> {
+    return apiService.delete('/inventory/stock-returns', id);
   }
 
   // Stock Ledger

@@ -1,9 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Settings, Save } from 'lucide-react';
+import { showToast } from '../../components/Toast';
 import { Button } from '../../components/Button';
+import { apiService } from '../../services/apiService';
+import { LoadingSpinner } from '../../components/LoadingSpinner';
 import './InventorySettings.css';
 
 export const InventorySettings = () => {
+  const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState({
     default_removal_strategy: 'fifo',
     default_cost_method: 'fifo',
@@ -17,11 +21,42 @@ export const InventorySettings = () => {
     cycle_count_frequency_days: 30,
   });
 
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      setLoading(true);
+      const data = await apiService.getAxiosInstance().get('/inventory/settings');
+      if (data.data) {
+        setSettings(data.data);
+      }
+    } catch (error) {
+      console.error('Failed to load settings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement settings save
-    alert('Settings saved successfully!');
+    try {
+      await apiService.getAxiosInstance().put('/inventory/settings', settings);
+      showToast('Settings saved successfully!', 'success');
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      showToast('Failed to save settings. Please try again.', 'error');
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="inventory-settings-page">
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   return (
     <div className="inventory-settings-page">

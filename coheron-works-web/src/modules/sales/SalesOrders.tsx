@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, FileText, CheckCircle, Clock, XCircle, Eye, Calculator, DollarSign } from 'lucide-react';
+import { Search, Plus, FileText, CheckCircle, Clock, XCircle, Eye } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { saleOrderService, partnerService } from '../../services/odooService';
-import { salesService } from '../../services/salesService';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { AdvancedFilter } from '../../shared/components/AdvancedFilter';
 import { BulkActions, createCommonBulkActions } from '../../shared/components/BulkActions';
+import { BulkActionModal } from '../../shared/components/BulkActionModal';
 import { OrderWorkflow } from './components/OrderWorkflow';
 import { OrderConfirmation } from './components/OrderConfirmation';
 import { DeliveryTracking } from './components/DeliveryTracking';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
+import { showToast } from '../../components/Toast';
 import type { SaleOrder, Partner } from '../../types/odoo';
 import './SalesOrders.css';
 
@@ -24,8 +25,9 @@ export const SalesOrders = () => {
     const [selectedOrder, setSelectedOrder] = useState<SaleOrder | null>(null);
     const [showConfirmation, setShowConfirmation] = useState(false);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-    const [showPricingCalculator, setShowPricingCalculator] = useState(false);
-    const [pricingResult, setPricingResult] = useState<any>(null);
+    const [showBulkUpdateModal, setShowBulkUpdateModal] = useState(false);
+    const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
+    const [bulkActionIds, setBulkActionIds] = useState<number[]>([]);
 
     useEffect(() => {
         loadData();
@@ -65,11 +67,45 @@ export const SalesOrders = () => {
     };
 
     const handleBulkUpdate = async (ids: number[]) => {
-        console.log('Bulk update for:', ids);
+        setBulkActionIds(ids);
+        setShowBulkUpdateModal(true);
+    };
+
+    const handleBulkUpdateConfirm = async (newState: string) => {
+        try {
+            for (const id of bulkActionIds) {
+                await saleOrderService.update(id, { state: newState as any });
+            }
+            await loadData();
+            setSelectedIds([]);
+            setShowBulkUpdateModal(false);
+            setBulkActionIds([]);
+            showToast(`${bulkActionIds.length} order(s) updated successfully`, 'success');
+        } catch (error: any) {
+            console.error('Failed to bulk update orders:', error);
+            showToast(error?.message || 'Failed to update orders', 'error');
+        }
     };
 
     const handleBulkAssign = async (ids: number[]) => {
-        console.log('Bulk assign for:', ids);
+        setBulkActionIds(ids);
+        setShowBulkAssignModal(true);
+    };
+
+    const handleBulkAssignConfirm = async (userId: string) => {
+        try {
+            for (const id of bulkActionIds) {
+                await saleOrderService.update(id, { user_id: parseInt(userId) });
+            }
+            await loadData();
+            setSelectedIds([]);
+            setShowBulkAssignModal(false);
+            setBulkActionIds([]);
+            showToast(`${bulkActionIds.length} order(s) assigned successfully`, 'success');
+        } catch (error: any) {
+            console.error('Failed to bulk assign orders:', error);
+            showToast(error?.message || 'Failed to assign orders', 'error');
+        }
     };
 
     const handleStateChange = () => {
@@ -131,19 +167,6 @@ export const SalesOrders = () => {
         return labels[state] || state;
     };
 
-    const handleCalculatePrice = async (productId: number, partnerId: number, quantity: number) => {
-        try {
-            const result = await salesService.pricing.calculatePrice({
-                product_id: productId,
-                partner_id: partnerId,
-                quantity: quantity,
-            });
-            setPricingResult(result);
-            setShowPricingCalculator(true);
-        } catch (error) {
-            console.error('Error calculating price:', error);
-        }
-    };
 
     const filteredOrders = orders.filter(order => {
         const matchesSearch = order.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -442,6 +465,39 @@ export const SalesOrders = () => {
                     />
                 )}
             </div>
+
+            <BulkActionModal
+          isOpen={showBulkUpdateModal}
+          onClose={() => {
+            setShowBulkUpdateModal(false);
+            setBulkActionIds([]);
+          }}
+          onConfirm={handleBulkUpdateConfirm}
+          title={`Update ${bulkActionIds.length} Order(s)`}
+          label="New State"
+          type="select"
+          options={[
+            { value: 'draft', label: 'Draft' },
+            { value: 'sent', label: 'Sent' },
+            { value: 'sale', label: 'Sale' },
+            { value: 'done', label: 'Done' },
+            { value: 'cancel', label: 'Cancel' },
+          ]}
+          confirmText="Update Orders"
+        />
+
+        <BulkActionModal
+          isOpen={showBulkAssignModal}
+          onClose={() => {
+            setShowBulkAssignModal(false);
+            setBulkActionIds([]);
+          }}
+          onConfirm={handleBulkAssignConfirm}
+          title={`Assign ${bulkActionIds.length} Order(s)`}
+          label="User ID"
+          placeholder="Enter user ID"
+          confirmText="Assign Orders"
+        />
         </div>
     );
 };

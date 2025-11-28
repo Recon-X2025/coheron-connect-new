@@ -20,9 +20,6 @@ import { supportDeskService } from '../services/supportDeskService';
 import './ITSM.css';
 
 type ITSMTab = 'incidents' | 'problems' | 'changes';
-type IncidentStatus = 'new' | 'assigned' | 'in_progress' | 'resolved' | 'closed';
-type ProblemStatus = 'new' | 'investigating' | 'identified' | 'resolved' | 'closed';
-type ChangeStatus = 'draft' | 'submitted' | 'approved' | 'in_progress' | 'completed' | 'rejected' | 'cancelled';
 
 export const ITSM: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ITSMTab>('incidents');
@@ -30,7 +27,7 @@ export const ITSM: React.FC = () => {
   const [problems, setProblems] = useState<any[]>([]);
   const [changes, setChanges] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [, setSelectedItem] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
@@ -122,12 +119,15 @@ export const ITSM: React.FC = () => {
     return (
       <div className="itsm-list">
         {filtered.map((incident) => (
-          <Card
+          <div
             key={incident.id}
-            className="itsm-item"
-            hover
             onClick={() => setSelectedItem(incident)}
+            style={{ cursor: 'pointer' }}
           >
+            <Card
+              className="itsm-item"
+              hover
+            >
             <div className="itsm-item-header">
               <div>
                 <span className="item-number">{incident.incident_number}</span>
@@ -176,7 +176,8 @@ export const ITSM: React.FC = () => {
                 Affected Users: {incident.affected_users}
               </div>
             )}
-          </Card>
+            </Card>
+          </div>
         ))}
       </div>
     );
@@ -196,12 +197,15 @@ export const ITSM: React.FC = () => {
     return (
       <div className="itsm-list">
         {filtered.map((problem) => (
-          <Card
+          <div
             key={problem.id}
-            className="itsm-item"
-            hover
             onClick={() => setSelectedItem(problem)}
+            style={{ cursor: 'pointer' }}
           >
+            <Card
+              className="itsm-item"
+              hover
+            >
             <div className="itsm-item-header">
               <div>
                 <span className="item-number">{problem.problem_number}</span>
@@ -252,7 +256,8 @@ export const ITSM: React.FC = () => {
                 <strong>RCA:</strong> {problem.root_cause_analysis.substring(0, 150)}...
               </div>
             )}
-          </Card>
+            </Card>
+          </div>
         ))}
       </div>
     );
@@ -272,12 +277,15 @@ export const ITSM: React.FC = () => {
     return (
       <div className="itsm-list">
         {filtered.map((change) => (
-          <Card
+          <div
             key={change.id}
-            className="itsm-item"
-            hover
             onClick={() => setSelectedItem(change)}
+            style={{ cursor: 'pointer' }}
           >
+            <Card
+              className="itsm-item"
+              hover
+            >
             <div className="itsm-item-header">
               <div>
                 <span className="item-number">{change.change_number}</span>
@@ -340,7 +348,8 @@ export const ITSM: React.FC = () => {
                 <Calendar size={14} /> Created: {new Date(change.created_at).toLocaleDateString()}
               </span>
             </div>
-          </Card>
+            </Card>
+          </div>
         ))}
       </div>
     );

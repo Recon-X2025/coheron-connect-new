@@ -170,6 +170,37 @@
 }
 
 .product-actions {
+    display: flex;
+    gap: var(--space-xs);
+    align-items: center;
+}
+
+.action-btn {
+    background: none;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    padding: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    transition: all var(--transition-fast);
+}
+
+.action-btn:hover {
+    background: var(--bg-surface-hover);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.action-btn.delete:hover {
+    background: #fee2e2;
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.product-actions {
     padding-top: var(--space-md);
     border-top: 1px solid var(--border-light);
 }

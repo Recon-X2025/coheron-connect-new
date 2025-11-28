@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { BarChart3, TrendingUp, ShoppingCart, Eye } from 'lucide-react';
 import './WebsiteAnalytics.css';
 

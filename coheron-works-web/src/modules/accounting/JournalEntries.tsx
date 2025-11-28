@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
-import { Search, Plus, FileText, CheckCircle, Clock, Eye, Edit, Trash2, Send } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Plus, FileText, CheckCircle, Clock, Eye, Edit, Trash2, Send, X } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { journalEntriesService } from '../../services/accountingService';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
+import { showToast } from '../../components/Toast';
 import './JournalEntries.css';
 
 interface JournalEntry {
@@ -45,7 +46,7 @@ export const JournalEntries = () => {
       if (filters.state) params.state = filters.state;
       if (filters.journal_id) params.journal_id = filters.journal_id;
       
-      const data = await journalEntriesService.getAll(params);
+      const data = await journalEntriesService.getAll(params) as JournalEntry[];
       setEntries(data);
     } catch (error) {
       console.error('Error loading journal entries:', error);
@@ -54,13 +55,79 @@ export const JournalEntries = () => {
     }
   };
 
+  const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
+
+  const handleViewEntry = async (id: number) => {
+    try {
+      const entry = entries.find(e => e.id === id);
+      if (entry) {
+        setSelectedEntry(entry);
+        setShowViewModal(true);
+      }
+    } catch (error) {
+      console.error('Error viewing entry:', error);
+      showToast('Failed to load entry details', 'error');
+    }
+  };
+
+  const handleEditEntry = async (id: number) => {
+    try {
+      const entry = entries.find(e => e.id === id);
+      if (entry) {
+        setEditingEntry(entry);
+        setShowEditModal(true);
+      }
+    } catch (error) {
+      console.error('Error loading entry for edit:', error);
+      showToast('Failed to load entry for editing', 'error');
+    }
+  };
+
+  const handleDeleteEntry = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this journal entry? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await journalEntriesService.delete(id);
+      loadEntries();
+      showToast('Journal entry deleted successfully', 'success');
+    } catch (error) {
+      console.error('Error deleting entry:', error);
+      showToast('Failed to delete entry. Please try again.', 'error');
+    }
+  };
+
   const handlePost = async (id: number) => {
     try {
       await journalEntriesService.post(id, { user_id: 1 });
       loadEntries();
+      showToast('Entry posted successfully', 'success');
     } catch (error) {
       console.error('Error posting entry:', error);
-      alert('Failed to post entry');
+      showToast('Failed to post entry', 'error');
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingEntry) return;
+
+    try {
+      await journalEntriesService.update(editingEntry.id, {
+        name: editingEntry.name,
+        date: editingEntry.date,
+        ref: editingEntry.ref,
+      });
+      await loadEntries();
+      setShowEditModal(false);
+      setEditingEntry(null);
+      showToast('Entry updated successfully', 'success');
+    } catch (error) {
+      console.error('Error updating entry:', error);
+      showToast('Failed to update entry. Please try again.', 'error');
     }
   };
 
@@ -71,7 +138,7 @@ export const JournalEntries = () => {
   );
 
   const getStateBadge = (state: string) => {
-    const badges: Record<string, { icon: JSX.Element; class: string }> = {
+    const badges: Record<string, { icon: React.ReactElement; class: string }> = {
       draft: { icon: <Clock size={14} />, class: 'draft' },
       posted: { icon: <CheckCircle size={14} />, class: 'posted' },
       cancel: { icon: <FileText size={14} />, class: 'cancel' },
@@ -152,15 +219,26 @@ export const JournalEntries = () => {
                     </td>
                     <td>
                       <div className="action-buttons">
-                        <button className="action-btn" title="View">
+                        <button 
+                          type="button"
+                          className="action-btn" 
+                          title="View"
+                          onClick={() => handleViewEntry(entry.id)}
+                        >
                           <Eye size={16} />
                         </button>
                         {entry.state === 'draft' && (
                           <>
-                            <button className="action-btn" title="Edit">
+                            <button 
+                              type="button"
+                              className="action-btn" 
+                              title="Edit"
+                              onClick={() => handleEditEntry(entry.id)}
+                            >
                               <Edit size={16} />
                             </button>
                             <button
+                              type="button"
                               className="action-btn post"
                               title="Post"
                               onClick={() => handlePost(entry.id)}
@@ -170,7 +248,12 @@ export const JournalEntries = () => {
                           </>
                         )}
                         {entry.state === 'draft' && (
-                          <button className="action-btn delete" title="Delete">
+                          <button 
+                            type="button"
+                            className="action-btn delete" 
+                            title="Delete"
+                            onClick={() => handleDeleteEntry(entry.id)}
+                          >
                             <Trash2 size={16} />
                           </button>
                         )}
@@ -182,6 +265,122 @@ export const JournalEntries = () => {
             </tbody>
           </table>
         </div>
+
+        {/* View Entry Modal */}
+        {showViewModal && selectedEntry && (
+          <div className="modal-overlay" onClick={() => setShowViewModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>Journal Entry Details</h2>
+                <button type="button" className="modal-close" onClick={() => setShowViewModal(false)}>
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="invoice-details">
+                <div className="detail-row">
+                  <span className="detail-label">Entry Number:</span>
+                  <span className="detail-value">{selectedEntry.name}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Journal:</span>
+                  <span className="detail-value">{selectedEntry.journal_name || selectedEntry.journal_code}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Date:</span>
+                  <span className="detail-value">{new Date(selectedEntry.date).toLocaleDateString()}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Reference:</span>
+                  <span className="detail-value">{selectedEntry.ref || '-'}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Amount:</span>
+                  <span className="detail-value">{formatInLakhsCompact(selectedEntry.amount_total)}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Status:</span>
+                  <span className={`state-badge ${selectedEntry.state}`}>
+                    {selectedEntry.state}
+                  </span>
+                </div>
+                {selectedEntry.lines && selectedEntry.lines.length > 0 && (
+                  <div className="detail-section">
+                    <h3>Entry Lines</h3>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Account</th>
+                          <th>Debit</th>
+                          <th>Credit</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedEntry.lines.map(line => (
+                          <tr key={line.id}>
+                            <td>{line.account_name} ({line.account_code})</td>
+                            <td>{line.debit > 0 ? formatInLakhsCompact(line.debit) : '-'}</td>
+                            <td>{line.credit > 0 ? formatInLakhsCompact(line.credit) : '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+              <div className="modal-actions">
+                <Button variant="ghost" onClick={() => setShowViewModal(false)}>Close</Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Entry Modal */}
+        {showEditModal && editingEntry && (
+          <div className="modal-overlay" onClick={() => { setShowEditModal(false); setEditingEntry(null); }}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>Edit Journal Entry</h2>
+                <button type="button" className="modal-close" onClick={() => { setShowEditModal(false); setEditingEntry(null); }}>
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="form-group">
+                <label htmlFor="edit-entry-name">Entry Number</label>
+                <input
+                  type="text"
+                  id="edit-entry-name"
+                  name="entry-name"
+                  value={editingEntry.name}
+                  onChange={(e) => setEditingEntry({ ...editingEntry, name: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="edit-entry-date">Date</label>
+                <input
+                  type="date"
+                  id="edit-entry-date"
+                  name="entry-date"
+                  value={editingEntry.date ? (editingEntry.date.includes('T') ? editingEntry.date.split('T')[0] : editingEntry.date.split(' ')[0]) : ''}
+                  onChange={(e) => setEditingEntry({ ...editingEntry, date: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="edit-entry-ref">Reference</label>
+                <input
+                  type="text"
+                  id="edit-entry-ref"
+                  name="entry-ref"
+                  value={editingEntry.ref || ''}
+                  onChange={(e) => setEditingEntry({ ...editingEntry, ref: e.target.value })}
+                />
+              </div>
+              <div className="modal-actions">
+                <Button variant="ghost" onClick={() => { setShowEditModal(false); setEditingEntry(null); }}>Cancel</Button>
+                <Button onClick={handleSaveEdit}>Save Changes</Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

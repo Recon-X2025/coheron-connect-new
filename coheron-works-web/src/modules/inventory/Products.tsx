@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Search, Package, Plus, Warehouse, MapPin, AlertTriangle, Eye, Edit } from 'lucide-react';
+import { Search, Package, Plus, MapPin, AlertTriangle, Eye, Edit, Trash2 } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { productService } from '../../services/odooService';
 import { inventoryService, type StockSummary, type StockQuant } from '../../services/inventoryService';
-import { apiService } from '../../services/apiService';
+import { ProductForm } from './components/ProductForm';
+import { showToast } from '../../components/Toast';
 import type { Product } from '../../types/odoo';
 import './Products.css';
 
@@ -17,6 +18,8 @@ export const Products = () => {
     const [showStockDetails, setShowStockDetails] = useState(false);
     const [stockDetails, setStockDetails] = useState<StockQuant[]>([]);
     const [loadingStockDetails, setLoadingStockDetails] = useState(false);
+    const [showProductForm, setShowProductForm] = useState(false);
+    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
     useEffect(() => {
         loadData();
@@ -62,6 +65,35 @@ export const Products = () => {
         await loadStockDetails(product.id);
     };
 
+    const handleNewProduct = () => {
+        setEditingProduct(null);
+        setShowProductForm(true);
+    };
+
+    const handleEditProduct = (product: Product) => {
+        setEditingProduct(product);
+        setShowProductForm(true);
+    };
+
+    const handleDeleteProduct = async (product: Product) => {
+        if (!window.confirm(`Are you sure you want to delete "${product.name}"? This action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            await productService.delete(product.id);
+            showToast('Product deleted successfully', 'success');
+            loadData();
+        } catch (error: any) {
+            console.error('Failed to delete product:', error);
+            showToast(error?.message || 'Failed to delete product. Please try again.', 'error');
+        }
+    };
+
+    const handleProductSaved = () => {
+        loadData();
+    };
+
     const getStockInfo = (productId: number) => {
         return stockSummary[productId] || {
             total_qty: 0,
@@ -88,7 +120,7 @@ export const Products = () => {
                         <h1>Products</h1>
                         <p className="products-subtitle">{filteredProducts.length} products</p>
                     </div>
-                    <Button icon={<Plus size={20} />}>New Product</Button>
+                    <Button icon={<Plus size={20} />} onClick={handleNewProduct}>New Product</Button>
                 </div>
 
                 <div className="products-toolbar">
@@ -169,12 +201,28 @@ export const Products = () => {
                                 <div className="product-actions">
                                     <Button 
                                         variant="secondary" 
-                                        size="small"
+                                        size="sm"
                                         icon={<Eye size={16} />}
                                         onClick={() => handleViewStock(product)}
                                     >
                                         View Stock
                                     </Button>
+                                    <button
+                                        type="button"
+                                        className="action-btn"
+                                        title="Edit Product"
+                                        onClick={() => handleEditProduct(product)}
+                                    >
+                                        <Edit size={16} />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="action-btn delete"
+                                        title="Delete Product"
+                                        onClick={() => handleDeleteProduct(product)}
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
                                 </div>
                             </div>
                         );
@@ -231,6 +279,17 @@ export const Products = () => {
                             )}
                         </div>
                     </div>
+                )}
+
+                {showProductForm && (
+                    <ProductForm
+                        product={editingProduct || undefined}
+                        onClose={() => {
+                            setShowProductForm(false);
+                            setEditingProduct(null);
+                        }}
+                        onSave={handleProductSaved}
+                    />
                 )}
             </div>
         </div>

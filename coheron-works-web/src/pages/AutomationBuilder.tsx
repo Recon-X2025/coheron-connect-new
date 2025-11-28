@@ -5,17 +5,15 @@ import {
   Play,
   Save,
   Trash2,
-  Filter,
   ArrowRight,
   Settings,
   Clock,
-  Mail,
-  User,
   AlertCircle,
 } from 'lucide-react';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { showToast } from '../components/Toast';
 import { supportDeskService, type AutomationRule } from '../services/supportDeskService';
 import './AutomationBuilder.css';
 
@@ -107,7 +105,7 @@ export const AutomationBuilder: React.FC = () => {
 
   const saveRule = async () => {
     if (!ruleName || !triggerEvent || conditions.length === 0 || actions.length === 0) {
-      alert('Please fill in all required fields');
+      showToast('Please fill in all required fields', 'error');
       return;
     }
 
@@ -205,12 +203,15 @@ export const AutomationBuilder: React.FC = () => {
               </div>
             ) : (
               rules.map((rule) => (
-                <Card
+                <div
                   key={rule.id}
-                  className={`rule-item ${selectedRule?.id === rule.id ? 'active' : ''}`}
-                  hover
                   onClick={() => handleRuleClick(rule)}
+                  style={{ cursor: 'pointer' }}
                 >
+                  <Card
+                    className={`rule-item ${selectedRule?.id === rule.id ? 'active' : ''}`}
+                    hover
+                  >
                   <div className="rule-item-header">
                     <Zap size={18} className="rule-icon" />
                     <h4>{rule.name}</h4>
@@ -224,7 +225,8 @@ export const AutomationBuilder: React.FC = () => {
                   <div className="rule-meta">
                     <span className="rule-trigger">Triggers: {rule.trigger_event.replace('_', ' ')}</span>
                   </div>
-                </Card>
+                  </Card>
+                </div>
               ))
             )}
           </div>
@@ -237,7 +239,7 @@ export const AutomationBuilder: React.FC = () => {
               <div className="rule-builder-header">
                 <h2>{selectedRule ? 'Edit Rule' : 'Create New Rule'}</h2>
                 <div className="builder-actions">
-                  <Button variant="outline" size="sm" icon={<Play size={16} />}>
+                  <Button variant="secondary" size="sm" icon={<Play size={16} />}>
                     Test
                   </Button>
                   <Button size="sm" icon={<Save size={16} />} onClick={saveRule}>
@@ -281,7 +283,7 @@ export const AutomationBuilder: React.FC = () => {
                 <div className="conditions-section">
                   <div className="section-header">
                     <h3>Conditions (IF)</h3>
-                    <Button size="sm" variant="outline" icon={<Plus size={14} />} onClick={addCondition}>
+                    <Button size="sm" variant="secondary" icon={<Plus size={14} />} onClick={addCondition}>
                       Add Condition
                     </Button>
                   </div>
@@ -335,7 +337,7 @@ export const AutomationBuilder: React.FC = () => {
                 <div className="actions-section">
                   <div className="section-header">
                     <h3>Actions (THEN)</h3>
-                    <Button size="sm" variant="outline" icon={<Plus size={14} />} onClick={addAction}>
+                    <Button size="sm" variant="secondary" icon={<Plus size={14} />} onClick={addAction}>
                       Add Action
                     </Button>
                   </div>

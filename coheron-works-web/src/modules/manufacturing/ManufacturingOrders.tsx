@@ -7,9 +7,7 @@ import {
   CheckCircle,
   XCircle,
   Eye,
-  Edit,
   Play,
-  Square,
   Scissors,
   AlertCircle,
   Package,
@@ -18,17 +16,15 @@ import {
 } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
-import { AdvancedFilter } from '../../shared/components/AdvancedFilter';
-import { BulkActions, createCommonBulkActions } from '../../shared/components/BulkActions';
 import { manufacturingService, type ManufacturingOrder } from '../../services/manufacturingService';
 import { apiService } from '../../services/apiService';
+import { showToast } from '../../components/Toast';
 import './ManufacturingOrders.css';
 
 export const ManufacturingOrders = () => {
   const [orders, setOrders] = useState<ManufacturingOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const [selectedOrder, setSelectedOrder] = useState<ManufacturingOrder | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -82,7 +78,7 @@ export const ManufacturingOrders = () => {
         routing_id: formData.routing_id ? parseInt(formData.routing_id) : undefined,
         date_planned_start: formData.date_planned_start || undefined,
         date_planned_finished: formData.date_planned_finished || undefined,
-      });
+      } as any);
       await loadData();
       setShowCreateModal(false);
       setFormData({
@@ -97,9 +93,9 @@ export const ManufacturingOrders = () => {
         routing_id: '',
         origin: 'manual',
       });
-      alert('Manufacturing order created successfully');
+      showToast('Manufacturing order created successfully', 'success');
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to create manufacturing order');
+      showToast(error.response?.data?.error || 'Failed to create manufacturing order', 'error');
     }
   };
 
@@ -133,9 +129,9 @@ export const ManufacturingOrders = () => {
     try {
       await manufacturingService.confirmMO(id);
       await loadData();
-      alert('Manufacturing order confirmed successfully');
+      showToast('Manufacturing order confirmed successfully', 'success');
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to confirm order');
+      showToast(error.response?.data?.error || 'Failed to confirm order', 'error');
     }
   };
 
@@ -143,9 +139,9 @@ export const ManufacturingOrders = () => {
     try {
       await manufacturingService.startMO(id);
       await loadData();
-      alert('Production started successfully');
+      showToast('Production started successfully', 'success');
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to start production');
+      showToast(error.response?.data?.error || 'Failed to start production', 'error');
     }
   };
 
@@ -155,9 +151,9 @@ export const ManufacturingOrders = () => {
       try {
         await manufacturingService.completeMO(id, parseFloat(qty));
         await loadData();
-        alert('Manufacturing order completed successfully');
+        showToast('Manufacturing order completed successfully', 'success');
       } catch (error: any) {
-        alert(error.response?.data?.error || 'Failed to complete order');
+        showToast(error.response?.data?.error || 'Failed to complete order', 'error');
       }
     }
   };
@@ -167,9 +163,9 @@ export const ManufacturingOrders = () => {
       try {
         await manufacturingService.cancelMO(id);
         await loadData();
-        alert('Manufacturing order cancelled successfully');
+        showToast('Manufacturing order cancelled successfully', 'success');
       } catch (error: any) {
-        alert(error.response?.data?.error || 'Failed to cancel order');
+        showToast(error.response?.data?.error || 'Failed to cancel order', 'error');
       }
     }
   };
@@ -180,9 +176,9 @@ export const ManufacturingOrders = () => {
       try {
         await manufacturingService.splitMO(id, parseFloat(qty), 'Split by user');
         await loadData();
-        alert('Manufacturing order split successfully');
+        showToast('Manufacturing order split successfully', 'success');
       } catch (error: any) {
-        alert(error.response?.data?.error || 'Failed to split order');
+        showToast(error.response?.data?.error || 'Failed to split order', 'error');
       }
     }
   };

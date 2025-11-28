@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Upload, Search, Grid, List, Image as ImageIcon, X } from 'lucide-react';
 import { Button } from '../../../components/Button';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
+import { showToast } from '../../../components/Toast';
 import './MediaLibrary.css';
 
 interface MediaItem {
@@ -48,7 +49,7 @@ export const MediaLibrary = () => {
 
     // In a real implementation, you would upload the file to a storage service
     // and then create the media record via API
-    alert('File upload functionality would be implemented here');
+    showToast('File upload functionality will be available soon', 'info');
   };
 
   const filteredMedia = media.filter((item) =>

@@ -7,19 +7,17 @@ import {
   CheckCircle,
   AlertCircle,
   Clock,
-  Factory,
-  TrendingUp,
 } from 'lucide-react';
-import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { manufacturingService, type WorkOrder } from '../../services/manufacturingService';
+import { showToast } from '../../components/Toast';
 import './WorkOrders.css';
 
 export const WorkOrders = () => {
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedWorkCenter, setSelectedWorkCenter] = useState<number | undefined>();
+  const [selectedWorkCenter] = useState<number | undefined>();
   const [selectedState, setSelectedState] = useState<string>('');
   const [dashboard, setDashboard] = useState<any>(null);
   const [selectedWO, setSelectedWO] = useState<WorkOrder | null>(null);
@@ -59,9 +57,9 @@ export const WorkOrders = () => {
       await manufacturingService.startWorkOrder(id);
       await loadData();
       await loadDashboard();
-      alert('Work order started');
+      showToast('Work order started', 'success');
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to start work order');
+      showToast(error.response?.data?.error || 'Failed to start work order', 'error');
     }
   };
 
@@ -72,9 +70,9 @@ export const WorkOrders = () => {
         await manufacturingService.pauseWorkOrder(id, undefined, reason);
         await loadData();
         await loadDashboard();
-        alert('Work order paused');
+        showToast('Work order paused', 'success');
       } catch (error: any) {
-        alert(error.response?.data?.error || 'Failed to pause work order');
+        showToast(error.response?.data?.error || 'Failed to pause work order', 'error');
       }
     }
   };
@@ -84,9 +82,9 @@ export const WorkOrders = () => {
       await manufacturingService.resumeWorkOrder(id);
       await loadData();
       await loadDashboard();
-      alert('Work order resumed');
+      showToast('Work order resumed', 'success');
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to resume work order');
+      showToast(error.response?.data?.error || 'Failed to resume work order', 'error');
     }
   };
 
@@ -103,9 +101,9 @@ export const WorkOrders = () => {
         );
         await loadData();
         await loadDashboard();
-        alert('Work order completed');
+        showToast('Work order completed', 'success');
       } catch (error: any) {
-        alert(error.response?.data?.error || 'Failed to complete work order');
+        showToast(error.response?.data?.error || 'Failed to complete work order', 'error');
       }
     }
   };
@@ -118,9 +116,9 @@ export const WorkOrders = () => {
         await manufacturingService.recordScrap(id, 1, parseFloat(qty), reason || undefined);
         await loadData();
         await loadDashboard();
-        alert('Scrap recorded');
+        showToast('Scrap recorded', 'success');
       } catch (error: any) {
-        alert(error.response?.data?.error || 'Failed to record scrap');
+        showToast(error.response?.data?.error || 'Failed to record scrap', 'error');
       }
     }
   };

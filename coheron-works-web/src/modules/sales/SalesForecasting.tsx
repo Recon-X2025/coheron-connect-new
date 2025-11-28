@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { TrendingUp, Target, BarChart3, Calendar, Plus, RefreshCw } from 'lucide-react';
+import { TrendingUp, Target, Calendar, Plus, RefreshCw } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { salesService, type SalesForecast, type SalesTarget } from '../../services/salesService';
@@ -125,7 +125,7 @@ export const SalesForecasting = () => {
         {activeTab === 'targets' && (
           <div className="targets-list">
             {targets.map((target) => {
-              const achievement = parseFloat(calculateAchievementPercentage(target));
+              const achievement = parseFloat(calculateAchievementPercentage(target) || '0');
               return (
                 <div key={target.id} className="target-card">
                   <div className="target-header">

@@ -3,7 +3,6 @@ import {
   Search,
   Plus,
   CheckCircle,
-  XCircle,
   AlertTriangle,
   Eye,
   FileText,
@@ -17,6 +16,7 @@ import {
   type NonConformance,
   type ReworkOrder,
 } from '../../services/manufacturingService';
+import { showToast } from '../../components/Toast';
 import './QualityControl.css';
 
 export const QualityControl = () => {
@@ -74,9 +74,9 @@ export const QualityControl = () => {
           parseFloat(qtyFailed)
         );
         await loadData();
-        alert('Inspection completed successfully');
+        showToast('Inspection completed successfully', 'success');
       } catch (error: any) {
-        alert(error.response?.data?.error || 'Failed to complete inspection');
+        showToast(error.response?.data?.error || 'Failed to complete inspection', 'error');
       }
     }
   };

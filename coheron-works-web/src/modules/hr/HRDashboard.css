@@ -1,0 +1,111 @@
+.hr-dashboard {
+  padding: var(--space-xl) 0;
+  min-height: 100vh;
+  background: var(--page-bg);
+}
+
+.hr-dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-xl);
+}
+
+.hr-dashboard-header h1 {
+  font-size: 2rem;
+  margin-bottom: var(--space-xs);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.hr-dashboard-subtitle {
+  font-size: 1rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.hr-dashboard-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+
+.hr-dashboard-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: var(--space-lg);
+}
+
+.hr-dashboard-section-card {
+  padding: var(--space-xl);
+}
+
+.hr-dashboard-section-card h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: var(--space-lg);
+}
+
+.hr-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
+}
+
+.hr-quick-action {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--text);
+  transition: all 0.2s ease;
+  background: var(--surface);
+}
+
+.hr-quick-action:hover {
+  background: var(--muted-surface);
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.hr-quick-action svg {
+  color: var(--primary);
+}
+
+.hr-recent-activity {
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hr-activity-placeholder {
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+}
+
+@media (max-width: 768px) {
+  .hr-dashboard-header {
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .hr-dashboard-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .hr-dashboard-sections {
+    grid-template-columns: 1fr;
+  }
+
+  .hr-quick-actions {
+    grid-template-columns: 1fr;
+  }
+}
+

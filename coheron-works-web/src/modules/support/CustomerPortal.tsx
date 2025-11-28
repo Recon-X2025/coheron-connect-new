@@ -82,7 +82,7 @@ export const CustomerPortal = () => {
                         <p className="text-gray-500 mt-1">Get help, search knowledge base, or create a ticket</p>
                     </div>
                     <div className="flex gap-2">
-                        <Button variant="outline" icon={<BookOpen size={18} />} onClick={() => setShowKB(!showKB)}>
+                        <Button variant="secondary" icon={<BookOpen size={18} />} onClick={() => setShowKB(!showKB)}>
                             Knowledge Base
                         </Button>
                         <Button icon={<Plus size={18} />} onClick={() => setShowCreateTicket(true)}>
@@ -166,7 +166,7 @@ export const CustomerPortal = () => {
                                 </select>
                             </div>
                             <div className="modal-actions">
-                                <Button variant="outline" onClick={() => setShowCreateTicket(false)}>
+                                <Button variant="secondary" onClick={() => setShowCreateTicket(false)}>
                                     Cancel
                                 </Button>
                                 <Button

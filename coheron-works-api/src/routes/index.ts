@@ -45,6 +45,7 @@ import coursesRoutes from './courses.js';
 import applicantsRoutes from './applicants.js';
 import policiesRoutes from './policies.js';
 import supportTicketsRoutes from './supportTickets.js';
+import emailWebhookRoutes from './emailWebhook.js';
 // Sales Module Routes
 import salesPricingRoutes from './salesPricing.js';
 import salesContractsRoutes from './salesContracts.js';
@@ -58,6 +59,8 @@ import inventoryRoutes from './inventory.js';
 // RBAC Module Routes
 import rbacRoutes from './rbac.js';
 import crmRbacRoutes from './crm-rbac.js';
+// CRM Module Routes
+import crmRoutes from './crm.js';
 // Accounting Module Routes
 import accountingChartOfAccountsRoutes from './accountingChartOfAccounts.js';
 import accountingJournalEntriesRoutes from './accountingJournalEntries.js';
@@ -67,6 +70,8 @@ import accountingBankManagementRoutes from './accountingBankManagement.js';
 import accountingFixedAssetsRoutes from './accountingFixedAssets.js';
 import accountingTaxRoutes from './accountingTax.js';
 import accountingFinancialReportsRoutes from './accountingFinancialReports.js';
+// E-Signature Module Routes
+import esignatureRoutes from './esignature.js';
 
 const router = express.Router();
 
@@ -117,6 +122,8 @@ router.use('/applicants', applicantsRoutes);
 router.use('/policies', policiesRoutes);
 // Support Desk Module
 router.use('/support-tickets', supportTicketsRoutes);
+// Email Webhook Module
+router.use('/email-webhook', emailWebhookRoutes);
 // Sales Module Routes
 router.use('/sales/pricing', salesPricingRoutes);
 router.use('/sales/contracts', salesContractsRoutes);
@@ -130,6 +137,8 @@ router.use('/inventory', inventoryRoutes);
 // RBAC Module
 router.use('/rbac', rbacRoutes);
 router.use('/crm-rbac', crmRbacRoutes);
+// CRM Module
+router.use('/crm', crmRoutes);
 // Accounting Module
 router.use('/accounting/chart-of-accounts', accountingChartOfAccountsRoutes);
 router.use('/accounting/journal-entries', accountingJournalEntriesRoutes);
@@ -139,5 +148,7 @@ router.use('/accounting/bank', accountingBankManagementRoutes);
 router.use('/accounting/fixed-assets', accountingFixedAssetsRoutes);
 router.use('/accounting/tax', accountingTaxRoutes);
 router.use('/accounting/reports', accountingFinancialReportsRoutes);
+// E-Signature Module
+router.use('/esignature', esignatureRoutes);
 
 export default router;

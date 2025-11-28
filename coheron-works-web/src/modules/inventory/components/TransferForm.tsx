@@ -4,6 +4,7 @@ import { Button } from '../../../components/Button';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import { inventoryService, type StockTransfer, type StockTransferLine } from '../../../services/inventoryService';
 import { apiService } from '../../../services/apiService';
+import { showToast } from '../../../components/Toast';
 import './TransferForm.css';
 
 interface TransferFormProps {
@@ -25,8 +26,8 @@ export const TransferForm = ({ transfer, onClose, onSuccess }: TransferFormProps
     transfer_type: transfer?.transfer_type || 'warehouse_to_warehouse',
     notes: transfer?.notes || '',
   });
-  const [lines, setLines] = useState<Partial<StockTransferLine>[]>(
-    transfer?.lines || [{ product_id: '', quantity: 0 }]
+  const [lines, setLines] = useState<Array<Partial<StockTransferLine> & { product_id?: string | number; quantity?: number }>>(
+    transfer?.lines || [{ product_id: '', quantity: 0 }] as any
   );
 
   useEffect(() => {
@@ -50,7 +51,7 @@ export const TransferForm = ({ transfer, onClose, onSuccess }: TransferFormProps
   };
 
   const handleAddLine = () => {
-    setLines([...lines, { product_id: '', quantity: 0 }]);
+    setLines([...lines, { product_id: '', quantity: 0 } as any]);
   };
 
   const handleRemoveLine = (index: number) => {
@@ -77,12 +78,12 @@ export const TransferForm = ({ transfer, onClose, onSuccess }: TransferFormProps
         })),
       };
 
-      await inventoryService.createTransfer(transferData);
+      await inventoryService.createTransfer(transferData as any);
       onSuccess();
       onClose();
     } catch (error) {
       console.error('Failed to save transfer:', error);
-      alert('Failed to save transfer. Please check all fields and try again.');
+      showToast('Failed to save transfer. Please check all fields and try again.', 'error');
     } finally {
       setLoading(false);
     }
@@ -180,7 +181,7 @@ export const TransferForm = ({ transfer, onClose, onSuccess }: TransferFormProps
         <div className="form-section">
           <div className="section-header">
             <h3>Items to Transfer</h3>
-            <Button type="button" variant="secondary" size="small" icon={<Plus size={16} />} onClick={handleAddLine}>
+            <Button type="button" variant="secondary" size="sm" icon={<Plus size={16} />} onClick={handleAddLine}>
               Add Item
             </Button>
           </div>

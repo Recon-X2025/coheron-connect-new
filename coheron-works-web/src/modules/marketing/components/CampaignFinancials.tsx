@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, TrendingUp, TrendingDown, AlertCircle, Receipt, FileText } from 'lucide-react';
+import { DollarSign, TrendingUp, AlertCircle, Receipt, FileText, Users, Target } from 'lucide-react';
 import { apiService } from '../../../services/apiService';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import './CampaignFinancials.css';
@@ -46,22 +46,23 @@ export const CampaignFinancials: React.FC<CampaignFinancialsProps> = ({
   const loadFinancials = async () => {
     try {
       setLoading(true);
-      const campaign = await apiService.get<any>(`/campaigns/${campaignId}`);
+      const campaignResponse = await apiService.get<any>(`/campaigns/${campaignId}`);
+      const campaign = Array.isArray(campaignResponse) ? campaignResponse[0] : campaignResponse;
       const transactions = await apiService.get<any[]>(`/campaigns/${campaignId}/financials`).catch(() => []);
 
-      const totalSpend = campaign.total_cost || 0;
-      const totalRevenue = campaign.revenue || 0;
+      const totalSpend = campaign?.total_cost || 0;
+      const totalRevenue = campaign?.revenue || 0;
       const budgetRemaining = campaignBudget - totalSpend;
       const budgetUtilization = campaignBudget > 0 ? (totalSpend / campaignBudget) * 100 : 0;
       const roi = totalSpend > 0 ? ((totalRevenue - totalSpend) / totalSpend) * 100 : 0;
-      const leads = campaign.leads_count || 1;
+      const leads = campaign?.leads_count || 1;
       const cpl = totalSpend / leads;
       const cpa = totalSpend / leads; // Simplified
       const roas = totalSpend > 0 ? (totalRevenue / totalSpend) * 100 : 0;
       const budgetVariance = campaignBudget - totalSpend;
       
       // Projected spend based on current daily average
-      const daysElapsed = campaign.start_date && campaign.end_date
+      const daysElapsed = campaign?.start_date && campaign?.end_date
         ? Math.ceil((new Date(campaign.end_date).getTime() - new Date(campaign.start_date).getTime()) / (1000 * 60 * 60 * 24))
         : 30;
       const dailyAverage = totalSpend / Math.max(daysElapsed, 1);

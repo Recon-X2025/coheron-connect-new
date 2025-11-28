@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, DollarSign, Tag, Settings, Search, X } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
-import { salesService, type PriceList, type ProductPrice, type PricingRule } from '../../services/salesService';
+import { salesService, type PriceList, type PricingRule } from '../../services/salesService';
+import { showToast } from '../../components/Toast';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
 import './PricingManagement.css';
 
@@ -12,7 +13,6 @@ export const PricingManagement = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'price-lists' | 'rules' | 'promotions'>('price-lists');
   const [selectedPriceList, setSelectedPriceList] = useState<PriceList | null>(null);
-  const [showPriceListForm, setShowPriceListForm] = useState(false);
   const [showRuleForm, setShowRuleForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -38,7 +38,7 @@ export const PricingManagement = () => {
   };
 
   const handleCreatePriceList = async () => {
-    setShowPriceListForm(true);
+    showToast('Create Price List functionality coming soon', 'info');
   };
 
   const handleCreateRule = async () => {
@@ -52,10 +52,10 @@ export const PricingManagement = () => {
       await salesService.pricing.createPricingRule(ruleData);
       await loadData();
       setShowRuleForm(false);
-      alert('Pricing rule created successfully');
+      showToast('Pricing rule created successfully', 'success');
     } catch (error: any) {
       console.error('Failed to create pricing rule:', error);
-      alert(error?.userMessage || error?.message || 'Failed to create pricing rule. Please try again.');
+      showToast(error?.userMessage || error?.message || 'Failed to create pricing rule. Please try again.', 'error');
     }
   };
 

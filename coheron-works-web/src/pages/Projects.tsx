@@ -40,10 +40,10 @@ export const Projects = () => {
           updated_at: p.updated_at,
         }));
         setProjects(mappedProjects);
-      } else if (projectsData && Array.isArray(projectsData.data)) {
-        setProjects(projectsData.data);
-      } else if (projectsData && projectsData.projects) {
-        setProjects(projectsData.projects);
+      } else if (projectsData && Array.isArray((projectsData as any).data)) {
+        setProjects((projectsData as any).data);
+      } else if (projectsData && (projectsData as any).projects) {
+        setProjects((projectsData as any).projects);
       } else {
         // Fallback: Show empty state or mock data for testing
         console.warn('Unexpected projects data format:', projectsData);
@@ -53,7 +53,8 @@ export const Projects = () => {
       console.error('Failed to load projects:', error);
       
       // Show user-friendly error message
-      const errorMessage = error.userMessage || 
+      // Error message available but not used
+      // const errorMessage = error.userMessage || 
                           error.response?.data?.error || 
                           error.message || 
                           'Failed to load projects';
@@ -145,13 +146,15 @@ export const Projects = () => {
         ) : (
           <div className="projects-grid">
             {filteredProjects.map((project) => (
-            <Card 
-              key={project.id} 
-              hover 
-              className="project-card"
+            <div
+              key={project.id}
               onClick={() => handleProjectClick(project.id)}
               style={{ cursor: 'pointer' }}
             >
+              <Card 
+                hover 
+                className="project-card"
+              >
               <div className="project-header">
                 <h3>{project.name}</h3>
                 <button 
@@ -178,8 +181,9 @@ export const Projects = () => {
                   )}
                 </div>
               </div>
-            </Card>
-          ))}
+                </Card>
+              </div>
+            ))}
           </div>
         )}
       </div>

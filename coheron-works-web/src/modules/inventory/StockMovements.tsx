@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Package, ArrowLeftRight, FileText, Search, Plus, Filter } from 'lucide-react';
-import { Button } from '../../components/Button';
+import { Package, ArrowLeftRight, FileText, ArrowDown, ArrowUp } from 'lucide-react';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { inventoryService, type GRN, type StockTransfer, type StockAdjustment } from '../../services/inventoryService';
 import { GRNList } from './components/GRNList';
 import { TransferList } from './components/TransferList';
 import { AdjustmentList } from './components/AdjustmentList';
+import { StockIssueList } from './components/StockIssueList';
+import { StockReturnList } from './components/StockReturnList';
 import './StockMovements.css';
 
-type MovementTab = 'grn' | 'transfers' | 'adjustments';
+type MovementTab = 'grn' | 'transfers' | 'adjustments' | 'issues' | 'returns';
 
 export const StockMovements = () => {
   const [activeTab, setActiveTab] = useState<MovementTab>('grn');
@@ -47,7 +48,9 @@ export const StockMovements = () => {
 
   const tabs = [
     { id: 'grn' as MovementTab, label: 'Goods Receipt (GRN)', icon: Package },
+    { id: 'issues' as MovementTab, label: 'Stock Issues', icon: ArrowDown },
     { id: 'transfers' as MovementTab, label: 'Transfers', icon: ArrowLeftRight },
+    { id: 'returns' as MovementTab, label: 'Returns', icon: ArrowUp },
     { id: 'adjustments' as MovementTab, label: 'Adjustments', icon: FileText },
   ];
 
@@ -75,7 +78,9 @@ export const StockMovements = () => {
         ) : (
           <>
             {activeTab === 'grn' && <GRNList grns={grns} onRefresh={loadData} />}
+            {activeTab === 'issues' && <StockIssueList onRefresh={loadData} />}
             {activeTab === 'transfers' && <TransferList transfers={transfers} onRefresh={loadData} />}
+            {activeTab === 'returns' && <StockReturnList onRefresh={loadData} />}
             {activeTab === 'adjustments' && <AdjustmentList adjustments={adjustments} onRefresh={loadData} />}
           </>
         )}

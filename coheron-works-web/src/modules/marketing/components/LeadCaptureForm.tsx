@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { X, Save, User, Mail, Phone, Building, FileText, Link as LinkIcon } from 'lucide-react';
+import { X, Save } from 'lucide-react';
 import { Button } from '../../../components/Button';
 import { apiService } from '../../../services/apiService';
-import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import './LeadCaptureForm.css';
 
 interface LeadCaptureFormProps {
@@ -61,11 +60,11 @@ export const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({
         type: 'lead',
       };
 
-      await apiService.post('/leads', leadData);
+      await apiService.create('/leads', leadData);
 
       // Trigger lead scoring if enabled
       if (campaignId) {
-        await apiService.post(`/campaigns/${campaignId}/leads/score`, { lead_id: leadData }).catch(() => {});
+        await apiService.getAxiosInstance().post(`/campaigns/${campaignId}/leads/score`, { lead_id: leadData }).catch(() => {});
       }
 
       onSuccess();

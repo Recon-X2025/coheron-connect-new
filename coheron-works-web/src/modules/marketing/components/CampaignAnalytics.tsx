@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, DollarSign, Users, MousePointerClick, Eye, Target, BarChart3, PieChart } from 'lucide-react';
+import { TrendingUp, DollarSign, Users, MousePointerClick, Eye, Target, BarChart3, PieChart } from 'lucide-react';
 import { apiService } from '../../../services/apiService';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import './CampaignAnalytics.css';
@@ -59,14 +59,15 @@ export const CampaignAnalytics: React.FC<CampaignAnalyticsProps> = ({
   const loadAnalytics = async () => {
     try {
       setLoading(true);
-      const campaign = await apiService.get<any>(`/campaigns/${campaignId}`);
+      const campaignResponse = await apiService.get<any>(`/campaigns/${campaignId}`);
+      const campaign = Array.isArray(campaignResponse) ? campaignResponse[0] : campaignResponse;
       
       // Calculate metrics
-      const leads = campaign.leads_count || 0;
-      const clicks = campaign.clicks || 0;
-      const impressions = campaign.impressions || 0;
-      const revenue = campaign.revenue || 0;
-      const cost = campaign.total_cost || 0;
+      const leads = campaign?.leads_count || 0;
+      const clicks = campaign?.clicks || 0;
+      const impressions = campaign?.impressions || 0;
+      const revenue = campaign?.revenue || 0;
+      const cost = campaign?.total_cost || 0;
       
       const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
       const cpl = leads > 0 ? cost / leads : 0;
@@ -74,7 +75,10 @@ export const CampaignAnalytics: React.FC<CampaignAnalyticsProps> = ({
       const roi = cost > 0 ? ((revenue - cost) / cost) * 100 : 0;
 
       // Load performance data
-      const performanceData = await apiService.get<any[]>(`/campaigns/${campaignId}/performance`).catch(() => []);
+      const performanceResponse = await apiService.get<any[]>(`/campaigns/${campaignId}/performance`).catch(() => []);
+      const performanceData = Array.isArray(performanceResponse) && performanceResponse.length > 0 && Array.isArray(performanceResponse[0])
+        ? performanceResponse[0]
+        : Array.isArray(performanceResponse) ? performanceResponse : [];
 
       setAnalytics({
         leads,
@@ -87,8 +91,15 @@ export const CampaignAnalytics: React.FC<CampaignAnalyticsProps> = ({
         cpa: parseFloat(cpa.toFixed(2)),
         roi: parseFloat(roi.toFixed(2)),
         conversions: leads, // Simplified
-        targetKpis: campaign.target_kpis || {},
-        dailyPerformance: performanceData,
+        targetKpis: campaign?.target_kpis || {},
+        dailyPerformance: performanceData as Array<{
+          date: string;
+          leads: number;
+          clicks: number;
+          impressions: number;
+          revenue: number;
+          cost: number;
+        }>,
         channelBreakdown: [], // Would be loaded from actual data
       });
     } catch (error) {

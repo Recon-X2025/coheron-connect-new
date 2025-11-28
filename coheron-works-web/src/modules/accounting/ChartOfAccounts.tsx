@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, Edit, Trash2, ChevronRight, ChevronDown, BookOpen } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, ChevronRight, ChevronDown, X } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { chartOfAccountsService } from '../../services/accountingService';
-import { formatInLakhsCompact } from '../../utils/currencyFormatter';
+import { showToast } from '../../components/Toast';
 import './ChartOfAccounts.css';
 
 interface Account {
@@ -23,6 +23,47 @@ export const ChartOfAccounts = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedAccounts, setExpandedAccounts] = useState<Set<number>>(new Set());
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+
+  const handleEditAccount = (account: Account) => {
+    setEditingAccount(account);
+    setShowEditModal(true);
+  };
+
+  const handleDeleteAccount = async (accountId: number) => {
+    if (!window.confirm('Are you sure you want to delete this account? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await chartOfAccountsService.delete(accountId);
+      await loadAccounts();
+      showToast('Account deleted successfully', 'success');
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      showToast('Failed to delete account. Please try again.', 'error');
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingAccount) return;
+
+    try {
+      await chartOfAccountsService.update(editingAccount.id, {
+        code: editingAccount.code,
+        name: editingAccount.name,
+        account_type: editingAccount.account_type,
+      });
+      await loadAccounts();
+      setShowEditModal(false);
+      setEditingAccount(null);
+      showToast('Account updated successfully', 'success');
+    } catch (error) {
+      console.error('Error updating account:', error);
+      showToast('Failed to update account. Please try again.', 'error');
+    }
+  };
 
   useEffect(() => {
     loadAccounts();
@@ -30,7 +71,7 @@ export const ChartOfAccounts = () => {
 
   const loadAccounts = async () => {
     try {
-      const data = await chartOfAccountsService.getAll();
+      const data = await chartOfAccountsService.getAll() as Account[];
       setAccounts(data);
     } catch (error) {
       console.error('Error loading accounts:', error);
@@ -107,11 +148,27 @@ export const ChartOfAccounts = () => {
             {account.reconcile && <span className="reconcile-badge">Reconcile</span>}
           </div>
           <div className="account-actions">
-            <button className="action-btn" title="Edit">
+            <button 
+              type="button"
+              className="action-btn" 
+              title="Edit"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEditAccount(account);
+              }}
+            >
               <Edit size={16} />
             </button>
             {!account.deprecated && (
-              <button className="action-btn delete" title="Delete">
+              <button 
+                type="button"
+                className="action-btn delete" 
+                title="Delete"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteAccount(account.id);
+                }}
+              >
                 <Trash2 size={16} />
               </button>
             )}
@@ -194,6 +251,61 @@ export const ChartOfAccounts = () => {
             </div>
           )}
         </div>
+
+        {/* Edit Account Modal */}
+        {showEditModal && editingAccount && (
+          <div className="modal-overlay" onClick={() => { setShowEditModal(false); setEditingAccount(null); }}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>Edit Account</h2>
+                <button type="button" className="modal-close" onClick={() => { setShowEditModal(false); setEditingAccount(null); }}>
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="form-group">
+                <label htmlFor="edit-account-code">Account Code</label>
+                <input
+                  type="text"
+                  id="edit-account-code"
+                  name="account-code"
+                  value={editingAccount.code}
+                  onChange={(e) => setEditingAccount({ ...editingAccount, code: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="edit-account-name">Account Name</label>
+                <input
+                  type="text"
+                  id="edit-account-name"
+                  name="account-name"
+                  value={editingAccount.name}
+                  onChange={(e) => setEditingAccount({ ...editingAccount, name: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="edit-account-type">Account Type</label>
+                <select
+                  id="edit-account-type"
+                  name="account-type"
+                  value={editingAccount.account_type}
+                  onChange={(e) => setEditingAccount({ ...editingAccount, account_type: e.target.value })}
+                >
+                  <option value="asset_current">Current Asset</option>
+                  <option value="asset_non_current">Non-Current Asset</option>
+                  <option value="liability_current">Current Liability</option>
+                  <option value="liability_non_current">Non-Current Liability</option>
+                  <option value="equity">Equity</option>
+                  <option value="income">Income</option>
+                  <option value="expense">Expense</option>
+                </select>
+              </div>
+              <div className="modal-actions">
+                <Button variant="ghost" onClick={() => { setShowEditModal(false); setEditingAccount(null); }}>Cancel</Button>
+                <Button onClick={handleSaveEdit}>Save Changes</Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

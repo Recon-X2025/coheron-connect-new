@@ -1,0 +1,207 @@
+.signing-interface {
+  max-width: 700px;
+  width: 90%;
+}
+
+.modal-header .document-name {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin: var(--space-xs) 0 0 0;
+}
+
+.signer-info {
+  padding: var(--space-md);
+  background: var(--muted-surface);
+  border-radius: var(--radius);
+  margin-bottom: var(--space-lg);
+}
+
+.signer-info p {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.9375rem;
+}
+
+.signature-type-selector {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: var(--space-md);
+}
+
+.type-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.type-btn:hover {
+  border-color: var(--primary);
+  background: var(--glass);
+}
+
+.type-btn.active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: white;
+}
+
+.signature-area {
+  margin-bottom: var(--space-lg);
+  min-height: 250px;
+}
+
+.draw-signature {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.signature-canvas {
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  cursor: crosshair;
+  background: white;
+  touch-action: none;
+}
+
+.clear-btn {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--muted-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.clear-btn:hover {
+  background: var(--border);
+}
+
+.type-signature {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.typed-signature-input {
+  padding: var(--space-md);
+  font-size: 1.25rem;
+  text-align: center;
+}
+
+.typed-preview {
+  padding: var(--space-xl);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  text-align: center;
+  font-size: 2rem;
+  font-family: 'Brush Script MT', cursive;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  color: var(--text);
+}
+
+.upload-signature {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl);
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  gap: var(--space-sm);
+  color: var(--text-muted);
+  min-height: 200px;
+}
+
+.upload-label:hover {
+  border-color: var(--primary);
+  background: var(--glass);
+  color: var(--primary);
+}
+
+.uploaded-signature-img {
+  max-width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+}
+
+.access-code-section {
+  margin-bottom: var(--space-lg);
+}
+
+.access-code-section label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: var(--space-xs);
+}
+
+.access-code-section input {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.9375rem;
+}
+
+.signing-note {
+  padding: var(--space-md);
+  background: var(--glass);
+  border-radius: var(--radius);
+  margin-bottom: var(--space-lg);
+}
+
+.signing-note p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .signing-interface {
+    width: 95%;
+  }
+
+  .signature-canvas {
+    width: 100%;
+    height: 200px;
+  }
+
+  .signature-type-selector {
+    flex-direction: column;
+  }
+}
+

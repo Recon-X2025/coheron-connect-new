@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Calendar, Target, Users } from 'lucide-react';
+import { Plus, Calendar, Target } from 'lucide-react';
 import { projectService, type Sprint, type Issue } from '../../services/projectService';
 import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';

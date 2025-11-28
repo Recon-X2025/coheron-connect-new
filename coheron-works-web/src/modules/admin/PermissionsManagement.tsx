@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Key, Search, Filter, Plus, CheckCircle, XCircle } from 'lucide-react';
+import { Key, Search, Filter, Plus } from 'lucide-react';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { rbacService, type Permission } from '../../services/rbacService';
+import { showToast } from '../../components/Toast';
 import './RBACManagement.css';
 
 export const PermissionsManagement: React.FC = () => {
@@ -53,7 +54,7 @@ export const PermissionsManagement: React.FC = () => {
       resetForm();
       loadPermissions();
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to create permission');
+      showToast(error.response?.data?.error || 'Failed to create permission', 'error');
     }
   };
 

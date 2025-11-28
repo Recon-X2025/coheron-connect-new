@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, TrendingUp, TrendingDown, DollarSign, BarChart3 } from 'lucide-react';
+import { FileText, TrendingUp, DollarSign, BarChart3 } from 'lucide-react';
 import { financialReportsService } from '../../services/accountingService';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
 import './FinancialReports.css';

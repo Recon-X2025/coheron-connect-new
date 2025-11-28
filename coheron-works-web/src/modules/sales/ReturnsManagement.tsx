@@ -54,8 +54,8 @@ export const ReturnsManagement = () => {
   };
 
   const filteredRMAs = rmas.filter(rma =>
-    rma.rma_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    rma.partner_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    (rma.rma_number?.toString() || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (rma.partner_id?.toString() || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -139,7 +139,7 @@ export const ReturnsManagement = () => {
                 <div className="rma-header">
                   <div>
                     <h3>{rma.rma_number}</h3>
-                    <p className="customer-name">{rma.partner_name || 'Unknown Customer'}</p>
+                    <p className="customer-name">{rma.partner_id || 'Unknown Customer'}</p>
                   </div>
                   <span
                     className="status-badge"
@@ -219,10 +219,10 @@ export const ReturnsManagement = () => {
                         <span className="label">Refund Amount:</span>
                         <span>{formatInLakhsCompact(selectedRMA.refund_amount)}</span>
                       </div>
-                      {selectedRMA.refund_method && (
+                      {(selectedRMA as any).refund_method && (
                         <div className="detail-item">
                           <span className="label">Refund Method:</span>
-                          <span>{selectedRMA.refund_method}</span>
+                          <span>{(selectedRMA as any).refund_method}</span>
                         </div>
                       )}
                     </div>

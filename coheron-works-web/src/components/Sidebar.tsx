@@ -28,6 +28,7 @@ import {
     BarChart3,
     Receipt,
     Zap,
+    PenTool,
     AlertCircle,
     Mail,
     FileCheck,
@@ -36,6 +37,9 @@ import {
     Wrench,
     ClipboardCheck,
     DollarSign,
+    ArrowLeft,
+    Barcode,
+    ArrowUp,
 } from 'lucide-react';
 import './Sidebar.css';
 
@@ -61,10 +65,13 @@ const getNavigationItems = (): NavItem[] => [
             path: '/crm',
             icon: <Users size={20} />,
             children: [
+                { label: 'Dashboard', path: '/crm/dashboard', icon: <LayoutDashboard size={18} /> },
                 { label: 'Pipeline', path: '/crm/pipeline', icon: <TrendingUp size={18} /> },
                 { label: 'Leads', path: '/crm/leads', icon: <FileText size={18} /> },
                 { label: 'Opportunities', path: '/crm/opportunities', icon: <BarChart3 size={18} /> },
                 { label: 'Customers', path: '/crm/customers', icon: <Users size={18} /> },
+                { label: 'Tasks & Calendar', path: '/crm/tasks', icon: <Calendar size={18} /> },
+                { label: 'Automation Engine', path: '/crm/automation', icon: <Zap size={18} /> },
             ],
         },
         {
@@ -72,8 +79,15 @@ const getNavigationItems = (): NavItem[] => [
             path: '/sales',
             icon: <TrendingUp size={20} />,
             children: [
+                { label: 'Dashboard', path: '/sales/dashboard', icon: <LayoutDashboard size={18} /> },
                 { label: 'Orders', path: '/sales/orders', icon: <ShoppingCart size={18} /> },
                 { label: 'Quotations', path: '/sales/quotations', icon: <FileCheck size={18} /> },
+                { label: 'Pricing Management', path: '/sales/pricing', icon: <DollarSign size={18} /> },
+                { label: 'Contracts', path: '/sales/contracts', icon: <FileText size={18} /> },
+                { label: 'Delivery Tracking', path: '/sales/delivery', icon: <Package size={18} /> },
+                { label: 'Returns', path: '/sales/returns', icon: <ArrowLeft size={18} /> },
+                { label: 'Forecasting', path: '/sales/forecasting', icon: <TrendingUp size={18} /> },
+                { label: 'Team Performance', path: '/sales/team', icon: <Users size={18} /> },
             ],
         },
         {
@@ -81,7 +95,14 @@ const getNavigationItems = (): NavItem[] => [
             path: '/inventory',
             icon: <Package size={20} />,
             children: [
+                { label: 'Dashboard', path: '/inventory/dashboard', icon: <LayoutDashboard size={18} /> },
                 { label: 'Products', path: '/inventory/products', icon: <Package size={18} /> },
+                { label: 'Warehouses', path: '/inventory/warehouses', icon: <Package size={18} /> },
+                { label: 'Stock Movements', path: '/inventory/movements', icon: <ArrowUp size={18} /> },
+                { label: 'Batch & Serial', path: '/inventory/batch-serial', icon: <Barcode size={18} /> },
+                { label: 'Warehouse Operations', path: '/inventory/warehouse-ops', icon: <Settings2 size={18} /> },
+                { label: 'Reports', path: '/inventory/reports', icon: <BarChart3 size={18} /> },
+                { label: 'Settings', path: '/inventory/settings', icon: <Settings2 size={18} /> },
             ],
         },
         {
@@ -89,7 +110,12 @@ const getNavigationItems = (): NavItem[] => [
             path: '/accounting',
             icon: <Calculator size={20} />,
             children: [
+                { label: 'Dashboard', path: '/accounting/dashboard', icon: <LayoutDashboard size={18} /> },
                 { label: 'Invoices', path: '/accounting/invoices', icon: <Receipt size={18} /> },
+                { label: 'Chart of Accounts', path: '/accounting/chart-of-accounts', icon: <FileText size={18} /> },
+                { label: 'Journal Entries', path: '/accounting/journal-entries', icon: <FileCheck size={18} /> },
+                { label: 'Accounts Payable', path: '/accounting/accounts-payable', icon: <DollarSign size={18} /> },
+                { label: 'Financial Reports', path: '/accounting/reports', icon: <BarChart3 size={18} /> },
             ],
         },
         {
@@ -98,6 +124,7 @@ const getNavigationItems = (): NavItem[] => [
             icon: <UserCog size={20} />,
             children: [
                 { label: 'Dashboard', path: '/hr', icon: <LayoutDashboard size={18} /> },
+                { label: 'Modules', path: '/hr/modules', icon: <Settings2 size={18} /> },
                 { label: 'Employees', path: '/hr/employees', icon: <Users size={18} /> },
                 { label: 'Payroll', path: '/hr/payroll', icon: <CreditCard size={18} /> },
                 { label: 'Recruitment', path: '/hr/recruitment', icon: <UserPlus size={18} /> },
@@ -115,6 +142,7 @@ const getNavigationItems = (): NavItem[] => [
             path: '/manufacturing',
             icon: <Factory size={20} />,
             children: [
+                { label: 'Dashboard', path: '/manufacturing/dashboard', icon: <LayoutDashboard size={18} /> },
                 { label: 'Orders', path: '/manufacturing/orders', icon: <Factory size={18} /> },
                 { label: 'BOM', path: '/manufacturing/bom', icon: <Layers size={18} /> },
                 { label: 'Routing', path: '/manufacturing/routing', icon: <Settings2 size={18} /> },
@@ -128,6 +156,7 @@ const getNavigationItems = (): NavItem[] => [
             path: '/marketing',
             icon: <Megaphone size={20} />,
             children: [
+                { label: 'Dashboard', path: '/marketing/dashboard', icon: <LayoutDashboard size={18} /> },
                 { label: 'Campaigns', path: '/marketing/campaigns', icon: <Mail size={18} /> },
             ],
         },
@@ -135,12 +164,19 @@ const getNavigationItems = (): NavItem[] => [
             label: 'POS',
             path: '/pos',
             icon: <ShoppingCart size={20} />,
+            children: [
+                { label: 'Dashboard', path: '/pos/dashboard', icon: <LayoutDashboard size={18} /> },
+                { label: 'POS Interface', path: '/pos', icon: <ShoppingCart size={18} /> },
+                { label: 'Sessions', path: '/pos/sessions', icon: <Clock size={18} /> },
+                { label: 'Terminals', path: '/pos/terminals', icon: <Settings2 size={18} /> },
+            ],
         },
         {
             label: 'Support',
             path: '/support',
             icon: <Headphones size={20} />,
             children: [
+                { label: 'Dashboard', path: '/support/dashboard', icon: <LayoutDashboard size={18} /> },
                 { label: 'Tickets', path: '/support/tickets', icon: <Headphones size={18} /> },
                 { label: 'Agent Workbench', path: '/support/workbench', icon: <Users size={18} /> },
                 { label: 'Knowledge Base', path: '/support/knowledge-base', icon: <FileText size={18} /> },
@@ -155,6 +191,27 @@ const getNavigationItems = (): NavItem[] => [
             label: 'Projects',
             path: '/projects',
             icon: <FolderKanban size={20} />,
+            children: [
+                { label: 'Dashboard', path: '/projects/dashboard', icon: <LayoutDashboard size={18} /> },
+                { label: 'Projects List', path: '/projects', icon: <FolderKanban size={18} /> },
+            ],
+        },
+        {
+            label: 'E-Signature',
+            path: '/esignature',
+            icon: <PenTool size={20} />,
+        },
+        {
+            label: 'Admin Portal',
+            path: '/admin',
+            icon: <Shield size={20} />,
+            children: [
+                { label: 'Admin Portal', path: '/admin', icon: <Shield size={18} /> },
+                { label: 'Roles', path: '/admin/roles', icon: <Users size={18} /> },
+                { label: 'Permissions', path: '/admin/permissions', icon: <Shield size={18} /> },
+                { label: 'Users', path: '/admin/users', icon: <Users size={18} /> },
+                { label: 'Audit Logs', path: '/admin/audit', icon: <FileText size={18} /> },
+            ],
         },
     ];
 
@@ -163,11 +220,6 @@ const getBottomItems = (): NavItem[] => [
             label: 'Settings',
             path: '/settings',
             icon: <Settings size={20} />,
-        },
-        {
-            label: 'Admin Portal',
-            path: '/admin',
-            icon: <Shield size={20} />,
         },
         {
             label: 'Subscription',

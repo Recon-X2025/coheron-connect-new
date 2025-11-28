@@ -4,8 +4,6 @@ import {
   TrendingDown,
   DollarSign,
   BarChart3,
-  PieChart,
-  Calendar,
   Filter,
 } from 'lucide-react';
 import { Button } from '../../components/Button';

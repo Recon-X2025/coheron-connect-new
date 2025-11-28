@@ -4,6 +4,7 @@ import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
 import { apiService } from '../../../services/apiService';
 import { formatInLakhsCompact } from '../../../utils/currencyFormatter';
+import { showToast } from '../../../components/Toast';
 import './PayrollProcessing.css';
 
 export const PayrollProcessing = () => {
@@ -49,7 +50,7 @@ export const PayrollProcessing = () => {
 
   const handleProcessPayroll = async () => {
     if (!selectedPeriod) {
-      alert('Please select a payroll period');
+      showToast('Please select a payroll period', 'error');
       return;
     }
 
@@ -86,11 +87,11 @@ export const PayrollProcessing = () => {
         }
       }
 
-      alert('Payroll processed successfully!');
+      showToast('Payroll processed successfully!', 'success');
       loadData();
     } catch (error) {
       console.error('Failed to process payroll:', error);
-      alert('Failed to process payroll. Please try again.');
+      showToast('Failed to process payroll. Please try again.', 'error');
     } finally {
       setProcessing(false);
     }

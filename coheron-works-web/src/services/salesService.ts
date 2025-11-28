@@ -308,34 +308,40 @@ export const pricingService = {
     apiService.getById<PriceList>('/sales/pricing/price-lists', id),
 
   createPriceList: (data: Partial<PriceList>) =>
-    apiService.post<PriceList>('/sales/pricing/price-lists', data),
+    apiService.create<PriceList>('/sales/pricing/price-lists', data),
 
   updatePriceList: (id: number, data: Partial<PriceList>) =>
-    apiService.put<PriceList>(`/sales/pricing/price-lists/${id}`, data),
+    apiService.update<PriceList>('/sales/pricing/price-lists', id, data),
 
   addProductPrice: (priceListId: number, data: Partial<ProductPrice>) =>
-    apiService.post<ProductPrice>(`/sales/pricing/price-lists/${priceListId}/products`, data),
+    apiService.create<ProductPrice>(`/sales/pricing/price-lists/${priceListId}/products`, data),
 
   getCustomerPrices: (partnerId: number) =>
     apiService.get<CustomerPrice>(`/sales/pricing/customer-prices/${partnerId}`),
 
   setCustomerPrice: (data: Partial<CustomerPrice>) =>
-    apiService.post<CustomerPrice>('/sales/pricing/customer-prices', data),
+    apiService.create<CustomerPrice>('/sales/pricing/customer-prices', data),
 
   getPricingRules: (params?: { is_active?: boolean; rule_type?: string }) =>
     apiService.get<PricingRule>('/sales/pricing/pricing-rules', params),
 
   createPricingRule: (data: Partial<PricingRule>) =>
-    apiService.post<PricingRule>('/sales/pricing/pricing-rules', data),
+    apiService.create<PricingRule>('/sales/pricing/pricing-rules', data),
 
   calculatePrice: (data: { product_id: number; partner_id?: number; quantity: number; price_list_id?: number }) =>
-    apiService.post<any>('/sales/pricing/calculate-price', data),
+    apiService.create<any>('/sales/pricing/calculate-price', data),
 
   getPromotions: (params?: { product_id?: number }) =>
     apiService.get<any>('/sales/pricing/promotions', params),
 
   createPromotion: (data: any) =>
-    apiService.post<any>('/sales/pricing/promotions', data),
+    apiService.create<any>('/sales/pricing/promotions', data),
+
+  updatePromotion: (id: number, data: any) =>
+    apiService.update<any>('/sales/pricing/promotions', id, data),
+
+  deletePromotion: (id: number) =>
+    apiService.getAxiosInstance().delete(`/sales/pricing/promotions/${id}`),
 };
 
 // ============================================
@@ -350,31 +356,31 @@ export const contractsService = {
     apiService.getById<Contract>('/sales/contracts', id),
 
   createContract: (data: Partial<Contract>) =>
-    apiService.post<Contract>('/sales/contracts', data),
+    apiService.create<Contract>('/sales/contracts', data),
 
   updateContract: (id: number, data: Partial<Contract>) =>
-    apiService.put<Contract>(`/sales/contracts/${id}`, data),
+    apiService.update<Contract>('/sales/contracts', id, data),
 
   renewContract: (id: number, data: { new_end_date: string; new_renewal_date?: string }) =>
-    apiService.post<Contract>(`/sales/contracts/${id}/renew`, data),
+    apiService.create<Contract>(`/sales/contracts/${id}/renew`, data),
 
   getSLAs: (contractId: number) =>
     apiService.get<SLA>(`/sales/contracts/${contractId}/slas`),
 
   createSLA: (contractId: number, data: Partial<SLA>) =>
-    apiService.post<SLA>(`/sales/contracts/${contractId}/slas`, data),
+    apiService.create<SLA>(`/sales/contracts/${contractId}/slas`, data),
 
   recordSLAPerformance: (slaId: number, data: any) =>
-    apiService.post<any>(`/sales/contracts/slas/${slaId}/performance`, data),
+    apiService.create<any>(`/sales/contracts/slas/${slaId}/performance`, data),
 
   getSubscriptions: (params?: { partner_id?: number; status?: string }) =>
     apiService.get<Subscription>('/sales/contracts/subscriptions', params),
 
   createSubscription: (data: Partial<Subscription>) =>
-    apiService.post<Subscription>('/sales/contracts/subscriptions', data),
+    apiService.create<Subscription>('/sales/contracts/subscriptions', data),
 
   cancelSubscription: (id: number, data: { cancellation_reason?: string }) =>
-    apiService.post<Subscription>(`/sales/contracts/subscriptions/${id}/cancel`, data),
+    apiService.create<Subscription>(`/sales/contracts/subscriptions/${id}/cancel`, data),
 };
 
 // ============================================
@@ -389,22 +395,22 @@ export const deliveryService = {
     apiService.getById<DeliveryOrder>('/sales/delivery', id),
 
   createDeliveryOrder: (data: Partial<DeliveryOrder>) =>
-    apiService.post<DeliveryOrder>('/sales/delivery', data),
+    apiService.create<DeliveryOrder>('/sales/delivery', data),
 
   updateDeliveryStatus: (id: number, data: { status: string; delivered_at?: string; tracking_number?: string; carrier_name?: string }) =>
-    apiService.put<DeliveryOrder>(`/sales/delivery/${id}/status`, data),
+    apiService.create<DeliveryOrder>(`/sales/delivery/${id}/status`, data),
 
   updateDeliveryLine: (id: number, lineId: number, data: { quantity_delivered: number }) =>
-    apiService.put<DeliveryOrderLine>(`/sales/delivery/${id}/lines/${lineId}`, data),
+    apiService.create<DeliveryOrderLine>(`/sales/delivery/${id}/lines/${lineId}`, data),
 
   addTrackingEvent: (id: number, data: { tracking_event: string; location?: string; notes?: string }) =>
-    apiService.post<ShipmentTracking>(`/sales/delivery/${id}/tracking`, data),
+    apiService.create<ShipmentTracking>(`/sales/delivery/${id}/tracking`, data),
 
   getTracking: (id: number) =>
     apiService.get<ShipmentTracking>(`/sales/delivery/${id}/tracking`),
 
   addFreightCharge: (id: number, data: Partial<FreightCharge>) =>
-    apiService.post<FreightCharge>(`/sales/delivery/${id}/freight`, data),
+    apiService.create<FreightCharge>(`/sales/delivery/${id}/freight`, data),
 };
 
 // ============================================
@@ -419,25 +425,25 @@ export const returnsService = {
     apiService.getById<RMA>('/sales/returns', id),
 
   createRMA: (data: Partial<RMA>) =>
-    apiService.post<RMA>('/sales/returns', data),
+    apiService.create<RMA>('/sales/returns', data),
 
   updateRMAStatus: (id: number, data: any) =>
-    apiService.put<RMA>(`/sales/returns/${id}/status`, data),
+    apiService.create<RMA>(`/sales/returns/${id}/status`, data),
 
   getWarranties: (params?: { partner_id?: number; product_id?: number; status?: string }) =>
     apiService.get<any>('/sales/returns/warranties', params),
 
   createWarranty: (data: any) =>
-    apiService.post<any>('/sales/returns/warranties', data),
+    apiService.create<any>('/sales/returns/warranties', data),
 
   getRepairRequests: (params?: { partner_id?: number; status?: string }) =>
     apiService.get<any>('/sales/returns/repairs', params),
 
   createRepairRequest: (data: any) =>
-    apiService.post<any>('/sales/returns/repairs', data),
+    apiService.create<any>('/sales/returns/repairs', data),
 
   updateRepairStatus: (id: number, data: any) =>
-    apiService.put<any>(`/sales/returns/repairs/${id}/status`, data),
+    apiService.create<any>(`/sales/returns/repairs/${id}/status`, data),
 };
 
 // ============================================
@@ -452,25 +458,25 @@ export const forecastingService = {
     apiService.getById<SalesForecast>('/sales/forecasting/forecasts', id),
 
   createForecast: (data: Partial<SalesForecast>) =>
-    apiService.post<SalesForecast>('/sales/forecasting/forecasts', data),
+    apiService.create<SalesForecast>('/sales/forecasting/forecasts', data),
 
   updateForecastActuals: (id: number, data: { actual_amount?: number; actual_quantity?: number }) =>
-    apiService.put<SalesForecast>(`/sales/forecasting/forecasts/${id}/actuals`, data),
+    apiService.create<SalesForecast>(`/sales/forecasting/forecasts/${id}/actuals`, data),
 
   generatePipelineForecast: (data: { period_start: string; period_end: string; user_id?: number; territory_id?: number }) =>
-    apiService.post<any>('/sales/forecasting/forecasts/pipeline', data),
+    apiService.create<any>('/sales/forecasting/forecasts/pipeline', data),
 
   getTargets: (params?: any) =>
     apiService.get<SalesTarget>('/sales/forecasting/targets', params),
 
   createTarget: (data: Partial<SalesTarget>) =>
-    apiService.post<SalesTarget>('/sales/forecasting/targets', data),
+    apiService.create<SalesTarget>('/sales/forecasting/targets', data),
 
   updateTargetAchievements: (id: number, data: any) =>
-    apiService.put<SalesTarget>(`/sales/forecasting/targets/${id}/achievements`, data),
+    apiService.create<SalesTarget>(`/sales/forecasting/targets/${id}/achievements`, data),
 
   calculateAchievements: (id: number) =>
-    apiService.post<SalesTarget>(`/sales/forecasting/targets/${id}/calculate-achievements`, {}),
+    apiService.create<SalesTarget>(`/sales/forecasting/targets/${id}/calculate-achievements`, {}),
 };
 
 // ============================================
@@ -482,28 +488,28 @@ export const salesTeamService = {
     apiService.get<SalesTeam>('/sales/team/teams', params),
 
   createTeam: (data: Partial<SalesTeam>) =>
-    apiService.post<SalesTeam>('/sales/team/teams', data),
+    apiService.create<SalesTeam>('/sales/team/teams', data),
 
   addTeamMember: (teamId: number, data: { user_id: number; role?: string }) =>
-    apiService.post<SalesTeamMember>(`/sales/team/teams/${teamId}/members`, data),
+    apiService.create<SalesTeamMember>(`/sales/team/teams/${teamId}/members`, data),
 
   getIncentives: (params?: { is_active?: boolean }) =>
     apiService.get<SalesIncentive>('/sales/team/incentives', params),
 
   createIncentive: (data: Partial<SalesIncentive>) =>
-    apiService.post<SalesIncentive>('/sales/team/incentives', data),
+    apiService.create<SalesIncentive>('/sales/team/incentives', data),
 
   calculateIncentive: (data: { sale_order_id: number; user_id: number }) =>
-    apiService.post<any>('/sales/team/incentives/calculate', data),
+    apiService.create<any>('/sales/team/incentives/calculate', data),
 
   recordIncentivePayment: (data: any) =>
-    apiService.post<any>('/sales/team/incentive-payments', data),
+    apiService.create<any>('/sales/team/incentive-payments', data),
 
   getActivityKPIs: (params: { user_id: number; period_start: string; period_end: string }) =>
     apiService.get<SalesActivityKPI>('/sales/team/activity-kpis', params),
 
   updateActivityKPIs: (data: Partial<SalesActivityKPI>) =>
-    apiService.post<SalesActivityKPI>('/sales/team/activity-kpis', data),
+    apiService.create<SalesActivityKPI>('/sales/team/activity-kpis', data),
 };
 
 // ============================================

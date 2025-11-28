@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Package } from 'lucide-react';
+import { X, Plus, Trash2 } from 'lucide-react';
 import { Button } from '../../../components/Button';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import { inventoryService, type GRN, type GRNLine } from '../../../services/inventoryService';
 import { apiService } from '../../../services/apiService';
+import { showToast } from '../../../components/Toast';
 import './GRNForm.css';
 
 interface GRNFormProps {
@@ -27,8 +28,8 @@ export const GRNForm = ({ grn, onClose, onSuccess }: GRNFormProps) => {
     supplier_invoice_number: grn?.supplier_invoice_number || '',
     notes: grn?.notes || '',
   });
-  const [lines, setLines] = useState<Partial<GRNLine>[]>(
-    grn?.lines || [{ product_id: '', ordered_qty: 0, received_qty: 0, unit_price: 0 }]
+  const [lines, setLines] = useState<Array<Partial<GRNLine> & { product_id?: string | number; ordered_qty?: number; received_qty?: number; unit_price?: number }>>(
+    grn?.lines || [{ product_id: '', ordered_qty: 0, received_qty: 0, unit_price: 0 }] as any
   );
 
   useEffect(() => {
@@ -54,7 +55,7 @@ export const GRNForm = ({ grn, onClose, onSuccess }: GRNFormProps) => {
   };
 
   const handleAddLine = () => {
-    setLines([...lines, { product_id: '', ordered_qty: 0, received_qty: 0, unit_price: 0 }]);
+    setLines([...lines, { product_id: '', ordered_qty: 0, received_qty: 0, unit_price: 0 } as any]);
   };
 
   const handleRemoveLine = (index: number) => {
@@ -84,15 +85,15 @@ export const GRNForm = ({ grn, onClose, onSuccess }: GRNFormProps) => {
       };
 
       if (grn) {
-        await inventoryService.updateGRN(grn.id, grnData);
+        await inventoryService.updateGRN(grn.id, grnData as any);
       } else {
-        await inventoryService.createGRN(grnData);
+        await inventoryService.createGRN(grnData as any);
       }
       onSuccess();
       onClose();
     } catch (error) {
       console.error('Failed to save GRN:', error);
-      alert('Failed to save GRN. Please check all fields and try again.');
+      showToast('Failed to save GRN. Please check all fields and try again.', 'error');
     } finally {
       setLoading(false);
     }
@@ -194,7 +195,7 @@ export const GRNForm = ({ grn, onClose, onSuccess }: GRNFormProps) => {
         <div className="form-section">
           <div className="section-header">
             <h3>Items Received</h3>
-            <Button type="button" variant="secondary" size="small" icon={<Plus size={16} />} onClick={handleAddLine}>
+            <Button type="button" variant="secondary" size="sm" icon={<Plus size={16} />} onClick={handleAddLine}>
               Add Item
             </Button>
           </div>
@@ -213,7 +214,6 @@ export const GRNForm = ({ grn, onClose, onSuccess }: GRNFormProps) => {
               </thead>
               <tbody>
                 {lines.map((line, index) => {
-                  const product = products.find(p => p.id === parseInt(line.product_id as any));
                   const total = (parseFloat(line.received_qty as any) || 0) * (parseFloat(line.unit_price as any) || 0);
                   return (
                     <tr key={index}>

@@ -1,0 +1,47 @@
+# Railway ignore file
+# Files and directories to exclude from Railway builds
+
+# Dependencies (will be installed during build)
+node_modules/
+**/node_modules/
+
+# Build outputs (will be generated during build)
+dist/
+**/dist/
+build/
+**/build/
+
+# Development files
+.env.local
+.env.development
+.env.test
+*.log
+*.swp
+*.swo
+*~
+
+# Documentation
+*.md
+!README.md
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# Odoo (large directory, not needed for Railway builds)
+odoo/
+
+# Test files
+**/test-results/
+**/playwright-report/
+**/coverage/
+
+# OS files
+.DS_Store
+Thumbs.db
+

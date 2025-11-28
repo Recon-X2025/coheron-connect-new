@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, Edit, Trash2, Package, Eye, X } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Eye } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
-import { manufacturingService, type BOM, type BOMLine } from '../../services/manufacturingService';
+import { manufacturingService, type BOM } from '../../services/manufacturingService';
 import { apiService } from '../../services/apiService';
+import { showToast } from '../../components/Toast';
 import './BOMManagement.css';
 
 export const BOMManagement = () => {
@@ -64,9 +65,9 @@ export const BOMManagement = () => {
       try {
         await manufacturingService.deleteBOM(id);
         await loadData();
-        alert('BOM deleted successfully');
+        showToast('BOM deleted successfully', 'success');
       } catch (error) {
-        alert('Failed to delete BOM');
+        showToast('Failed to delete BOM', 'error');
       }
     }
   };
@@ -78,7 +79,7 @@ export const BOMManagement = () => {
         ...bomFormData,
         product_id: parseInt(bomFormData.product_id),
         product_qty: parseFloat(bomFormData.product_qty),
-      });
+      } as any);
       await loadData();
       setShowCreateModal(false);
       setBomFormData({
@@ -89,9 +90,9 @@ export const BOMManagement = () => {
         type: 'normal',
         active: true,
       });
-      alert('BOM created successfully');
+      showToast('BOM created successfully', 'success');
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to create BOM');
+      showToast(error.response?.data?.error || 'Failed to create BOM', 'error');
     }
   };
 

@@ -1,0 +1,64 @@
+/* Light-mode-only KPI Card using CSS variables */
+.light-kpi-card {
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius);
+  padding: 16px;
+  border: 1px solid var(--border);
+}
+
+.light-kpi-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.light-kpi-card__content {
+  flex: 1;
+}
+
+.light-kpi-card__title {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.light-kpi-card__value {
+  margin-top: 4px;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.light-kpi-card__icon {
+  margin-left: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.light-kpi-card__delta {
+  margin-top: 12px;
+}
+
+.light-kpi-card__delta-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.light-kpi-card__delta-badge--success {
+  background: #ECFDF6;
+  color: var(--success);
+  border-color: rgba(5, 150, 105, 0.12);
+}
+
+.light-kpi-card__delta-badge--danger {
+  background: #FEF2F2;
+  color: var(--danger);
+  border-color: rgba(220, 38, 38, 0.12);
+}
+

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BarChart3, TrendingUp, Package, AlertCircle, FileText } from 'lucide-react';
+import { Package, AlertCircle, FileText } from 'lucide-react';
 import { inventoryService, type StockSummary, type StockLedger, type ReorderSuggestion } from '../../services/inventoryService';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import './StockReports.css';

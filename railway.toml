@@ -1,0 +1,37 @@
+# Railway Configuration for Coheron CRM/ERP
+# This monorepo contains two services that should be deployed separately in Railway
+
+[build]
+builder = "NIXPACKS"
+
+[build.env]
+NODE_ENV = "production"
+
+# Note: Railway requires separate services for each application
+# Configure these in Railway dashboard:
+#
+# Service 1: API Backend
+# - Root Directory: coheron-works-api
+# - Build Command: npm install && npm run build
+# - Start Command: npm start
+# - Port: Set via PORT environment variable (default: 3000)
+# - Environment Variables:
+#   - DB_HOST (Railway PostgreSQL service URL)
+#   - DB_PORT
+#   - DB_NAME
+#   - DB_USER
+#   - DB_PASSWORD
+#   - PORT
+#   - CORS_ORIGIN (frontend URL)
+#
+# Service 2: Web Frontend
+# - Root Directory: coheron-works-web
+# - Build Command: npm install && npm run build
+# - Start Command: npx serve dist -s -l $PORT
+# - Port: Set via PORT environment variable
+# - Environment Variables:
+#   - VITE_ODOO_URL
+#   - VITE_ODOO_DATABASE
+#   - VITE_ODOO_PROTOCOL
+#   - VITE_ODOO_TIMEOUT
+

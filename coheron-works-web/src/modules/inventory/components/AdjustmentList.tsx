@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { FileText, Eye, CheckCircle, Clock, XCircle, Plus } from 'lucide-react';
+import { Eye, CheckCircle, Clock, XCircle, Plus } from 'lucide-react';
 import { Button } from '../../../components/Button';
 import { type StockAdjustment } from '../../../services/inventoryService';
 import { AdjustmentForm } from './AdjustmentForm';
 import './AdjustmentList.css';
+import './GRNList.css';
 
 interface AdjustmentListProps {
   adjustments: StockAdjustment[];
@@ -12,6 +13,7 @@ interface AdjustmentListProps {
 
 export const AdjustmentList = ({ adjustments, onRefresh }: AdjustmentListProps) => {
   const [showForm, setShowForm] = useState(false);
+  const [viewingAdjustment, setViewingAdjustment] = useState<StockAdjustment | undefined>(undefined);
   const getStateIcon = (state: string) => {
     switch (state) {
       case 'done':
@@ -80,7 +82,12 @@ export const AdjustmentList = ({ adjustments, onRefresh }: AdjustmentListProps) 
                   </span>
                 </td>
                 <td>
-                  <button className="icon-button">
+                  <button
+                    type="button"
+                    className="icon-button"
+                    title="View"
+                    onClick={() => setViewingAdjustment(adjustment)}
+                  >
                     <Eye size={18} />
                   </button>
                 </td>
@@ -100,6 +107,70 @@ export const AdjustmentList = ({ adjustments, onRefresh }: AdjustmentListProps) 
                 setShowForm(false);
               }}
             />
+          </div>
+        </div>
+      )}
+
+      {viewingAdjustment && (
+        <div className="modal-overlay" onClick={() => setViewingAdjustment(undefined)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Adjustment Details: {viewingAdjustment.adjustment_number}</h2>
+              <button type="button" onClick={() => setViewingAdjustment(undefined)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="detail-row">
+                <span className="detail-label">Adjustment Number:</span>
+                <span className="detail-value">{viewingAdjustment.adjustment_number}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Type:</span>
+                <span className="detail-value">{viewingAdjustment.adjustment_type}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Warehouse:</span>
+                <span className="detail-value">{viewingAdjustment.warehouse_name}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Date:</span>
+                <span className="detail-value">{new Date(viewingAdjustment.adjustment_date).toLocaleDateString()}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Total Value:</span>
+                <span className="detail-value">₹{viewingAdjustment.total_value.toFixed(2)}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">State:</span>
+                <span className="detail-value">{viewingAdjustment.state}</span>
+              </div>
+              {viewingAdjustment.lines && viewingAdjustment.lines.length > 0 && (
+                <div className="detail-section">
+                  <h3>Items</h3>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th>System Qty</th>
+                        <th>Physical Qty</th>
+                        <th>Adjustment</th>
+                        <th>Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {viewingAdjustment.lines.map((line, idx) => (
+                        <tr key={idx}>
+                          <td>{line.product_name || line.product_code}</td>
+                          <td>{line.system_qty}</td>
+                          <td>{line.physical_qty}</td>
+                          <td>{line.adjustment_qty}</td>
+                          <td>₹{line.adjustment_value.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

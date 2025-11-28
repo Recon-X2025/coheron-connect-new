@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '../../../components/Button';
 import { apiService } from '../../../services/apiService';
+import { showToast } from '../../../components/Toast';
 import './LeaveRequestForm.css';
 
 interface LeaveRequestFormProps {
@@ -37,7 +38,7 @@ export const LeaveRequestForm = ({ onClose, onSave }: LeaveRequestFormProps) => 
       onSave();
     } catch (error) {
       console.error('Failed to create leave request:', error);
-      alert('Failed to submit leave request. Please try again.');
+      showToast('Failed to submit leave request. Please try again.', 'error');
     }
   };
 

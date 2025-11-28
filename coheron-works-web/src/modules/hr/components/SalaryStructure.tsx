@@ -4,6 +4,7 @@ import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
 import { apiService } from '../../../services/apiService';
 import { formatInLakhsCompact } from '../../../utils/currencyFormatter';
+import { showToast } from '../../../components/Toast';
 import './SalaryStructure.css';
 
 export const SalaryStructure = () => {
@@ -63,7 +64,7 @@ export const SalaryStructure = () => {
         loadSalaryStructure();
       } catch (error) {
         console.error('Failed to delete component:', error);
-        alert('Failed to delete component');
+        showToast('Failed to delete component', 'error');
       }
     }
   };

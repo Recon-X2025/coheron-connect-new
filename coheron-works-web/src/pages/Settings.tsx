@@ -3,6 +3,7 @@ import { User, Bell, Lock, Palette, Globe, Save, Check } from 'lucide-react';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { showToast } from '../components/Toast';
 import './Settings.css';
 
 type Tab = 'profile' | 'notifications' | 'security' | 'appearance' | 'integrations';
@@ -72,7 +73,7 @@ export const Settings = () => {
   const handleDeleteAccount = () => {
     if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
       // In a real implementation, call API to delete account
-      alert('Account deletion would be processed here');
+      showToast('Account deletion will be processed here', 'info');
     }
   };
 

@@ -51,7 +51,7 @@ export const DeliveryTracking = () => {
 
   const filteredDeliveries = deliveries.filter(delivery =>
     delivery.delivery_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    delivery.sale_order_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    (delivery.sale_order_id?.toString() || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -109,7 +109,7 @@ export const DeliveryTracking = () => {
               <div className="delivery-header-card">
                 <div className="delivery-info">
                   <h3>{delivery.delivery_number}</h3>
-                  <p className="sale-order-ref">{delivery.sale_order_name || 'N/A'}</p>
+                  <p className="sale-order-ref">{delivery.sale_order_id || 'N/A'}</p>
                 </div>
                 <span
                   className="status-badge"
@@ -218,7 +218,7 @@ export const DeliveryTracking = () => {
                     <div className="detail-section">
                       <h3>Tracking History</h3>
                       <div className="tracking-timeline">
-                        {selectedDelivery.tracking.map((event, index) => (
+                        {selectedDelivery.tracking.map((event) => (
                           <div key={event.id} className="tracking-event">
                             <div className="event-dot" />
                             <div className="event-content">

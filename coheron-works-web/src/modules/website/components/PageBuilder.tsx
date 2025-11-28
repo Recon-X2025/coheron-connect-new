@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Plus, Save, Eye, X } from 'lucide-react';
+import { Save, Eye, X } from 'lucide-react';
 import { Button } from '../../../components/Button';
+import { showToast } from '../../../components/Toast';
+import { apiService } from '../../../services/apiService';
 import './PageBuilder.css';
 
 interface Block {
@@ -47,6 +49,23 @@ export const PageBuilder = () => {
     );
   };
 
+  const handleSave = async () => {
+    try {
+      const pageData = {
+        blocks: blocks,
+        metadata: {
+          saved_at: new Date().toISOString(),
+        },
+      };
+      // TODO: Get page ID from route or state
+      await apiService.create('/website/pages/save', pageData);
+      showToast('Page saved successfully', 'success');
+    } catch (error: any) {
+      console.error('Failed to save page:', error);
+      showToast(error?.message || 'Failed to save page', 'error');
+    }
+  };
+
   return (
     <div className="page-builder">
       <div className="page-builder-header">
@@ -59,7 +78,7 @@ export const PageBuilder = () => {
           >
             {previewMode ? 'Edit' : 'Preview'}
           </Button>
-          <Button icon={<Save size={18} />}>Save Page</Button>
+          <Button icon={<Save size={18} />} onClick={handleSave}>Save Page</Button>
         </div>
       </div>
 
@@ -185,10 +204,9 @@ const renderBlock = (block: Block, onUpdate: (config: Record<string, any>) => vo
 
 const BlockProperties = ({
   block,
-  onUpdate,
 }: {
   block: Block;
-  onUpdate: (config: Record<string, any>) => void;
+  onUpdate?: (config: Record<string, any>) => void;
 }) => {
   return (
     <div className="block-properties">

@@ -6,16 +6,15 @@ import {
   MessageSquare,
   TrendingUp,
   Users,
-  Filter,
   Edit,
-  Trash2,
-  Eye,
   Send,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { supportDeskService, type Survey, type SurveyResponse } from '../services/supportDeskService';
+import { showToast } from '../components/Toast';
 import './SurveyManagement.css';
 
 type SurveyType = 'csat' | 'ces' | 'nps' | 'custom';
@@ -26,8 +25,15 @@ export const SurveyManagement: React.FC = () => {
   const [responses, setResponses] = useState<SurveyResponse[]>([]);
   const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newSurvey, setNewSurvey] = useState({
+    name: '',
+    description: '',
+    survey_type: 'csat' as SurveyType,
+    is_active: true,
+    trigger_event: '',
+  });
 
   useEffect(() => {
     loadSurveys();
@@ -127,6 +133,48 @@ export const SurveyManagement: React.FC = () => {
     );
   };
 
+  const handleCreateSurvey = async () => {
+    if (!newSurvey.name) {
+      showToast('Please enter a survey name', 'error');
+      return;
+    }
+
+    try {
+      await supportDeskService.createSurvey(newSurvey);
+      showToast('Survey created successfully', 'success');
+      setShowCreateModal(false);
+      setNewSurvey({
+        name: '',
+        description: '',
+        survey_type: 'csat' as SurveyType,
+        is_active: true,
+        trigger_event: '',
+      });
+      loadSurveys();
+    } catch (error: any) {
+      console.error('Failed to create survey:', error);
+      showToast(error?.message || 'Failed to create survey. Please try again.', 'error');
+    }
+  };
+
+  const handleDeleteSurvey = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this survey? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await supportDeskService.deleteSurvey(id);
+      showToast('Survey deleted successfully', 'success');
+      if (selectedSurvey?.id === id) {
+        setSelectedSurvey(null);
+      }
+      loadSurveys();
+    } catch (error: any) {
+      console.error('Failed to delete survey:', error);
+      showToast(error?.message || 'Failed to delete survey. Please try again.', 'error');
+    }
+  };
+
   const filteredSurveys = surveys;
 
   return (
@@ -136,7 +184,9 @@ export const SurveyManagement: React.FC = () => {
           <h1>Survey Management</h1>
           <p className="survey-subtitle">Create and manage CSAT, CES, NPS, and custom surveys</p>
         </div>
-        <Button icon={<Plus size={18} />} onClick={() => setShowCreateModal(true)}>
+        <Button icon={<Plus size={18} />} onClick={() => {
+          setShowCreateModal(true);
+        }}>
           New Survey
         </Button>
       </div>
@@ -230,11 +280,19 @@ export const SurveyManagement: React.FC = () => {
                   )}
                 </div>
                 <div className="survey-actions">
-                  <Button variant="outline" size="sm" icon={<Edit size={16} />}>
+                  <Button variant="secondary" size="sm" icon={<Edit size={16} />}>
                     Edit
                   </Button>
-                  <Button variant="outline" size="sm" icon={<Send size={16} />}>
+                  <Button variant="secondary" size="sm" icon={<Send size={16} />}>
                     Send
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    icon={<Trash2 size={16} />}
+                    onClick={() => handleDeleteSurvey(selectedSurvey.id)}
+                  >
+                    Delete
                   </Button>
                 </div>
               </div>
@@ -274,8 +332,8 @@ export const SurveyManagement: React.FC = () => {
                       <Card key={response.id} className="response-item">
                         <div className="response-header">
                           <div>
-                            {response.partner_name && (
-                              <span className="response-customer">{response.partner_name}</span>
+                            {response.partner_id && (
+                              <span className="response-customer">{response.partner_id}</span>
                             )}
                             {response.ticket_id && (
                               <span className="response-ticket">Ticket #{response.ticket_id}</span>
@@ -323,6 +381,76 @@ export const SurveyManagement: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Create Survey Modal */}
+      {showCreateModal && (
+        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <div className="modal-header">
+              <h2>Create New Survey</h2>
+              <button className="modal-close" onClick={() => setShowCreateModal(false)}>×</button>
+            </div>
+            <div style={{ padding: '20px' }}>
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Survey Name *</label>
+                <input
+                  type="text"
+                  value={newSurvey.name}
+                  onChange={(e) => setNewSurvey({ ...newSurvey, name: e.target.value })}
+                  style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                  placeholder="Survey name"
+                />
+              </div>
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Description</label>
+                <textarea
+                  value={newSurvey.description}
+                  onChange={(e) => setNewSurvey({ ...newSurvey, description: e.target.value })}
+                  style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px', minHeight: '100px' }}
+                  placeholder="Survey description"
+                />
+              </div>
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Survey Type</label>
+                <select
+                  value={newSurvey.survey_type}
+                  onChange={(e) => setNewSurvey({ ...newSurvey, survey_type: e.target.value as SurveyType })}
+                  style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                >
+                  <option value="csat">CSAT (Customer Satisfaction)</option>
+                  <option value="ces">CES (Customer Effort Score)</option>
+                  <option value="nps">NPS (Net Promoter Score)</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Trigger Event</label>
+                <input
+                  type="text"
+                  value={newSurvey.trigger_event}
+                  onChange={(e) => setNewSurvey({ ...newSurvey, trigger_event: e.target.value })}
+                  style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                  placeholder="e.g., ticket_resolved"
+                />
+              </div>
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    type="checkbox"
+                    checked={newSurvey.is_active}
+                    onChange={(e) => setNewSurvey({ ...newSurvey, is_active: e.target.checked })}
+                  />
+                  Active
+                </label>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
+                <Button variant="ghost" onClick={() => setShowCreateModal(false)}>Cancel</Button>
+                <Button onClick={handleCreateSurvey}>Create Survey</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { ArrowLeftRight, Eye, CheckCircle, Clock, XCircle, Plus } from 'lucide-react';
+import { Eye, CheckCircle, Clock, XCircle, Plus } from 'lucide-react';
 import { Button } from '../../../components/Button';
 import { type StockTransfer } from '../../../services/inventoryService';
 import { TransferForm } from './TransferForm';
 import './TransferList.css';
+import './GRNList.css';
 
 interface TransferListProps {
   transfers: StockTransfer[];
@@ -12,6 +13,7 @@ interface TransferListProps {
 
 export const TransferList = ({ transfers, onRefresh }: TransferListProps) => {
   const [showForm, setShowForm] = useState(false);
+  const [viewingTransfer, setViewingTransfer] = useState<StockTransfer | undefined>(undefined);
   const getStateIcon = (state: string) => {
     switch (state) {
       case 'done':
@@ -73,7 +75,12 @@ export const TransferList = ({ transfers, onRefresh }: TransferListProps) => {
                   </span>
                 </td>
                 <td>
-                  <button className="icon-button">
+                  <button
+                    type="button"
+                    className="icon-button"
+                    title="View"
+                    onClick={() => setViewingTransfer(transfer)}
+                  >
                     <Eye size={18} />
                   </button>
                 </td>
@@ -93,6 +100,62 @@ export const TransferList = ({ transfers, onRefresh }: TransferListProps) => {
                 setShowForm(false);
               }}
             />
+          </div>
+        </div>
+      )}
+
+      {viewingTransfer && (
+        <div className="modal-overlay" onClick={() => setViewingTransfer(undefined)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Transfer Details: {viewingTransfer.transfer_number}</h2>
+              <button type="button" onClick={() => setViewingTransfer(undefined)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="detail-row">
+                <span className="detail-label">Transfer Number:</span>
+                <span className="detail-value">{viewingTransfer.transfer_number}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">From:</span>
+                <span className="detail-value">{viewingTransfer.from_warehouse_name}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">To:</span>
+                <span className="detail-value">{viewingTransfer.to_warehouse_name}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Date:</span>
+                <span className="detail-value">{new Date(viewingTransfer.transfer_date).toLocaleDateString()}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">State:</span>
+                <span className="detail-value">{viewingTransfer.state}</span>
+              </div>
+              {viewingTransfer.lines && viewingTransfer.lines.length > 0 && (
+                <div className="detail-section">
+                  <h3>Items</h3>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th>Done</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {viewingTransfer.lines.map((line, idx) => (
+                        <tr key={idx}>
+                          <td>{line.product_name || line.product_code}</td>
+                          <td>{line.quantity}</td>
+                          <td>{line.quantity_done}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

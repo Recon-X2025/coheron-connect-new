@@ -11,7 +11,6 @@ export const SupportTickets: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadTickets();
@@ -20,7 +19,7 @@ export const SupportTickets: React.FC = () => {
   const loadTickets = async () => {
     try {
       setLoading(true);
-      setError(null);
+      console.error(null);
       const params: any = {};
       if (statusFilter !== 'all') {
         params.status = statusFilter;
@@ -32,7 +31,7 @@ export const SupportTickets: React.FC = () => {
       setTickets(data);
     } catch (err: any) {
       console.error('Error loading tickets:', err);
-      setError(err.message || 'Failed to load tickets');
+      console.error(err.message || 'Failed to load tickets');
     } finally {
       setLoading(false);
     }

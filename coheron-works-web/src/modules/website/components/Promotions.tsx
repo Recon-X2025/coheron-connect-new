@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Plus, Tag, Calendar } from 'lucide-react';
+import { Plus, Tag, Calendar, Edit, Trash2 } from 'lucide-react';
 import { Button } from '../../../components/Button';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
+import { salesService } from '../../../services/salesService';
+import { PromotionForm } from './PromotionForm';
+import { showToast } from '../../../components/Toast';
 import './Promotions.css';
 
 interface Promotion {
   id: number;
   name: string;
   code: string;
-  discount_type: string;
+  discount_type: 'fixed' | 'percentage';
   discount_value: number;
   valid_from: string;
   valid_until: string;
@@ -20,6 +23,8 @@ interface Promotion {
 export const Promotions = () => {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showPromotionForm, setShowPromotionForm] = useState(false);
+  const [editingPromotion, setEditingPromotion] = useState<Promotion | null>(null);
 
   useEffect(() => {
     loadPromotions();
@@ -28,16 +33,42 @@ export const Promotions = () => {
   const loadPromotions = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/website/promotions');
-      if (response.ok) {
-        const data = await response.json();
-        setPromotions(data);
-      }
+      const data = await salesService.pricing.getPromotions();
+      setPromotions(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error loading promotions:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleNewPromotion = () => {
+    setEditingPromotion(null);
+    setShowPromotionForm(true);
+  };
+
+  const handleEditPromotion = (promotion: Promotion) => {
+    setEditingPromotion(promotion);
+    setShowPromotionForm(true);
+  };
+
+  const handleDeletePromotion = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this promotion?')) {
+      return;
+    }
+
+    try {
+      await salesService.pricing.deletePromotion(id);
+      showToast('Promotion deleted successfully', 'success');
+      loadPromotions();
+    } catch (error: any) {
+      console.error('Failed to delete promotion:', error);
+      showToast(error?.message || 'Failed to delete promotion. Please try again.', 'error');
+    }
+  };
+
+  const handlePromotionSaved = () => {
+    loadPromotions();
   };
 
   if (loading) {
@@ -48,7 +79,7 @@ export const Promotions = () => {
     <div className="promotions">
       <div className="promotions-header">
         <h2>Promotions & Coupons</h2>
-        <Button icon={<Plus size={18} />}>Create Promotion</Button>
+        <Button icon={<Plus size={18} />} onClick={handleNewPromotion}>Create Promotion</Button>
       </div>
 
       <div className="promotions-grid">
@@ -56,7 +87,7 @@ export const Promotions = () => {
           <div className="empty-promotions">
             <Tag size={48} />
             <p>No promotions created yet</p>
-            <Button icon={<Plus size={18} />}>Create Your First Promotion</Button>
+            <Button icon={<Plus size={18} />} onClick={handleNewPromotion}>Create Your First Promotion</Button>
           </div>
         ) : (
           promotions.map((promo) => (
@@ -85,10 +116,39 @@ export const Promotions = () => {
                 Used: {promo.usage_count}
                 {promo.usage_limit && ` / ${promo.usage_limit}`}
               </div>
+              <div className="promotion-actions">
+                <button
+                  type="button"
+                  className="action-btn"
+                  title="Edit Promotion"
+                  onClick={() => handleEditPromotion(promo)}
+                >
+                  <Edit size={16} />
+                </button>
+                <button
+                  type="button"
+                  className="action-btn delete"
+                  title="Delete Promotion"
+                  onClick={() => handleDeletePromotion(promo.id)}
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
             </div>
           ))
         )}
       </div>
+
+      {showPromotionForm && (
+        <PromotionForm
+          promotion={editingPromotion || undefined}
+          onClose={() => {
+            setShowPromotionForm(false);
+            setEditingPromotion(null);
+          }}
+          onSave={handlePromotionSaved}
+        />
+      )}
     </div>
   );
 };

@@ -1031,6 +1031,175 @@ router.post('/lots', async (req, res) => {
   }
 });
 
+// Update lot
+router.put('/lots/:id', async (req, res) => {
+  try {
+    const { name, ref, note } = req.body;
+
+    const result = await pool.query(
+      `UPDATE stock_production_lot 
+       SET name = COALESCE($1, name), ref = COALESCE($2, ref), note = COALESCE($3, note), updated_at = CURRENT_TIMESTAMP
+       WHERE id = $4
+       RETURNING *`,
+      [name, ref, note, req.params.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Lot not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error: any) {
+    console.error('Error updating lot:', error);
+    if (error.code === '23505') {
+      res.status(400).json({ error: 'Lot name already exists for this product' });
+    } else {
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+});
+
+// Delete lot
+router.delete('/lots/:id', async (req, res) => {
+  try {
+    const result = await pool.query('DELETE FROM stock_production_lot WHERE id = $1 RETURNING id', [req.params.id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Lot not found' });
+    }
+
+    res.json({ message: 'Lot deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting lot:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get serials
+router.get('/serials', async (req, res) => {
+  try {
+    const { product_id, name } = req.query;
+    let query = `
+      SELECT s.*, p.name as product_name, p.default_code as product_code
+      FROM stock_serial s
+      JOIN products p ON s.product_id = p.id
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+    let paramCount = 1;
+
+    if (product_id) {
+      query += ` AND s.product_id = $${paramCount++}`;
+      params.push(product_id);
+    }
+
+    if (name) {
+      query += ` AND s.name ILIKE $${paramCount}`;
+      params.push(`%${name}%`);
+    }
+
+    query += ' ORDER BY s.name DESC';
+
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching serials:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get serial by ID
+router.get('/serials/:id', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT s.*, p.name as product_name, p.default_code as product_code
+       FROM stock_serial s
+       JOIN products p ON s.product_id = p.id
+       WHERE s.id = $1`,
+      [req.params.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Serial not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error fetching serial:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Create serial
+router.post('/serials', async (req, res) => {
+  try {
+    const { name, product_id, lot_id, warranty_start_date, warranty_end_date, notes } = req.body;
+
+    const result = await pool.query(
+      `INSERT INTO stock_serial (name, product_id, lot_id, warranty_start_date, warranty_end_date, notes)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [name, product_id, lot_id, warranty_start_date, warranty_end_date, notes]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error: any) {
+    console.error('Error creating serial:', error);
+    if (error.code === '23505') {
+      res.status(400).json({ error: 'Serial number already exists' });
+    } else {
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+});
+
+// Update serial
+router.put('/serials/:id', async (req, res) => {
+  try {
+    const { name, lot_id, warranty_start_date, warranty_end_date, notes } = req.body;
+
+    const result = await pool.query(
+      `UPDATE stock_serial 
+       SET name = COALESCE($1, name), lot_id = COALESCE($2, lot_id),
+           warranty_start_date = COALESCE($3, warranty_start_date),
+           warranty_end_date = COALESCE($4, warranty_end_date),
+           notes = COALESCE($5, notes), updated_at = CURRENT_TIMESTAMP
+       WHERE id = $6
+       RETURNING *`,
+      [name, lot_id, warranty_start_date, warranty_end_date, notes, req.params.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Serial not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error: any) {
+    console.error('Error updating serial:', error);
+    if (error.code === '23505') {
+      res.status(400).json({ error: 'Serial number already exists' });
+    } else {
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+});
+
+// Delete serial
+router.delete('/serials/:id', async (req, res) => {
+  try {
+    const result = await pool.query('DELETE FROM stock_serial WHERE id = $1 RETURNING id', [req.params.id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Serial not found' });
+    }
+
+    res.json({ message: 'Serial deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting serial:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // ============================================
 // REPLENISHMENT & REORDER SUGGESTIONS
 // ============================================
@@ -1068,6 +1237,834 @@ router.get('/reorder-suggestions', async (req, res) => {
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching reorder suggestions:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================
+// STOCK ISSUES
+// ============================================
+
+// Get all stock issues
+router.get('/stock-issues', async (req, res) => {
+  try {
+    const { state, issue_type, warehouse_id, start_date, end_date } = req.query;
+    let query = `
+      SELECT si.*,
+             w.name as from_warehouse_name,
+             u1.name as issued_by_name,
+             u2.name as approved_by_name
+      FROM stock_issue si
+      LEFT JOIN warehouses w ON si.from_warehouse_id = w.id
+      LEFT JOIN users u1 ON si.issued_by = u1.id
+      LEFT JOIN users u2 ON si.approved_by = u2.id
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+    let paramCount = 1;
+
+    if (state) {
+      query += ` AND si.state = $${paramCount++}`;
+      params.push(state);
+    }
+
+    if (issue_type) {
+      query += ` AND si.issue_type = $${paramCount++}`;
+      params.push(issue_type);
+    }
+
+    if (warehouse_id) {
+      query += ` AND si.from_warehouse_id = $${paramCount++}`;
+      params.push(warehouse_id);
+    }
+
+    if (start_date) {
+      query += ` AND si.issue_date >= $${paramCount++}`;
+      params.push(start_date);
+    }
+
+    if (end_date) {
+      query += ` AND si.issue_date <= $${paramCount++}`;
+      params.push(end_date);
+    }
+
+    query += ' ORDER BY si.issue_date DESC, si.issue_number DESC';
+
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching stock issues:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get stock issue by ID
+router.get('/stock-issues/:id', async (req, res) => {
+  try {
+    const issueResult = await pool.query(
+      `SELECT si.*, w.name as from_warehouse_name
+       FROM stock_issue si
+       LEFT JOIN warehouses w ON si.from_warehouse_id = w.id
+       WHERE si.id = $1`,
+      [req.params.id]
+    );
+
+    if (issueResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Stock issue not found' });
+    }
+
+    const linesResult = await pool.query(
+      `SELECT sil.*, p.name as product_name, p.default_code as product_code
+       FROM stock_issue_lines sil
+       JOIN products p ON sil.product_id = p.id
+       WHERE sil.issue_id = $1
+       ORDER BY sil.id`,
+      [req.params.id]
+    );
+
+    res.json({
+      ...issueResult.rows[0],
+      lines: linesResult.rows,
+    });
+  } catch (error) {
+    console.error('Error fetching stock issue:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Create stock issue
+router.post('/stock-issues', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const issueCountResult = await client.query(
+      "SELECT COUNT(*) as count FROM stock_issue WHERE issue_number LIKE 'ISSUE-%'"
+    );
+    const issueNumber = `ISSUE-${String(parseInt(issueCountResult.rows[0].count) + 1).padStart(6, '0')}`;
+
+    const {
+      issue_type,
+      from_warehouse_id,
+      to_entity_id,
+      issue_date,
+      issued_by,
+      notes,
+      lines,
+    } = req.body;
+
+    const issueResult = await client.query(
+      `INSERT INTO stock_issue (
+        issue_number, issue_type, from_warehouse_id, to_entity_id,
+        issue_date, issued_by, notes, state
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'draft')
+      RETURNING *`,
+      [
+        issueNumber,
+        issue_type,
+        from_warehouse_id,
+        to_entity_id,
+        issue_date || new Date(),
+        issued_by,
+        notes,
+      ]
+    );
+
+    const issueId = issueResult.rows[0].id;
+
+    if (lines && Array.isArray(lines)) {
+      for (const line of lines) {
+        await client.query(
+          `INSERT INTO stock_issue_lines (
+            issue_id, product_id, product_uom_id, quantity, lot_id
+          ) VALUES ($1, $2, $3, $4, $5)`,
+          [
+            issueId,
+            line.product_id,
+            line.product_uom_id,
+            line.quantity,
+            line.lot_id,
+          ]
+        );
+      }
+    }
+
+    await client.query('COMMIT');
+    res.status(201).json(issueResult.rows[0]);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error creating stock issue:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
+  }
+});
+
+// Update stock issue
+router.put('/stock-issues/:id', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const {
+      issue_date,
+      notes,
+      state,
+      approved_by,
+      lines,
+    } = req.body;
+
+    await client.query(
+      `UPDATE stock_issue 
+       SET issue_date = $1, notes = $2, state = $3, approved_by = $4, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $5`,
+      [issue_date, notes, state, approved_by, req.params.id]
+    );
+
+    if (lines && Array.isArray(lines)) {
+      await client.query('DELETE FROM stock_issue_lines WHERE issue_id = $1', [req.params.id]);
+      for (const line of lines) {
+        await client.query(
+          `INSERT INTO stock_issue_lines (
+            issue_id, product_id, product_uom_id, quantity, lot_id
+          ) VALUES ($1, $2, $3, $4, $5)`,
+          [
+            req.params.id,
+            line.product_id,
+            line.product_uom_id,
+            line.quantity,
+            line.lot_id,
+          ]
+        );
+      }
+    }
+
+    await client.query('COMMIT');
+
+    const result = await pool.query(
+      `SELECT si.*, w.name as from_warehouse_name
+       FROM stock_issue si
+       LEFT JOIN warehouses w ON si.from_warehouse_id = w.id
+       WHERE si.id = $1`,
+      [req.params.id]
+    );
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error updating stock issue:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
+  }
+});
+
+// Approve stock issue
+router.post('/stock-issues/:id/approve', async (req, res) => {
+  try {
+    const { approved_by } = req.body;
+    await pool.query(
+      `UPDATE stock_issue 
+       SET state = 'approved', approved_by = $1, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $2`,
+      [approved_by, req.params.id]
+    );
+    res.json({ message: 'Stock issue approved' });
+  } catch (error) {
+    console.error('Error approving stock issue:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Issue stock (execute)
+router.post('/stock-issues/:id/issue', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Update state
+    await client.query(
+      `UPDATE stock_issue 
+       SET state = 'issued', updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1`,
+      [req.params.id]
+    );
+
+    // TODO: Update stock quantities (reduce from warehouse)
+
+    await client.query('COMMIT');
+    res.json({ message: 'Stock issued successfully' });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error issuing stock:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
+  }
+});
+
+// Delete stock issue
+router.delete('/stock-issues/:id', async (req, res) => {
+  try {
+    const result = await pool.query('DELETE FROM stock_issue WHERE id = $1 RETURNING id', [req.params.id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Stock issue not found' });
+    }
+
+    res.json({ message: 'Stock issue deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting stock issue:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================
+// STOCK RETURNS
+// ============================================
+
+// Get all stock returns
+router.get('/stock-returns', async (req, res) => {
+  try {
+    const { state, return_type, warehouse_id, start_date, end_date } = req.query;
+    let query = `
+      SELECT sr.*,
+             w.name as warehouse_name,
+             u1.name as returned_by_name,
+             u2.name as approved_by_name
+      FROM stock_return sr
+      LEFT JOIN warehouses w ON sr.warehouse_id = w.id
+      LEFT JOIN users u1 ON sr.returned_by = u1.id
+      LEFT JOIN users u2 ON sr.approved_by = u2.id
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+    let paramCount = 1;
+
+    if (state) {
+      query += ` AND sr.state = $${paramCount++}`;
+      params.push(state);
+    }
+
+    if (return_type) {
+      query += ` AND sr.return_type = $${paramCount++}`;
+      params.push(return_type);
+    }
+
+    if (warehouse_id) {
+      query += ` AND sr.warehouse_id = $${paramCount++}`;
+      params.push(warehouse_id);
+    }
+
+    if (start_date) {
+      query += ` AND sr.return_date >= $${paramCount++}`;
+      params.push(start_date);
+    }
+
+    if (end_date) {
+      query += ` AND sr.return_date <= $${paramCount++}`;
+      params.push(end_date);
+    }
+
+    query += ' ORDER BY sr.return_date DESC, sr.return_number DESC';
+
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching stock returns:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get stock return by ID
+router.get('/stock-returns/:id', async (req, res) => {
+  try {
+    const returnResult = await pool.query(
+      `SELECT sr.*, w.name as warehouse_name
+       FROM stock_return sr
+       LEFT JOIN warehouses w ON sr.warehouse_id = w.id
+       WHERE sr.id = $1`,
+      [req.params.id]
+    );
+
+    if (returnResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Stock return not found' });
+    }
+
+    const linesResult = await pool.query(
+      `SELECT srl.*, p.name as product_name, p.default_code as product_code
+       FROM stock_return_lines srl
+       JOIN products p ON srl.product_id = p.id
+       WHERE srl.return_id = $1
+       ORDER BY srl.id`,
+      [req.params.id]
+    );
+
+    res.json({
+      ...returnResult.rows[0],
+      lines: linesResult.rows,
+    });
+  } catch (error) {
+    console.error('Error fetching stock return:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Create stock return
+router.post('/stock-returns', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const returnCountResult = await client.query(
+      "SELECT COUNT(*) as count FROM stock_return WHERE return_number LIKE 'RET-%'"
+    );
+    const returnNumber = `RET-${String(parseInt(returnCountResult.rows[0].count) + 1).padStart(6, '0')}`;
+
+    const {
+      return_type,
+      original_transaction_id,
+      warehouse_id,
+      return_date,
+      returned_by,
+      notes,
+      lines,
+    } = req.body;
+
+    const returnResult = await client.query(
+      `INSERT INTO stock_return (
+        return_number, return_type, original_transaction_id, warehouse_id,
+        return_date, returned_by, notes, state
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'draft')
+      RETURNING *`,
+      [
+        returnNumber,
+        return_type,
+        original_transaction_id,
+        warehouse_id,
+        return_date || new Date(),
+        returned_by,
+        notes,
+      ]
+    );
+
+    const returnId = returnResult.rows[0].id;
+
+    if (lines && Array.isArray(lines)) {
+      for (const line of lines) {
+        await client.query(
+          `INSERT INTO stock_return_lines (
+            return_id, product_id, product_uom_id, quantity, reason_code, lot_id
+          ) VALUES ($1, $2, $3, $4, $5, $6)`,
+          [
+            returnId,
+            line.product_id,
+            line.product_uom_id,
+            line.quantity,
+            line.reason_code,
+            line.lot_id,
+          ]
+        );
+      }
+    }
+
+    await client.query('COMMIT');
+    res.status(201).json(returnResult.rows[0]);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error creating stock return:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
+  }
+});
+
+// Update stock return
+router.put('/stock-returns/:id', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const {
+      return_date,
+      notes,
+      state,
+      approved_by,
+      qc_status,
+      lines,
+    } = req.body;
+
+    await client.query(
+      `UPDATE stock_return 
+       SET return_date = $1, notes = $2, state = $3, approved_by = $4, qc_status = $5, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $6`,
+      [return_date, notes, state, approved_by, qc_status, req.params.id]
+    );
+
+    if (lines && Array.isArray(lines)) {
+      await client.query('DELETE FROM stock_return_lines WHERE return_id = $1', [req.params.id]);
+      for (const line of lines) {
+        await client.query(
+          `INSERT INTO stock_return_lines (
+            return_id, product_id, product_uom_id, quantity, reason_code, lot_id
+          ) VALUES ($1, $2, $3, $4, $5, $6)`,
+          [
+            req.params.id,
+            line.product_id,
+            line.product_uom_id,
+            line.quantity,
+            line.reason_code,
+            line.lot_id,
+          ]
+        );
+      }
+    }
+
+    await client.query('COMMIT');
+
+    const result = await pool.query(
+      `SELECT sr.*, w.name as warehouse_name
+       FROM stock_return sr
+       LEFT JOIN warehouses w ON sr.warehouse_id = w.id
+       WHERE sr.id = $1`,
+      [req.params.id]
+    );
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error updating stock return:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    client.release();
+  }
+});
+
+// Delete stock return
+router.delete('/stock-returns/:id', async (req, res) => {
+  try {
+    const result = await pool.query('DELETE FROM stock_return WHERE id = $1 RETURNING id', [req.params.id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Stock return not found' });
+    }
+
+    res.json({ message: 'Stock return deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting stock return:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================
+// WAREHOUSE OPERATIONS
+// ============================================
+
+// Get putaway tasks
+router.get('/warehouse-operations/putaway', async (req, res) => {
+  try {
+    const { state, warehouse_id } = req.query;
+    let query = `
+      SELECT pt.*,
+             g.grn_number,
+             p.name as product_name,
+             p.default_code as product_code
+      FROM putaway_tasks pt
+      LEFT JOIN stock_grn g ON pt.grn_id = g.id
+      LEFT JOIN products p ON pt.product_id = p.id
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+    let paramCount = 1;
+
+    if (state) {
+      query += ` AND pt.state = $${paramCount++}`;
+      params.push(state);
+    }
+
+    if (warehouse_id) {
+      query += ` AND pt.warehouse_id = $${paramCount++}`;
+      params.push(warehouse_id);
+    }
+
+    query += ' ORDER BY pt.created_at DESC';
+
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching putaway tasks:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Start putaway task
+router.post('/warehouse-operations/putaway/:id/start', async (req, res) => {
+  try {
+    await pool.query(
+      `UPDATE putaway_tasks 
+       SET state = 'in_progress', started_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1`,
+      [req.params.id]
+    );
+    res.json({ message: 'Putaway task started' });
+  } catch (error) {
+    console.error('Error starting putaway task:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Complete putaway task
+router.post('/warehouse-operations/putaway/:id/complete', async (req, res) => {
+  try {
+    const { actual_location } = req.body;
+    const taskResult = await pool.query(
+      'SELECT started_at FROM putaway_tasks WHERE id = $1',
+      [req.params.id]
+    );
+    const startedAt = taskResult.rows[0]?.started_at;
+    const putawayTime = startedAt 
+      ? Math.round((new Date().getTime() - new Date(startedAt).getTime()) / 60000)
+      : 0;
+
+    await pool.query(
+      `UPDATE putaway_tasks 
+       SET state = 'completed', actual_location = $1, completed_at = CURRENT_TIMESTAMP,
+           putaway_time_minutes = $2, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $3`,
+      [actual_location, putawayTime, req.params.id]
+    );
+    res.json({ message: 'Putaway task completed' });
+  } catch (error) {
+    console.error('Error completing putaway task:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get picking tasks
+router.get('/warehouse-operations/picking', async (req, res) => {
+  try {
+    const { state, warehouse_id } = req.query;
+    let query = `
+      SELECT pt.*,
+             p.name as product_name,
+             p.default_code as product_code
+      FROM picking_tasks pt
+      LEFT JOIN products p ON pt.product_id = p.id
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+    let paramCount = 1;
+
+    if (state) {
+      query += ` AND pt.state = $${paramCount++}`;
+      params.push(state);
+    }
+
+    if (warehouse_id) {
+      query += ` AND pt.warehouse_id = $${paramCount++}`;
+      params.push(warehouse_id);
+    }
+
+    query += ' ORDER BY pt.created_at DESC';
+
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching picking tasks:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Start picking task
+router.post('/warehouse-operations/picking/:id/start', async (req, res) => {
+  try {
+    await pool.query(
+      `UPDATE picking_tasks 
+       SET state = 'in_progress', started_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1`,
+      [req.params.id]
+    );
+    res.json({ message: 'Picking task started' });
+  } catch (error) {
+    console.error('Error starting picking task:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Complete picking task
+router.post('/warehouse-operations/picking/:id/complete', async (req, res) => {
+  try {
+    const { quantity_picked } = req.body;
+    const taskResult = await pool.query(
+      'SELECT started_at FROM picking_tasks WHERE id = $1',
+      [req.params.id]
+    );
+    const startedAt = taskResult.rows[0]?.started_at;
+    const pickingTime = startedAt 
+      ? Math.round((new Date().getTime() - new Date(startedAt).getTime()) / 60000)
+      : 0;
+
+    await pool.query(
+      `UPDATE picking_tasks 
+       SET state = 'completed', quantity_picked = $1, completed_at = CURRENT_TIMESTAMP,
+           picking_time_minutes = $2, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $3`,
+      [quantity_picked, pickingTime, req.params.id]
+    );
+    res.json({ message: 'Picking task completed' });
+  } catch (error) {
+    console.error('Error completing picking task:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get packing tasks
+router.get('/warehouse-operations/packing', async (req, res) => {
+  try {
+    const { state } = req.query;
+    let query = `
+      SELECT pt.*
+      FROM packing_tasks pt
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+    let paramCount = 1;
+
+    if (state) {
+      query += ` AND pt.state = $${paramCount++}`;
+      params.push(state);
+    }
+
+    query += ' ORDER BY pt.created_at DESC';
+
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching packing tasks:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get cycle counts
+router.get('/warehouse-operations/cycle-counts', async (req, res) => {
+  try {
+    const { state, warehouse_id } = req.query;
+    let query = `
+      SELECT cc.*, w.name as warehouse_name
+      FROM cycle_counts cc
+      LEFT JOIN warehouses w ON cc.warehouse_id = w.id
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+    let paramCount = 1;
+
+    if (state) {
+      query += ` AND cc.state = $${paramCount++}`;
+      params.push(state);
+    }
+
+    if (warehouse_id) {
+      query += ` AND cc.warehouse_id = $${paramCount++}`;
+      params.push(warehouse_id);
+    }
+
+    query += ' ORDER BY cc.created_at DESC';
+
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching cycle counts:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================
+// SETTINGS
+// ============================================
+
+// Get inventory settings
+router.get('/settings', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM inventory_settings LIMIT 1');
+    if (result.rows.length === 0) {
+      // Return defaults
+      res.json({
+        default_removal_strategy: 'fifo',
+        default_cost_method: 'fifo',
+        auto_create_lots: false,
+        auto_assign_lots: false,
+        require_qc_on_grn: false,
+        require_approval_for_adjustments: true,
+        adjustment_approval_threshold: 10000,
+        enable_abc_analysis: true,
+        enable_cycle_counting: true,
+        cycle_count_frequency_days: 30,
+      });
+    } else {
+      res.json(result.rows[0]);
+    }
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update inventory settings
+router.put('/settings', async (req, res) => {
+  try {
+    const settings = req.body;
+    const existing = await pool.query('SELECT id FROM inventory_settings LIMIT 1');
+    
+    if (existing.rows.length > 0) {
+      await pool.query(
+        `UPDATE inventory_settings 
+         SET default_removal_strategy = $1, default_cost_method = $2,
+             auto_create_lots = $3, auto_assign_lots = $4,
+             require_qc_on_grn = $5, require_approval_for_adjustments = $6,
+             adjustment_approval_threshold = $7, enable_abc_analysis = $8,
+             enable_cycle_counting = $9, cycle_count_frequency_days = $10,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = $11`,
+        [
+          settings.default_removal_strategy,
+          settings.default_cost_method,
+          settings.auto_create_lots,
+          settings.auto_assign_lots,
+          settings.require_qc_on_grn,
+          settings.require_approval_for_adjustments,
+          settings.adjustment_approval_threshold,
+          settings.enable_abc_analysis,
+          settings.enable_cycle_counting,
+          settings.cycle_count_frequency_days,
+          existing.rows[0].id,
+        ]
+      );
+    } else {
+      await pool.query(
+        `INSERT INTO inventory_settings (
+          default_removal_strategy, default_cost_method, auto_create_lots,
+          auto_assign_lots, require_qc_on_grn, require_approval_for_adjustments,
+          adjustment_approval_threshold, enable_abc_analysis, enable_cycle_counting,
+          cycle_count_frequency_days
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [
+          settings.default_removal_strategy,
+          settings.default_cost_method,
+          settings.auto_create_lots,
+          settings.auto_assign_lots,
+          settings.require_qc_on_grn,
+          settings.require_approval_for_adjustments,
+          settings.adjustment_approval_threshold,
+          settings.enable_abc_analysis,
+          settings.enable_cycle_counting,
+          settings.cycle_count_frequency_days,
+        ]
+      );
+    }
+
+    res.json({ message: 'Settings updated successfully' });
+  } catch (error) {
+    console.error('Error updating settings:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

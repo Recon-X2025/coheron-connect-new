@@ -2,14 +2,9 @@ import { useState, useEffect } from 'react';
 import {
   BarChart3,
   TrendingUp,
-  TrendingDown,
-  Users,
   Clock,
   CheckCircle,
-  AlertCircle,
-  Calendar,
   Download,
-  Filter,
 } from 'lucide-react';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
@@ -123,7 +118,7 @@ export const SupportReports: React.FC = () => {
               className="date-input"
             />
           </div>
-          <Button variant="outline" icon={<Download size={18} />}>
+          <Button variant="secondary" icon={<Download size={18} />}>
             Export
           </Button>
         </div>

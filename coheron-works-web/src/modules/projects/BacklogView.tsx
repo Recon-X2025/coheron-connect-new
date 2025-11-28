@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Filter, Search, List } from 'lucide-react';
-import { projectService, type Issue } from '../../services/projectService';
+import { projectService } from '../../services/projectService';
 import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import './BacklogView.css';

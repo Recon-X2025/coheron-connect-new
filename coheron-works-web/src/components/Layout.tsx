@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
+import { ToastContainer } from './Toast';
 import './Layout.css';
 
 interface LayoutProps {
@@ -25,6 +26,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                     <p>&copy; 2025 CoheronWorks. All rights reserved.</p>
                 </div>
             </footer>
+            <ToastContainer />
         </div>
     );
 };

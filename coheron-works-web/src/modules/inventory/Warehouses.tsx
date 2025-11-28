@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, Warehouse, MapPin, User, Phone, Mail, Edit, Eye } from 'lucide-react';
+import { Search, Plus, Warehouse, MapPin, User, Phone, Mail, Edit } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { inventoryService, type Warehouse as WarehouseType } from '../../services/inventoryService';
+import { showToast } from '../../components/Toast';
 import './Warehouses.css';
 
 export const Warehouses = () => {
@@ -11,10 +12,29 @@ export const Warehouses = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedWarehouse, setSelectedWarehouse] = useState<WarehouseType | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    code: string;
+    name: string;
+    warehouse_type: WarehouseType['warehouse_type'];
+    address: string;
+    city: string;
+    state: string;
+    country: string;
+    zip_code: string;
+    phone: string;
+    email: string;
+    manager_id: string;
+    active: boolean;
+    temperature_controlled: boolean;
+    humidity_controlled: boolean;
+    security_level: string;
+    operating_hours: string;
+    capacity_cubic_meters: string;
+    notes: string;
+  }>({
     code: '',
     name: '',
-    warehouse_type: 'internal' as const,
+    warehouse_type: 'internal',
     address: '',
     city: '',
     state: '',
@@ -70,7 +90,7 @@ export const Warehouses = () => {
       loadWarehouses();
     } catch (error) {
       console.error('Failed to save warehouse:', error);
-      alert('Failed to save warehouse. Please try again.');
+      showToast('Failed to save warehouse. Please try again.', 'error');
     }
   };
 
@@ -244,7 +264,7 @@ export const Warehouses = () => {
                   <label>Type *</label>
                   <select
                     value={formData.warehouse_type}
-                    onChange={(e) => setFormData({ ...formData, warehouse_type: e.target.value as any })}
+                    onChange={(e) => setFormData({ ...formData, warehouse_type: e.target.value as WarehouseType['warehouse_type'] })}
                     required
                   >
                     <option value="internal">Internal</option>

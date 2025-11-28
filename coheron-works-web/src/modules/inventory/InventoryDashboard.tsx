@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Package, TrendingUp, TrendingDown, AlertTriangle, Warehouse, ArrowUpRight, ArrowDownRight, Activity } from 'lucide-react';
+import { Package, TrendingUp, AlertTriangle, Warehouse, ArrowUpRight, ArrowDownRight, Activity } from 'lucide-react';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { inventoryService, type StockSummary, type ReorderSuggestion, type Warehouse as WarehouseType } from '../../services/inventoryService';
 import './InventoryDashboard.css';

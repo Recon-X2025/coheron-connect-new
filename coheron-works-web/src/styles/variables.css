@@ -1,54 +1,156 @@
 :root {
-  /* Brand Colors */
-  --color-primary: #6366f1; /* Indigo 500 */
-  --color-primary-hover: #4f46e5; /* Indigo 600 */
-  --color-primary-light: #a5b4fc; /* Indigo 300 */
-  --color-primary-glow: #6366f1; /* Indigo 500 */
-  --color-secondary: #ec4899; /* Pink 500 */
-  --color-accent: #8b5cf6; /* Violet 500 */
+  /* Layout / Surfaces */
+  --page-bg: #F6F8FA;
+  --surface: #FFFFFF;
+  --muted-surface: #F3F5F7;
+  --border: #E6E9EE;
 
-  /* Backgrounds - Light Theme */
-  --bg-body: #f8fafc; /* Slate 50 */
-  --bg-main: #ffffff; /* White */
-  --bg-surface: #ffffff; /* White */
-  --bg-surface-hover: #f1f5f9; /* Slate 100 */
-  --bg-hover: #f1f5f9; /* Slate 100 */
-  --bg-glass: rgba(255, 255, 255, 0.8);
+  /* Typography */
+  --text: #0F1724;
+  --text-muted: #556074;
 
-  /* Text - Light Theme */
-  --text-main: #0f172a; /* Slate 900 */
-  --text-primary: #0f172a; /* Slate 900 */
-  --text-secondary: #64748b; /* Slate 500 */
-  --text-tertiary: #94a3b8; /* Slate 400 */
-  --text-muted: #64748b; /* Slate 500 */
-  --text-inverse: #f8fafc;
+  /* Actions */
+  --primary: #2563EB;
+  --primary-press: #1E40AF;
+  --accent: #7C3AED;
+  --success: #059669;
+  --warning: #D97706;
+  --danger: #DC2626;
 
-  /* Borders - Light Theme */
-  --border-light: #e2e8f0; /* Slate 200 */
-  --border-focus: #6366f1;
-
-  /* Spacing */
-  --space-xs: 0.25rem;
-  --space-sm: 0.5rem;
-  --space-md: 1rem;
-  --space-lg: 1.5rem;
-  --space-xl: 2rem;
-  --space-2xl: 3rem;
-
-  /* Radius */
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
-  --radius-full: 9999px;
+  /* UI niceties */
+  --glass: rgba(37, 99, 235, 0.08);
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-glow: 0 0 15px rgba(99, 102, 241, 0.5);
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04);
+  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.06);
 
-  /* Transitions */
+  /* Spacing & radius */
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --gap: 8px;
+
+  /* Legacy compatibility - mapped to new tokens */
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-press);
+  --color-primary-press: var(--primary-press);
+  --color-accent: var(--accent);
+  --bg-body: var(--page-bg);
+  --bg-main: var(--surface);
+  --bg-surface: var(--surface);
+  --bg-surface-hover: var(--muted-surface);
+  --bg-hover: var(--muted-surface);
+  --bg-glass: var(--glass);
+  --text-main: var(--text);
+  --text-primary: var(--text);
+  --text-secondary: var(--text-muted);
+  --text-muted: var(--text-muted);
+  --border-light: var(--border);
+  --border-focus: var(--primary);
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --radius-md: var(--radius);
+  --radius-xl: var(--radius-lg);
+  --radius-full: 9999px;
+  --shadow-lg: var(--shadow-md);
   --transition-fast: 150ms ease;
   --transition-normal: 300ms ease;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--page-bg);
+  color: var(--text);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Example surface/card */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 16px;
+  border: 1px solid var(--border);
+}
+
+/* Primary button */
+.btn-primary {
+  background: var(--primary);
+  color: #ffffff;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  border: none;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.08);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: var(--primary-press);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Secondary / outline */
+.btn-outline {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-outline:hover {
+  background: var(--muted-surface);
+}
+
+/* Chip examples */
+.chip {
+  display: inline-flex;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.chip.success {
+  background: #ECFDF6;
+  color: var(--success);
+  border-color: rgba(5, 150, 105, 0.12);
+}
+
+.chip.warning {
+  background: #FFFBEB;
+  color: var(--warning);
+  border-color: rgba(217, 119, 6, 0.12);
+}
+
+.chip.danger {
+  background: #FEF2F2;
+  color: var(--danger);
+  border-color: rgba(220, 38, 38, 0.12);
+}
+
+.chip.info {
+  background: rgba(124, 58, 237, 0.06);
+  color: var(--accent);
+  border-color: rgba(124, 58, 237, 0.08);
 }

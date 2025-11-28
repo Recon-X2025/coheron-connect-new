@@ -14,11 +14,12 @@ import {
   Eye,
   Tag,
   Filter,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '../components/Button';
-import { Card } from '../components/Card';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { supportDeskService, type KBArticle, type KBRevision } from '../services/supportDeskService';
+import { supportDeskService, type KBArticle } from '../services/supportDeskService';
+import { showToast } from '../components/Toast';
 import './KnowledgeBase.css';
 
 type ArticleType = 'article' | 'faq' | 'how_to' | 'troubleshooting';
@@ -32,9 +33,18 @@ export const KnowledgeBase: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<ArticleStatus | 'all'>('all');
   const [typeFilter, setTypeFilter] = useState<ArticleType | 'all'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showRevisions, setShowRevisions] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newArticle, setNewArticle] = useState({
+    title: '',
+    summary: '',
+    content: '',
+    article_type: 'article' as ArticleType,
+    status: 'draft' as ArticleStatus,
+    category_id: '',
+    tags: [] as string[],
+  });
 
   useEffect(() => {
     loadArticles();
@@ -85,10 +95,31 @@ export const KnowledgeBase: React.FC = () => {
       await supportDeskService.rateKBArticle(selectedArticle.id, isHelpful);
       const updated = await supportDeskService.getKBArticle(selectedArticle.id);
       setSelectedArticle(updated);
+      showToast('Thank you for your feedback!', 'success');
     } catch (error) {
       console.error('Error rating article:', error);
+      showToast('Failed to submit rating. Please try again.', 'error');
     }
   };
+
+  const handleDeleteArticle = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this article? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await supportDeskService.deleteKBArticle(id);
+      showToast('Article deleted successfully', 'success');
+      if (selectedArticle?.id === id) {
+        setSelectedArticle(null);
+      }
+      loadArticles();
+    } catch (error: any) {
+      console.error('Failed to delete article:', error);
+      showToast(error?.message || 'Failed to delete article. Please try again.', 'error');
+    }
+  };
+
 
   const getArticleTypeIcon = (type: ArticleType) => {
     switch (type) {
@@ -105,6 +136,44 @@ export const KnowledgeBase: React.FC = () => {
 
   const getArticleTypeLabel = (type: ArticleType) => {
     return type.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+  };
+
+  const handleCreateArticle = async () => {
+    if (!newArticle.title || !newArticle.content) {
+      showToast('Please fill in title and content', 'error');
+      return;
+    }
+
+    try {
+      const articleData: any = {
+        title: newArticle.title,
+        summary: newArticle.summary,
+        content: newArticle.content,
+        article_type: newArticle.article_type,
+        status: newArticle.status,
+        tags: newArticle.tags,
+      };
+      if (newArticle.category_id && newArticle.category_id !== 'all') {
+        articleData.category_id = parseInt(newArticle.category_id);
+      }
+
+      await supportDeskService.createKBArticle(articleData);
+      showToast('Article created successfully', 'success');
+      setShowCreateModal(false);
+      setNewArticle({
+        title: '',
+        summary: '',
+        content: '',
+        article_type: 'article',
+        status: 'draft',
+        category_id: '',
+        tags: [],
+      });
+      loadArticles();
+    } catch (error: any) {
+      console.error('Error creating article:', error);
+      showToast(error?.message || 'Failed to create article', 'error');
+    }
   };
 
   const filteredArticles = articles.filter((article) => {
@@ -196,6 +265,7 @@ export const KnowledgeBase: React.FC = () => {
                   key={article.id}
                   className={`article-item ${selectedArticle?.id === article.id ? 'active' : ''}`}
                   onClick={() => handleArticleClick(article)}
+                  style={{ cursor: 'pointer' }}
                 >
                   <div className="article-item-header">
                     <div className="article-type-badge">
@@ -254,16 +324,24 @@ export const KnowledgeBase: React.FC = () => {
                   {selectedArticle.summary && <p className="article-summary-large">{selectedArticle.summary}</p>}
                 </div>
                 <div className="article-actions">
-                  <Button variant="outline" size="sm" icon={<Edit size={16} />}>
+                  <Button variant="secondary" size="sm" icon={<Edit size={16} />}>
                     Edit
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     icon={<History size={16} />}
                     onClick={() => setShowRevisions(!showRevisions)}
                   >
                     History
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    icon={<Trash2 size={16} />}
+                    onClick={() => handleDeleteArticle(selectedArticle.id)}
+                  >
+                    Delete
                   </Button>
                 </div>
               </div>
@@ -302,7 +380,7 @@ export const KnowledgeBase: React.FC = () => {
                 </div>
                 <div className="article-rating">
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     icon={<ThumbsUp size={16} />}
                     onClick={() => handleRateArticle(true)}
@@ -310,7 +388,7 @@ export const KnowledgeBase: React.FC = () => {
                     Helpful
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     icon={<ThumbsDown size={16} />}
                     onClick={() => handleRateArticle(false)}
@@ -351,6 +429,95 @@ export const KnowledgeBase: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Create Article Modal */}
+      {showCreateModal && (
+        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+            <div className="modal-header">
+              <h2>Create New Article</h2>
+              <button className="modal-close" onClick={() => setShowCreateModal(false)}>×</button>
+            </div>
+            <div style={{ padding: '20px' }}>
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Title *</label>
+                <input
+                  type="text"
+                  value={newArticle.title}
+                  onChange={(e) => setNewArticle({ ...newArticle, title: e.target.value })}
+                  style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                  placeholder="Article title"
+                />
+              </div>
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Summary</label>
+                <input
+                  type="text"
+                  value={newArticle.summary}
+                  onChange={(e) => setNewArticle({ ...newArticle, summary: e.target.value })}
+                  style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                  placeholder="Brief summary"
+                />
+              </div>
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Content *</label>
+                <textarea
+                  value={newArticle.content}
+                  onChange={(e) => setNewArticle({ ...newArticle, content: e.target.value })}
+                  style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px', minHeight: '150px' }}
+                  placeholder="Article content (HTML supported)"
+                />
+              </div>
+              <div style={{ marginBottom: '15px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Type</label>
+                  <select
+                    value={newArticle.article_type}
+                    onChange={(e) => setNewArticle({ ...newArticle, article_type: e.target.value as ArticleType })}
+                    style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                  >
+                    <option value="article">Article</option>
+                    <option value="faq">FAQ</option>
+                    <option value="how_to">How-To</option>
+                    <option value="troubleshooting">Troubleshooting</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Status</label>
+                  <select
+                    value={newArticle.status}
+                    onChange={(e) => setNewArticle({ ...newArticle, status: e.target.value as ArticleStatus })}
+                    style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                  >
+                    <option value="draft">Draft</option>
+                    <option value="published">Published</option>
+                    <option value="archived">Archived</option>
+                  </select>
+                </div>
+              </div>
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Category</label>
+                <select
+                  value={newArticle.category_id}
+                  onChange={(e) => setNewArticle({ ...newArticle, category_id: e.target.value })}
+                  style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                >
+                  <option value="all">No Category</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
+                <Button variant="ghost" onClick={() => setShowCreateModal(false)}>Cancel</Button>
+                <Button onClick={handleCreateArticle}>Create Article</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

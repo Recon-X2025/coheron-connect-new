@@ -84,7 +84,7 @@ export const ProjectWiki = ({ projectId }: ProjectWikiProps) => {
             {spaces.length === 0 && (
               <div className="empty-spaces">
                 <p>No spaces yet</p>
-                <Button size="small" icon={<Plus size={14} />}>
+                <Button size="sm" icon={<Plus size={14} />}>
                   Create Space
                 </Button>
               </div>
@@ -106,7 +106,7 @@ export const ProjectWiki = ({ projectId }: ProjectWikiProps) => {
                   <Search size={18} />
                   <input type="text" placeholder="Search pages..." />
                 </div>
-                <Button icon={<Plus size={16} />} size="small">
+                <Button icon={<Plus size={16} />} size="sm">
                   New Page
                 </Button>
               </div>

@@ -176,7 +176,6 @@ export const Dashboard: React.FC = () => {
     { name: 'Manufacturing', path: '/manufacturing/orders', icon: <Factory size={20} /> },
     { name: 'Campaigns', path: '/marketing/campaigns', icon: <Megaphone size={20} /> },
     { name: 'POS', path: '/pos', icon: <ShoppingCart size={20} /> },
-    { name: 'Website Pages', path: '/website/pages', icon: <FileText size={20} /> },
     { name: 'Settings', path: '/settings', icon: <Users size={20} /> },
   ];
 

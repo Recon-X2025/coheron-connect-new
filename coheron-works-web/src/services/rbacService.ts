@@ -79,23 +79,25 @@ class RbacService {
     if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
     
     const query = params.toString();
-    return apiService.get<Role[]>(`/rbac/roles${query ? `?${query}` : ''}`);
+    const result = await apiService.get<Role>(`/rbac/roles${query ? `?${query}` : ''}`);
+    return Array.isArray(result) ? result : [];
   }
 
   async getRole(id: number): Promise<Role & { permissions: Permission[] }> {
-    return apiService.get(`/rbac/roles/${id}`);
+    const result = await apiService.get(`/rbac/roles/${id}`);
+    return (Array.isArray(result) ? result[0] : result) as Role & { permissions: Permission[] };
   }
 
   async createRole(role: Partial<Role>): Promise<Role> {
-    return apiService.post<Role>('/rbac/roles', role);
+    return apiService.create<Role>('/rbac/roles', role);
   }
 
   async updateRole(id: number, role: Partial<Role>): Promise<Role> {
-    return apiService.put<Role>(`/rbac/roles/${id}`, role);
+    return apiService.update<Role>('/rbac/roles', id, role);
   }
 
   async deleteRole(id: number): Promise<void> {
-    return apiService.delete(`/rbac/roles/${id}`);
+    return apiService.delete('/rbac/roles', id);
   }
 
   // Permissions
@@ -106,16 +108,17 @@ class RbacService {
     if (filters?.action) params.append('action', filters.action);
     
     const query = params.toString();
-    return apiService.get<Permission[]>(`/rbac/permissions${query ? `?${query}` : ''}`);
+    const result = await apiService.get<Permission>(`/rbac/permissions${query ? `?${query}` : ''}`);
+    return Array.isArray(result) ? result : [];
   }
 
   async createPermission(permission: Partial<Permission>): Promise<Permission> {
-    return apiService.post<Permission>('/rbac/permissions', permission);
+    return apiService.create<Permission>('/rbac/permissions', permission);
   }
 
   // Role-Permission Assignments
   async assignPermissionToRole(roleId: number, permissionId: number, granted: boolean = true, conditions?: any): Promise<RolePermission> {
-    return apiService.post<RolePermission>(`/rbac/roles/${roleId}/permissions`, {
+    return apiService.create<RolePermission>(`/rbac/roles/${roleId}/permissions`, {
       permission_id: permissionId,
       granted,
       conditions
@@ -123,12 +126,12 @@ class RbacService {
   }
 
   async removePermissionFromRole(roleId: number, permissionId: number): Promise<void> {
-    return apiService.delete(`/rbac/roles/${roleId}/permissions/${permissionId}`);
+    return apiService.getAxiosInstance().delete(`/rbac/roles/${roleId}/permissions/${permissionId}`);
   }
 
   // User-Role Assignments
   async assignRoleToUser(userId: number, roleId: number, expiresAt?: string, notes?: string): Promise<UserRole> {
-    return apiService.post<UserRole>(`/rbac/users/${userId}/roles`, {
+    return apiService.create<UserRole>(`/rbac/users/${userId}/roles`, {
       role_id: roleId,
       expires_at: expiresAt,
       notes
@@ -136,11 +139,12 @@ class RbacService {
   }
 
   async removeRoleFromUser(userId: number, roleId: number): Promise<void> {
-    return apiService.delete(`/rbac/users/${userId}/roles/${roleId}`);
+    return apiService.getAxiosInstance().delete(`/rbac/users/${userId}/roles/${roleId}`);
   }
 
   async getUserPermissions(userId: number): Promise<UserPermissions> {
-    return apiService.get<UserPermissions>(`/rbac/users/${userId}/permissions`);
+    const result = await apiService.get<UserPermissions>(`/rbac/users/${userId}/permissions`);
+    return Array.isArray(result) ? result[0] : result;
   }
 
   // Audit Logs
@@ -153,7 +157,8 @@ class RbacService {
     if (filters?.offset) params.append('offset', filters.offset.toString());
     
     const query = params.toString();
-    return apiService.get<AuditLog[]>(`/rbac/audit-logs${query ? `?${query}` : ''}`);
+    const result = await apiService.get<AuditLog>(`/rbac/audit-logs${query ? `?${query}` : ''}`);
+    return Array.isArray(result) ? result : [];
   }
 }
 

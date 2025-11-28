@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, Edit, Trash2, Settings, Eye, X } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Eye } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import {
   manufacturingService,
   type Routing,
-  type RoutingOperation,
   type WorkCenter,
 } from '../../services/manufacturingService';
+import { showToast } from '../../components/Toast';
 import './RoutingManagement.css';
 
 export const RoutingManagement = () => {
@@ -61,9 +61,9 @@ export const RoutingManagement = () => {
       try {
         await manufacturingService.deleteRouting(id);
         await loadData();
-        alert('Routing deleted successfully');
+        showToast('Routing deleted successfully', 'success');
       } catch (error) {
-        alert('Failed to delete routing');
+        showToast('Failed to delete routing', 'error');
       }
     }
   };
@@ -80,9 +80,9 @@ export const RoutingManagement = () => {
         active: true,
         note: '',
       });
-      alert('Routing created successfully');
+      showToast('Routing created successfully', 'success');
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Failed to create routing');
+      showToast(error.response?.data?.error || 'Failed to create routing', 'error');
     }
   };
 
