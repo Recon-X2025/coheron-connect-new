@@ -1,0 +1,222 @@
+.page-builder {
+  padding: 1rem;
+}
+
+.page-builder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.page-builder-header h2 {
+  margin: 0;
+}
+
+.page-builder-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.page-builder-layout {
+  display: grid;
+  grid-template-columns: 200px 1fr 300px;
+  gap: 1rem;
+  min-height: 600px;
+}
+
+.page-builder-sidebar {
+  background: white;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  padding: 1rem;
+  height: fit-content;
+}
+
+.page-builder-sidebar h3 {
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.block-types {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.block-type-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--bg-secondary, #f5f5f5);
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.block-type-btn:hover {
+  background: var(--bg-hover, #e8e8e8);
+  border-color: var(--primary-color, #2563eb);
+}
+
+.block-icon {
+  font-size: 1.2rem;
+}
+
+.page-builder-canvas {
+  background: white;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  padding: 2rem;
+  min-height: 600px;
+}
+
+.empty-canvas {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 500px;
+  text-align: center;
+  color: var(--text-secondary, #666);
+}
+
+.block-types-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.page-block {
+  border: 2px dashed var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.page-block.selected {
+  border-color: var(--primary-color, #2563eb);
+  border-style: solid;
+  background: var(--bg-selected, #f0f7ff);
+}
+
+.block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color, #e0e0e0);
+}
+
+.block-type-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-secondary, #666);
+}
+
+.block-remove-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary, #666);
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.block-remove-btn:hover {
+  color: var(--error-color, #dc2626);
+}
+
+.block-content {
+  min-height: 50px;
+}
+
+.block-text textarea {
+  width: 100%;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 4px;
+  padding: 0.5rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.block-image input {
+  width: 100%;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 4px;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.block-image img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+.block-product input {
+  width: 100%;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 4px;
+  padding: 0.5rem;
+}
+
+.block-placeholder {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary, #666);
+  background: var(--bg-secondary, #f5f5f5);
+  border-radius: 4px;
+}
+
+.page-builder-properties {
+  background: white;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  padding: 1rem;
+  height: fit-content;
+}
+
+.page-builder-properties h3 {
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.block-properties {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.property-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.property-group label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary, #666);
+}
+
+.property-group input,
+.property-group select,
+.property-group textarea {
+  padding: 0.5rem;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 4px;
+  font-family: inherit;
+}
+

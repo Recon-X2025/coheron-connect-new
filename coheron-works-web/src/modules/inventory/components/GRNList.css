@@ -1,0 +1,171 @@
+.grn-list,
+.transfer-list,
+.adjustment-list {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.list-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.list-table {
+  overflow-x: auto;
+}
+
+.list-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.list-table th {
+  text-align: left;
+  padding: 0.75rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.list-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.9rem;
+  color: #1a1a1a;
+}
+
+.list-table tr:hover {
+  background: #f9fafb;
+}
+
+.grn-number,
+.transfer-number,
+.adjustment-number {
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.qc-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.qc-status.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.qc-status.passed {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.qc-status.failed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.state-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.state-badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.state-badge.done,
+.state-badge.received,
+.state-badge.approved {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.state-badge.cancel,
+.state-badge.failed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.state-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.icon-button {
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  color: #666;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.icon-button:hover {
+  background: #f3f4f6;
+  color: #2563eb;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.transfer-type {
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  background: #e0e7ff;
+  color: #3730a3;
+  text-transform: capitalize;
+}
+
+.adjustment-type {
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.adjustment-type.positive {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.adjustment-type.negative {
+  background: #fee2e2;
+  color: #991b1b;
+}
+

@@ -1,0 +1,325 @@
+.campaign-analytics {
+  padding: 2rem;
+  background: #f5f5f5;
+  min-height: 100vh;
+}
+
+.analytics-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.analytics-header h2 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.75rem;
+  color: #333;
+}
+
+.analytics-subtitle {
+  margin: 0;
+  color: #666;
+  font-size: 0.9375rem;
+}
+
+.analytics-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.time-range-select {
+  padding: 0.5rem 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 0.9375rem;
+  background: white;
+  cursor: pointer;
+}
+
+.view-mode-tabs {
+  display: flex;
+  gap: 0.5rem;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 0.25rem;
+}
+
+.view-mode-tabs button {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #666;
+}
+
+.view-mode-tabs button:hover {
+  background: #f5f5f5;
+}
+
+.view-mode-tabs button.active {
+  background: #6366f1;
+  color: white;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.metric-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.metric-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.metric-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #333;
+}
+
+.metric-value.revenue {
+  color: #10b981;
+}
+
+.metric-value.positive {
+  color: #10b981;
+}
+
+.metric-value.negative {
+  color: #ef4444;
+}
+
+.metric-change {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.metric-change.positive {
+  color: #10b981;
+}
+
+.metric-change.negative {
+  color: #ef4444;
+}
+
+.metric-target {
+  font-size: 0.8125rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  display: inline-block;
+  width: fit-content;
+}
+
+.metric-target.positive {
+  background: #e8f5e9;
+  color: #10b981;
+}
+
+.metric-target.negative {
+  background: #fee;
+  color: #ef4444;
+}
+
+.metric-target.neutral {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.chart-section {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.chart-section h3 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.25rem;
+  color: #333;
+}
+
+.chart-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  background: #f9f9f9;
+  border: 2px dashed #e0e0e0;
+  border-radius: 6px;
+  color: #666;
+  text-align: center;
+}
+
+.chart-placeholder svg {
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.chart-note {
+  font-size: 0.875rem;
+  color: #999;
+  margin-top: 0.5rem;
+}
+
+.channel-breakdown {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.channel-breakdown h3 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.25rem;
+  color: #333;
+}
+
+.channel-table {
+  overflow-x: auto;
+}
+
+.channel-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.channel-table th,
+.channel-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.channel-table th {
+  font-weight: 600;
+  color: #333;
+  background: #f9f9f9;
+}
+
+.channel-table td.positive {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.channel-table td.negative {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.attribution-view,
+.comparison-view {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 2rem;
+}
+
+.attribution-view h3,
+.comparison-view h3 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.25rem;
+  color: #333;
+}
+
+.attribution-models {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.attribution-card {
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.attribution-card h4 {
+  margin: 0;
+  font-size: 1.125rem;
+  color: #333;
+}
+
+.attribution-card p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.attribution-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #6366f1;
+  margin-top: 0.5rem;
+}
+
+.comparison-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  background: #f9f9f9;
+  border: 2px dashed #e0e0e0;
+  border-radius: 6px;
+  color: #666;
+  text-align: center;
+}
+
+.comparison-placeholder svg {
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+@media (max-width: 768px) {
+  .campaign-analytics {
+    padding: 1rem;
+  }
+
+  .analytics-header {
+    flex-direction: column;
+  }
+
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .attribution-models {
+    grid-template-columns: 1fr;
+  }
+}
+

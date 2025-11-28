@@ -1,0 +1,132 @@
+.product-catalog {
+  padding: 1rem;
+}
+
+.product-catalog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.product-catalog-header h2 {
+  margin: 0;
+}
+
+.product-catalog-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: white;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.product-catalog-search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 0.9rem;
+}
+
+.product-catalog-table {
+  background: white;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.product-catalog-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.product-catalog-table thead {
+  background: var(--bg-secondary, #f5f5f5);
+}
+
+.product-catalog-table th {
+  padding: 1rem;
+  text-align: left;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary, #666);
+}
+
+.product-catalog-table td {
+  padding: 1rem;
+  border-top: 1px solid var(--border-color, #e0e0e0);
+}
+
+.product-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-badge.published {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge.draft {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.sync-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.sync-status.synced {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.sync-status.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.sync-status.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.sync-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary, #666);
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sync-btn:hover {
+  color: var(--primary-color, #2563eb);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-secondary, #666);
+}
+
+.empty-state p {
+  margin-top: 1rem;
+}
+

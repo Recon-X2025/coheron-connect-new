@@ -1,0 +1,183 @@
+.order-workflow {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid #e0e0e0;
+}
+
+.workflow-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.workflow-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #333;
+}
+
+.current-state-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.current-state-badge[data-state="draft"] {
+  background: #f0f0f0;
+  color: #666;
+}
+
+.current-state-badge[data-state="sent"] {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.current-state-badge[data-state="sale"] {
+  background: #e8f5e9;
+  color: #388e3c;
+}
+
+.current-state-badge[data-state="done"] {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.current-state-badge[data-state="cancel"] {
+  background: #ffebee;
+  color: #d32f2f;
+}
+
+.workflow-error {
+  padding: 0.75rem 1rem;
+  background: #fee;
+  border: 1px solid #fcc;
+  border-radius: 4px;
+  color: #c33;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+}
+
+.workflow-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.workflow-step {
+  display: flex;
+  gap: 1rem;
+  position: relative;
+}
+
+.workflow-step.disabled {
+  opacity: 0.5;
+}
+
+.workflow-step.active .step-icon {
+  background: #875A7B;
+  color: white;
+  border-color: #875A7B;
+}
+
+.workflow-step.completed .step-icon {
+  background: #10b981;
+  color: white;
+  border-color: #10b981;
+}
+
+.step-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.step-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f0f0;
+  border: 2px solid #e0e0e0;
+  color: #666;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.step-connector {
+  width: 2px;
+  height: 40px;
+  background: #e0e0e0;
+  margin: 0.5rem 0;
+  transition: background 0.2s;
+}
+
+.step-connector.completed {
+  background: #10b981;
+}
+
+.step-content {
+  flex: 1;
+  padding-top: 0.5rem;
+}
+
+.step-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.step-description {
+  font-size: 0.875rem;
+  color: #666;
+  margin-bottom: 0.75rem;
+}
+
+.step-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #875A7B;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.step-action-btn:hover:not(:disabled) {
+  background: #6b4670;
+}
+
+.step-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.workflow-note {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 4px;
+}
+
+.workflow-note p {
+  margin: 0;
+  color: #856404;
+  font-size: 0.875rem;
+}
+
+.completed-icon {
+  color: white;
+}
+

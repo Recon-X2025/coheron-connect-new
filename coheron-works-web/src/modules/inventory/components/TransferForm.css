@@ -1,0 +1,27 @@
+.transfer-form-modal {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 900px;
+  width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Reuse styles from GRNForm.css */
+.transfer-form {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.form-header,
+.form-section,
+.form-row,
+.form-group,
+.section-header,
+.lines-table,
+.form-actions {
+  /* Styles inherited from GRNForm.css or defined globally */
+}
+

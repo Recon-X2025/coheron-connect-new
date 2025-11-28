@@ -1,0 +1,158 @@
+.compliance-reporting {
+  padding: var(--space-lg) 0;
+}
+
+.compliance-header {
+  margin-bottom: var(--space-xl);
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-content h3 {
+  font-size: 1.25rem;
+  margin-bottom: var(--space-xs);
+}
+
+.header-content p {
+  color: var(--text-muted);
+}
+
+.compliance-select {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.compliance-select label {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.compliance-select select {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  color: var(--text-main);
+}
+
+.reports-section {
+  margin-bottom: var(--space-xl);
+}
+
+.reports-section h3 {
+  font-size: 1.25rem;
+  margin-bottom: var(--space-lg);
+}
+
+.reports-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--space-lg);
+}
+
+.report-card {
+  padding: var(--space-lg);
+}
+
+.report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+}
+
+.report-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-badge.compliant {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.status-badge.pending {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+.report-card h4 {
+  font-size: 1.125rem;
+  margin-bottom: var(--space-sm);
+}
+
+.report-meta {
+  display: flex;
+  gap: var(--space-md);
+  margin-bottom: var(--space-sm);
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.report-type {
+  font-weight: 500;
+}
+
+.last-generated {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: var(--space-md);
+}
+
+.report-actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.tax-section h3 {
+  font-size: 1.25rem;
+  margin-bottom: var(--space-lg);
+}
+
+.tax-forms {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.tax-form-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+}
+
+.tax-form-item > div {
+  flex: 1;
+}
+
+.tax-form-item h4 {
+  font-size: 1rem;
+  margin-bottom: var(--space-xs);
+}
+
+.tax-form-item p {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+

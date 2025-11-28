@@ -1,0 +1,266 @@
+.chart-of-accounts-page {
+  padding: 2rem;
+  min-height: 100vh;
+  background: #f5f7fa;
+}
+
+.coa-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+}
+
+.coa-header h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 0.5rem 0;
+}
+
+.coa-subtitle {
+  color: #6b7280;
+  margin: 0;
+}
+
+.coa-toolbar {
+  margin-bottom: 1.5rem;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  max-width: 400px;
+}
+
+.search-box input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 0.95rem;
+}
+
+.coa-content {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 1.5rem;
+}
+
+.coa-tree {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.coa-table-header {
+  display: grid;
+  grid-template-columns: 40px 100px 1fr 150px 100px 100px;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #6b7280;
+  text-transform: uppercase;
+}
+
+.account-row {
+  display: grid;
+  grid-template-columns: 40px 100px 1fr 150px 100px 100px;
+  gap: 1rem;
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+  transition: background 0.2s;
+  align-items: center;
+}
+
+.account-row:hover {
+  background: #f9fafb;
+}
+
+.account-row.selected {
+  background: #eff6ff;
+  border-left: 3px solid #3b82f6;
+}
+
+.account-expand {
+  display: flex;
+  align-items: center;
+}
+
+.expand-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+}
+
+.expand-btn:hover {
+  color: #1a1a1a;
+}
+
+.expand-spacer {
+  width: 24px;
+}
+
+.account-code {
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-weight: 600;
+  color: #1a1a1a;
+  font-size: 0.875rem;
+}
+
+.account-name {
+  color: #1a1a1a;
+  font-size: 0.95rem;
+}
+
+.account-type {
+  font-size: 0.875rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-weight: 500;
+  display: inline-block;
+  width: fit-content;
+}
+
+.account-type.asset {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.account-type.liability {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.account-type.equity {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.account-type.income {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.account-type.expense {
+  background: #fce7f3;
+  color: #9f1239;
+}
+
+.account-type.default {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.account-reconcile {
+  display: flex;
+  align-items: center;
+}
+
+.reconcile-badge {
+  background: #10b981;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.account-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  color: #6b7280;
+  border-radius: 6px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+.action-btn:hover {
+  background: #f3f4f6;
+  color: #1a1a1a;
+}
+
+.action-btn.delete:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.account-children {
+  background: #fafbfc;
+}
+
+.coa-details {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 1.5rem;
+  height: fit-content;
+  position: sticky;
+  top: 2rem;
+}
+
+.coa-details h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 1.5rem 0;
+  color: #1a1a1a;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.detail-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.detail-item label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.detail-item span {
+  font-size: 0.95rem;
+  color: #1a1a1a;
+}
+
+@media (max-width: 1024px) {
+  .coa-content {
+    grid-template-columns: 1fr;
+  }
+
+  .coa-details {
+    position: static;
+  }
+}
+

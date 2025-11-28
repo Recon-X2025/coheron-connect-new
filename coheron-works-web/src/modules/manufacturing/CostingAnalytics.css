@@ -1,0 +1,283 @@
+.costing-analytics-page {
+  padding: 2rem;
+  background: #f5f5f5;
+  min-height: 100vh;
+}
+
+.analytics-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.analytics-header h1 {
+  margin: 0 0 0.5rem 0;
+  font-size: 2rem;
+  color: #333;
+}
+
+.analytics-subtitle {
+  margin: 0;
+  color: #666;
+  font-size: 0.9375rem;
+}
+
+.date-filters {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.date-input {
+  padding: 0.75rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 0.9375rem;
+}
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.summary-card {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.summary-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.summary-icon.total {
+  background: #dbeafe;
+  color: #3b82f6;
+}
+
+.summary-icon.actual {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.summary-icon.variance-positive {
+  background: #d1fae5;
+  color: #10b981;
+}
+
+.summary-icon.variance-negative {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.summary-icon.mos {
+  background: #f3e8ff;
+  color: #8b5cf6;
+}
+
+.summary-icon.avg-variance {
+  background: #fef3c7;
+  color: #f59e0b;
+}
+
+.summary-content {
+  flex: 1;
+}
+
+.summary-label {
+  font-size: 0.875rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+}
+
+.summary-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.summary-value.positive {
+  color: #10b981;
+}
+
+.summary-value.negative {
+  color: #ef4444;
+}
+
+.summary-percent {
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 0.25rem;
+}
+
+.cost-breakdown-section,
+.oee-section {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.cost-breakdown-section h2,
+.oee-section h2 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.25rem;
+  color: #333;
+}
+
+.breakdown-table-container {
+  overflow-x: auto;
+}
+
+.breakdown-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.breakdown-table thead {
+  background: #f9f9f9;
+}
+
+.breakdown-table th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #333;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.breakdown-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.9375rem;
+}
+
+.breakdown-table tbody tr:hover {
+  background: #fafafa;
+}
+
+.variance-positive {
+  color: #10b981;
+  font-weight: 500;
+}
+
+.variance-negative {
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.oee-averages {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.oee-metric {
+  background: #f9f9f9;
+  padding: 1rem;
+  border-radius: 6px;
+}
+
+.oee-label {
+  font-size: 0.875rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.oee-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.75rem;
+}
+
+.oee-value.overall {
+  color: #875A7B;
+  font-size: 1.75rem;
+}
+
+.oee-bar {
+  width: 100%;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.oee-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+
+.oee-bar-fill.availability {
+  background: #3b82f6;
+}
+
+.oee-bar-fill.performance {
+  background: #f59e0b;
+}
+
+.oee-bar-fill.quality {
+  background: #10b981;
+}
+
+.oee-bar-fill.overall {
+  background: #875A7B;
+}
+
+.oee-tracking-table-container {
+  overflow-x: auto;
+}
+
+.oee-tracking-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.oee-tracking-table thead {
+  background: #f9f9f9;
+}
+
+.oee-tracking-table th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #333;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.oee-tracking-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.875rem;
+}
+
+.oee-tracking-table tbody tr:hover {
+  background: #fafafa;
+}
+
+.oee-tracking-table strong {
+  color: #875A7B;
+}
+

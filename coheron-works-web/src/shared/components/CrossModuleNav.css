@@ -1,0 +1,154 @@
+.cross-module-nav {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid #e0e0e0;
+  margin-bottom: 1.5rem;
+}
+
+.breadcrumbs {
+  margin-bottom: 1.5rem;
+}
+
+.breadcrumb-list {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex-wrap: wrap;
+}
+
+.breadcrumb-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.breadcrumb-link {
+  color: #875A7B;
+  text-decoration: none;
+  font-size: 0.875rem;
+  transition: color 0.2s;
+}
+
+.breadcrumb-link:hover {
+  color: #6b4670;
+  text-decoration: underline;
+}
+
+.breadcrumb-current {
+  color: #333;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.breadcrumb-separator {
+  color: #999;
+  font-size: 0.875rem;
+}
+
+.related-records {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.related-title,
+.quick-links-title {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.related-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.related-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  text-decoration: none;
+  color: #333;
+  transition: all 0.2s;
+}
+
+.related-item:hover {
+  background: #f0f0f0;
+  border-color: #875A7B;
+  color: #875A7B;
+}
+
+.related-icon {
+  flex-shrink: 0;
+  color: #875A7B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.related-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.related-model {
+  font-size: 0.75rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.related-name {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.quick-links-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+
+.quick-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  text-decoration: none;
+  color: #333;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.quick-link:hover {
+  background: #875A7B;
+  border-color: #875A7B;
+  color: white;
+}
+
+.quick-link svg {
+  flex-shrink: 0;
+  color: #875A7B;
+  transition: color 0.2s;
+}
+
+.quick-link:hover svg {
+  color: white;
+}
+

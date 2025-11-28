@@ -1,0 +1,103 @@
+.pos-interface {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #f5f5f5;
+  overflow: hidden;
+}
+
+.pos-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: white;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.pos-title h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  color: #333;
+}
+
+.customer-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: #f0f0f0;
+  border-radius: 20px;
+  font-size: 0.9375rem;
+}
+
+.customer-badge button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.customer-badge button:hover {
+  color: #333;
+}
+
+.pos-main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.pos-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: white;
+}
+
+.product-search {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  background: white;
+}
+
+.product-search svg {
+  color: #666;
+  flex-shrink: 0;
+}
+
+.product-search input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 1rem;
+  outline: none;
+}
+
+.product-search input:focus {
+  border-color: #875A7B;
+  box-shadow: 0 0 0 3px rgba(135, 90, 123, 0.1);
+}
+
+.pos-right {
+  width: 400px;
+  display: flex;
+  flex-direction: column;
+  background: white;
+}
+
+@media (max-width: 1024px) {
+  .pos-right {
+    width: 350px;
+  }
+}
+

@@ -1,0 +1,158 @@
+.attendance-leave-integration {
+  padding: var(--space-lg) 0;
+}
+
+.integration-header {
+  margin-bottom: var(--space-xl);
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-content h3 {
+  font-size: 1.25rem;
+  margin-bottom: var(--space-xs);
+}
+
+.header-content p {
+  color: var(--text-muted);
+}
+
+.period-select {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.period-select label {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.period-select input {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  color: var(--text-main);
+}
+
+.sync-section {
+  margin-bottom: var(--space-xl);
+}
+
+.sync-section h4 {
+  font-size: 1.125rem;
+  margin-bottom: var(--space-md);
+}
+
+.sync-actions {
+  display: flex;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.sync-status {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background: var(--bg-hover);
+  border-radius: var(--radius-md);
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.status-item .success {
+  color: #10b981;
+}
+
+.status-item .warning {
+  color: #f59e0b;
+}
+
+.attendance-table-section {
+  margin-bottom: var(--space-xl);
+}
+
+.attendance-table-section h4 {
+  font-size: 1.125rem;
+  margin-bottom: var(--space-md);
+}
+
+.attendance-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.attendance-table thead {
+  background: var(--bg-surface);
+}
+
+.attendance-table th {
+  padding: var(--space-md);
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.attendance-table td {
+  padding: var(--space-md);
+  border-top: 1px solid var(--border-light);
+}
+
+.attendance-table tbody tr:hover {
+  background: var(--bg-hover);
+}
+
+.employee-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.emp-id {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.emp-name {
+  font-weight: 500;
+}
+
+.leave-types-section h4 {
+  font-size: 1.125rem;
+  margin-bottom: var(--space-md);
+}
+
+.leave-types {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.leave-type-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-md);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+}
+
+.leave-name {
+  font-weight: 500;
+}
+
+.leave-balance {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+

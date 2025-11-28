@@ -1,0 +1,203 @@
+import { useState } from 'react';
+import { Plus, Save, Eye, X } from 'lucide-react';
+import { Button } from '../../../components/Button';
+import './PageBuilder.css';
+
+interface Block {
+  id: string;
+  type: string;
+  config: Record<string, any>;
+}
+
+export const PageBuilder = () => {
+  const [blocks, setBlocks] = useState<Block[]>([]);
+  const [selectedBlock, setSelectedBlock] = useState<string | null>(null);
+  const [previewMode, setPreviewMode] = useState(false);
+
+  const blockTypes = [
+    { type: 'text', label: 'Text', icon: '📝' },
+    { type: 'image', label: 'Image', icon: '🖼️' },
+    { type: 'gallery', label: 'Gallery', icon: '🖼️' },
+    { type: 'product', label: 'Product', icon: '📦' },
+    { type: 'cta', label: 'Call to Action', icon: '🎯' },
+    { type: 'form', label: 'Form', icon: '📋' },
+    { type: 'video', label: 'Video', icon: '🎥' },
+  ];
+
+  const addBlock = (type: string) => {
+    const newBlock: Block = {
+      id: `block-${Date.now()}`,
+      type,
+      config: {},
+    };
+    setBlocks([...blocks, newBlock]);
+    setSelectedBlock(newBlock.id);
+  };
+
+  const removeBlock = (id: string) => {
+    setBlocks(blocks.filter((b) => b.id !== id));
+    if (selectedBlock === id) {
+      setSelectedBlock(null);
+    }
+  };
+
+  const updateBlock = (id: string, config: Record<string, any>) => {
+    setBlocks(
+      blocks.map((b) => (b.id === id ? { ...b, config: { ...b.config, ...config } } : b))
+    );
+  };
+
+  return (
+    <div className="page-builder">
+      <div className="page-builder-header">
+        <h2>Page Builder</h2>
+        <div className="page-builder-actions">
+          <Button
+            icon={<Eye size={18} />}
+            onClick={() => setPreviewMode(!previewMode)}
+            variant="secondary"
+          >
+            {previewMode ? 'Edit' : 'Preview'}
+          </Button>
+          <Button icon={<Save size={18} />}>Save Page</Button>
+        </div>
+      </div>
+
+      <div className="page-builder-layout">
+        {!previewMode && (
+          <div className="page-builder-sidebar">
+            <h3>Blocks</h3>
+            <div className="block-types">
+              {blockTypes.map((bt) => (
+                <button
+                  key={bt.type}
+                  className="block-type-btn"
+                  onClick={() => addBlock(bt.type)}
+                >
+                  <span className="block-icon">{bt.icon}</span>
+                  <span>{bt.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="page-builder-canvas">
+          {blocks.length === 0 ? (
+            <div className="empty-canvas">
+              <p>Start building your page by adding blocks</p>
+              <div className="block-types-inline">
+                {blockTypes.map((bt) => (
+                  <button
+                    key={bt.type}
+                    className="block-type-btn"
+                    onClick={() => addBlock(bt.type)}
+                  >
+                    <span className="block-icon">{bt.icon}</span>
+                    <span>{bt.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            blocks.map((block) => (
+              <div
+                key={block.id}
+                className={`page-block ${selectedBlock === block.id ? 'selected' : ''}`}
+                onClick={() => setSelectedBlock(block.id)}
+              >
+                {!previewMode && (
+                  <div className="block-header">
+                    <span className="block-type-label">{block.type}</span>
+                    <button
+                      className="block-remove-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeBlock(block.id);
+                      }}
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                )}
+                <div className="block-content">
+                  {renderBlock(block, (config) => updateBlock(block.id, config))}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {!previewMode && selectedBlock && (
+          <div className="page-builder-properties">
+            <h3>Block Properties</h3>
+            <BlockProperties
+              block={blocks.find((b) => b.id === selectedBlock)!}
+              onUpdate={(config) => updateBlock(selectedBlock, config)}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const renderBlock = (block: Block, onUpdate: (config: Record<string, any>) => void) => {
+  switch (block.type) {
+    case 'text':
+      return (
+        <div className="block-text">
+          <textarea
+            value={block.config.content || ''}
+            onChange={(e) => onUpdate({ content: e.target.value })}
+            placeholder="Enter text content..."
+            rows={4}
+          />
+        </div>
+      );
+    case 'image':
+      return (
+        <div className="block-image">
+          <input
+            type="text"
+            value={block.config.url || ''}
+            onChange={(e) => onUpdate({ url: e.target.value })}
+            placeholder="Image URL"
+          />
+          {block.config.url && <img src={block.config.url} alt={block.config.alt || ''} />}
+        </div>
+      );
+    case 'product':
+      return (
+        <div className="block-product">
+          <input
+            type="number"
+            value={block.config.productId || ''}
+            onChange={(e) => onUpdate({ productId: e.target.value })}
+            placeholder="Product ID"
+          />
+        </div>
+      );
+    default:
+      return <div className="block-placeholder">{block.type} block</div>;
+  }
+};
+
+const BlockProperties = ({
+  block,
+  onUpdate,
+}: {
+  block: Block;
+  onUpdate: (config: Record<string, any>) => void;
+}) => {
+  return (
+    <div className="block-properties">
+      <div className="property-group">
+        <label>Block Type</label>
+        <input type="text" value={block.type} disabled />
+      </div>
+      {/* Add more property fields based on block type */}
+    </div>
+  );
+};
+

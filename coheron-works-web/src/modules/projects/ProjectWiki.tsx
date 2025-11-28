@@ -1,0 +1,157 @@
+import { useState, useEffect } from 'react';
+import { BookOpen, Plus, Search, FileText } from 'lucide-react';
+import { wikiService, type KnowledgeSpace, type WikiPage } from '../../services/wikiService';
+import { Button } from '../../components/Button';
+import { LoadingSpinner } from '../../components/LoadingSpinner';
+import './ProjectWiki.css';
+
+interface ProjectWikiProps {
+  projectId: number;
+}
+
+export const ProjectWiki = ({ projectId }: ProjectWikiProps) => {
+  const [spaces, setSpaces] = useState<KnowledgeSpace[]>([]);
+  const [pages, setPages] = useState<WikiPage[]>([]);
+  const [selectedSpace, setSelectedSpace] = useState<KnowledgeSpace | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadSpaces();
+  }, [projectId]);
+
+  useEffect(() => {
+    if (selectedSpace) {
+      loadPages(selectedSpace.id);
+    }
+  }, [selectedSpace]);
+
+  const loadSpaces = async () => {
+    try {
+      setLoading(true);
+      const spacesData = await wikiService.getSpaces({ project_id: projectId });
+      setSpaces(spacesData);
+      if (spacesData.length > 0) {
+        setSelectedSpace(spacesData[0]);
+      }
+    } catch (error) {
+      console.error('Failed to load spaces:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadPages = async (spaceId: number) => {
+    try {
+      const pagesData = await wikiService.getPages(spaceId);
+      setPages(pagesData);
+    } catch (error) {
+      console.error('Failed to load pages:', error);
+    }
+  };
+
+  if (loading) {
+    return <LoadingSpinner size="medium" message="Loading wiki..." />;
+  }
+
+  return (
+    <div className="project-wiki">
+      <div className="wiki-header">
+        <div>
+          <h2>Knowledge Base</h2>
+          <p>Documentation and knowledge sharing for this project</p>
+        </div>
+        <Button icon={<Plus size={16} />}>New Page</Button>
+      </div>
+
+      <div className="wiki-layout">
+        {/* Spaces Sidebar */}
+        <div className="wiki-spaces">
+          <div className="spaces-header">
+            <BookOpen size={18} />
+            <span>Spaces</span>
+          </div>
+          <div className="spaces-list">
+            {spaces.map(space => (
+              <button
+                key={space.id}
+                className={`space-item ${selectedSpace?.id === space.id ? 'active' : ''}`}
+                onClick={() => setSelectedSpace(space)}
+              >
+                <span className="space-name">{space.name}</span>
+                <span className="space-key">{space.key}</span>
+              </button>
+            ))}
+            {spaces.length === 0 && (
+              <div className="empty-spaces">
+                <p>No spaces yet</p>
+                <Button size="small" icon={<Plus size={14} />}>
+                  Create Space
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Pages Content */}
+        <div className="wiki-content">
+          {selectedSpace ? (
+            <>
+              <div className="pages-header">
+                <h3>{selectedSpace.name}</h3>
+                {selectedSpace.description && <p>{selectedSpace.description}</p>}
+              </div>
+
+              <div className="pages-toolbar">
+                <div className="search-box">
+                  <Search size={18} />
+                  <input type="text" placeholder="Search pages..." />
+                </div>
+                <Button icon={<Plus size={16} />} size="small">
+                  New Page
+                </Button>
+              </div>
+
+              <div className="pages-list">
+                {pages.length === 0 ? (
+                  <div className="empty-pages">
+                    <FileText size={48} />
+                    <h3>No pages yet</h3>
+                    <p>Create your first page to get started</p>
+                    <Button icon={<Plus size={16} />}>Create Page</Button>
+                  </div>
+                ) : (
+                  pages.map(page => (
+                    <div key={page.id} className="page-item">
+                      <FileText size={20} />
+                      <div className="page-info">
+                        <h4>{page.title}</h4>
+                        {page.excerpt && <p>{page.excerpt}</p>}
+                        <div className="page-meta">
+                          <span>{new Date(page.updated_at).toLocaleDateString()}</span>
+                          {page.labels && page.labels.length > 0 && (
+                            <div className="page-labels">
+                              {page.labels.map((label, i) => (
+                                <span key={i} className="label">{label}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="empty-state">
+              <BookOpen size={48} />
+              <h3>No space selected</h3>
+              <p>Select a space or create a new one to get started</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+

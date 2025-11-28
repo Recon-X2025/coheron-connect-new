@@ -1,0 +1,84 @@
+.gmail-integration {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid #e0e0e0;
+}
+
+.integration-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.integration-header svg {
+  color: #875A7B;
+  flex-shrink: 0;
+}
+
+.integration-header h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.125rem;
+  color: #333;
+}
+
+.integration-header p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.integration-status {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+}
+
+.integration-status.connected {
+  background: #e8f5e9;
+  color: #388e3c;
+}
+
+.disconnect-btn {
+  margin-left: auto;
+  padding: 0.5rem 1rem;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.disconnect-btn:hover {
+  background: #fee;
+  border-color: #fcc;
+  color: #c33;
+}
+
+.connect-btn {
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  background: #875A7B;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.connect-btn:hover:not(:disabled) {
+  background: #6b4670;
+}
+
+.connect-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+

@@ -1,0 +1,161 @@
+### CRM RBAC API Test File
+### Use with REST Client extension in VS Code or similar tool
+### Make sure to set your JWT token in the variables below
+
+@baseUrl = http://localhost:3000/api
+@token = YOUR_JWT_TOKEN_HERE
+
+### ============================================
+### 1. DISCOUNT APPROVAL ENDPOINTS
+### ============================================
+
+### Request discount approval
+POST {{baseUrl}}/crm-rbac/discount-approvals
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "quote_id": 1,
+  "discount_percentage": 18.5,
+  "original_amount": 10000,
+  "discounted_amount": 8150,
+  "justification": "Bulk order discount for strategic customer"
+}
+
+### Get pending discount approvals (requires approve_discount permission)
+GET {{baseUrl}}/crm-rbac/discount-approvals/pending
+Authorization: Bearer {{token}}
+
+### Approve discount
+POST {{baseUrl}}/crm-rbac/discount-approvals/1/approve
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reason": "Approved for strategic account"
+}
+
+### Reject discount
+POST {{baseUrl}}/crm-rbac/discount-approvals/1/reject
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reason": "Discount exceeds threshold"
+}
+
+### ============================================
+### 2. TERRITORY MANAGEMENT ENDPOINTS
+### ============================================
+
+### Get all territories
+GET {{baseUrl}}/crm-rbac/territories
+Authorization: Bearer {{token}}
+
+### Assign user to territory
+POST {{baseUrl}}/crm-rbac/territories/1/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "user_id": 2,
+  "is_primary": true
+}
+
+### Auto-assign lead to territory
+POST {{baseUrl}}/crm-rbac/leads/1/assign-territory
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "zip_code": "560001",
+  "state": "Karnataka",
+  "country": "India",
+  "industry": "IT",
+  "company_size": "Large"
+}
+
+### ============================================
+### 3. EXPORT APPROVAL ENDPOINTS
+### ============================================
+
+### Request export approval
+POST {{baseUrl}}/crm-rbac/export-approvals
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "resource_type": "leads",
+  "record_count": 1500,
+  "filters": {
+    "stage": "qualified",
+    "date_from": "2024-01-01"
+  },
+  "justification": "Monthly report for management review"
+}
+
+### Get pending export approvals
+GET {{baseUrl}}/crm-rbac/export-approvals/pending
+Authorization: Bearer {{token}}
+
+### ============================================
+### 4. PARTNER DEAL REGISTRATION ENDPOINTS
+### ============================================
+
+### Register partner deal
+POST {{baseUrl}}/crm-rbac/partner-deals/register
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "lead_id": 1,
+  "auto_approve": false
+}
+
+### Check partner access to deal
+GET {{baseUrl}}/crm-rbac/partner-deals/1/access
+Authorization: Bearer {{token}}
+
+### ============================================
+### 5. ROLE SIMULATION ENDPOINT
+### ============================================
+
+### Simulate user permissions (requires system.rbac.manage permission)
+GET {{baseUrl}}/crm-rbac/simulate/1?resource_type=quote&action=approve
+Authorization: Bearer {{token}}
+
+### Get all permissions for a user
+GET {{baseUrl}}/crm-rbac/simulate/1
+Authorization: Bearer {{token}}
+
+### ============================================
+### 6. FIELD-LEVEL ACCESS CHECK
+### ============================================
+
+### Check field access
+GET {{baseUrl}}/crm-rbac/fields/check?resource_type=quote&resource_id=1&field_name=discount_percentage&action=edit
+Authorization: Bearer {{token}}
+
+### ============================================
+### 7. RBAC MANAGEMENT ENDPOINTS (from /api/rbac)
+### ============================================
+
+### Get all roles
+GET {{baseUrl}}/rbac/roles
+Authorization: Bearer {{token}}
+
+### Get user permissions
+GET {{baseUrl}}/rbac/users/1/permissions
+Authorization: Bearer {{token}}
+
+### Assign role to user
+POST {{baseUrl}}/rbac/users/1/roles
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "role_id": 5,
+  "expires_at": null,
+  "notes": "Assigned for CRM access"
+}
+
