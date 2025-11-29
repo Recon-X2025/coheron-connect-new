@@ -125,6 +125,152 @@ export const FinancialReports = () => {
     );
   };
 
+  const renderBalanceSheet = () => {
+    if (!reportData) return null;
+    
+    const totalAssets = (reportData.assets || []).reduce((sum: number, item: any) => sum + parseFloat(item.balance || 0), 0);
+    const totalLiabilities = (reportData.liabilities || []).reduce((sum: number, item: any) => sum + parseFloat(item.balance || 0), 0);
+    const totalEquity = (reportData.equity || []).reduce((sum: number, item: any) => sum + parseFloat(item.balance || 0), 0);
+    const totalLiabilitiesEquity = totalLiabilities + totalEquity;
+
+    return (
+      <div className="bs-report">
+        <div className="bs-section">
+          <h3>Assets</h3>
+          <div className="bs-items">
+            {reportData.assets?.map((item: any) => (
+              <div key={item.account_type} className="bs-item">
+                <span>{item.account_type.replace(/_/g, ' ')}</span>
+                <span className="amount">{formatInLakhsCompact(item.balance || 0)}</span>
+              </div>
+            ))}
+          </div>
+          <div className="bs-total">
+            <span>Total Assets</span>
+            <span className="amount">{formatInLakhsCompact(totalAssets)}</span>
+          </div>
+        </div>
+
+        <div className="bs-section">
+          <h3>Liabilities</h3>
+          <div className="bs-items">
+            {reportData.liabilities?.map((item: any) => (
+              <div key={item.account_type} className="bs-item">
+                <span>{item.account_type.replace(/_/g, ' ')}</span>
+                <span className="amount">{formatInLakhsCompact(item.balance || 0)}</span>
+              </div>
+            ))}
+          </div>
+          <div className="bs-total">
+            <span>Total Liabilities</span>
+            <span className="amount">{formatInLakhsCompact(totalLiabilities)}</span>
+          </div>
+        </div>
+
+        <div className="bs-section">
+          <h3>Equity</h3>
+          <div className="bs-items">
+            {reportData.equity?.map((item: any) => (
+              <div key={item.account_type} className="bs-item">
+                <span>{item.account_type.replace(/_/g, ' ')}</span>
+                <span className="amount">{formatInLakhsCompact(item.balance || 0)}</span>
+              </div>
+            ))}
+          </div>
+          <div className="bs-total">
+            <span>Total Equity</span>
+            <span className="amount">{formatInLakhsCompact(totalEquity)}</span>
+          </div>
+        </div>
+
+        <div className="bs-net">
+          <span>Total Liabilities & Equity</span>
+          <span className="amount">{formatInLakhsCompact(totalLiabilitiesEquity)}</span>
+        </div>
+      </div>
+    );
+  };
+
+  const renderCashFlow = () => {
+    if (!reportData) return null;
+    
+    const operatingCash = (reportData.operating?.cash_in || 0) - (reportData.operating?.cash_out || 0);
+    const investingCash = (reportData.investing?.cash_in || 0) - (reportData.investing?.cash_out || 0);
+    const financingCash = (reportData.financing?.cash_in || 0) - (reportData.financing?.cash_out || 0);
+    const netCashFlow = operatingCash + investingCash + financingCash;
+
+    return (
+      <div className="cf-report">
+        <div className="cf-section">
+          <h3>Operating Activities</h3>
+          <div className="cf-items">
+            <div className="cf-item">
+              <span>Cash In</span>
+              <span className="amount positive">{formatInLakhsCompact(reportData.operating?.cash_in || 0)}</span>
+            </div>
+            <div className="cf-item">
+              <span>Cash Out</span>
+              <span className="amount negative">{formatInLakhsCompact(reportData.operating?.cash_out || 0)}</span>
+            </div>
+          </div>
+          <div className="cf-total">
+            <span>Net Operating Cash Flow</span>
+            <span className={`amount ${operatingCash >= 0 ? 'positive' : 'negative'}`}>
+              {formatInLakhsCompact(operatingCash)}
+            </span>
+          </div>
+        </div>
+
+        <div className="cf-section">
+          <h3>Investing Activities</h3>
+          <div className="cf-items">
+            <div className="cf-item">
+              <span>Cash In</span>
+              <span className="amount positive">{formatInLakhsCompact(reportData.investing?.cash_in || 0)}</span>
+            </div>
+            <div className="cf-item">
+              <span>Cash Out</span>
+              <span className="amount negative">{formatInLakhsCompact(reportData.investing?.cash_out || 0)}</span>
+            </div>
+          </div>
+          <div className="cf-total">
+            <span>Net Investing Cash Flow</span>
+            <span className={`amount ${investingCash >= 0 ? 'positive' : 'negative'}`}>
+              {formatInLakhsCompact(investingCash)}
+            </span>
+          </div>
+        </div>
+
+        <div className="cf-section">
+          <h3>Financing Activities</h3>
+          <div className="cf-items">
+            <div className="cf-item">
+              <span>Cash In</span>
+              <span className="amount positive">{formatInLakhsCompact(reportData.financing?.cash_in || 0)}</span>
+            </div>
+            <div className="cf-item">
+              <span>Cash Out</span>
+              <span className="amount negative">{formatInLakhsCompact(reportData.financing?.cash_out || 0)}</span>
+            </div>
+          </div>
+          <div className="cf-total">
+            <span>Net Financing Cash Flow</span>
+            <span className={`amount ${financingCash >= 0 ? 'positive' : 'negative'}`}>
+              {formatInLakhsCompact(financingCash)}
+            </span>
+          </div>
+        </div>
+
+        <div className="cf-net">
+          <span>Net Cash Flow</span>
+          <span className={`amount ${netCashFlow >= 0 ? 'positive' : 'negative'}`}>
+            {formatInLakhsCompact(netCashFlow)}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="financial-reports-page">
       <div className="container">
@@ -192,10 +338,10 @@ export const FinancialReports = () => {
             {activeReport === 'trial-balance' && renderTrialBalance()}
             {activeReport === 'profit-loss' && renderProfitLoss()}
             {activeReport === 'balance-sheet' && (
-              <div className="fr-placeholder">Balance Sheet report coming soon...</div>
+              {renderBalanceSheet()}
             )}
             {activeReport === 'cash-flow' && (
-              <div className="fr-placeholder">Cash Flow report coming soon...</div>
+              {renderCashFlow()}
             )}
           </div>
         )}
