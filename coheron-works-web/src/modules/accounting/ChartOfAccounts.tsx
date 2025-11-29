@@ -3,6 +3,7 @@ import { Search, Plus, Edit, Trash2, ChevronRight, ChevronDown, X } from 'lucide
 import { Button } from '../../components/Button';
 import { chartOfAccountsService } from '../../services/accountingService';
 import { showToast } from '../../components/Toast';
+import { AccountForm } from './components/AccountForm';
 import './ChartOfAccounts.css';
 
 interface Account {
@@ -25,6 +26,7 @@ export const ChartOfAccounts = () => {
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [showAccountForm, setShowAccountForm] = useState(false);
 
   const handleEditAccount = (account: Account) => {
     setEditingAccount(account);
@@ -195,7 +197,7 @@ export const ChartOfAccounts = () => {
             <h1>Chart of Accounts</h1>
             <p className="coa-subtitle">{accounts.length} accounts</p>
           </div>
-          <Button icon={<Plus size={20} />} onClick={() => showToast('Account creation form coming soon', 'info')}>New Account</Button>
+          <Button icon={<Plus size={20} />} onClick={() => setShowAccountForm(true)}>New Account</Button>
         </div>
 
         <div className="coa-toolbar">
@@ -305,6 +307,16 @@ export const ChartOfAccounts = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {showAccountForm && (
+          <AccountForm
+            onClose={() => setShowAccountForm(false)}
+            onSave={() => {
+              setShowAccountForm(false);
+              loadAccounts();
+            }}
+          />
         )}
       </div>
     </div>

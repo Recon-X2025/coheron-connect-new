@@ -13,7 +13,6 @@ interface ShiftFormProps {
 
 export const ShiftForm = ({ onClose, onSave, initialData }: ShiftFormProps) => {
   const [loading, setLoading] = useState(false);
-  const [employees, setEmployees] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     start_time: '09:00',
@@ -24,7 +23,6 @@ export const ShiftForm = ({ onClose, onSave, initialData }: ShiftFormProps) => {
   });
 
   useEffect(() => {
-    loadEmployees();
     if (initialData) {
       setFormData({
         name: initialData.name || '',
@@ -37,25 +35,11 @@ export const ShiftForm = ({ onClose, onSave, initialData }: ShiftFormProps) => {
     }
   }, [initialData]);
 
-  const loadEmployees = async () => {
-    try {
-      const data = await apiService.get<any[]>('employees');
-      setEmployees(data);
-    } catch (error) {
-      console.error('Error loading employees:', error);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const submitData = {
-        ...formData,
-        break_duration: parseInt(formData.break_duration) || 0,
-      };
-
       // For now, show success - backend API can be added later
       showToast('Shift created successfully', 'success');
       onSave();
