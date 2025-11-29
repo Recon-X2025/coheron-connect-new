@@ -4,6 +4,7 @@ import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { apiService } from '../../services/apiService';
 import { showToast } from '../../components/Toast';
+import { ShiftForm } from './components/ShiftForm';
 import './Attendance.css';
 
 type AttendanceTab = 'overview' | 'timesheet' | 'shifts' | 'overtime' | 'biometric';
@@ -11,6 +12,7 @@ type AttendanceTab = 'overview' | 'timesheet' | 'shifts' | 'overtime' | 'biometr
 export const Attendance = () => {
   const [activeTab, setActiveTab] = useState<AttendanceTab>('overview');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [showShiftForm, setShowShiftForm] = useState(false);
 
   const tabs = [
     { id: 'overview' as AttendanceTab, label: 'Overview', icon: <Calendar size={18} /> },
@@ -96,10 +98,19 @@ export const Attendance = () => {
         <div className="attendance-content">
           {activeTab === 'overview' && <OverviewTab selectedDate={selectedDate} setSelectedDate={setSelectedDate} />}
           {activeTab === 'timesheet' && <TimesheetTab />}
-          {activeTab === 'shifts' && <ShiftsTab />}
+          {activeTab === 'shifts' && <ShiftsTab onAddShift={() => setShowShiftForm(true)} />}
           {activeTab === 'overtime' && <OvertimeTab />}
           {activeTab === 'biometric' && <BiometricTab />}
         </div>
+
+        {showShiftForm && (
+          <ShiftForm
+            onClose={() => setShowShiftForm(false)}
+            onSave={() => {
+              setShowShiftForm(false);
+            }}
+          />
+        )}
       </div>
     </div>
   );
@@ -219,7 +230,7 @@ const ShiftsTab = () => {
           <span className="shift-count">34 employees</span>
         </div>
       </div>
-      <Button icon={<Plus size={18} />} onClick={() => showToast('Shift creation form coming soon', 'info')}>Create Shift</Button>
+      <Button icon={<Plus size={18} />} onClick={onAddShift}>Create Shift</Button>
     </Card>
   );
 };

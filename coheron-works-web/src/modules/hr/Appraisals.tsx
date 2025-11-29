@@ -4,6 +4,7 @@ import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { apiService } from '../../services/apiService';
 import { AppraisalForm } from './components/AppraisalForm';
+import { GoalForm } from './components/GoalForm';
 import { showToast } from '../../components/Toast';
 import './Appraisals.css';
 
@@ -15,6 +16,7 @@ export const Appraisals = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<AppraisalTab>('overview');
   const [showForm, setShowForm] = useState(false);
+  const [showGoalForm, setShowGoalForm] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -114,7 +116,7 @@ export const Appraisals = () => {
         <div className="appraisals-content">
           {activeTab === 'overview' && <OverviewTab appraisals={appraisals} getEmployeeName={getEmployeeName} />}
           {activeTab === 'appraisals' && <AppraisalsTab appraisals={appraisals} getEmployeeName={getEmployeeName} />}
-          {activeTab === 'goals' && <GoalsTab />}
+          {activeTab === 'goals' && <GoalsTab onAddGoal={() => setShowGoalForm(true)} />}
           {activeTab === 'feedback' && <FeedbackTab />}
           {activeTab === 'reports' && <ReportsTab />}
         </div>
@@ -125,6 +127,16 @@ export const Appraisals = () => {
             onClose={() => setShowForm(false)}
             onSave={() => {
               setShowForm(false);
+              loadData();
+            }}
+          />
+        )}
+
+        {showGoalForm && (
+          <GoalForm
+            onClose={() => setShowGoalForm(false)}
+            onSave={() => {
+              setShowGoalForm(false);
               loadData();
             }}
           />
@@ -204,7 +216,7 @@ const AppraisalsTab = ({ appraisals, getEmployeeName }: { appraisals: any[]; get
   );
 };
 
-const GoalsTab = () => {
+const GoalsTab = ({ onAddGoal }: { onAddGoal: () => void }) => {
   const goals = [
     { id: 1, title: 'Increase Sales by 20%', employee: 'Rajesh Kumar', progress: 75, status: 'on_track' },
     { id: 2, title: 'Complete Project X', employee: 'Priya Sharma', progress: 45, status: 'at_risk' },
@@ -233,7 +245,7 @@ const GoalsTab = () => {
           </div>
         ))}
       </div>
-      <Button icon={<Plus size={18} />} onClick={() => showToast('Goal creation form coming soon', 'info')}>Add Goal</Button>
+      <Button icon={<Plus size={18} />} onClick={onAddGoal}>Add Goal</Button>
     </Card>
   );
 };
