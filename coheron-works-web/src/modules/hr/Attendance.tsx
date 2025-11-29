@@ -214,7 +214,7 @@ const TimesheetTab = () => {
   );
 };
 
-const ShiftsTab = () => {
+const ShiftsTab = ({ onAddShift }: { onAddShift: () => void }) => {
   return (
     <Card>
       <h3>Shifts & Rosters</h3>

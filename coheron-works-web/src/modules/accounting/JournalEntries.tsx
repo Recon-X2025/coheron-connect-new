@@ -4,6 +4,7 @@ import { Button } from '../../components/Button';
 import { journalEntriesService } from '../../services/accountingService';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
 import { showToast } from '../../components/Toast';
+import { JournalEntryForm } from './components/JournalEntryForm';
 import './JournalEntries.css';
 
 interface JournalEntry {
@@ -35,6 +36,8 @@ export const JournalEntries = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({ state: '', journal_id: '' });
+  const [showEntryForm, setShowEntryForm] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
 
   useEffect(() => {
     loadEntries();
@@ -57,8 +60,6 @@ export const JournalEntries = () => {
 
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   const [showViewModal, setShowViewModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
 
   const handleViewEntry = async (id: number) => {
     try {
@@ -78,7 +79,7 @@ export const JournalEntries = () => {
       const entry = entries.find(e => e.id === id);
       if (entry) {
         setEditingEntry(entry);
-        setShowEditModal(true);
+        setShowEntryForm(true);
       }
     } catch (error) {
       console.error('Error loading entry for edit:', error);
@@ -112,24 +113,6 @@ export const JournalEntries = () => {
     }
   };
 
-  const handleSaveEdit = async () => {
-    if (!editingEntry) return;
-
-    try {
-      await journalEntriesService.update(editingEntry.id, {
-        name: editingEntry.name,
-        date: editingEntry.date,
-        ref: editingEntry.ref,
-      });
-      await loadEntries();
-      setShowEditModal(false);
-      setEditingEntry(null);
-      showToast('Entry updated successfully', 'success');
-    } catch (error) {
-      console.error('Error updating entry:', error);
-      showToast('Failed to update entry. Please try again.', 'error');
-    }
-  };
 
   const filteredEntries = entries.filter(entry =>
     entry.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -158,7 +141,7 @@ export const JournalEntries = () => {
             <h1>Journal Entries</h1>
             <p className="je-subtitle">{filteredEntries.length} entries</p>
           </div>
-          <Button icon={<Plus size={20} />} onClick={() => showToast('Journal entry form coming soon', 'info')}>New Entry</Button>
+          <Button icon={<Plus size={20} />} onClick={() => setShowEntryForm(true)}>New Entry</Button>
         </div>
 
         <div className="je-filters">
@@ -334,52 +317,19 @@ export const JournalEntries = () => {
           </div>
         )}
 
-        {/* Edit Entry Modal */}
-        {showEditModal && editingEntry && (
-          <div className="modal-overlay" onClick={() => { setShowEditModal(false); setEditingEntry(null); }}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <h2>Edit Journal Entry</h2>
-                <button type="button" className="modal-close" onClick={() => { setShowEditModal(false); setEditingEntry(null); }}>
-                  <X size={20} />
-                </button>
-              </div>
-              <div className="form-group">
-                <label htmlFor="edit-entry-name">Entry Number</label>
-                <input
-                  type="text"
-                  id="edit-entry-name"
-                  name="entry-name"
-                  value={editingEntry.name}
-                  onChange={(e) => setEditingEntry({ ...editingEntry, name: e.target.value })}
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="edit-entry-date">Date</label>
-                <input
-                  type="date"
-                  id="edit-entry-date"
-                  name="entry-date"
-                  value={editingEntry.date ? (editingEntry.date.includes('T') ? editingEntry.date.split('T')[0] : editingEntry.date.split(' ')[0]) : ''}
-                  onChange={(e) => setEditingEntry({ ...editingEntry, date: e.target.value })}
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="edit-entry-ref">Reference</label>
-                <input
-                  type="text"
-                  id="edit-entry-ref"
-                  name="entry-ref"
-                  value={editingEntry.ref || ''}
-                  onChange={(e) => setEditingEntry({ ...editingEntry, ref: e.target.value })}
-                />
-              </div>
-              <div className="modal-actions">
-                <Button variant="ghost" onClick={() => { setShowEditModal(false); setEditingEntry(null); }}>Cancel</Button>
-                <Button onClick={handleSaveEdit}>Save Changes</Button>
-              </div>
-            </div>
-          </div>
+        {showEntryForm && (
+          <JournalEntryForm
+            initialData={editingEntry}
+            onClose={() => {
+              setShowEntryForm(false);
+              setEditingEntry(null);
+            }}
+            onSave={() => {
+              setShowEntryForm(false);
+              setEditingEntry(null);
+              loadEntries();
+            }}
+          />
         )}
       </div>
     </div>
