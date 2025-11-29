@@ -203,29 +203,33 @@ router.post('/', async (req, res) => {
     const num = parseInt(ticketCount.rows[0]?.count || '0') + 1;
     const ticketNumber = `TKT-${Date.now()}-${num.toString().padStart(6, '0')}`;
 
-    // Auto-assign SLA based on priority
+    // Auto-assign SLA based on priority (non-blocking)
     let slaPolicyId = null;
-    if (priority) {
-      const slaResult = await pool.query(
-        'SELECT id FROM sla_policies WHERE priority = $1 AND is_active = true LIMIT 1',
-        [priority]
-      );
-      if (slaResult.rows.length > 0) {
-        slaPolicyId = slaResult.rows[0].id;
-      }
-    }
-
-    // Calculate SLA deadlines if SLA policy exists
     let firstResponseDeadline = null;
     let resolutionDeadline = null;
-    if (slaPolicyId) {
-      const slaPolicy = await pool.query('SELECT * FROM sla_policies WHERE id = $1', [slaPolicyId]);
-      if (slaPolicy.rows.length > 0) {
-        const policy = slaPolicy.rows[0];
-        const now = new Date();
-        firstResponseDeadline = new Date(now.getTime() + policy.first_response_time_minutes * 60000);
-        resolutionDeadline = new Date(now.getTime() + policy.resolution_time_minutes * 60000);
+    
+    try {
+      if (priority) {
+        const slaResult = await pool.query(
+          'SELECT id FROM sla_policies WHERE priority = $1 AND is_active = true LIMIT 1',
+          [priority]
+        );
+        if (slaResult.rows.length > 0) {
+          slaPolicyId = slaResult.rows[0].id;
+          
+          // Calculate SLA deadlines if SLA policy exists
+          const slaPolicy = await pool.query('SELECT * FROM sla_policies WHERE id = $1', [slaPolicyId]);
+          if (slaPolicy.rows.length > 0) {
+            const policy = slaPolicy.rows[0];
+            const now = new Date();
+            firstResponseDeadline = new Date(now.getTime() + policy.first_response_time_minutes * 60000);
+            resolutionDeadline = new Date(now.getTime() + policy.resolution_time_minutes * 60000);
+          }
+        }
       }
+    } catch (slaError) {
+      console.warn('Failed to assign SLA policy (non-critical):', slaError);
+      // Continue without SLA - ticket creation should still work
     }
 
     const result = await pool.query(
@@ -257,17 +261,33 @@ router.post('/', async (req, res) => {
       ]
     );
 
-    // Log history
-    await pool.query(
-      `INSERT INTO ticket_history (ticket_id, action, new_value, performed_by)
-       VALUES ($1, 'created', $2, $3)`,
-      [result.rows[0].id, 'Ticket created', ticketNumber, req.body.created_by || null]
-    );
+    // Log history (non-blocking - don't fail if this fails)
+    try {
+      await pool.query(
+        `INSERT INTO ticket_history (ticket_id, action, new_value, performed_by)
+         VALUES ($1, 'created', $2, $3)`,
+        [result.rows[0].id, 'Ticket created', ticketNumber, req.body.created_by || null]
+      );
+    } catch (historyError) {
+      console.warn('Failed to log ticket history (non-critical):', historyError);
+      // Continue anyway - history logging failure shouldn't break ticket creation
+    }
 
     res.status(201).json(result.rows[0]);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating ticket:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+      constraint: error.constraint,
+      stack: error.stack
+    });
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: error.message || 'Unknown error',
+      code: error.code
+    });
   }
 });
 
