@@ -4,6 +4,7 @@ import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { salesService, type DeliveryOrder } from '../../services/salesService';
 import { showToast } from '../../components/Toast';
+import { DeliveryOrderForm } from './components/DeliveryOrderForm';
 import './DeliveryTracking.css';
 
 export const DeliveryTracking = () => {
@@ -12,6 +13,7 @@ export const DeliveryTracking = () => {
   const [selectedDelivery, setSelectedDelivery] = useState<DeliveryOrder | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showDeliveryForm, setShowDeliveryForm] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -73,7 +75,7 @@ export const DeliveryTracking = () => {
             <h1>Delivery Tracking</h1>
             <p className="delivery-subtitle">Track shipments and deliveries</p>
           </div>
-          <Button icon={<Plus size={20} />} onClick={() => showToast('Delivery order creation form coming soon', 'info')}>New Delivery Order</Button>
+          <Button icon={<Plus size={20} />} onClick={() => setShowDeliveryForm(true)}>New Delivery Order</Button>
         </div>
 
         <div className="delivery-filters">
@@ -248,6 +250,16 @@ export const DeliveryTracking = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {showDeliveryForm && (
+          <DeliveryOrderForm
+            onClose={() => setShowDeliveryForm(false)}
+            onSave={() => {
+              setShowDeliveryForm(false);
+              loadData();
+            }}
+          />
         )}
       </div>
     </div>

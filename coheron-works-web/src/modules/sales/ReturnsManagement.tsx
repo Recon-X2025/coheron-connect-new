@@ -5,6 +5,7 @@ import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { salesService, type RMA } from '../../services/salesService';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
 import { showToast } from '../../components/Toast';
+import { RMAForm } from './components/RMAForm';
 import './ReturnsManagement.css';
 
 export const ReturnsManagement = () => {
@@ -14,6 +15,7 @@ export const ReturnsManagement = () => {
   const [selectedRMA, setSelectedRMA] = useState<RMA | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showRMAForm, setShowRMAForm] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -77,7 +79,7 @@ export const ReturnsManagement = () => {
             <h1>Returns & After-Sales</h1>
             <p className="returns-subtitle">Manage RMAs, warranties, and repairs</p>
           </div>
-          <Button icon={<Plus size={20} />} onClick={() => showToast('RMA creation form coming soon', 'info')}>New RMA</Button>
+          <Button icon={<Plus size={20} />} onClick={() => setShowRMAForm(true)}>New RMA</Button>
         </div>
 
         <div className="returns-tabs">
