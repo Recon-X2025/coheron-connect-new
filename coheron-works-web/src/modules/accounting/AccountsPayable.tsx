@@ -4,6 +4,9 @@ import { Button } from '../../components/Button';
 import { accountsPayableService } from '../../services/accountingService';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
 import { showToast } from '../../components/Toast';
+import { BillForm } from './components/BillForm';
+import { PaymentForm } from './components/PaymentForm';
+import { VendorForm } from './components/VendorForm';
 import './AccountsPayable.css';
 
 interface Bill {
@@ -28,6 +31,9 @@ export const AccountsPayable = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingBill, setEditingBill] = useState<Bill | null>(null);
+  const [showBillForm, setShowBillForm] = useState(false);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [showVendorForm, setShowVendorForm] = useState(false);
 
   useEffect(() => {
     loadBills();
@@ -124,9 +130,9 @@ export const AccountsPayable = () => {
             </p>
           </div>
           <div className="ap-actions">
-            {activeTab === 'bills' && <Button icon={<Plus size={20} />} onClick={() => showToast('Bill creation form coming soon', 'info')}>New Bill</Button>}
-            {activeTab === 'payments' && <Button icon={<DollarSign size={20} />} onClick={() => showToast('Payment form coming soon', 'info')}>New Payment</Button>}
-            {activeTab === 'vendors' && <Button icon={<Plus size={20} />} onClick={() => showToast('Vendor creation form coming soon', 'info')}>New Vendor</Button>}
+            {activeTab === 'bills' && <Button icon={<Plus size={20} />} onClick={() => setShowBillForm(true)}>New Bill</Button>}
+            {activeTab === 'payments' && <Button icon={<DollarSign size={20} />} onClick={() => setShowPaymentForm(true)}>New Payment</Button>}
+            {activeTab === 'vendors' && <Button icon={<Plus size={20} />} onClick={() => setShowVendorForm(true)}>New Vendor</Button>}
           </div>
         </div>
 
@@ -352,6 +358,36 @@ export const AccountsPayable = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {showBillForm && (
+          <BillForm
+            onClose={() => setShowBillForm(false)}
+            onSave={() => {
+              setShowBillForm(false);
+              loadBills();
+            }}
+          />
+        )}
+
+        {showPaymentForm && (
+          <PaymentForm
+            onClose={() => setShowPaymentForm(false)}
+            onSave={() => {
+              setShowPaymentForm(false);
+              loadBills();
+            }}
+          />
+        )}
+
+        {showVendorForm && (
+          <VendorForm
+            onClose={() => setShowVendorForm(false)}
+            onSave={() => {
+              setShowVendorForm(false);
+              loadBills();
+            }}
+          />
         )}
       </div>
     </div>
