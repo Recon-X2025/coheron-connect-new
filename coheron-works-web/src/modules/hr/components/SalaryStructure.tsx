@@ -114,7 +114,7 @@ export const SalaryStructure = () => {
                   </div>
                   <div className="component-amount">{formatInLakhsCompact(parseFloat(item.amount || 0))}</div>
                   <div className="component-actions">
-                    <button><Edit size={14} /></button>
+                    <button onClick={() => showToast('Edit salary component coming soon', 'info')}><Edit size={14} /></button>
                     <button className="delete" onClick={() => handleDeleteComponent(item.id)}><Trash2 size={14} /></button>
                   </div>
                 </div>

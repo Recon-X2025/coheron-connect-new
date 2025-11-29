@@ -281,13 +281,28 @@ router.post('/', async (req, res) => {
       code: error.code,
       detail: error.detail,
       constraint: error.constraint,
+      table: error.table,
+      column: error.column,
       stack: error.stack
     });
-    res.status(500).json({ 
+    
+    // Return detailed error for debugging
+    const errorResponse: any = {
       error: 'Internal server error',
-      details: error.message || 'Unknown error',
-      code: error.code
-    });
+      message: error.message || 'Unknown error',
+    };
+    
+    if (error.code) {
+      errorResponse.code = error.code;
+    }
+    if (error.detail) {
+      errorResponse.details = error.detail;
+    }
+    if (error.constraint) {
+      errorResponse.constraint = error.constraint;
+    }
+    
+    res.status(500).json(errorResponse);
   }
 });
 

@@ -5,6 +5,7 @@ import { Card } from '../components/Card';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { supportDeskService, type SupportTicket } from '../services/supportDeskService';
 import { TicketForm } from './components/TicketForm';
+import { TicketDetailModal } from './components/TicketDetailModal';
 import './SupportTickets.css';
 
 export const SupportTickets: React.FC = () => {
@@ -13,6 +14,7 @@ export const SupportTickets: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showTicketForm, setShowTicketForm] = useState(false);
+  const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
 
   useEffect(() => {
     loadTickets();
@@ -209,11 +211,11 @@ export const SupportTickets: React.FC = () => {
                 </div>
                 <p className="ticket-description">{ticket.description}</p>
                 <div className="ticket-actions">
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedTicketId(ticket.id)}>
                     View Details
                   </Button>
                   {ticket.status !== 'resolved' && ticket.status !== 'closed' && (
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={() => setSelectedTicketId(ticket.id)}>
                       Update Status
                     </Button>
                   )}
@@ -228,6 +230,17 @@ export const SupportTickets: React.FC = () => {
             onClose={() => setShowTicketForm(false)}
             onSave={() => {
               setShowTicketForm(false);
+              loadTickets();
+            }}
+          />
+        )}
+
+        {selectedTicketId && (
+          <TicketDetailModal
+            ticketId={selectedTicketId}
+            onClose={() => setSelectedTicketId(null)}
+            onUpdate={() => {
+              setSelectedTicketId(null);
               loadTickets();
             }}
           />

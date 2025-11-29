@@ -4,6 +4,7 @@ import { Button } from '../../components/Button';
 import { odooService } from '../../services/odooService';
 import { apiService } from '../../services/apiService';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { showToast } from '../../components/Toast';
 import { AdvancedFilter } from '../../shared/components/AdvancedFilter';
 import { BulkActions, createCommonBulkActions } from '../../shared/components/BulkActions';
 import { ActivityTimeline } from './components/ActivityTimeline';
@@ -425,7 +426,7 @@ export const Opportunities = () => {
                         >
                           <Eye size={16} />
                         </button>
-                        <button className="action-btn" title="Edit">
+                        <button className="action-btn" title="Edit" onClick={() => showToast('Opportunity edit form coming soon', 'info')}>
                           <Edit size={16} />
                         </button>
                         <button

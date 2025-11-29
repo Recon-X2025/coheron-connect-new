@@ -195,8 +195,8 @@ const AppraisalsTab = ({ appraisals, getEmployeeName }: { appraisals: any[]; get
           </div>
 
           <div className="appraisal-actions">
-            <Button variant="secondary" size="sm">View Details</Button>
-            <Button variant="secondary" size="sm">Edit</Button>
+            <Button variant="secondary" size="sm" onClick={() => showToast('Appraisal detail view coming soon', 'info')}>View Details</Button>
+            <Button variant="secondary" size="sm" onClick={() => showToast('Appraisal edit form coming soon', 'info')}>Edit</Button>
           </div>
         </Card>
       ))}

@@ -178,7 +178,7 @@ export const RoutingManagement = () => {
                         >
                           <Eye size={16} />
                         </button>
-                        <button className="action-btn" title="Edit">
+                        <button className="action-btn" title="Edit" onClick={() => showToast('Routing edit form coming soon', 'info')}>
                           <Edit size={16} />
                         </button>
                         <button
@@ -226,7 +226,7 @@ export const RoutingManagement = () => {
                     </td>
                     <td>
                       <div className="action-buttons">
-                        <button className="action-btn" title="Edit">
+                        <button className="action-btn" title="Edit" onClick={() => showToast('Routing edit form coming soon', 'info')}>
                           <Edit size={16} />
                         </button>
                         <button className="action-btn danger" title="Delete">

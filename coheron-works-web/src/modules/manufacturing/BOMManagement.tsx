@@ -182,7 +182,7 @@ export const BOMManagement = () => {
                       >
                         <Eye size={16} />
                       </button>
-                      <button className="action-btn" title="Edit">
+                      <button className="action-btn" title="Edit" onClick={() => showToast('BOM edit form coming soon', 'info')}>
                         <Edit size={16} />
                       </button>
                       <button

@@ -191,12 +191,12 @@ const TimesheetTab = () => {
         <div className="timesheet-card">
           <h4>Project: Mobile App</h4>
           <p>Total Hours: 40h</p>
-          <Button variant="secondary" size="sm">View Details</Button>
+          <Button variant="secondary" size="sm" onClick={() => showToast('Timesheet detail view coming soon', 'info')}>View Details</Button>
         </div>
         <div className="timesheet-card">
           <h4>Project: Website Redesign</h4>
           <p>Total Hours: 32h</p>
-          <Button variant="secondary" size="sm">View Details</Button>
+          <Button variant="secondary" size="sm" onClick={() => showToast('Timesheet detail view coming soon', 'info')}>View Details</Button>
         </div>
       </div>
     </Card>
