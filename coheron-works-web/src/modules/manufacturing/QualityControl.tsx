@@ -17,6 +17,7 @@ import {
   type ReworkOrder,
 } from '../../services/manufacturingService';
 import { showToast } from '../../components/Toast';
+import { QualityInspectionForm } from './components/QualityInspectionForm';
 import './QualityControl.css';
 
 export const QualityControl = () => {
@@ -28,6 +29,7 @@ export const QualityControl = () => {
   const [activeTab, setActiveTab] = useState<'inspections' | 'ncr' | 'rework'>('inspections');
   const [selectedInspection, setSelectedInspection] = useState<QualityInspection | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showInspectionForm, setShowInspectionForm] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -176,7 +178,7 @@ export const QualityControl = () => {
             />
           </div>
           {activeTab === 'inspections' && (
-            <Button icon={<Plus size={20} />} onClick={() => showToast('Inspection form coming soon', 'info')}>New Inspection</Button>
+            <Button icon={<Plus size={20} />} onClick={() => setShowInspectionForm(true)}>New Inspection</Button>
           )}
         </div>
 
@@ -450,6 +452,16 @@ export const QualityControl = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {showInspectionForm && (
+          <QualityInspectionForm
+            onClose={() => setShowInspectionForm(false)}
+            onSave={() => {
+              setShowInspectionForm(false);
+              loadData();
+            }}
+          />
         )}
       </div>
     </div>
