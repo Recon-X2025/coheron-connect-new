@@ -5,6 +5,7 @@ import { Card } from '../../../components/Card';
 import { apiService } from '../../../services/apiService';
 import { formatInLakhsCompact } from '../../../utils/currencyFormatter';
 import { showToast } from '../../../components/Toast';
+import { SalaryComponentForm } from './SalaryComponentForm';
 import './SalaryStructure.css';
 
 export const SalaryStructure = () => {
@@ -12,6 +13,9 @@ export const SalaryStructure = () => {
   const [employees, setEmployees] = useState<any[]>([]);
   const [salaryStructure, setSalaryStructure] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showComponentForm, setShowComponentForm] = useState(false);
+  const [componentType, setComponentType] = useState<'earning' | 'deduction'>('earning');
+  const [editingComponent, setEditingComponent] = useState<any>(null);
 
   useEffect(() => {
     loadEmployees();
@@ -90,7 +94,15 @@ export const SalaryStructure = () => {
             ))}
           </select>
           <Button icon={<Calculator size={18} />}>Calculate</Button>
-          <Button icon={<Plus size={18} />} onClick={() => showToast('Component creation form coming soon', 'info')}>
+          <Button icon={<Plus size={18} />} onClick={() => {
+            if (!selectedEmployee) {
+              showToast('Please select an employee first', 'warning');
+              return;
+            }
+            setComponentType('earning');
+            setEditingComponent(null);
+            setShowComponentForm(true);
+          }}>
             Add Component
           </Button>
         </div>
@@ -114,7 +126,11 @@ export const SalaryStructure = () => {
                   </div>
                   <div className="component-amount">{formatInLakhsCompact(parseFloat(item.amount || 0))}</div>
                   <div className="component-actions">
-                    <button onClick={() => showToast('Edit salary component coming soon', 'info')}><Edit size={14} /></button>
+                    <button onClick={() => {
+                      setEditingComponent(item);
+                      setComponentType(item.component_type);
+                      setShowComponentForm(true);
+                    }}><Edit size={14} /></button>
                     <button className="delete" onClick={() => handleDeleteComponent(item.id)}><Trash2 size={14} /></button>
                   </div>
                 </div>
@@ -122,7 +138,15 @@ export const SalaryStructure = () => {
             ) : (
               <p className="text-muted">No earnings components defined</p>
             )}
-            <Button variant="ghost" icon={<Plus size={16} />} fullWidth onClick={() => showToast('Earning component form coming soon', 'info')}>
+            <Button variant="ghost" icon={<Plus size={16} />} fullWidth onClick={() => {
+              if (!selectedEmployee) {
+                showToast('Please select an employee first', 'warning');
+                return;
+              }
+              setComponentType('earning');
+              setEditingComponent(null);
+              setShowComponentForm(true);
+            }}>
               Add Earning Component
             </Button>
           </div>
@@ -152,7 +176,15 @@ export const SalaryStructure = () => {
                 </div>
               </div>
             ))}
-            <Button variant="ghost" icon={<Plus size={16} />} fullWidth onClick={() => showToast('Deduction component form coming soon', 'info')}>
+            <Button variant="ghost" icon={<Plus size={16} />} fullWidth onClick={() => {
+              if (!selectedEmployee) {
+                showToast('Please select an employee first', 'warning');
+                return;
+              }
+              setComponentType('deduction');
+              setEditingComponent(null);
+              setShowComponentForm(true);
+            }}>
               Add Deduction Component
             </Button>
           </div>
