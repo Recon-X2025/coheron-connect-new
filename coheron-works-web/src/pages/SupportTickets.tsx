@@ -4,7 +4,7 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { supportDeskService, type SupportTicket } from '../services/supportDeskService';
-import { showToast } from '../components/Toast';
+import { TicketForm } from './components/TicketForm';
 import './SupportTickets.css';
 
 export const SupportTickets: React.FC = () => {
@@ -12,6 +12,7 @@ export const SupportTickets: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [showTicketForm, setShowTicketForm] = useState(false);
 
   useEffect(() => {
     loadTickets();
@@ -109,7 +110,7 @@ export const SupportTickets: React.FC = () => {
             <h1>Support Tickets</h1>
             <p className="tickets-subtitle">{filteredTickets.length} ticket(s) found</p>
           </div>
-          <Button icon={<Plus size={20} />} onClick={() => showToast('Ticket creation form coming soon', 'info')}>New Ticket</Button>
+          <Button icon={<Plus size={20} />} onClick={() => setShowTicketForm(true)}>New Ticket</Button>
         </div>
 
         <div className="tickets-toolbar">
@@ -221,6 +222,16 @@ export const SupportTickets: React.FC = () => {
             ))
           )}
         </div>
+
+        {showTicketForm && (
+          <TicketForm
+            onClose={() => setShowTicketForm(false)}
+            onSave={() => {
+              setShowTicketForm(false);
+              loadTickets();
+            }}
+          />
+        )}
       </div>
     </div>
   );

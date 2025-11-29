@@ -3,7 +3,7 @@ import { Plus, Calendar, Target } from 'lucide-react';
 import { projectService, type Sprint, type Issue } from '../../services/projectService';
 import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
-import { showToast } from '../../components/Toast';
+import { SprintForm } from './components/SprintForm';
 import './SprintBoard.css';
 
 interface SprintBoardProps {
@@ -15,6 +15,7 @@ export const SprintBoard = ({ projectId }: SprintBoardProps) => {
   const [activeSprint, setActiveSprint] = useState<Sprint | null>(null);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showSprintForm, setShowSprintForm] = useState(false);
 
   useEffect(() => {
     loadSprints();
@@ -84,7 +85,7 @@ export const SprintBoard = ({ projectId }: SprintBoardProps) => {
             </button>
           ))}
         </div>
-        <Button icon={<Plus size={16} />} onClick={() => showToast('Sprint creation form coming soon', 'info')}>
+        <Button icon={<Plus size={16} />} onClick={() => setShowSprintForm(true)}>
           New Sprint
         </Button>
       </div>
@@ -154,8 +155,19 @@ export const SprintBoard = ({ projectId }: SprintBoardProps) => {
           <Calendar size={48} />
           <h3>No sprints yet</h3>
           <p>Create your first sprint to get started</p>
-          <Button icon={<Plus size={16} />} onClick={() => showToast('Sprint creation form coming soon', 'info')}>Create Sprint</Button>
+          <Button icon={<Plus size={16} />} onClick={() => setShowSprintForm(true)}>Create Sprint</Button>
         </div>
+      )}
+
+      {showSprintForm && (
+        <SprintForm
+          projectId={projectId}
+          onClose={() => setShowSprintForm(false)}
+          onSave={() => {
+            setShowSprintForm(false);
+            loadSprints();
+          }}
+        />
       )}
     </div>
   );

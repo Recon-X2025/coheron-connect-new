@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search, FolderKanban, Plus } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { projectService } from '../../services/odooService';
-import { showToast } from '../../components/Toast';
+import { CreateProjectModal } from '../../components/CreateProjectModal';
 import type { Project } from '../../types/odoo';
 import './ProjectsList.css';
 
@@ -10,6 +10,7 @@ export const ProjectsList = () => {
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [showCreateModal, setShowCreateModal] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -40,7 +41,7 @@ export const ProjectsList = () => {
                         <h1>Projects</h1>
                         <p className="projects-subtitle">{filteredProjects.length} active projects</p>
                     </div>
-                    <Button icon={<Plus size={20} />} onClick={() => showToast('Project creation form coming soon', 'info')}>New Project</Button>
+                    <Button icon={<Plus size={20} />} onClick={() => setShowCreateModal(true)}>New Project</Button>
                 </div>
 
                 <div className="projects-toolbar">
@@ -82,6 +83,15 @@ export const ProjectsList = () => {
                         </div>
                     ))}
                 </div>
+
+                <CreateProjectModal
+                    isOpen={showCreateModal}
+                    onClose={() => setShowCreateModal(false)}
+                    onSuccess={() => {
+                        setShowCreateModal(false);
+                        loadData();
+                    }}
+                />
             </div>
         </div>
     );

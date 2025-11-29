@@ -3,7 +3,7 @@ import { Plus, Filter, Search, List } from 'lucide-react';
 import { projectService } from '../../services/projectService';
 import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
-import { showToast } from '../../components/Toast';
+import { IssueForm } from './components/IssueForm';
 import './BacklogView.css';
 
 interface BacklogViewProps {
@@ -14,6 +14,7 @@ export const BacklogView = ({ projectId }: BacklogViewProps) => {
   const [backlog, setBacklog] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showIssueForm, setShowIssueForm] = useState(false);
 
   useEffect(() => {
     loadBacklog();
@@ -51,7 +52,7 @@ export const BacklogView = ({ projectId }: BacklogViewProps) => {
           </p>
         </div>
         <div className="backlog-actions">
-          <Button icon={<Plus size={16} />} onClick={() => showToast('Issue creation form coming soon', 'info')}>Add Issue</Button>
+          <Button icon={<Plus size={16} />} onClick={() => setShowIssueForm(true)}>Add Issue</Button>
         </div>
       </div>
 
@@ -77,7 +78,7 @@ export const BacklogView = ({ projectId }: BacklogViewProps) => {
             <List size={48} />
             <h3>No backlog items</h3>
             <p>Add issues to your backlog to get started</p>
-            <Button icon={<Plus size={16} />} onClick={() => showToast('Issue creation form coming soon', 'info')}>Add Issue</Button>
+            <Button icon={<Plus size={16} />} onClick={() => setShowIssueForm(true)}>Add Issue</Button>
           </div>
         ) : (
           filteredItems.map((item: any) => (
@@ -111,6 +112,17 @@ export const BacklogView = ({ projectId }: BacklogViewProps) => {
           ))
         )}
       </div>
+
+      {showIssueForm && (
+        <IssueForm
+          projectId={projectId}
+          onClose={() => setShowIssueForm(false)}
+          onSave={() => {
+            setShowIssueForm(false);
+            loadBacklog();
+          }}
+        />
+      )}
     </div>
   );
 };
