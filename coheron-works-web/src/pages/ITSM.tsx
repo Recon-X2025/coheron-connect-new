@@ -18,6 +18,7 @@ import { Card } from '../components/Card';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { supportDeskService } from '../services/supportDeskService';
 import { showToast } from '../components/Toast';
+import { ITSMForm } from './components/ITSMForm';
 import './ITSM.css';
 
 type ITSMTab = 'incidents' | 'problems' | 'changes';
@@ -31,6 +32,7 @@ export const ITSM: React.FC = () => {
   const [, setSelectedItem] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [showITSMForm, setShowITSMForm] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -373,7 +375,7 @@ export const ITSM: React.FC = () => {
           <h1>ITSM Management</h1>
           <p className="itsm-subtitle">Manage Incidents, Problems, and Change Requests</p>
         </div>
-        <Button icon={<Plus size={18} />} onClick={() => showToast(`${activeTab === 'incidents' ? 'Incident' : activeTab === 'problems' ? 'Problem' : 'Change'} creation form coming soon`, 'info')}>
+        <Button icon={<Plus size={18} />} onClick={() => setShowITSMForm(true)}>
           New {activeTab === 'incidents' ? 'Incident' : activeTab === 'problems' ? 'Problem' : 'Change'}
         </Button>
       </div>
@@ -433,6 +435,17 @@ export const ITSM: React.FC = () => {
             {activeTab === 'problems' && renderProblems()}
             {activeTab === 'changes' && renderChanges()}
           </>
+        )}
+
+        {showITSMForm && (
+          <ITSMForm
+            type={activeTab === 'incidents' ? 'incident' : activeTab === 'problems' ? 'problem' : 'change'}
+            onClose={() => setShowITSMForm(false)}
+            onSave={() => {
+              setShowITSMForm(false);
+              loadData();
+            }}
+          />
         )}
       </div>
     </div>

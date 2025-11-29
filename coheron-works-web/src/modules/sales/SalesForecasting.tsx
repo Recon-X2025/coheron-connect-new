@@ -4,7 +4,7 @@ import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { salesService, type SalesForecast, type SalesTarget } from '../../services/salesService';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
-import { showToast } from '../../components/Toast';
+import { ForecastForm } from './components/ForecastForm';
 import './SalesForecasting.css';
 
 export const SalesForecasting = () => {
@@ -13,6 +13,7 @@ export const SalesForecasting = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'forecasts' | 'targets'>('forecasts');
   const [selectedForecast, setSelectedForecast] = useState<SalesForecast | null>(null);
+  const [showForecastForm, setShowForecastForm] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -58,7 +59,7 @@ export const SalesForecasting = () => {
             <h1>Sales Forecasting & Planning</h1>
             <p className="forecasting-subtitle">Forecasts, targets, and achievement tracking</p>
           </div>
-          <Button icon={<Plus size={20} />} onClick={() => showToast(`${activeTab === 'forecasts' ? 'Forecast' : 'Target'} creation form coming soon`, 'info')}>
+          <Button icon={<Plus size={20} />} onClick={() => setShowForecastForm(true)}>
             New {activeTab === 'forecasts' ? 'Forecast' : 'Target'}
           </Button>
         </div>
@@ -219,6 +220,17 @@ export const SalesForecasting = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {showForecastForm && (
+          <ForecastForm
+            type={activeTab === 'forecasts' ? 'forecast' : 'target'}
+            onClose={() => setShowForecastForm(false)}
+            onSave={() => {
+              setShowForecastForm(false);
+              loadData();
+            }}
+          />
         )}
       </div>
     </div>

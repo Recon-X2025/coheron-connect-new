@@ -3,12 +3,14 @@ import { UserPlus, CheckCircle2, Clock, FileText, Settings, Plus } from 'lucide-
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { showToast } from '../../components/Toast';
+import { OnboardingForm } from './components/OnboardingForm';
 import './Onboarding.css';
 
 type OnboardingTab = 'overview' | 'tasks' | 'documents' | 'checklist';
 
 export const Onboarding = () => {
   const [activeTab, setActiveTab] = useState<OnboardingTab>('overview');
+  const [showOnboardingForm, setShowOnboardingForm] = useState(false);
 
   const tabs = [
     { id: 'overview' as OnboardingTab, label: 'Overview', icon: <UserPlus size={18} /> },
@@ -38,7 +40,7 @@ export const Onboarding = () => {
             <p className="onboarding-subtitle">Streamline new employee onboarding process</p>
           </div>
           <div className="header-actions">
-            <Button icon={<Plus size={18} />} onClick={() => showToast('Onboarding creation form coming soon', 'info')}>New Onboarding</Button>
+            <Button icon={<Plus size={18} />} onClick={() => setShowOnboardingForm(true)}>New Onboarding</Button>
           </div>
         </div>
 
@@ -85,6 +87,15 @@ export const Onboarding = () => {
           {activeTab === 'documents' && <DocumentsTab />}
           {activeTab === 'checklist' && <ChecklistTab />}
         </div>
+
+        {showOnboardingForm && (
+          <OnboardingForm
+            onClose={() => setShowOnboardingForm(false)}
+            onSave={() => {
+              setShowOnboardingForm(false);
+            }}
+          />
+        )}
       </div>
     </div>
   );

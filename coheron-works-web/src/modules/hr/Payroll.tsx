@@ -13,7 +13,7 @@ import { PayrollProcessing } from './components/PayrollProcessing';
 import { ComplianceReporting } from './components/ComplianceReporting';
 import { PayrollReports } from './components/PayrollReports';
 import { EmployeeSelfService } from './components/EmployeeSelfService';
-import { showToast } from '../../components/Toast';
+import { PayrollRunForm } from './components/PayrollRunForm';
 import { AttendanceLeaveIntegration } from './components/AttendanceLeaveIntegration';
 import { PayoutFinancial } from './components/PayoutFinancial';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
@@ -33,6 +33,7 @@ type PayrollTab =
 
 export const Payroll = () => {
   const [activeTab, setActiveTab] = useState<PayrollTab>('overview');
+  const [showPayrollRunForm, setShowPayrollRunForm] = useState(false);
 
   const tabs = [
     { id: 'overview' as PayrollTab, label: 'Overview', icon: <BarChart3 size={18} /> },
@@ -86,7 +87,7 @@ export const Payroll = () => {
             <Button variant="secondary" icon={<Download size={18} />}>
               Export
             </Button>
-            <Button icon={<Plus size={18} />} onClick={() => showToast('Payroll run creation form coming soon', 'info')}>
+            <Button icon={<Plus size={18} />} onClick={() => setShowPayrollRunForm(true)}>
               New Payroll Run
             </Button>
           </div>
@@ -108,6 +109,15 @@ export const Payroll = () => {
         <div className="payroll-content">
           {renderTabContent()}
         </div>
+
+        {showPayrollRunForm && (
+          <PayrollRunForm
+            onClose={() => setShowPayrollRunForm(false)}
+            onSave={() => {
+              setShowPayrollRunForm(false);
+            }}
+          />
+        )}
       </div>
     </div>
   );

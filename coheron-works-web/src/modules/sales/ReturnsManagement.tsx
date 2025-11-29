@@ -4,7 +4,6 @@ import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { salesService, type RMA } from '../../services/salesService';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
-import { showToast } from '../../components/Toast';
 import { RMAForm } from './components/RMAForm';
 import './ReturnsManagement.css';
 

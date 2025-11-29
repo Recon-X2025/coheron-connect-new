@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '../../../components/Button';
-import { apiService } from '../../../services/apiService';
 import { showToast } from '../../../components/Toast';
 import './ShiftForm.css';
 

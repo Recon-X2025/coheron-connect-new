@@ -4,7 +4,7 @@ import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
 import { apiService } from '../../../services/apiService';
 import { formatInLakhsCompact } from '../../../utils/currencyFormatter';
-import { showToast } from '../../../components/Toast';
+import { ClaimForm } from './ClaimForm';
 import './EmployeeSelfService.css';
 
 export const EmployeeSelfService = () => {
@@ -12,6 +12,7 @@ export const EmployeeSelfService = () => {
   const [payslips, setPayslips] = useState<any[]>([]);
   const [salaryStructure, setSalaryStructure] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showClaimForm, setShowClaimForm] = useState(false);
   const employeeId = 1; // TODO: Get from auth context
 
   useEffect(() => {
@@ -191,12 +192,23 @@ export const EmployeeSelfService = () => {
           <Card>
             <h4>Reimbursement Claims</h4>
             <div className="claims-section">
-              <Button icon={<Plus size={18} />} onClick={() => showToast('Claim creation form coming soon', 'info')}>New Claim</Button>
+              <Button icon={<Plus size={18} />} onClick={() => setShowClaimForm(true)}>New Claim</Button>
               <div className="claims-list">
                 <p>No pending claims</p>
               </div>
             </div>
           </Card>
+        )}
+
+        {showClaimForm && (
+          <ClaimForm
+            employeeId={employeeId}
+            onClose={() => setShowClaimForm(false)}
+            onSave={() => {
+              setShowClaimForm(false);
+              loadData();
+            }}
+          />
         )}
       </div>
     </div>

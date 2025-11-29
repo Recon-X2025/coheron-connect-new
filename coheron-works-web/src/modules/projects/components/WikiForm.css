@@ -1,0 +1,7 @@
+.wiki-form {
+  max-width: 800px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+

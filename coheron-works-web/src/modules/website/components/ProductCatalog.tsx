@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search, Plus, RefreshCw, Package } from 'lucide-react';
 import { Button } from '../../../components/Button';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
-import { showToast } from '../../../components/Toast';
+import { ProductForm } from './ProductForm';
 import './ProductCatalog.css';
 
 interface WebsiteProduct {
@@ -21,6 +21,7 @@ export const ProductCatalog = () => {
   const [products, setProducts] = useState<WebsiteProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showProductForm, setShowProductForm] = useState(false);
 
   useEffect(() => {
     loadProducts();
@@ -69,7 +70,7 @@ export const ProductCatalog = () => {
     <div className="product-catalog">
       <div className="product-catalog-header">
         <h2>Product Catalog</h2>
-        <Button icon={<Plus size={18} />} onClick={() => showToast('Product creation form coming soon', 'info')}>Add Product</Button>
+        <Button icon={<Plus size={18} />} onClick={() => setShowProductForm(true)}>Add Product</Button>
       </div>
 
       <div className="product-catalog-search">
@@ -138,6 +139,16 @@ export const ProductCatalog = () => {
             )}
           </tbody>
         </table>
+
+        {showProductForm && (
+          <ProductForm
+            onClose={() => setShowProductForm(false)}
+            onSave={() => {
+              setShowProductForm(false);
+              loadProducts();
+            }}
+          />
+        )}
       </div>
     </div>
   );
