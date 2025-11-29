@@ -261,6 +261,16 @@ export const ReturnsManagement = () => {
             </div>
           </div>
         )}
+
+        {showRMAForm && (
+          <RMAForm
+            onClose={() => setShowRMAForm(false)}
+            onSave={() => {
+              setShowRMAForm(false);
+              loadData();
+            }}
+          />
+        )}
       </div>
     </div>
   );
