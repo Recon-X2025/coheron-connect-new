@@ -316,46 +316,154 @@ router.get('/issues/:id', async (req, res) => {
 // Create issue
 router.post('/:projectId/issues', async (req, res) => {
   try {
-    const {
-      task_id,
-      title,
-      description,
-      severity,
-      priority,
-      status,
-      reported_by,
-      assigned_to,
-      sla_deadline,
-    } = req.body;
+    // Check if this is for the 'issues' table (has summary) or 'project_issues' table (has title)
+    if (req.body.summary && !req.body.title) {
+      // Handle issues table format (agile/scrum issues)
+      const {
+        summary,
+        description,
+        issue_type_id,
+        priority,
+        story_points,
+        assignee_id,
+        reporter_id,
+        labels,
+        components,
+        fix_version,
+        due_date,
+        time_estimate,
+      } = req.body;
 
-    if (!title) {
-      return res.status(400).json({ error: 'Issue title is required' });
-    }
+      if (!summary) {
+        return res.status(400).json({ error: 'Summary is required' });
+      }
 
-    const result = await pool.query(
-      `INSERT INTO project_issues (
-        project_id, task_id, title, description,
-        severity, priority, status, reported_by, assigned_to, sla_deadline
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-      RETURNING *`,
-      [
+      // Get project key
+      const projectResult = await pool.query('SELECT key FROM projects WHERE id = $1', [
         req.params.projectId,
+      ]);
+
+      if (projectResult.rows.length === 0) {
+        return res.status(404).json({ error: 'Project not found' });
+      }
+
+      const projectKey = projectResult.rows[0].key;
+
+      // Get next issue number
+      const nextNumberResult = await pool.query(
+        `SELECT COALESCE(MAX(CAST(SUBSTRING(key FROM '[0-9]+$') AS INTEGER)), 0) + 1 as next_num
+         FROM issues
+         WHERE project_id = $1`,
+        [req.params.projectId]
+      );
+
+      const nextNum = nextNumberResult.rows[0].next_num;
+      const issueKey = `${projectKey}-${nextNum}`;
+
+      // Get default issue type if not provided
+      let issueTypeId = issue_type_id;
+      if (!issueTypeId) {
+        const defaultTypeResult = await pool.query(
+          "SELECT id FROM issue_types WHERE name = 'Task' AND is_active = true LIMIT 1"
+        );
+        if (defaultTypeResult.rows.length > 0) {
+          issueTypeId = defaultTypeResult.rows[0].id;
+        } else {
+          // Get first active issue type
+          const firstTypeResult = await pool.query(
+            "SELECT id FROM issue_types WHERE is_active = true LIMIT 1"
+          );
+          if (firstTypeResult.rows.length > 0) {
+            issueTypeId = firstTypeResult.rows[0].id;
+          } else {
+            return res.status(400).json({ error: 'No issue types found. Please create an issue type first.' });
+          }
+        }
+      }
+
+      // Create issue in issues table
+      const issueResult = await pool.query(
+        `INSERT INTO issues (
+          project_id, issue_type_id, key, summary, description, priority,
+          assignee_id, reporter_id, labels, components, fix_version,
+          due_date, story_points, time_estimate, status
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'To Do')
+        RETURNING *`,
+        [
+          req.params.projectId,
+          issueTypeId,
+          issueKey,
+          summary,
+          description || null,
+          priority || 'medium',
+          assignee_id || null,
+          reporter_id || null,
+          labels && Array.isArray(labels) ? labels : (labels ? [labels] : []),
+          components && Array.isArray(components) ? components : (components ? [components] : []),
+          fix_version || null,
+          due_date || null,
+          story_points || null,
+          time_estimate || null,
+        ]
+      );
+
+      const issue = issueResult.rows[0];
+
+      // Add to backlog
+      await pool.query(
+        `INSERT INTO backlog (project_id, issue_id, priority, rank)
+         VALUES ($1, $2, 0, NULL)
+         ON CONFLICT DO NOTHING`,
+        [req.params.projectId, issue.id]
+      );
+
+      return res.status(201).json(issue);
+    } else {
+      // Handle project_issues table format (traditional project issues)
+      const {
         task_id,
         title,
         description,
-        severity || 'medium',
-        priority || 'medium',
-        status || 'open',
+        severity,
+        priority,
+        status,
         reported_by,
         assigned_to,
         sla_deadline,
-      ]
-    );
+      } = req.body;
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
+      if (!title) {
+        return res.status(400).json({ error: 'Issue title is required' });
+      }
+
+      const result = await pool.query(
+        `INSERT INTO project_issues (
+          project_id, task_id, title, description,
+          severity, priority, status, reported_by, assigned_to, sla_deadline
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING *`,
+        [
+          req.params.projectId,
+          task_id || null,
+          title,
+          description || null,
+          severity || 'medium',
+          priority || 'medium',
+          status || 'open',
+          reported_by || null,
+          assigned_to || null,
+          sla_deadline || null,
+        ]
+      );
+
+      return res.status(201).json(result.rows[0]);
+    }
+  } catch (error: any) {
+    if (error.code === '23505') {
+      return res.status(400).json({ error: 'Issue key already exists' });
+    }
     console.error('Error creating issue:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 
