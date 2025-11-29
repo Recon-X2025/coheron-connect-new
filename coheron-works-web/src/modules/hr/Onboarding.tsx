@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { UserPlus, CheckCircle2, Clock, FileText, Settings, Plus } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
-import { showToast } from '../../components/Toast';
 import { OnboardingForm } from './components/OnboardingForm';
 import './Onboarding.css';
 
