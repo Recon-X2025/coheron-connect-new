@@ -195,7 +195,7 @@ export const ChartOfAccounts = () => {
             <h1>Chart of Accounts</h1>
             <p className="coa-subtitle">{accounts.length} accounts</p>
           </div>
-          <Button icon={<Plus size={20} />}>New Account</Button>
+          <Button icon={<Plus size={20} />} onClick={() => showToast('Account creation form coming soon', 'info')}>New Account</Button>
         </div>
 
         <div className="coa-toolbar">

@@ -158,7 +158,7 @@ export const JournalEntries = () => {
             <h1>Journal Entries</h1>
             <p className="je-subtitle">{filteredEntries.length} entries</p>
           </div>
-          <Button icon={<Plus size={20} />}>New Entry</Button>
+          <Button icon={<Plus size={20} />} onClick={() => showToast('Journal entry form coming soon', 'info')}>New Entry</Button>
         </div>
 
         <div className="je-filters">

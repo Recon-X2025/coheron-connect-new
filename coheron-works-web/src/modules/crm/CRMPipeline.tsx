@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { TrendingUp, Mail, Phone, User } from 'lucide-react';
+import { TrendingUp, Mail, Phone, User, Plus } from 'lucide-react';
 import { KanbanBoard } from '../../shared/views/KanbanBoard';
 import { Button } from '../../components/Button';
 import { leadService, partnerService } from '../../services/odooService';
+import { LeadForm } from './components/LeadForm';
 import type { Lead, Partner } from '../../types/odoo';
 import './CRMPipeline.css';
 
@@ -18,6 +19,7 @@ export const CRMPipeline = () => {
     const [leads, setLeads] = useState<Lead[]>([]);
     const [partners, setPartners] = useState<Partner[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showLeadForm, setShowLeadForm] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -129,7 +131,7 @@ export const CRMPipeline = () => {
                             <span className="stat-label">Won</span>
                             <span className="stat-value won">₹{wonRevenue.toLocaleString()}</span>
                         </div>
-                        <Button>+ New Lead</Button>
+                        <Button icon={<Plus size={20} />} onClick={() => setShowLeadForm(true)}>New Lead</Button>
                     </div>
                 </div>
 
@@ -139,6 +141,16 @@ export const CRMPipeline = () => {
                     onItemMove={handleLeadMove}
                     renderCard={renderLeadCard as any}
                 />
+
+                {showLeadForm && (
+                    <LeadForm
+                        onClose={() => setShowLeadForm(false)}
+                        onSave={() => {
+                            setShowLeadForm(false);
+                            loadData();
+                        }}
+                    />
+                )}
             </div>
         </div>
     );

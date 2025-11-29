@@ -784,9 +784,15 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  // Redirect to /orders
+  // Forward to /orders endpoint by calling the handler directly
+  // Create a new request object with modified URL
+  const originalUrl = req.url;
   req.url = '/orders';
-  router.handle(req, res);
+  // Use the router as middleware to handle the request
+  router(req, res, () => {
+    // Restore original URL if next is called
+    req.url = originalUrl;
+  });
 });
 
 export default router;

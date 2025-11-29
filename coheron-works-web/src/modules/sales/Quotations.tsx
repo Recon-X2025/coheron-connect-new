@@ -6,6 +6,7 @@ import { apiService } from '../../services/apiService';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { AdvancedFilter } from '../../shared/components/AdvancedFilter';
 import { BulkActions, createCommonBulkActions } from '../../shared/components/BulkActions';
+import { OrderForm } from './components/OrderForm';
 import type { SaleOrder, Partner } from '../../types/odoo';
 import './Quotations.css';
 
@@ -19,6 +20,7 @@ export const Quotations = () => {
   const [selectedQuote, setSelectedQuote] = useState<SaleOrder | null>(null);
   const [quoteVersions, setQuoteVersions] = useState<any[]>([]);
   const [showVersions, setShowVersions] = useState(false);
+  const [showQuotationForm, setShowQuotationForm] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -136,7 +138,7 @@ export const Quotations = () => {
               {filteredQuotations.length} quotation(s) found
             </p>
           </div>
-          <Button icon={<Plus size={20} />}>New Quotation</Button>
+          <Button icon={<Plus size={20} />} onClick={() => setShowQuotationForm(true)}>New Quotation</Button>
         </div>
 
         <div className="quotations-toolbar">
@@ -265,6 +267,13 @@ export const Quotations = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {showQuotationForm && (
+          <OrderForm
+            onClose={() => setShowQuotationForm(false)}
+            onSave={loadData}
+          />
         )}
       </div>
     </div>

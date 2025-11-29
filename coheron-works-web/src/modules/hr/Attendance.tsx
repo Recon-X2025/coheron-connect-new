@@ -3,6 +3,7 @@ import { Clock, Calendar, CheckCircle2, XCircle, AlertCircle, Download, Upload, 
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { apiService } from '../../services/apiService';
+import { showToast } from '../../components/Toast';
 import './Attendance.css';
 
 type AttendanceTab = 'overview' | 'timesheet' | 'shifts' | 'overtime' | 'biometric';
@@ -218,7 +219,7 @@ const ShiftsTab = () => {
           <span className="shift-count">34 employees</span>
         </div>
       </div>
-      <Button icon={<Plus size={18} />}>Create Shift</Button>
+      <Button icon={<Plus size={18} />} onClick={() => showToast('Shift creation form coming soon', 'info')}>Create Shift</Button>
     </Card>
   );
 };

@@ -419,7 +419,7 @@ router.get('/shop-floor/dashboard', async (req, res) => {
     const stats = await pool.query(query, params);
 
     // Get active work orders
-    const activeQuery = `
+    let activeQuery = `
       SELECT wo.*, mo.name as mo_name, wc.name as workcenter_name
       FROM work_orders wo
       LEFT JOIN manufacturing_orders mo ON wo.mo_id = mo.id

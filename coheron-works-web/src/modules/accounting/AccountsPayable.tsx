@@ -124,9 +124,9 @@ export const AccountsPayable = () => {
             </p>
           </div>
           <div className="ap-actions">
-            {activeTab === 'bills' && <Button icon={<Plus size={20} />}>New Bill</Button>}
-            {activeTab === 'payments' && <Button icon={<DollarSign size={20} />}>New Payment</Button>}
-            {activeTab === 'vendors' && <Button icon={<Plus size={20} />}>New Vendor</Button>}
+            {activeTab === 'bills' && <Button icon={<Plus size={20} />} onClick={() => showToast('Bill creation form coming soon', 'info')}>New Bill</Button>}
+            {activeTab === 'payments' && <Button icon={<DollarSign size={20} />} onClick={() => showToast('Payment form coming soon', 'info')}>New Payment</Button>}
+            {activeTab === 'vendors' && <Button icon={<Plus size={20} />} onClick={() => showToast('Vendor creation form coming soon', 'info')}>New Vendor</Button>}
           </div>
         </div>
 

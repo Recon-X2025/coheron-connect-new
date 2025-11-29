@@ -3,6 +3,8 @@ import { Search, Plus, Mail, Phone, Building, User, Edit, Trash2 } from 'lucide-
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { partnerService } from '../../services/odooService';
+import { PartnerForm } from './components/PartnerForm';
+import { showToast } from '../../components/Toast';
 import type { Partner } from '../../types/odoo';
 import './Customers.css';
 
@@ -11,6 +13,8 @@ export const Customers = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [typeFilter, setTypeFilter] = useState<'all' | 'company' | 'contact'>('all');
+    const [showPartnerForm, setShowPartnerForm] = useState(false);
+    const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
 
     useEffect(() => {
         loadData();
@@ -49,7 +53,10 @@ export const Customers = () => {
                             {companies.length} companies, {contacts.length} contacts
                         </p>
                     </div>
-                    <Button icon={<Plus size={20} />}>New Customer</Button>
+                    <Button icon={<Plus size={20} />} onClick={() => {
+                        setEditingPartner(null);
+                        setShowPartnerForm(true);
+                    }}>New Customer</Button>
                 </div>
 
                 {/* Toolbar */}
@@ -99,10 +106,23 @@ export const Customers = () => {
                                     )}
                                 </div>
                                 <div className="customer-actions">
-                                    <button className="action-btn" title="Edit">
+                                    <button className="action-btn" title="Edit" onClick={() => {
+                                        setEditingPartner(partner);
+                                        setShowPartnerForm(true);
+                                    }}>
                                         <Edit size={16} />
                                     </button>
-                                    <button className="action-btn delete" title="Delete">
+                                    <button className="action-btn delete" title="Delete" onClick={async () => {
+                                        if (window.confirm(`Are you sure you want to delete ${partner.name}?`)) {
+                                            try {
+                                                await partnerService.delete(partner.id);
+                                                showToast('Customer deleted successfully', 'success');
+                                                await loadData();
+                                            } catch (error: any) {
+                                                showToast(error?.message || 'Failed to delete customer', 'error');
+                                            }
+                                        }
+                                    }}>
                                         <Trash2 size={16} />
                                     </button>
                                 </div>
@@ -138,6 +158,17 @@ export const Customers = () => {
                     <div className="empty-state">
                         <p>No customers found</p>
                     </div>
+                )}
+
+                {showPartnerForm && (
+                    <PartnerForm
+                        partner={editingPartner}
+                        onClose={() => {
+                            setShowPartnerForm(false);
+                            setEditingPartner(null);
+                        }}
+                        onSave={loadData}
+                    />
                 )}
             </div>
         </div>

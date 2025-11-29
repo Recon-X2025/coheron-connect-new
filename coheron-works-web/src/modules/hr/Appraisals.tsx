@@ -4,6 +4,7 @@ import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { apiService } from '../../services/apiService';
 import { AppraisalForm } from './components/AppraisalForm';
+import { showToast } from '../../components/Toast';
 import './Appraisals.css';
 
 type AppraisalTab = 'overview' | 'appraisals' | 'goals' | 'feedback' | 'reports';
@@ -232,7 +233,7 @@ const GoalsTab = () => {
           </div>
         ))}
       </div>
-      <Button icon={<Plus size={18} />}>Add Goal</Button>
+      <Button icon={<Plus size={18} />} onClick={() => showToast('Goal creation form coming soon', 'info')}>Add Goal</Button>
     </Card>
   );
 };

@@ -425,7 +425,7 @@ router.post('/:projectId/billing', async (req, res) => {
       billing_date,
     } = req.body;
 
-    if (!billing_type || !billed_amount || !billing_date) {
+    if (!billing_type || !amount || !billing_date) {
       return res.status(400).json({ error: 'Billing type, amount, and date are required' });
     }
 

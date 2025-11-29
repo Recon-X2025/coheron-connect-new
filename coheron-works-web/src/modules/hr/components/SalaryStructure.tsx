@@ -90,7 +90,7 @@ export const SalaryStructure = () => {
             ))}
           </select>
           <Button icon={<Calculator size={18} />}>Calculate</Button>
-          <Button icon={<Plus size={18} />}>
+          <Button icon={<Plus size={18} />} onClick={() => showToast('Component creation form coming soon', 'info')}>
             Add Component
           </Button>
         </div>
@@ -122,7 +122,7 @@ export const SalaryStructure = () => {
             ) : (
               <p className="text-muted">No earnings components defined</p>
             )}
-            <Button variant="ghost" icon={<Plus size={16} />} fullWidth>
+            <Button variant="ghost" icon={<Plus size={16} />} fullWidth onClick={() => showToast('Earning component form coming soon', 'info')}>
               Add Earning Component
             </Button>
           </div>
@@ -152,7 +152,7 @@ export const SalaryStructure = () => {
                 </div>
               </div>
             ))}
-            <Button variant="ghost" icon={<Plus size={16} />} fullWidth>
+            <Button variant="ghost" icon={<Plus size={16} />} fullWidth onClick={() => showToast('Deduction component form coming soon', 'info')}>
               Add Deduction Component
             </Button>
           </div>

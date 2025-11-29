@@ -7,6 +7,9 @@
     transition: all var(--transition-fast);
     cursor: pointer;
     gap: var(--space-sm);
+    position: relative;
+    z-index: 1;
+    pointer-events: auto;
 }
 
 .btn:disabled {

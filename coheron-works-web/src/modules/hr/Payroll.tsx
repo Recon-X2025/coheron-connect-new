@@ -13,6 +13,7 @@ import { PayrollProcessing } from './components/PayrollProcessing';
 import { ComplianceReporting } from './components/ComplianceReporting';
 import { PayrollReports } from './components/PayrollReports';
 import { EmployeeSelfService } from './components/EmployeeSelfService';
+import { showToast } from '../../components/Toast';
 import { AttendanceLeaveIntegration } from './components/AttendanceLeaveIntegration';
 import { PayoutFinancial } from './components/PayoutFinancial';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
@@ -85,7 +86,7 @@ export const Payroll = () => {
             <Button variant="secondary" icon={<Download size={18} />}>
               Export
             </Button>
-            <Button icon={<Plus size={18} />}>
+            <Button icon={<Plus size={18} />} onClick={() => showToast('Payroll run creation form coming soon', 'info')}>
               New Payroll Run
             </Button>
           </div>

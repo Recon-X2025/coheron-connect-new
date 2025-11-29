@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { UserMinus, FileText, CheckCircle2, Plus } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
+import { showToast } from '../../components/Toast';
 import './Offboarding.css';
 
 type OffboardingTab = 'overview' | 'clearance' | 'exit-interview' | 'documents';
@@ -30,7 +31,7 @@ export const Offboarding = () => {
             <p className="offboarding-subtitle">Manage employee exit process and final settlement</p>
           </div>
           <div className="header-actions">
-            <Button icon={<Plus size={18} />}>New Offboarding</Button>
+            <Button icon={<Plus size={18} />} onClick={() => showToast('Offboarding creation form coming soon', 'info')}>New Offboarding</Button>
           </div>
         </div>
 

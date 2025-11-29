@@ -4,6 +4,7 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { supportDeskService, type SupportTicket } from '../services/supportDeskService';
+import { showToast } from '../components/Toast';
 import './SupportTickets.css';
 
 export const SupportTickets: React.FC = () => {
@@ -108,7 +109,7 @@ export const SupportTickets: React.FC = () => {
             <h1>Support Tickets</h1>
             <p className="tickets-subtitle">{filteredTickets.length} ticket(s) found</p>
           </div>
-          <Button icon={<Plus size={20} />}>New Ticket</Button>
+          <Button icon={<Plus size={20} />} onClick={() => showToast('Ticket creation form coming soon', 'info')}>New Ticket</Button>
         </div>
 
         <div className="tickets-toolbar">

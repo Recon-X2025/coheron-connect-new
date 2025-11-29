@@ -16,10 +16,13 @@ export const Button: React.FC<ButtonProps> = ({
   icon,
   fullWidth = false,
   className,
+  onClick,
+  type = 'button',
   ...props
 }) => {
   return (
     <button
+      type={type}
       className={clsx(
         'btn',
         `btn-${variant}`,
@@ -27,6 +30,7 @@ export const Button: React.FC<ButtonProps> = ({
         fullWidth && 'btn-full-width',
         className
       )}
+      onClick={onClick}
       {...props}
     >
       {icon && <span className="btn-icon">{icon}</span>}

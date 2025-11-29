@@ -3,6 +3,7 @@ import { Package, Truck, MapPin, Clock, CheckCircle, Search, Plus } from 'lucide
 import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { salesService, type DeliveryOrder } from '../../services/salesService';
+import { showToast } from '../../components/Toast';
 import './DeliveryTracking.css';
 
 export const DeliveryTracking = () => {
@@ -72,7 +73,7 @@ export const DeliveryTracking = () => {
             <h1>Delivery Tracking</h1>
             <p className="delivery-subtitle">Track shipments and deliveries</p>
           </div>
-          <Button icon={<Plus size={20} />}>New Delivery Order</Button>
+          <Button icon={<Plus size={20} />} onClick={() => showToast('Delivery order creation form coming soon', 'info')}>New Delivery Order</Button>
         </div>
 
         <div className="delivery-filters">

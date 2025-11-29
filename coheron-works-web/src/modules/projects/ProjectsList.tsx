@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search, FolderKanban, Plus } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { projectService } from '../../services/odooService';
+import { showToast } from '../../components/Toast';
 import type { Project } from '../../types/odoo';
 import './ProjectsList.css';
 
@@ -39,7 +40,7 @@ export const ProjectsList = () => {
                         <h1>Projects</h1>
                         <p className="projects-subtitle">{filteredProjects.length} active projects</p>
                     </div>
-                    <Button icon={<Plus size={20} />}>New Project</Button>
+                    <Button icon={<Plus size={20} />} onClick={() => showToast('Project creation form coming soon', 'info')}>New Project</Button>
                 </div>
 
                 <div className="projects-toolbar">

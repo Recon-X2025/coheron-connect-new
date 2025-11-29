@@ -7,6 +7,7 @@ import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { AdvancedFilter } from '../../shared/components/AdvancedFilter';
 import { BulkActions, createCommonBulkActions } from '../../shared/components/BulkActions';
 import { ActivityTimeline } from './components/ActivityTimeline';
+import { LeadForm } from './components/LeadForm';
 import {
   DndContext,
   DragOverlay,
@@ -40,6 +41,7 @@ export const Opportunities = () => {
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
   const [activeId, setActiveId] = useState<number | null>(null);
+  const [showOpportunityForm, setShowOpportunityForm] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -285,7 +287,7 @@ export const Opportunities = () => {
               {filteredOpportunities.length} opportunity/ies found
             </p>
           </div>
-          <Button icon={<Plus size={20} />}>New Opportunity</Button>
+          <Button icon={<Plus size={20} />} onClick={() => setShowOpportunityForm(true)}>New Opportunity</Button>
         </div>
 
         <div className="opportunities-toolbar">
@@ -543,6 +545,16 @@ export const Opportunities = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {showOpportunityForm && (
+          <LeadForm
+            onClose={() => setShowOpportunityForm(false)}
+            onSave={() => {
+              setShowOpportunityForm(false);
+              loadData();
+            }}
+          />
         )}
       </div>
     </div>

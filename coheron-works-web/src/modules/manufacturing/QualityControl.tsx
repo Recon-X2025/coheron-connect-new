@@ -176,7 +176,7 @@ export const QualityControl = () => {
             />
           </div>
           {activeTab === 'inspections' && (
-            <Button icon={<Plus size={20} />}>New Inspection</Button>
+            <Button icon={<Plus size={20} />} onClick={() => showToast('Inspection form coming soon', 'info')}>New Inspection</Button>
           )}
         </div>
 

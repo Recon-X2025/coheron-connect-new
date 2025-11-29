@@ -17,6 +17,7 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { supportDeskService } from '../services/supportDeskService';
+import { showToast } from '../components/Toast';
 import './ITSM.css';
 
 type ITSMTab = 'incidents' | 'problems' | 'changes';
@@ -372,7 +373,7 @@ export const ITSM: React.FC = () => {
           <h1>ITSM Management</h1>
           <p className="itsm-subtitle">Manage Incidents, Problems, and Change Requests</p>
         </div>
-        <Button icon={<Plus size={18} />}>
+        <Button icon={<Plus size={18} />} onClick={() => showToast(`${activeTab === 'incidents' ? 'Incident' : activeTab === 'problems' ? 'Problem' : 'Change'} creation form coming soon`, 'info')}>
           New {activeTab === 'incidents' ? 'Incident' : activeTab === 'problems' ? 'Problem' : 'Change'}
         </Button>
       </div>

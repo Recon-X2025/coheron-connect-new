@@ -321,7 +321,7 @@ router.post('/:id/confirm', async (req, res) => {
     }
 
     // Check material availability
-    const availability = await checkMaterialAvailability(id);
+    const availability = await checkMaterialAvailability(parseInt(id));
     if (!availability.available) {
       return res.status(400).json({ 
         error: 'Materials not available',
@@ -331,11 +331,11 @@ router.post('/:id/confirm', async (req, res) => {
 
     // Create work orders from routing
     if (mo.rows[0].routing_id) {
-      await createWorkOrdersFromRouting(id, mo.rows[0].routing_id, mo.rows[0].product_qty);
+      await createWorkOrdersFromRouting(parseInt(id), mo.rows[0].routing_id, mo.rows[0].product_qty);
     }
 
     // Reserve materials
-    await reserveMaterials(id);
+    await reserveMaterials(parseInt(id));
 
     // Update state
     const result = await pool.query(
@@ -477,7 +477,7 @@ router.post('/:id/cancel', async (req, res) => {
 // Check material availability
 router.get('/:id/availability', async (req, res) => {
   try {
-    const availability = await checkMaterialAvailability(req.params.id);
+    const availability = await checkMaterialAvailability(parseInt(req.params.id));
     res.json(availability);
   } catch (error) {
     console.error('Error checking availability:', error);

@@ -9,6 +9,7 @@ import { BulkActionModal } from '../../shared/components/BulkActionModal';
 import { OrderWorkflow } from './components/OrderWorkflow';
 import { OrderConfirmation } from './components/OrderConfirmation';
 import { DeliveryTracking } from './components/DeliveryTracking';
+import { OrderForm } from './components/OrderForm';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
 import { showToast } from '../../components/Toast';
 import type { SaleOrder, Partner } from '../../types/odoo';
@@ -28,6 +29,7 @@ export const SalesOrders = () => {
     const [showBulkUpdateModal, setShowBulkUpdateModal] = useState(false);
     const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
     const [bulkActionIds, setBulkActionIds] = useState<number[]>([]);
+    const [showOrderForm, setShowOrderForm] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -203,7 +205,7 @@ export const SalesOrders = () => {
                             {filteredOrders.length} orders · {formatInLakhsCompact(totalRevenue)} total
                         </p>
                     </div>
-                    <Button icon={<Plus size={20} />}>New Order</Button>
+                    <Button icon={<Plus size={20} />} onClick={() => setShowOrderForm(true)}>New Order</Button>
                 </div>
 
                 <div className="sales-toolbar">
@@ -498,6 +500,13 @@ export const SalesOrders = () => {
           placeholder="Enter user ID"
           confirmText="Assign Orders"
         />
+
+        {showOrderForm && (
+          <OrderForm
+            onClose={() => setShowOrderForm(false)}
+            onSave={loadData}
+          />
+        )}
         </div>
     );
 };

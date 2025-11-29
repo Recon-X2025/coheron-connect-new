@@ -3,6 +3,7 @@ import { Plus, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { projectService, type Issue } from '../../services/projectService';
 import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { showToast } from '../../components/Toast';
 import './BugTracker.css';
 
 interface BugTrackerProps {
@@ -54,7 +55,7 @@ export const BugTracker = ({ projectId }: BugTrackerProps) => {
           <h2>Bug Tracker</h2>
           <p>Track and manage bugs for this project</p>
         </div>
-        <Button icon={<Plus size={16} />}>Report Bug</Button>
+        <Button icon={<Plus size={16} />} onClick={() => showToast('Bug report form coming soon', 'info')}>Report Bug</Button>
       </div>
 
       {/* Statistics */}

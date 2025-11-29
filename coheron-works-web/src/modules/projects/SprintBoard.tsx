@@ -3,6 +3,7 @@ import { Plus, Calendar, Target } from 'lucide-react';
 import { projectService, type Sprint, type Issue } from '../../services/projectService';
 import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { showToast } from '../../components/Toast';
 import './SprintBoard.css';
 
 interface SprintBoardProps {
@@ -83,7 +84,7 @@ export const SprintBoard = ({ projectId }: SprintBoardProps) => {
             </button>
           ))}
         </div>
-        <Button icon={<Plus size={16} />} onClick={() => {/* Create sprint */}}>
+        <Button icon={<Plus size={16} />} onClick={() => showToast('Sprint creation form coming soon', 'info')}>
           New Sprint
         </Button>
       </div>
@@ -153,7 +154,7 @@ export const SprintBoard = ({ projectId }: SprintBoardProps) => {
           <Calendar size={48} />
           <h3>No sprints yet</h3>
           <p>Create your first sprint to get started</p>
-          <Button icon={<Plus size={16} />}>Create Sprint</Button>
+          <Button icon={<Plus size={16} />} onClick={() => showToast('Sprint creation form coming soon', 'info')}>Create Sprint</Button>
         </div>
       )}
     </div>

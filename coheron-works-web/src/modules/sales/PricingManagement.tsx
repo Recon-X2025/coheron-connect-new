@@ -5,6 +5,7 @@ import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { salesService, type PriceList, type PricingRule } from '../../services/salesService';
 import { showToast } from '../../components/Toast';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
+import { PriceListForm } from './components/PriceListForm';
 import './PricingManagement.css';
 
 export const PricingManagement = () => {
@@ -14,6 +15,7 @@ export const PricingManagement = () => {
   const [activeTab, setActiveTab] = useState<'price-lists' | 'rules' | 'promotions'>('price-lists');
   const [selectedPriceList, setSelectedPriceList] = useState<PriceList | null>(null);
   const [showRuleForm, setShowRuleForm] = useState(false);
+  const [showPriceListForm, setShowPriceListForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -37,8 +39,8 @@ export const PricingManagement = () => {
     }
   };
 
-  const handleCreatePriceList = async () => {
-    showToast('Create Price List functionality coming soon', 'info');
+  const handleCreatePriceList = () => {
+    setShowPriceListForm(true);
   };
 
   const handleCreateRule = async () => {
@@ -387,6 +389,16 @@ export const PricingManagement = () => {
               </form>
             </div>
           </div>
+        )}
+
+        {showPriceListForm && (
+          <PriceListForm
+            onClose={() => setShowPriceListForm(false)}
+            onSave={() => {
+              setShowPriceListForm(false);
+              loadData();
+            }}
+          />
         )}
       </div>
     </div>

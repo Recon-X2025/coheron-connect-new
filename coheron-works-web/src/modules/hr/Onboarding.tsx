@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { UserPlus, CheckCircle2, Clock, FileText, Settings, Plus } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
+import { showToast } from '../../components/Toast';
 import './Onboarding.css';
 
 type OnboardingTab = 'overview' | 'tasks' | 'documents' | 'checklist';
@@ -37,7 +38,7 @@ export const Onboarding = () => {
             <p className="onboarding-subtitle">Streamline new employee onboarding process</p>
           </div>
           <div className="header-actions">
-            <Button icon={<Plus size={18} />}>New Onboarding</Button>
+            <Button icon={<Plus size={18} />} onClick={() => showToast('Onboarding creation form coming soon', 'info')}>New Onboarding</Button>
           </div>
         </div>
 

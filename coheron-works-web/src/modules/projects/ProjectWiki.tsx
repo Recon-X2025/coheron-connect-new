@@ -3,6 +3,7 @@ import { BookOpen, Plus, Search, FileText } from 'lucide-react';
 import { wikiService, type KnowledgeSpace, type WikiPage } from '../../services/wikiService';
 import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { showToast } from '../../components/Toast';
 import './ProjectWiki.css';
 
 interface ProjectWikiProps {
@@ -60,7 +61,7 @@ export const ProjectWiki = ({ projectId }: ProjectWikiProps) => {
           <h2>Knowledge Base</h2>
           <p>Documentation and knowledge sharing for this project</p>
         </div>
-        <Button icon={<Plus size={16} />}>New Page</Button>
+        <Button icon={<Plus size={16} />} onClick={() => showToast('Page creation form coming soon', 'info')}>New Page</Button>
       </div>
 
       <div className="wiki-layout">
@@ -84,7 +85,7 @@ export const ProjectWiki = ({ projectId }: ProjectWikiProps) => {
             {spaces.length === 0 && (
               <div className="empty-spaces">
                 <p>No spaces yet</p>
-                <Button size="sm" icon={<Plus size={14} />}>
+                <Button size="sm" icon={<Plus size={14} />} onClick={() => showToast('Space creation form coming soon', 'info')}>
                   Create Space
                 </Button>
               </div>
@@ -106,7 +107,7 @@ export const ProjectWiki = ({ projectId }: ProjectWikiProps) => {
                   <Search size={18} />
                   <input type="text" placeholder="Search pages..." />
                 </div>
-                <Button icon={<Plus size={16} />} size="sm">
+                <Button icon={<Plus size={16} />} size="sm" onClick={() => showToast('Page creation form coming soon', 'info')}>
                   New Page
                 </Button>
               </div>
@@ -117,7 +118,7 @@ export const ProjectWiki = ({ projectId }: ProjectWikiProps) => {
                     <FileText size={48} />
                     <h3>No pages yet</h3>
                     <p>Create your first page to get started</p>
-                    <Button icon={<Plus size={16} />}>Create Page</Button>
+                    <Button icon={<Plus size={16} />} onClick={() => showToast('Page creation form coming soon', 'info')}>Create Page</Button>
                   </div>
                 ) : (
                   pages.map(page => (

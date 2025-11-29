@@ -5,6 +5,7 @@ import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { salesService, type Contract, type Subscription } from '../../services/salesService';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
 import { CreateDocumentModal } from '../esignature/components/CreateDocumentModal';
+import { showToast } from '../../components/Toast';
 import './ContractsManagement.css';
 
 export const ContractsManagement = () => {
@@ -90,7 +91,7 @@ export const ContractsManagement = () => {
             <h1>Contracts & Subscriptions</h1>
             <p className="contracts-subtitle">Manage contracts, SLAs, and subscriptions</p>
           </div>
-          <Button icon={<Plus size={20} />}>New {activeTab === 'contracts' ? 'Contract' : 'Subscription'}</Button>
+          <Button icon={<Plus size={20} />} onClick={() => showToast(`${activeTab === 'contracts' ? 'Contract' : 'Subscription'} creation form coming soon`, 'info')}>New {activeTab === 'contracts' ? 'Contract' : 'Subscription'}</Button>
         </div>
 
         <div className="contracts-tabs">

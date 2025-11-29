@@ -3,6 +3,7 @@ import { Plus, Filter, Search, List } from 'lucide-react';
 import { projectService } from '../../services/projectService';
 import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { showToast } from '../../components/Toast';
 import './BacklogView.css';
 
 interface BacklogViewProps {
@@ -50,7 +51,7 @@ export const BacklogView = ({ projectId }: BacklogViewProps) => {
           </p>
         </div>
         <div className="backlog-actions">
-          <Button icon={<Plus size={16} />}>Add Issue</Button>
+          <Button icon={<Plus size={16} />} onClick={() => showToast('Issue creation form coming soon', 'info')}>Add Issue</Button>
         </div>
       </div>
 
@@ -76,7 +77,7 @@ export const BacklogView = ({ projectId }: BacklogViewProps) => {
             <List size={48} />
             <h3>No backlog items</h3>
             <p>Add issues to your backlog to get started</p>
-            <Button icon={<Plus size={16} />}>Add Issue</Button>
+            <Button icon={<Plus size={16} />} onClick={() => showToast('Issue creation form coming soon', 'info')}>Add Issue</Button>
           </div>
         ) : (
           filteredItems.map((item: any) => (

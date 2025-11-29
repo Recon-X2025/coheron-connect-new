@@ -4,6 +4,7 @@ import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { salesService, type SalesForecast, type SalesTarget } from '../../services/salesService';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
+import { showToast } from '../../components/Toast';
 import './SalesForecasting.css';
 
 export const SalesForecasting = () => {
@@ -57,7 +58,7 @@ export const SalesForecasting = () => {
             <h1>Sales Forecasting & Planning</h1>
             <p className="forecasting-subtitle">Forecasts, targets, and achievement tracking</p>
           </div>
-          <Button icon={<Plus size={20} />}>
+          <Button icon={<Plus size={20} />} onClick={() => showToast(`${activeTab === 'forecasts' ? 'Forecast' : 'Target'} creation form coming soon`, 'info')}>
             New {activeTab === 'forecasts' ? 'Forecast' : 'Target'}
           </Button>
         </div>

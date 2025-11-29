@@ -175,16 +175,16 @@ export async function assignToTerritory(
         matches = zipCode && rule.rule_value.split(',').includes(zipCode);
         break;
       case 'state':
-        matches = state && rule.rule_value.toLowerCase() === state.toLowerCase();
+        matches = Boolean(state && typeof state === 'string' && rule.rule_value.toLowerCase() === state.toLowerCase());
         break;
       case 'country':
-        matches = country && rule.rule_value.toLowerCase() === country.toLowerCase();
+        matches = Boolean(country && typeof country === 'string' && rule.rule_value.toLowerCase() === country.toLowerCase());
         break;
       case 'industry':
-        matches = industry && rule.rule_value.toLowerCase() === industry.toLowerCase();
+        matches = Boolean(industry && typeof industry === 'string' && rule.rule_value.toLowerCase() === industry.toLowerCase());
         break;
       case 'company_size':
-        matches = companySize && rule.rule_value.toLowerCase() === companySize.toLowerCase();
+        matches = Boolean(companySize && typeof companySize === 'string' && rule.rule_value.toLowerCase() === companySize.toLowerCase());
         break;
     }
 

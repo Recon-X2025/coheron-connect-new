@@ -186,7 +186,7 @@ router.get('/analytics/summary', async (req, res) => {
     const summary = await pool.query(query, params);
 
     // Get cost breakdown by type
-    const breakdownQuery = `
+    let breakdownQuery = `
       SELECT 
         cost_type,
         SUM(standard_cost) as total_standard,
