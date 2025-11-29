@@ -43,6 +43,7 @@ export const Opportunities = () => {
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
   const [activeId, setActiveId] = useState<number | null>(null);
   const [showOpportunityForm, setShowOpportunityForm] = useState(false);
+  const [editingOpportunity, setEditingOpportunity] = useState<Opportunity | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -426,7 +427,10 @@ export const Opportunities = () => {
                         >
                           <Eye size={16} />
                         </button>
-                        <button className="action-btn" title="Edit" onClick={() => showToast('Opportunity edit form coming soon', 'info')}>
+                        <button className="action-btn" title="Edit" onClick={() => {
+                          setEditingOpportunity(opp);
+                          setShowOpportunityForm(true);
+                        }}>
                           <Edit size={16} />
                         </button>
                         <button
@@ -550,9 +554,14 @@ export const Opportunities = () => {
 
         {showOpportunityForm && (
           <LeadForm
-            onClose={() => setShowOpportunityForm(false)}
+            lead={editingOpportunity || undefined}
+            onClose={() => {
+              setShowOpportunityForm(false);
+              setEditingOpportunity(null);
+            }}
             onSave={() => {
               setShowOpportunityForm(false);
+              setEditingOpportunity(null);
               loadData();
             }}
           />

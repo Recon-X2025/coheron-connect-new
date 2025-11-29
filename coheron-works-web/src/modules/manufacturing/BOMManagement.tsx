@@ -14,6 +14,7 @@ export const BOMManagement = () => {
   const [selectedBOM, setSelectedBOM] = useState<BOM | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingBOM, setEditingBOM] = useState<BOM | null>(null);
   const [products, setProducts] = useState<any[]>([]);
   const [bomFormData, setBomFormData] = useState({
     name: '',
@@ -75,13 +76,23 @@ export const BOMManagement = () => {
   const handleCreateBOM = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await manufacturingService.createBOM({
+      const submitData = {
         ...bomFormData,
         product_id: parseInt(bomFormData.product_id),
         product_qty: parseFloat(bomFormData.product_qty),
-      } as any);
+      } as any;
+
+      if (editingBOM?.id) {
+        await manufacturingService.updateBOM(editingBOM.id, submitData);
+        showToast('BOM updated successfully', 'success');
+      } else {
+        await manufacturingService.createBOM(submitData);
+        showToast('BOM created successfully', 'success');
+      }
+
       await loadData();
       setShowCreateModal(false);
+      setEditingBOM(null);
       setBomFormData({
         name: '',
         code: '',
@@ -90,9 +101,8 @@ export const BOMManagement = () => {
         type: 'normal',
         active: true,
       });
-      showToast('BOM created successfully', 'success');
     } catch (error: any) {
-      showToast(error.response?.data?.error || 'Failed to create BOM', 'error');
+      showToast(error.response?.data?.error || `Failed to ${editingBOM ? 'update' : 'create'} BOM`, 'error');
     }
   };
 
@@ -182,7 +192,18 @@ export const BOMManagement = () => {
                       >
                         <Eye size={16} />
                       </button>
-                      <button className="action-btn" title="Edit" onClick={() => showToast('BOM edit form coming soon', 'info')}>
+                      <button className="action-btn" title="Edit" onClick={() => {
+                        setEditingBOM(bom);
+                        setBomFormData({
+                          name: bom.name || '',
+                          code: bom.code || '',
+                          product_id: bom.product_id?.toString() || '',
+                          product_qty: bom.product_qty?.toString() || '1',
+                          type: bom.type || 'normal',
+                          active: bom.active !== false,
+                        });
+                        setShowCreateModal(true);
+                      }}>
                         <Edit size={16} />
                       </button>
                       <button
@@ -281,8 +302,19 @@ export const BOMManagement = () => {
           <div className="bom-detail-modal" onClick={() => setShowCreateModal(false)}>
             <div className="bom-detail-content" onClick={(e) => e.stopPropagation()}>
               <div className="bom-detail-header">
-                <h2>Create BOM</h2>
-                <button onClick={() => setShowCreateModal(false)}>×</button>
+                <h2>{editingBOM ? 'Edit BOM' : 'Create BOM'}</h2>
+                <button onClick={() => {
+                  setShowCreateModal(false);
+                  setEditingBOM(null);
+                  setBomFormData({
+                    name: '',
+                    code: '',
+                    product_id: '',
+                    product_qty: '1',
+                    type: 'normal',
+                    active: true,
+                  });
+                }}>×</button>
               </div>
               <form onSubmit={handleCreateBOM} className="create-bom-form">
                 <div className="form-group">
@@ -347,7 +379,7 @@ export const BOMManagement = () => {
                   <Button type="button" variant="ghost" onClick={() => setShowCreateModal(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit">Create BOM</Button>
+                  <Button type="submit">{editingBOM ? 'Update BOM' : 'Create BOM'}</Button>
                 </div>
               </form>
             </div>

@@ -17,6 +17,7 @@ export const Appraisals = () => {
   const [activeTab, setActiveTab] = useState<AppraisalTab>('overview');
   const [showForm, setShowForm] = useState(false);
   const [showGoalForm, setShowGoalForm] = useState(false);
+  const [editingAppraisal, setEditingAppraisal] = useState<any>(null);
 
   useEffect(() => {
     loadData();
@@ -124,9 +125,14 @@ export const Appraisals = () => {
         {showForm && (
           <AppraisalForm
             employees={employees}
-            onClose={() => setShowForm(false)}
+            initialData={editingAppraisal}
+            onClose={() => {
+              setShowForm(false);
+              setEditingAppraisal(null);
+            }}
             onSave={() => {
               setShowForm(false);
+              setEditingAppraisal(null);
               loadData();
             }}
           />

@@ -18,6 +18,7 @@ export const RoutingManagement = () => {
   const [selectedRouting, setSelectedRouting] = useState<Routing | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingRouting, setEditingRouting] = useState<Routing | null>(null);
   const [activeTab, setActiveTab] = useState<'routings' | 'workcenters'>('routings');
   const [routingFormData, setRoutingFormData] = useState({
     name: '',
@@ -71,18 +72,25 @@ export const RoutingManagement = () => {
   const handleCreateRouting = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await manufacturingService.createRouting(routingFormData);
+      if (editingRouting?.id) {
+        await manufacturingService.updateRouting(editingRouting.id, routingFormData);
+        showToast('Routing updated successfully', 'success');
+      } else {
+        await manufacturingService.createRouting(routingFormData);
+        showToast('Routing created successfully', 'success');
+      }
+
       await loadData();
       setShowCreateModal(false);
+      setEditingRouting(null);
       setRoutingFormData({
         name: '',
         code: '',
         active: true,
         note: '',
       });
-      showToast('Routing created successfully', 'success');
     } catch (error: any) {
-      showToast(error.response?.data?.error || 'Failed to create routing', 'error');
+      showToast(error.response?.data?.error || `Failed to ${editingRouting ? 'update' : 'create'} routing`, 'error');
     }
   };
 
@@ -310,8 +318,17 @@ export const RoutingManagement = () => {
           <div className="routing-detail-modal" onClick={() => setShowCreateModal(false)}>
             <div className="routing-detail-content" onClick={(e) => e.stopPropagation()}>
               <div className="routing-detail-header">
-                <h2>Create Routing</h2>
-                <button onClick={() => setShowCreateModal(false)}>×</button>
+                <h2>{editingRouting ? 'Edit Routing' : 'Create Routing'}</h2>
+                <button onClick={() => {
+                  setShowCreateModal(false);
+                  setEditingRouting(null);
+                  setRoutingFormData({
+                    name: '',
+                    code: '',
+                    active: true,
+                    note: '',
+                  });
+                }}>×</button>
               </div>
               <form onSubmit={handleCreateRouting} className="create-routing-form">
                 <div className="form-group">
@@ -346,7 +363,7 @@ export const RoutingManagement = () => {
                   <Button type="button" variant="ghost" onClick={() => setShowCreateModal(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit">Create Routing</Button>
+                  <Button type="submit">{editingRouting ? 'Update Routing' : 'Create Routing'}</Button>
                 </div>
               </form>
             </div>
