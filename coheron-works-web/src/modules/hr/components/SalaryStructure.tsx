@@ -207,6 +207,23 @@ export const SalaryStructure = () => {
           </div>
         </div>
       </Card>
+
+      {showComponentForm && selectedEmployee && (
+        <SalaryComponentForm
+          employeeId={selectedEmployee}
+          componentType={componentType}
+          initialData={editingComponent}
+          onClose={() => {
+            setShowComponentForm(false);
+            setEditingComponent(null);
+          }}
+          onSave={() => {
+            setShowComponentForm(false);
+            setEditingComponent(null);
+            loadSalaryStructure();
+          }}
+        />
+      )}
     </div>
   );
 };
