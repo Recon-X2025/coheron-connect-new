@@ -4,7 +4,6 @@ import { Button } from '../../components/Button';
 import { odooService } from '../../services/odooService';
 import { apiService } from '../../services/apiService';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
-import { showToast } from '../../components/Toast';
 import { AdvancedFilter } from '../../shared/components/AdvancedFilter';
 import { BulkActions, createCommonBulkActions } from '../../shared/components/BulkActions';
 import { ActivityTimeline } from './components/ActivityTimeline';

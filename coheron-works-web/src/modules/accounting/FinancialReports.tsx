@@ -337,12 +337,8 @@ export const FinancialReports = () => {
           <div className="fr-content">
             {activeReport === 'trial-balance' && renderTrialBalance()}
             {activeReport === 'profit-loss' && renderProfitLoss()}
-            {activeReport === 'balance-sheet' && (
-              {renderBalanceSheet()}
-            )}
-            {activeReport === 'cash-flow' && (
-              {renderCashFlow()}
-            )}
+            {activeReport === 'balance-sheet' && renderBalanceSheet()}
+            {activeReport === 'cash-flow' && renderCashFlow()}
           </div>
         )}
       </div>
