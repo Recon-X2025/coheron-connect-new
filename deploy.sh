@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_URL="https://github.com/kathikiyer/CoheronERP.git"
+REPO_URL="https://github.com/Recon-X2025/coheron-connect-new.git"
 APP_DIR="$HOME/CoheronERP"
 
 echo "=== CoheronERP Deployment ==="
