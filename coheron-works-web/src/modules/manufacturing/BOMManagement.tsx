@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, Edit, Trash2, Eye } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Eye, ClipboardList } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { manufacturingService, type BOM } from '../../services/manufacturingService';
 import { apiService } from '../../services/apiService';
 import { showToast } from '../../components/Toast';
 import { confirmAction } from '../../components/ConfirmDialog';
+import { EmptyState } from '../../components/EmptyState';
 import './BOMManagement.css';
 
 export const BOMManagement = () => {
@@ -157,6 +158,15 @@ export const BOMManagement = () => {
           </div>
         </div>
 
+        {filteredBOMs.length === 0 ? (
+          <EmptyState
+            icon={<ClipboardList size={48} />}
+            title="No bills of materials yet"
+            description="Define your first BOM to manage product components and manufacturing"
+            actionLabel="New BOM"
+            onAction={() => setShowCreateModal(true)}
+          />
+        ) : (
         <div className="boms-table-container">
           <table className="boms-table">
             <thead>
@@ -226,6 +236,7 @@ export const BOMManagement = () => {
             </tbody>
           </table>
         </div>
+        )}
 
         {showDetailModal && selectedBOM && (
           <div className="bom-detail-modal" onClick={() => setShowDetailModal(false)}>

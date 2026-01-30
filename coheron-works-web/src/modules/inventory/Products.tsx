@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Package, Plus, MapPin, AlertTriangle, Eye, Edit, Trash2 } from 'lucide-react';
+import { Pagination } from '../../shared/components/Pagination';
+import { usePagination } from '../../hooks/usePagination';
 import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { productService } from '../../services/odooService';
@@ -113,6 +115,11 @@ export const Products = () => {
         product.default_code.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const { paginatedItems: paginatedProducts, page, setPage, pageSize, setPageSize, totalPages, totalItems, resetPage } = usePagination(filteredProducts);
+
+    // Reset page when filters change
+    useEffect(() => { resetPage(); }, [searchTerm, resetPage]);
+
     if (loading) {
         return <div className="products-page"><div className="container"><LoadingSpinner /></div></div>;
     }
@@ -141,7 +148,7 @@ export const Products = () => {
                 </div>
 
                 <div className="products-grid">
-                    {filteredProducts.map(product => {
+                    {paginatedProducts.map(product => {
                         const stock = getStockInfo(product.id);
                         const isLowStock = stock.available_qty < (product as any).reorder_point || 0;
                         return (
@@ -233,6 +240,16 @@ export const Products = () => {
                         );
                     })}
                 </div>
+
+                <Pagination
+                    currentPage={page}
+                    totalPages={totalPages}
+                    pageSize={pageSize}
+                    totalItems={totalItems}
+                    onPageChange={setPage}
+                    onPageSizeChange={setPageSize}
+                    pageSizeOptions={[10, 25, 50]}
+                />
 
                 {showStockDetails && selectedProduct && (
                     <div className="modal-overlay" onClick={() => {

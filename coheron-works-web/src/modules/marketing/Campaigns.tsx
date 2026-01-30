@@ -9,6 +9,7 @@ import { CampaignForm } from './components/CampaignForm';
 import { CampaignAnalytics } from './components/CampaignAnalytics';
 import { CampaignFinancials } from './components/CampaignFinancials';
 import { confirmAction } from '../../components/ConfirmDialog';
+import { EmptyState } from '../../components/EmptyState';
 import './Campaigns.css';
 
 export interface Campaign {
@@ -214,6 +215,15 @@ export const Campaigns = () => {
           />
         )}
 
+        {filteredCampaigns.length === 0 ? (
+          <EmptyState
+            icon={<Megaphone size={48} />}
+            title="No campaigns yet"
+            description="Launch your first marketing campaign to reach your audience"
+            actionLabel="New Campaign"
+            onAction={() => { setEditingCampaignId(undefined); setShowCampaignForm(true); }}
+          />
+        ) : (
         <div className="campaigns-grid">
           {filteredCampaigns.map((campaign) => {
             const roi = calculateROI(campaign);
@@ -301,6 +311,7 @@ export const Campaigns = () => {
             );
           })}
         </div>
+        )}
 
         {selectedCampaign && (
           <div className="campaign-detail-modal" onClick={() => {

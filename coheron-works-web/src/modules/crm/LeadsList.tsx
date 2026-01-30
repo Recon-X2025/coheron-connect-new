@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Filter, Plus, Mail, Phone, TrendingUp, Edit, Trash2, CheckCircle } from 'lucide-react';
+import { Pagination } from '../../shared/components/Pagination';
+import { usePagination } from '../../hooks/usePagination';
 import { Button } from '../../components/Button';
 import { leadService, partnerService } from '../../services/odooService';
 import { apiService } from '../../services/apiService';
@@ -189,6 +191,11 @@ export const LeadsList = () => {
             return sortOrder === 'asc' ? comparison : -comparison;
         });
 
+    const { paginatedItems: paginatedLeads, page, setPage, pageSize, setPageSize, totalPages, totalItems, resetPage } = usePagination(filteredLeads);
+
+    // Reset page when filters change
+    useEffect(() => { resetPage(); }, [searchTerm, stageFilter, filterDomain, resetPage]);
+
     const handleSort = (field: 'name' | 'revenue' | 'probability') => {
         if (sortBy === field) {
             setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -276,12 +283,12 @@ export const LeadsList = () => {
                                     <input
                                         type="checkbox"
                                         checked={
-                                            selectedIds.length === filteredLeads.length &&
-                                            filteredLeads.length > 0
+                                            selectedIds.length === paginatedLeads.length &&
+                                            paginatedLeads.length > 0
                                         }
                                         onChange={(e) => {
                                             if (e.target.checked) {
-                                                setSelectedIds(filteredLeads.map((l) => l.id));
+                                                setSelectedIds(paginatedLeads.map((l) => l.id));
                                             } else {
                                                 setSelectedIds([]);
                                             }
@@ -305,7 +312,7 @@ export const LeadsList = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredLeads.map(lead => (
+                            {paginatedLeads.map(lead => (
                                 <tr key={lead.id}>
                                     <td>
                                         <input
@@ -395,6 +402,16 @@ export const LeadsList = () => {
                         </tbody>
                     </table>
                 </div>
+
+                <Pagination
+                    currentPage={page}
+                    totalPages={totalPages}
+                    pageSize={pageSize}
+                    totalItems={totalItems}
+                    onPageChange={setPage}
+                    onPageSizeChange={setPageSize}
+                    pageSizeOptions={[10, 25, 50]}
+                />
 
                 {convertingLead && (
                     <LeadConversion

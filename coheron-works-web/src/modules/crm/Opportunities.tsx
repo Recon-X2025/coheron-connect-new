@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, TrendingUp, Edit, Trash2, Eye } from 'lucide-react';
+import { Pagination } from '../../shared/components/Pagination';
+import { usePagination } from '../../hooks/usePagination';
 import { Button } from '../../components/Button';
 import { odooService } from '../../services/odooService';
 import { apiService } from '../../services/apiService';
@@ -184,6 +186,11 @@ export const Opportunities = () => {
     );
   });
 
+  const { paginatedItems: paginatedOpportunities, page, setPage, pageSize, setPageSize, totalPages, totalItems, resetPage } = usePagination(filteredOpportunities);
+
+  // Reset page when filters change
+  useEffect(() => { resetPage(); }, [searchTerm, filterDomain, resetPage]);
+
   const filterFields = [
     { name: 'stage', label: 'Stage', type: 'selection' as const },
     { name: 'probability', label: 'Probability', type: 'number' as const },
@@ -341,6 +348,7 @@ export const Opportunities = () => {
         )}
 
         {viewMode === 'list' ? (
+          <>
           <div className="opportunities-table-container">
             <table className="opportunities-table">
               <thead>
@@ -349,12 +357,12 @@ export const Opportunities = () => {
                     <input
                       type="checkbox"
                       checked={
-                        selectedIds.length === filteredOpportunities.length &&
-                        filteredOpportunities.length > 0
+                        selectedIds.length === paginatedOpportunities.length &&
+                        paginatedOpportunities.length > 0
                       }
                       onChange={(e) => {
                         if (e.target.checked) {
-                          setSelectedIds(filteredOpportunities.map((o) => o.id));
+                          setSelectedIds(paginatedOpportunities.map((o) => o.id));
                         } else {
                           setSelectedIds([]);
                         }
@@ -371,7 +379,7 @@ export const Opportunities = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredOpportunities.map((opp) => (
+                {paginatedOpportunities.map((opp) => (
                   <tr key={opp.id}>
                     <td>
                       <input
@@ -452,6 +460,16 @@ export const Opportunities = () => {
               </tbody>
             </table>
           </div>
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            pageSize={pageSize}
+            totalItems={totalItems}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+            pageSizeOptions={[10, 25, 50]}
+          />
+          </>
         ) : (
           <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <div className="opportunities-kanban">

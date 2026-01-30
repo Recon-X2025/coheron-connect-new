@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, FileText, CheckCircle, Clock, XCircle, Eye } from 'lucide-react';
+import { Pagination } from '../../shared/components/Pagination';
+import { usePagination } from '../../hooks/usePagination';
 import { Button } from '../../components/Button';
 import { saleOrderService, partnerService } from '../../services/odooService';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
@@ -10,6 +12,7 @@ import { OrderWorkflow } from './components/OrderWorkflow';
 import { OrderConfirmation } from './components/OrderConfirmation';
 import { DeliveryTracking } from './components/DeliveryTracking';
 import { OrderForm } from './components/OrderForm';
+import { EmptyState } from '../../components/EmptyState';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
 import { showToast } from '../../components/Toast';
 import type { SaleOrder, Partner } from '../../types/odoo';
@@ -183,6 +186,11 @@ export const SalesOrders = () => {
         return matchesSearch && matchesStatus;
     });
 
+    const { paginatedItems: paginatedOrders, page, setPage, pageSize, setPageSize, totalPages, totalItems, resetPage } = usePagination(filteredOrders);
+
+    // Reset page when filters change
+    useEffect(() => { resetPage(); }, [searchTerm, statusFilter, filterDomain, resetPage]);
+
     const totalRevenue = filteredOrders.reduce((sum, order) => sum + order.amount_total, 0);
 
     const filterFields = [
@@ -271,9 +279,17 @@ export const SalesOrders = () => {
                     />
                 )}
 
-                {viewMode === 'grid' ? (
+                {filteredOrders.length === 0 ? (
+                    <EmptyState
+                        icon={<FileText size={48} />}
+                        title="No sales orders yet"
+                        description="Create your first sales order to get started"
+                        actionLabel="New Order"
+                        onAction={() => setShowOrderForm(true)}
+                    />
+                ) : viewMode === 'grid' ? (
                 <div className="orders-grid">
-                    {filteredOrders.map(order => (
+                    {paginatedOrders.map(order => (
                         <div key={order.id} className="order-card">
                             <div className="order-header">
                                 <div>
@@ -339,12 +355,12 @@ export const SalesOrders = () => {
                                         <input
                                             type="checkbox"
                                             checked={
-                                                selectedIds.length === filteredOrders.length &&
-                                                filteredOrders.length > 0
+                                                selectedIds.length === paginatedOrders.length &&
+                                                paginatedOrders.length > 0
                                             }
                                             onChange={(e) => {
                                                 if (e.target.checked) {
-                                                    setSelectedIds(filteredOrders.map((o) => o.id));
+                                                    setSelectedIds(paginatedOrders.map((o) => o.id));
                                                 } else {
                                                     setSelectedIds([]);
                                                 }
@@ -360,7 +376,7 @@ export const SalesOrders = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredOrders.map(order => (
+                                {paginatedOrders.map(order => (
                                     <tr key={order.id}>
                                         <td>
                                             <input
@@ -419,6 +435,16 @@ export const SalesOrders = () => {
                         </table>
                     </div>
                 )}
+
+                <Pagination
+                    currentPage={page}
+                    totalPages={totalPages}
+                    pageSize={pageSize}
+                    totalItems={totalItems}
+                    onPageChange={setPage}
+                    onPageSizeChange={setPageSize}
+                    pageSizeOptions={[10, 25, 50]}
+                />
 
                 {selectedOrder && !showConfirmation && (
                     <div className="order-detail-modal" onClick={() => setSelectedOrder(null)}>

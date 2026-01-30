@@ -5,6 +5,7 @@ import { Sidebar } from './Sidebar';
 import { ToastContainer } from './Toast';
 import { GlobalSearch } from './GlobalSearch';
 import { ConfirmDialog, useConfirm, setGlobalConfirm } from './ConfirmDialog';
+import { Breadcrumb } from './Breadcrumb';
 import './Layout.css';
 
 interface LayoutProps {
@@ -55,6 +56,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </>
             )}
             <main id="main-content" role="main" className={`main-content ${!isPublicPage ? 'with-sidebar' : ''} ${sidebarCollapsed ? 'collapsed' : ''}`}>
+                {!isPublicPage && <Breadcrumb />}
                 {children}
             </main>
             <footer className="footer">

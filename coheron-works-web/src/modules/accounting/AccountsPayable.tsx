@@ -8,6 +8,7 @@ import { BillForm } from './components/BillForm';
 import { PaymentForm } from './components/PaymentForm';
 import { VendorForm } from './components/VendorForm';
 import { confirmAction } from '../../components/ConfirmDialog';
+import { EmptyState } from '../../components/EmptyState';
 import './AccountsPayable.css';
 
 interface Bill {
@@ -176,7 +177,17 @@ export const AccountsPayable = () => {
           </div>
         </div>
 
-        {activeTab === 'bills' && (
+        {activeTab === 'bills' && filteredBills.length === 0 && (
+          <EmptyState
+            icon={<FileText size={48} />}
+            title="No bills yet"
+            description="Record your first vendor bill to track accounts payable"
+            actionLabel="New Bill"
+            onAction={() => setShowBillForm(true)}
+          />
+        )}
+
+        {activeTab === 'bills' && filteredBills.length > 0 && (
           <div className="ap-table-container">
             <table className="ap-table">
               <thead>

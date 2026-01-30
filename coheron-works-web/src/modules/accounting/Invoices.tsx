@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, FileText, Plus, CheckCircle, Clock, Eye, Edit, Trash2, Download, X } from 'lucide-react';
+import { Pagination } from '../../shared/components/Pagination';
+import { usePagination } from '../../hooks/usePagination';
 import { Button } from '../../components/Button';
 import { invoiceService, partnerService } from '../../services/odooService';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
@@ -155,6 +157,11 @@ export const Invoices = () => {
         getPartnerName(invoice.partner_id).toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const { paginatedItems: paginatedInvoices, page, setPage, pageSize, setPageSize, totalPages, totalItems, resetPage } = usePagination(filteredInvoices);
+
+    // Reset page when filters change
+    useEffect(() => { resetPage(); }, [searchTerm, resetPage]);
+
     const totalAmount = filteredInvoices.reduce((sum, inv) => sum + inv.amount_total, 0);
     const totalPaid = filteredInvoices.filter(inv => inv.payment_state === 'paid').reduce((sum, inv) => sum + inv.amount_total, 0);
 
@@ -232,7 +239,7 @@ export const Invoices = () => {
                                     </td>
                                 </tr>
                             ) : (
-                                filteredInvoices.map((invoice) => (
+                                paginatedInvoices.map((invoice) => (
                                     <tr key={invoice.id}>
                                         <td className="invoice-number">
                                             <FileText size={16} />
@@ -290,6 +297,16 @@ export const Invoices = () => {
                         </tbody>
                     </table>
                 </div>
+
+                <Pagination
+                    currentPage={page}
+                    totalPages={totalPages}
+                    pageSize={pageSize}
+                    totalItems={totalItems}
+                    onPageChange={setPage}
+                    onPageSizeChange={setPageSize}
+                    pageSizeOptions={[10, 25, 50]}
+                />
 
                 {/* View Invoice Modal */}
                 {showViewModal && selectedInvoice && (

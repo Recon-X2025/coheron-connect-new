@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
-import { 
-  Search, Users, Plus, Edit, Trash2, Download, Upload, 
+import {
+  Search, Users, Plus, Edit, Trash2, Download, Upload,
   Phone, Mail, Building2,
   AlertCircle, CheckCircle2
 } from 'lucide-react';
+import { Pagination } from '../../shared/components/Pagination';
+import { usePagination } from '../../hooks/usePagination';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
@@ -58,6 +60,11 @@ export const Employees = () => {
 
     return matchesSearch && matchesTab && matchesDept;
   });
+
+  const { paginatedItems: paginatedEmployees, page, setPage, pageSize, setPageSize, totalPages, totalItems, resetPage } = usePagination(filteredEmployees);
+
+  // Reset page when filters change
+  useEffect(() => { resetPage(); }, [searchTerm, activeTab, filterDepartment, resetPage]);
 
   const stats = {
     total: employees.length,
@@ -220,7 +227,7 @@ export const Employees = () => {
 
         {viewMode === 'grid' ? (
           <div className="employees-grid">
-            {filteredEmployees.map(employee => (
+            {paginatedEmployees.map(employee => (
               <div
                 key={employee.id}
                 className="employee-card"
@@ -300,7 +307,7 @@ export const Employees = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredEmployees.map(employee => (
+                {paginatedEmployees.map(employee => (
                   <tr
                     key={employee.id}
                     onClick={() => {
@@ -358,6 +365,16 @@ export const Employees = () => {
             </table>
           </Card>
         )}
+
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+          pageSizeOptions={[10, 25, 50]}
+        />
 
         {showForm && (
           <EmployeeForm

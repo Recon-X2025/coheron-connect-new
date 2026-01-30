@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, Edit, Trash2, ChevronRight, ChevronDown, X } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, ChevronRight, ChevronDown, X, BookOpen } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { chartOfAccountsService } from '../../services/accountingService';
 import { showToast } from '../../components/Toast';
 import { AccountForm } from './components/AccountForm';
 import { confirmAction } from '../../components/ConfirmDialog';
+import { EmptyState } from '../../components/EmptyState';
 import './ChartOfAccounts.css';
 
 interface Account {
@@ -228,7 +229,17 @@ export const ChartOfAccounts = () => {
               <div className="account-actions">Actions</div>
             </div>
             <div className="coa-table-body">
-              {rootAccounts.map(account => renderAccount(account))}
+              {rootAccounts.length === 0 ? (
+                <EmptyState
+                  icon={<BookOpen size={48} />}
+                  title="No accounts found"
+                  description="Set up your chart of accounts to organize your financial data"
+                  actionLabel="New Account"
+                  onAction={() => setShowAccountForm(true)}
+                />
+              ) : (
+                rootAccounts.map(account => renderAccount(account))
+              )}
             </div>
           </div>
 

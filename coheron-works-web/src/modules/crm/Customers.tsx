@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, Mail, Phone, Building, User, Edit, Trash2 } from 'lucide-react';
+import { Pagination } from '../../shared/components/Pagination';
+import { usePagination } from '../../hooks/usePagination';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { partnerService } from '../../services/odooService';
@@ -39,6 +41,11 @@ export const Customers = () => {
 
     const companies = filteredPartners.filter(p => p.type === 'company');
     const contacts = filteredPartners.filter(p => p.type === 'contact');
+
+    const { paginatedItems: paginatedPartners, page, setPage, pageSize, setPageSize, totalPages, totalItems, resetPage } = usePagination(filteredPartners);
+
+    // Reset page when filters change
+    useEffect(() => { resetPage(); }, [searchTerm, typeFilter, resetPage]);
 
     if (loading) {
         return <div className="customers-page"><div className="container"><h1>Loading...</h1></div></div>;
@@ -96,7 +103,7 @@ export const Customers = () => {
 
                 {/* Customer Grid */}
                 <div className="customers-grid">
-                    {filteredPartners.map(partner => (
+                    {paginatedPartners.map(partner => (
                         <Card key={partner.id} className="customer-card">
                             <div className="customer-card-header">
                                 <div className="customer-avatar">
@@ -159,6 +166,16 @@ export const Customers = () => {
                         </Card>
                     ))}
                 </div>
+
+                <Pagination
+                    currentPage={page}
+                    totalPages={totalPages}
+                    pageSize={pageSize}
+                    totalItems={totalItems}
+                    onPageChange={setPage}
+                    onPageSizeChange={setPageSize}
+                    pageSizeOptions={[10, 25, 50]}
+                />
 
                 {filteredPartners.length === 0 && (
                     <div className="empty-state">

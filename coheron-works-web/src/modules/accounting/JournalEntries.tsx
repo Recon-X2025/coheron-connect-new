@@ -6,6 +6,7 @@ import { formatInLakhsCompact } from '../../utils/currencyFormatter';
 import { showToast } from '../../components/Toast';
 import { JournalEntryForm } from './components/JournalEntryForm';
 import { confirmAction } from '../../components/ConfirmDialog';
+import { EmptyState } from '../../components/EmptyState';
 import './JournalEntries.css';
 
 interface JournalEntry {
@@ -171,6 +172,15 @@ export const JournalEntries = () => {
           </select>
         </div>
 
+        {filteredEntries.length === 0 ? (
+          <EmptyState
+            icon={<FileText size={48} />}
+            title="No journal entries yet"
+            description="Create your first journal entry to start tracking transactions"
+            actionLabel="New Entry"
+            onAction={() => setShowEntryForm(true)}
+          />
+        ) : (
         <div className="je-table-container">
           <table className="je-table">
             <thead>
@@ -253,6 +263,7 @@ export const JournalEntries = () => {
             </tbody>
           </table>
         </div>
+        )}
 
         {/* View Entry Modal */}
         {showViewModal && selectedEntry && (

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, FileText, Send, CheckCircle, Mail, History, Eye } from 'lucide-react';
+import { Pagination } from '../../shared/components/Pagination';
+import { usePagination } from '../../hooks/usePagination';
 import { Button } from '../../components/Button';
 import { saleOrderService, partnerService } from '../../services/odooService';
 import { apiService } from '../../services/apiService';
@@ -118,6 +120,11 @@ export const Quotations = () => {
     );
   });
 
+  const { paginatedItems: paginatedQuotations, page, setPage, pageSize, setPageSize, totalPages, totalItems, resetPage } = usePagination(filteredQuotations);
+
+  // Reset page when filters change
+  useEffect(() => { resetPage(); }, [searchTerm, filterDomain, resetPage]);
+
   const filterFields = [
     { name: 'state', label: 'State', type: 'selection' as const },
     { name: 'amount_total', label: 'Total Amount', type: 'number' as const },
@@ -175,7 +182,7 @@ export const Quotations = () => {
         )}
 
         <div className="quotations-grid">
-          {filteredQuotations.map((quote) => (
+          {paginatedQuotations.map((quote) => (
             <div key={quote.id} className="quotation-card">
               <div className="quotation-header">
                 <div>
@@ -241,6 +248,16 @@ export const Quotations = () => {
             </div>
           ))}
         </div>
+
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+          pageSizeOptions={[10, 25, 50]}
+        />
 
         {showVersions && selectedQuote && (
           <div className="modal-overlay" onClick={() => { setShowVersions(false); setSelectedQuote(null); }}>
