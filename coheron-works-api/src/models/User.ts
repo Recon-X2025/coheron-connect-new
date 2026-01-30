@@ -10,7 +10,13 @@ export interface IUser extends Document {
   created_at: Date;
   updated_at: Date;
   two_factor_enabled: boolean;
+  two_factor_method: string;
+  avatar_url: string;
+  timezone: string;
+  locale: string;
   tenant_id: mongoose.Types.ObjectId;
+  role_id: mongoose.Types.ObjectId;
+  last_login_at: Date;
 }
 
 const userSchema = new Schema<IUser>({
