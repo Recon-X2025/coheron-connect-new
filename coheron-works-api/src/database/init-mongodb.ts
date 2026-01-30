@@ -222,9 +222,9 @@ async function initMongoDB() {
     console.log('--- Seeding Manufacturing ---');
     const now = new Date();
     const moData = [
-      { name: 'MO/2026/001', product_id: laptop?._id, product_qty: 20, state: 'draft', date_planned_start: now, date_planned_finished: new Date(now.getTime() + 7 * 86400000), user_id: admin?._id },
-      { name: 'MO/2026/002', product_id: laptop?._id, product_qty: 50, state: 'confirmed', date_planned_start: now, date_planned_finished: new Date(now.getTime() + 14 * 86400000), user_id: admin?._id },
-      { name: 'MO/2026/003', product_id: laptop?._id, product_qty: 100, state: 'progress', date_planned_start: new Date(now.getTime() - 7 * 86400000), date_planned_finished: new Date(now.getTime() + 7 * 86400000), user_id: admin?._id },
+      { name: 'MO/2026/001', mo_number: 'MO-001', product_id: laptop?._id, product_qty: 20, state: 'draft', date_planned_start: now, date_planned_finished: new Date(now.getTime() + 7 * 86400000), user_id: admin?._id },
+      { name: 'MO/2026/002', mo_number: 'MO-002', product_id: laptop?._id, product_qty: 50, state: 'confirmed', date_planned_start: now, date_planned_finished: new Date(now.getTime() + 14 * 86400000), user_id: admin?._id },
+      { name: 'MO/2026/003', mo_number: 'MO-003', product_id: laptop?._id, product_qty: 100, state: 'progress', date_planned_start: new Date(now.getTime() - 7 * 86400000), date_planned_finished: new Date(now.getTime() + 7 * 86400000), user_id: admin?._id },
     ];
     for (const mo of moData) {
       await ManufacturingOrder.findOneAndUpdate({ name: mo.name }, mo, { upsert: true });
@@ -388,8 +388,8 @@ async function initMongoDB() {
     // =============================================
     console.log('--- Seeding Projects ---');
     const projectsData = [
-      { name: 'ERP v2.0 Development', description: 'Next major version of Coheron ERP', state: 'active', start_date: new Date('2026-01-01'), planned_end_date: new Date('2026-06-30'), budget_planned: 5000000, priority: 'high' },
-      { name: 'Website Redesign', description: 'Redesign the marketing website', state: 'planning', start_date: new Date('2026-02-01'), planned_end_date: new Date('2026-04-30'), budget_planned: 1500000, priority: 'medium' },
+      { name: 'ERP v2.0 Development', key: 'ERP2', code: 'PROJ-001', description: 'Next major version of Coheron ERP', state: 'active', start_date: new Date('2026-01-01'), planned_end_date: new Date('2026-06-30'), budget_planned: 5000000, priority: 'high' },
+      { name: 'Website Redesign', key: 'WEB', code: 'PROJ-002', description: 'Redesign the marketing website', state: 'planning', start_date: new Date('2026-02-01'), planned_end_date: new Date('2026-04-30'), budget_planned: 1500000, priority: 'medium' },
     ];
     for (const p of projectsData) {
       await Project.findOneAndUpdate({ name: p.name }, p, { upsert: true });
