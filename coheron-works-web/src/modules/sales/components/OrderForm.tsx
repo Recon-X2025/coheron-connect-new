@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { saleOrderService, partnerService } from '../../../services/odooService';
 import { showToast } from '../../../components/Toast';
 import type { SaleOrder, Partner } from '../../../types/odoo';
+import { useModalDismiss } from '../../../hooks/useModalDismiss';
 import './OrderForm.css';
 
 interface OrderFormProps {
@@ -12,6 +13,7 @@ interface OrderFormProps {
 }
 
 export const OrderForm = ({ order, onClose, onSave }: OrderFormProps) => {
+  useModalDismiss(true, onClose);
   const [loading, setLoading] = useState(false);
   const [partners, setPartners] = useState<Partner[]>([]);
   const [formData, setFormData] = useState({

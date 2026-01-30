@@ -6,6 +6,7 @@ import { formatInLakhsCompact } from '../../utils/currencyFormatter';
 import { showToast } from '../../components/Toast';
 import { JournalEntryForm } from './components/JournalEntryForm';
 import { confirmAction } from '../../components/ConfirmDialog';
+import { DateRangeFilter } from '../../components/DateRangeFilter';
 import { EmptyState } from '../../components/EmptyState';
 import './JournalEntries.css';
 
@@ -40,6 +41,8 @@ export const JournalEntries = () => {
   const [filters, setFilters] = useState({ state: '', journal_id: '' });
   const [showEntryForm, setShowEntryForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   useEffect(() => {
     loadEntries();
@@ -120,11 +123,15 @@ export const JournalEntries = () => {
   };
 
 
-  const filteredEntries = entries.filter(entry =>
-    entry.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entry.ref?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entry.partner_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredEntries = entries.filter(entry => {
+    const matchesSearch = entry.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      entry.ref?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      entry.partner_name?.toLowerCase().includes(searchTerm.toLowerCase());
+    const entryDate = entry.date ? entry.date.split('T')[0].split(' ')[0] : '';
+    const matchesStart = !startDate || entryDate >= startDate;
+    const matchesEnd = !endDate || entryDate <= endDate;
+    return matchesSearch && matchesStart && matchesEnd;
+  });
 
   const getStateBadge = (state: string) => {
     const badges: Record<string, { icon: React.ReactElement; class: string }> = {
@@ -160,6 +167,13 @@ export const JournalEntries = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          <DateRangeFilter
+            startDate={startDate}
+            endDate={endDate}
+            onStartChange={setStartDate}
+            onEndChange={setEndDate}
+            onClear={() => { setStartDate(''); setEndDate(''); }}
+          />
           <select
             value={filters.state}
             onChange={(e) => setFilters({ ...filters, state: e.target.value })}

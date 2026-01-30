@@ -4,6 +4,7 @@ import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { apiService } from '../../services/apiService';
 import { showToast } from '../../components/Toast';
+import { DateRangeFilter } from '../../components/DateRangeFilter';
 import { ShiftForm } from './components/ShiftForm';
 import './Attendance.css';
 
@@ -13,6 +14,8 @@ export const Attendance = () => {
   const [activeTab, setActiveTab] = useState<AttendanceTab>('overview');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [showShiftForm, setShowShiftForm] = useState(false);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   const tabs = [
     { id: 'overview' as AttendanceTab, label: 'Overview', icon: <Calendar size={18} /> },
@@ -50,6 +53,14 @@ export const Attendance = () => {
             </Button>
           </div>
         </div>
+
+        <DateRangeFilter
+          startDate={startDate}
+          endDate={endDate}
+          onStartChange={(d) => { setStartDate(d); if (d && !endDate) setSelectedDate(d); }}
+          onEndChange={setEndDate}
+          onClear={() => { setStartDate(''); setEndDate(''); }}
+        />
 
         <div className="attendance-stats">
           <Card className="stat-card">
@@ -96,7 +107,7 @@ export const Attendance = () => {
         </div>
 
         <div className="attendance-content">
-          {activeTab === 'overview' && <OverviewTab selectedDate={selectedDate} setSelectedDate={setSelectedDate} />}
+          {activeTab === 'overview' && <OverviewTab selectedDate={selectedDate} setSelectedDate={setSelectedDate} startDate={startDate} endDate={endDate} />}
           {activeTab === 'timesheet' && <TimesheetTab />}
           {activeTab === 'shifts' && <ShiftsTab onAddShift={() => setShowShiftForm(true)} />}
           {activeTab === 'overtime' && <OvertimeTab />}
@@ -116,7 +127,7 @@ export const Attendance = () => {
   );
 };
 
-const OverviewTab = ({ selectedDate, setSelectedDate }: { selectedDate: string; setSelectedDate: (date: string) => void }) => {
+const OverviewTab = ({ selectedDate, setSelectedDate, startDate, endDate }: { selectedDate: string; setSelectedDate: (date: string) => void; startDate: string; endDate: string }) => {
   const [attendanceData, setAttendanceData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -131,12 +142,18 @@ const OverviewTab = ({ selectedDate, setSelectedDate }: { selectedDate: string; 
       setAttendanceData(data);
     } catch (error) {
       console.error('Failed to load attendance:', error);
-      // Fallback to empty array
       setAttendanceData([]);
     } finally {
       setLoading(false);
     }
   };
+
+  const filteredData = attendanceData.filter((emp: any) => {
+    const empDate = (emp.date || selectedDate || '').split('T')[0].split(' ')[0];
+    const matchesStart = !startDate || empDate >= startDate;
+    const matchesEnd = !endDate || empDate <= endDate;
+    return matchesStart && matchesEnd;
+  });
 
   if (loading) {
     return <div className="p-8">Loading attendance data...</div>;
@@ -169,7 +186,7 @@ const OverviewTab = ({ selectedDate, setSelectedDate }: { selectedDate: string; 
             </tr>
           </thead>
           <tbody>
-            {attendanceData.map((emp) => (
+            {filteredData.map((emp) => (
               <tr key={emp.id}>
                 <td>{emp.employee_name || emp.name}</td>
                 <td>{emp.emp_id || emp.empId}</td>

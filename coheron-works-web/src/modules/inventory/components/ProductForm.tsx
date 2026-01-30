@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { productService } from '../../../services/odooService';
 import { showToast } from '../../../components/Toast';
 import type { Product } from '../../../types/odoo';
+import { useModalDismiss } from '../../../hooks/useModalDismiss';
 import './ProductForm.css';
 
 interface ProductFormProps {
@@ -12,6 +13,7 @@ interface ProductFormProps {
 }
 
 export const ProductForm = ({ product, onClose, onSave }: ProductFormProps) => {
+  useModalDismiss(true, onClose);
   const [formData, setFormData] = useState({
     name: '',
     default_code: '',

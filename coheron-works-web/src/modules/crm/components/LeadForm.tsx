@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { leadService, partnerService } from '../../../services/odooService';
 import { showToast } from '../../../components/Toast';
 import type { Lead, Partner } from '../../../types/odoo';
+import { useModalDismiss } from '../../../hooks/useModalDismiss';
 import './LeadForm.css';
 
 interface LeadFormProps {
@@ -12,6 +13,8 @@ interface LeadFormProps {
 }
 
 export const LeadForm = ({ lead, onClose, onSave }: LeadFormProps) => {
+  useModalDismiss(true, onClose);
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',

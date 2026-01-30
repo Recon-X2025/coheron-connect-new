@@ -30,15 +30,20 @@
 .stat-card-link {
   text-decoration: none;
   color: inherit;
+  cursor: pointer;
+  border-radius: 8px;
 }
 
 .stat-card {
   padding: 1.5rem;
-  transition: transform 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
 }
 
 .stat-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
 .stat-header {
@@ -71,6 +76,25 @@
 
 .stat-change.down {
   color: #ef4444;
+}
+
+.stat-sparkline {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 24px;
+  margin-top: 0.75rem;
+}
+
+.stat-sparkline-bar {
+  width: 4px;
+  border-radius: 2px;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.stat-card:hover .stat-sparkline-bar {
+  opacity: 0.9;
 }
 
 .stat-content {

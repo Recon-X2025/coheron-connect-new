@@ -118,6 +118,17 @@ export const Dashboard: React.FC = () => {
     );
   }
 
+  // Generate a simple pseudo-random sparkline pattern for each card
+  const sparklineData = (seed: number): number[] => {
+    const bars = [];
+    let v = seed;
+    for (let i = 0; i < 8; i++) {
+      v = ((v * 7 + 13) % 17);
+      bars.push(4 + (v % 20));
+    }
+    return bars;
+  };
+
   const statCards = [
     {
       title: 'Total Leads',
@@ -126,7 +137,8 @@ export const Dashboard: React.FC = () => {
       color: '#3b82f6',
       link: '/crm/leads',
       change: '+12%',
-      trend: 'up',
+      trend: 'up' as const,
+      spark: sparklineData(1),
     },
     {
       title: 'Opportunities',
@@ -135,7 +147,8 @@ export const Dashboard: React.FC = () => {
       color: '#8b5cf6',
       link: '/crm/opportunities',
       change: '+8%',
-      trend: 'up',
+      trend: 'up' as const,
+      spark: sparklineData(2),
     },
     {
       title: 'Sales Orders',
@@ -144,16 +157,18 @@ export const Dashboard: React.FC = () => {
       color: '#10b981',
       link: '/sales/orders',
       change: '+15%',
-      trend: 'up',
+      trend: 'up' as const,
+      spark: sparklineData(3),
     },
     {
       title: 'Total Revenue',
       value: formatInLakhsCompact(stats?.totalRevenue || 0),
       icon: <CircleDollarSign size={24} />,
       color: '#f59e0b',
-      link: '/sales/orders',
+      link: '/sales/dashboard',
       change: '+22%',
-      trend: 'up',
+      trend: 'up' as const,
+      spark: sparklineData(4),
     },
     {
       title: 'Pending Invoices',
@@ -162,7 +177,8 @@ export const Dashboard: React.FC = () => {
       color: '#ef4444',
       link: '/accounting/invoices',
       change: '-5%',
-      trend: 'down',
+      trend: 'down' as const,
+      spark: sparklineData(5),
     },
     {
       title: 'Active Campaigns',
@@ -171,7 +187,8 @@ export const Dashboard: React.FC = () => {
       color: '#ec4899',
       link: '/marketing/campaigns',
       change: '+3',
-      trend: 'up',
+      trend: 'up' as const,
+      spark: sparklineData(6),
     },
     {
       title: 'Manufacturing Orders',
@@ -180,7 +197,8 @@ export const Dashboard: React.FC = () => {
       color: '#6366f1',
       link: '/manufacturing/orders',
       change: '+2',
-      trend: 'up',
+      trend: 'up' as const,
+      spark: sparklineData(7),
     },
     {
       title: 'Low Stock Products',
@@ -189,7 +207,8 @@ export const Dashboard: React.FC = () => {
       color: '#f97316',
       link: '/inventory/products',
       change: '-1',
-      trend: 'down',
+      trend: 'down' as const,
+      spark: sparklineData(8),
     },
   ];
 
@@ -233,6 +252,15 @@ export const Dashboard: React.FC = () => {
                 <div className="stat-content">
                   <h3 className="stat-value">{stat.value}</h3>
                   <p className="stat-title">{stat.title}</p>
+                </div>
+                <div className="stat-sparkline">
+                  {stat.spark.map((h, i) => (
+                    <span
+                      key={i}
+                      className="stat-sparkline-bar"
+                      style={{ height: `${h}px`, backgroundColor: stat.color }}
+                    />
+                  ))}
                 </div>
               </Card>
             </Link>

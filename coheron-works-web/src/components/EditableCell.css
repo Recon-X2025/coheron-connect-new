@@ -1,0 +1,30 @@
+.editable-cell-display {
+  display: inline-block;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.editable-cell-input {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid var(--primary, #3b82f6);
+  border-radius: 6px;
+  font-size: inherit;
+  font-family: inherit;
+  background: var(--bg-primary, #fff);
+  color: inherit;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.editable-cell-input:focus {
+  border-color: var(--primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+.editable-cell-select {
+  cursor: pointer;
+}

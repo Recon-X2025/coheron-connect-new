@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   Search, Users, Plus, Edit, Trash2, Download, Upload,
   Phone, Mail, Building2,
-  AlertCircle, CheckCircle2
+  AlertCircle, CheckCircle2, Check, X
 } from 'lucide-react';
 import { Pagination } from '../../shared/components/Pagination';
 import { usePagination } from '../../hooks/usePagination';
@@ -14,6 +14,9 @@ import { EmployeeDetailView } from './components/EmployeeDetailView';
 import { EmployeeForm } from './components/EmployeeForm';
 import { confirmAction } from '../../components/ConfirmDialog';
 import { exportToCSV } from '../../utils/exportCSV';
+import { showToast } from '../../components/Toast';
+import { useInlineEdit } from '../../hooks/useInlineEdit';
+import { EditableCell } from '../../components/EditableCell';
 import './Employees.css';
 
 type ViewMode = 'list' | 'grid' | 'detail';
@@ -28,6 +31,7 @@ export const Employees = () => {
   const [selectedEmployee, setSelectedEmployee] = useState<any | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [filterDepartment, setFilterDepartment] = useState<string>('all');
+  const inlineEdit = useInlineEdit<any>();
 
   useEffect(() => {
     loadData();
@@ -41,6 +45,14 @@ export const Employees = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleInlineSave = (empId: number) => {
+    const values = inlineEdit.saveEdit();
+    setEmployees(prev => prev.map(e =>
+      e.id === empId ? { ...e, ...values } : e
+    ));
+    showToast('Employee updated successfully', 'success');
   };
 
   const filteredEmployees = employees.filter(emp => {
@@ -318,45 +330,93 @@ export const Employees = () => {
                     <td>
                       <div className="table-employee">
                         <div className="table-avatar">{employee.name.charAt(0)}</div>
-                        <span>{employee.name}</span>
+                        <EditableCell
+                          editing={inlineEdit.editingId === employee.id}
+                          value={inlineEdit.editingId === employee.id ? (inlineEdit.editValues.name ?? employee.name) : employee.name}
+                          onChange={(v) => inlineEdit.updateField('name', v)}
+                          onSave={() => handleInlineSave(employee.id)}
+                          onCancel={inlineEdit.cancelEdit}
+                        />
                       </div>
                     </td>
                     <td>{employee.job_title || 'N/A'}</td>
-                    <td>Department</td>
+                    <td>
+                      <EditableCell
+                        editing={inlineEdit.editingId === employee.id}
+                        value={inlineEdit.editingId === employee.id ? (inlineEdit.editValues.department_id ?? employee.department_id ?? '') : 'Department'}
+                        onChange={(v) => inlineEdit.updateField('department_id', v)}
+                        onSave={() => handleInlineSave(employee.id)}
+                        onCancel={inlineEdit.cancelEdit}
+                        type={inlineEdit.editingId === employee.id ? 'select' : 'text'}
+                        options={[
+                          { value: '1', label: 'Engineering' },
+                          { value: '2', label: 'HR' },
+                          { value: '3', label: 'Sales' },
+                          { value: '4', label: 'Finance' },
+                        ]}
+                      />
+                    </td>
                     <td>{employee.work_email || 'N/A'}</td>
                     <td>{employee.work_phone || 'N/A'}</td>
                     <td>
-                      <span className={`status-badge ${employee.attendance_state}`}>
-                        {employee.attendance_state === 'checked_in' ? 'Active' : 'Inactive'}
-                      </span>
+                      {inlineEdit.editingId === employee.id ? (
+                        <EditableCell
+                          editing={true}
+                          value={inlineEdit.editValues.attendance_state ?? employee.attendance_state ?? 'checked_out'}
+                          onChange={(v) => inlineEdit.updateField('attendance_state', v)}
+                          onSave={() => handleInlineSave(employee.id)}
+                          onCancel={inlineEdit.cancelEdit}
+                          type="select"
+                          options={[
+                            { value: 'checked_in', label: 'Active' },
+                            { value: 'checked_out', label: 'Inactive' },
+                          ]}
+                        />
+                      ) : (
+                        <span className={`status-badge ${employee.attendance_state}`}>
+                          {employee.attendance_state === 'checked_in' ? 'Active' : 'Inactive'}
+                        </span>
+                      )}
                     </td>
                     <td>
                       <div className="table-actions">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedEmployee(employee);
-                            setShowForm(true);
-                          }}
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button
-                          className="delete"
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            const ok = await confirmAction({
-                              title: 'Delete Employee',
-                              message: 'Are you sure you want to delete this employee?',
-                              confirmLabel: 'Delete',
-                              variant: 'danger',
-                            });
-                            if (!ok) return;
-                            // Handle delete
-                          }}
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        {inlineEdit.editingId === employee.id ? (
+                          <>
+                            <button onClick={(e) => { e.stopPropagation(); handleInlineSave(employee.id); }}>
+                              <Check size={16} />
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); inlineEdit.cancelEdit(); }}>
+                              <X size={16} />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                inlineEdit.startEdit(employee.id, { name: employee.name, department_id: employee.department_id ?? '', attendance_state: employee.attendance_state ?? 'checked_out' });
+                              }}
+                            >
+                              <Edit size={16} />
+                            </button>
+                            <button
+                              className="delete"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const ok = await confirmAction({
+                                  title: 'Delete Employee',
+                                  message: 'Are you sure you want to delete this employee?',
+                                  confirmLabel: 'Delete',
+                                  variant: 'danger',
+                                });
+                                if (!ok) return;
+                                // Handle delete
+                              }}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Search, Plus, FileText, CheckCircle, Clock, XCircle, Eye } from 'lucide-react';
 import { Pagination } from '../../shared/components/Pagination';
 import { usePagination } from '../../hooks/usePagination';
@@ -13,10 +13,12 @@ import { OrderConfirmation } from './components/OrderConfirmation';
 import { DeliveryTracking } from './components/DeliveryTracking';
 import { OrderForm } from './components/OrderForm';
 import { EmptyState } from '../../components/EmptyState';
+import { DateRangeFilter } from '../../components/DateRangeFilter';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
 import { showToast } from '../../components/Toast';
 import type { SaleOrder, Partner } from '../../types/odoo';
 import { confirmAction } from '../../components/ConfirmDialog';
+import { useModalDismiss } from '../../hooks/useModalDismiss';
 import './SalesOrders.css';
 
 export const SalesOrders = () => {
@@ -34,6 +36,11 @@ export const SalesOrders = () => {
     const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
     const [bulkActionIds, setBulkActionIds] = useState<number[]>([]);
     const [showOrderForm, setShowOrderForm] = useState(false);
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+
+    const closeDetailModal = useCallback(() => setSelectedOrder(null), []);
+    useModalDismiss(!!selectedOrder && !showConfirmation, closeDetailModal);
 
     useEffect(() => {
         loadData();
@@ -183,13 +190,16 @@ export const SalesOrders = () => {
         const matchesSearch = order.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             getPartnerName(order.partner_id).toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = statusFilter === 'all' || order.state === statusFilter;
-        return matchesSearch && matchesStatus;
+        const orderDate = order.date_order ? order.date_order.split('T')[0].split(' ')[0] : '';
+        const matchesStart = !startDate || orderDate >= startDate;
+        const matchesEnd = !endDate || orderDate <= endDate;
+        return matchesSearch && matchesStatus && matchesStart && matchesEnd;
     });
 
     const { paginatedItems: paginatedOrders, page, setPage, pageSize, setPageSize, totalPages, totalItems, resetPage } = usePagination(filteredOrders);
 
     // Reset page when filters change
-    useEffect(() => { resetPage(); }, [searchTerm, statusFilter, filterDomain, resetPage]);
+    useEffect(() => { resetPage(); }, [searchTerm, statusFilter, filterDomain, startDate, endDate, resetPage]);
 
     const totalRevenue = filteredOrders.reduce((sum, order) => sum + order.amount_total, 0);
 
@@ -232,6 +242,13 @@ export const SalesOrders = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
+                    <DateRangeFilter
+                        startDate={startDate}
+                        endDate={endDate}
+                        onStartChange={setStartDate}
+                        onEndChange={setEndDate}
+                        onClear={() => { setStartDate(''); setEndDate(''); }}
+                    />
 
                     <div className="toolbar-actions">
                     <div className="status-filter">

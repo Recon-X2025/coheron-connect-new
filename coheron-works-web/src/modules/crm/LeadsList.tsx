@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, Plus, Mail, Phone, TrendingUp, Edit, Trash2, CheckCircle } from 'lucide-react';
+import { Search, Filter, Plus, Mail, Phone, TrendingUp, Edit, Trash2, CheckCircle, Check, X } from 'lucide-react';
 import { Pagination } from '../../shared/components/Pagination';
 import { usePagination } from '../../hooks/usePagination';
 import { Button } from '../../components/Button';
@@ -14,6 +14,8 @@ import { LeadForm } from './components/LeadForm';
 import { showToast } from '../../components/Toast';
 import type { Lead, Partner } from '../../types/odoo';
 import { confirmAction } from '../../components/ConfirmDialog';
+import { useInlineEdit } from '../../hooks/useInlineEdit';
+import { EditableCell } from '../../components/EditableCell';
 import './LeadsList.css';
 
 export const LeadsList = () => {
@@ -32,6 +34,7 @@ export const LeadsList = () => {
     const [showBulkUpdateModal, setShowBulkUpdateModal] = useState(false);
     const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
     const [bulkActionIds, setBulkActionIds] = useState<number[]>([]);
+    const inlineEdit = useInlineEdit<Lead>();
 
     useEffect(() => {
         loadData();
@@ -80,10 +83,9 @@ export const LeadsList = () => {
         setShowLeadForm(true);
     };
 
-    const handleEditLead = (lead: Lead) => {
-        setEditingLead(lead);
-        setShowLeadForm(true);
-    };
+    const _handleEditLead = (_lead: Lead) => {
+        void _lead;
+    }; void _handleEditLead;
 
     const handleLeadSaved = () => {
         loadData();
@@ -145,6 +147,14 @@ export const LeadsList = () => {
             // Revert on error
             loadData();
         }
+    };
+
+    const handleInlineSave = (leadId: number) => {
+        const values = inlineEdit.saveEdit();
+        setLeads(prev => prev.map(lead =>
+            lead.id === leadId ? { ...lead, ...values } : lead
+        ));
+        showToast('Lead updated successfully', 'success');
     };
 
     const handleConvertSuccess = () => {
@@ -328,9 +338,25 @@ export const LeadsList = () => {
                                         />
                                     </td>
                                     <td className="lead-name-cell">
-                                        <strong>{lead.name}</strong>
+                                        <strong>
+                                            <EditableCell
+                                                editing={inlineEdit.editingId === lead.id}
+                                                value={inlineEdit.editingId === lead.id ? (inlineEdit.editValues.name ?? lead.name) : lead.name}
+                                                onChange={(v) => inlineEdit.updateField('name', v)}
+                                                onSave={() => handleInlineSave(lead.id)}
+                                                onCancel={inlineEdit.cancelEdit}
+                                            />
+                                        </strong>
                                     </td>
-                                    <td>{getPartnerName(lead.partner_id)}</td>
+                                    <td>
+                                        <EditableCell
+                                            editing={inlineEdit.editingId === lead.id}
+                                            value={inlineEdit.editingId === lead.id ? (inlineEdit.editValues.email ?? lead.email) : getPartnerName(lead.partner_id)}
+                                            onChange={(v) => inlineEdit.updateField('email', v)}
+                                            onSave={() => handleInlineSave(lead.id)}
+                                            onCancel={inlineEdit.cancelEdit}
+                                        />
+                                    </td>
                                     <td>
                                         <div className="contact-info">
                                             <div className="contact-item">
@@ -352,24 +378,42 @@ export const LeadsList = () => {
                                         {lead.probability}%
                                     </td>
                                     <td>
-                                        <div className="stage-select-wrapper">
-                                            <select
-                                                className="stage-select"
-                                                value={lead.stage}
-                                                onChange={(e) => handleStageChange(lead.id, e.target.value)}
-                                                style={{
-                                                    backgroundColor: `${getStageColor(lead.stage)}20`,
-                                                    color: getStageColor(lead.stage),
-                                                    borderColor: getStageColor(lead.stage),
-                                                }}
-                                            >
-                                                <option value="new">New</option>
-                                                <option value="qualified">Qualified</option>
-                                                <option value="proposition">Proposition</option>
-                                                <option value="won">Won</option>
-                                                <option value="lost">Lost</option>
-                                            </select>
-                                        </div>
+                                        {inlineEdit.editingId === lead.id ? (
+                                            <EditableCell
+                                                editing={true}
+                                                value={inlineEdit.editValues.stage ?? lead.stage}
+                                                onChange={(v) => inlineEdit.updateField('stage', v)}
+                                                onSave={() => handleInlineSave(lead.id)}
+                                                onCancel={inlineEdit.cancelEdit}
+                                                type="select"
+                                                options={[
+                                                    { value: 'new', label: 'New' },
+                                                    { value: 'qualified', label: 'Qualified' },
+                                                    { value: 'proposition', label: 'Proposition' },
+                                                    { value: 'won', label: 'Won' },
+                                                    { value: 'lost', label: 'Lost' },
+                                                ]}
+                                            />
+                                        ) : (
+                                            <div className="stage-select-wrapper">
+                                                <select
+                                                    className="stage-select"
+                                                    value={lead.stage}
+                                                    onChange={(e) => handleStageChange(lead.id, e.target.value)}
+                                                    style={{
+                                                        backgroundColor: `${getStageColor(lead.stage)}20`,
+                                                        color: getStageColor(lead.stage),
+                                                        borderColor: getStageColor(lead.stage),
+                                                    }}
+                                                >
+                                                    <option value="new">New</option>
+                                                    <option value="qualified">Qualified</option>
+                                                    <option value="proposition">Proposition</option>
+                                                    <option value="won">Won</option>
+                                                    <option value="lost">Lost</option>
+                                                </select>
+                                            </div>
+                                        )}
                                     </td>
                                     <td>
                                         <span className={`priority-badge priority-${lead.priority}`}>
@@ -378,23 +422,36 @@ export const LeadsList = () => {
                                     </td>
                                     <td>
                                         <div className="action-buttons">
-                                            <button
-                                                className="action-btn convert"
-                                                title="Convert Lead"
-                                                onClick={() => setConvertingLead(lead)}
-                                            >
-                                                <CheckCircle size={16} />
-                                            </button>
-                                            <button className="action-btn" title="Edit" onClick={() => handleEditLead(lead)}>
-                                                <Edit size={16} />
-                                            </button>
-                                            <button
-                                                className="action-btn delete"
-                                                title="Delete"
-                                                onClick={() => handleDelete([lead.id])}
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
+                                            {inlineEdit.editingId === lead.id ? (
+                                                <>
+                                                    <button className="action-btn" title="Save" onClick={() => handleInlineSave(lead.id)}>
+                                                        <Check size={16} />
+                                                    </button>
+                                                    <button className="action-btn" title="Cancel" onClick={inlineEdit.cancelEdit}>
+                                                        <X size={16} />
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        className="action-btn convert"
+                                                        title="Convert Lead"
+                                                        onClick={() => setConvertingLead(lead)}
+                                                    >
+                                                        <CheckCircle size={16} />
+                                                    </button>
+                                                    <button className="action-btn" title="Inline Edit" onClick={() => inlineEdit.startEdit(lead.id, { name: lead.name, email: lead.email, stage: lead.stage })}>
+                                                        <Edit size={16} />
+                                                    </button>
+                                                    <button
+                                                        className="action-btn delete"
+                                                        title="Delete"
+                                                        onClick={() => handleDelete([lead.id])}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

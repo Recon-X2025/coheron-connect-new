@@ -6,6 +6,7 @@ import { ToastContainer } from './Toast';
 import { GlobalSearch } from './GlobalSearch';
 import { ConfirmDialog, useConfirm, setGlobalConfirm } from './ConfirmDialog';
 import { Breadcrumb } from './Breadcrumb';
+import { QuickActions } from './QuickActions';
 import './Layout.css';
 
 interface LayoutProps {
@@ -67,6 +68,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             <ToastContainer />
             <GlobalSearch />
             <ConfirmDialog {...dialogProps} />
+            {!isPublicPage && <QuickActions />}
         </div>
     );
 };

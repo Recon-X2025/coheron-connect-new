@@ -7,6 +7,7 @@ import { LeaveRequestForm } from './components/LeaveRequestForm';
 import { useAuth } from '../../contexts/AuthContext';
 import { showToast } from '../../components/Toast';
 import { exportToCSV } from '../../utils/exportCSV';
+import { DateRangeFilter } from '../../components/DateRangeFilter';
 import './LeaveManagement.css';
 
 type LeaveTab = 'overview' | 'requests' | 'policies' | 'calendar' | 'balance';
@@ -17,6 +18,8 @@ export const LeaveManagement = () => {
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
   const [leaveBalance, setLeaveBalance] = useState<any>({});
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   useEffect(() => {
     loadData();
@@ -54,11 +57,18 @@ export const LeaveManagement = () => {
     { id: 'balance' as LeaveTab, label: 'Leave Balance', icon: <CheckCircle2 size={18} /> },
   ];
 
+  const filteredLeaveRequests = leaveRequests.filter((r: any) => {
+    const fromDate = (r.from_date || r.from || '').split('T')[0].split(' ')[0];
+    const matchesStart = !startDate || fromDate >= startDate;
+    const matchesEnd = !endDate || fromDate <= endDate;
+    return matchesStart && matchesEnd;
+  });
+
   const leaveStats = {
-    pending: leaveRequests.filter((r: any) => r.status === 'pending').length,
-    approved: leaveRequests.filter((r: any) => r.status === 'approved').length,
-    rejected: leaveRequests.filter((r: any) => r.status === 'rejected').length,
-    onLeave: leaveRequests.filter((r: any) => r.status === 'approved' && new Date(r.to_date) >= new Date()).length,
+    pending: filteredLeaveRequests.filter((r: any) => r.status === 'pending').length,
+    approved: filteredLeaveRequests.filter((r: any) => r.status === 'approved').length,
+    rejected: filteredLeaveRequests.filter((r: any) => r.status === 'rejected').length,
+    onLeave: filteredLeaveRequests.filter((r: any) => r.status === 'approved' && new Date(r.to_date) >= new Date()).length,
   };
 
   return (
@@ -85,6 +95,14 @@ export const LeaveManagement = () => {
             </Button>
           </div>
         </div>
+
+        <DateRangeFilter
+          startDate={startDate}
+          endDate={endDate}
+          onStartChange={setStartDate}
+          onEndChange={setEndDate}
+          onClear={() => { setStartDate(''); setEndDate(''); }}
+        />
 
         <div className="leave-stats">
           <Card className="stat-card">
@@ -131,8 +149,8 @@ export const LeaveManagement = () => {
         </div>
 
         <div className="leave-content">
-          {activeTab === 'overview' && <OverviewTab requests={leaveRequests} />}
-          {activeTab === 'requests' && <RequestsTab requests={leaveRequests} />}
+          {activeTab === 'overview' && <OverviewTab requests={filteredLeaveRequests} />}
+          {activeTab === 'requests' && <RequestsTab requests={filteredLeaveRequests} />}
           {activeTab === 'policies' && <PoliciesTab />}
           {activeTab === 'calendar' && <CalendarTab />}
           {activeTab === 'balance' && <BalanceTab balance={leaveBalance || {}} />}

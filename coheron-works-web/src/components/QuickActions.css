@@ -1,0 +1,110 @@
+.quick-actions {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.quick-actions-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2);
+  z-index: -1;
+}
+
+.quick-actions-fab {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md), 0 4px 12px rgba(37, 99, 235, 0.3);
+  transition: transform 0.25s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.quick-actions-fab:hover {
+  background: var(--primary-press);
+  transform: scale(1.05);
+  box-shadow: var(--shadow-md), 0 6px 20px rgba(37, 99, 235, 0.4);
+}
+
+.quick-actions-fab.active {
+  background: var(--text);
+  transform: rotate(90deg);
+}
+
+.quick-actions-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.quick-actions-menu.open {
+  pointer-events: auto;
+}
+
+.quick-action-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  transform: translateY(10px) scale(0.95);
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.15s ease;
+}
+
+.quick-actions-menu.open .quick-action-item {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.quick-action-item:hover {
+  background: var(--muted-surface);
+}
+
+.quick-action-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--glass);
+  color: var(--action-color, var(--primary));
+}
+
+.quick-action-label {
+  color: var(--text);
+}
+
+@media (max-width: 768px) {
+  .quick-actions {
+    bottom: 16px;
+    right: 16px;
+  }
+
+  .quick-actions-fab {
+    width: 48px;
+    height: 48px;
+  }
+}

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Search, Package, Plus, MapPin, AlertTriangle, Eye, Edit, Trash2 } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Search, Package, Plus, MapPin, AlertTriangle, Eye, Edit, Trash2, Check, X } from 'lucide-react';
 import { Pagination } from '../../shared/components/Pagination';
 import { usePagination } from '../../hooks/usePagination';
 import { Button } from '../../components/Button';
@@ -10,6 +10,9 @@ import { ProductForm } from './components/ProductForm';
 import { showToast } from '../../components/Toast';
 import type { Product } from '../../types/odoo';
 import { confirmAction } from '../../components/ConfirmDialog';
+import { useInlineEdit } from '../../hooks/useInlineEdit';
+import { useModalDismiss } from '../../hooks/useModalDismiss';
+import { EditableCell } from '../../components/EditableCell';
 import './Products.css';
 
 export const Products = () => {
@@ -23,6 +26,10 @@ export const Products = () => {
     const [loadingStockDetails, setLoadingStockDetails] = useState(false);
     const [showProductForm, setShowProductForm] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+    const inlineEdit = useInlineEdit<Product>();
+
+    const closeStockModal = useCallback(() => { setShowStockDetails(false); setSelectedProduct(null); }, []);
+    useModalDismiss(showStockDetails, closeStockModal);
 
     useEffect(() => {
         loadData();
@@ -73,10 +80,9 @@ export const Products = () => {
         setShowProductForm(true);
     };
 
-    const handleEditProduct = (product: Product) => {
-        setEditingProduct(product);
-        setShowProductForm(true);
-    };
+    const _handleEditProduct = (_product: Product) => {
+        void _product;
+    }; void _handleEditProduct;
 
     const handleDeleteProduct = async (product: Product) => {
         const ok = await confirmAction({
@@ -95,6 +101,14 @@ export const Products = () => {
             console.error('Failed to delete product:', error);
             showToast(error?.message || 'Failed to delete product. Please try again.', 'error');
         }
+    };
+
+    const handleInlineSave = (productId: number) => {
+        const values = inlineEdit.saveEdit();
+        setProducts(prev => prev.map(p =>
+            p.id === productId ? { ...p, ...values, list_price: values.list_price !== undefined ? Number(values.list_price) : p.list_price, qty_available: values.qty_available !== undefined ? Number(values.qty_available) : p.qty_available } : p
+        ));
+        showToast('Product updated successfully', 'success');
     };
 
     const handleProductSaved = () => {
@@ -158,7 +172,15 @@ export const Products = () => {
                                         <Package size={32} />
                                     </div>
                                     <div className="product-info">
-                                        <h3>{product.name}</h3>
+                                        <h3>
+                                            <EditableCell
+                                                editing={inlineEdit.editingId === product.id}
+                                                value={inlineEdit.editingId === product.id ? (inlineEdit.editValues.name ?? product.name) : product.name}
+                                                onChange={(v) => inlineEdit.updateField('name', v)}
+                                                onSave={() => handleInlineSave(product.id)}
+                                                onCancel={inlineEdit.cancelEdit}
+                                            />
+                                        </h3>
                                         <span className="product-code">{product.default_code}</span>
                                     </div>
                                     {isLowStock && (
@@ -171,7 +193,20 @@ export const Products = () => {
                                 <div className="product-pricing">
                                     <div className="price-item">
                                         <span className="label">Sale Price</span>
-                                        <span className="value">₹{product.list_price}</span>
+                                        <span className="value">
+                                            {inlineEdit.editingId === product.id ? (
+                                                <EditableCell
+                                                    editing={true}
+                                                    value={inlineEdit.editValues.list_price ?? product.list_price}
+                                                    onChange={(v) => inlineEdit.updateField('list_price', v)}
+                                                    onSave={() => handleInlineSave(product.id)}
+                                                    onCancel={inlineEdit.cancelEdit}
+                                                    type="number"
+                                                />
+                                            ) : (
+                                                <>₹{product.list_price}</>
+                                            )}
+                                        </span>
                                     </div>
                                     <div className="price-item">
                                         <span className="label">Cost</span>
@@ -183,7 +218,18 @@ export const Products = () => {
                                     <div className="stock-row">
                                         <span className="label">Total Stock</span>
                                         <span className={`stock-value ${stock.total_qty > 0 ? 'in-stock' : 'out-of-stock'}`}>
-                                            {stock.total_qty.toFixed(2)} units
+                                            {inlineEdit.editingId === product.id ? (
+                                                <EditableCell
+                                                    editing={true}
+                                                    value={inlineEdit.editValues.qty_available ?? stock.total_qty}
+                                                    onChange={(v) => inlineEdit.updateField('qty_available', v)}
+                                                    onSave={() => handleInlineSave(product.id)}
+                                                    onCancel={inlineEdit.cancelEdit}
+                                                    type="number"
+                                                />
+                                            ) : (
+                                                <>{stock.total_qty.toFixed(2)} units</>
+                                            )}
                                         </span>
                                     </div>
                                     <div className="stock-row">
@@ -211,30 +257,43 @@ export const Products = () => {
                                 </div>
 
                                 <div className="product-actions">
-                                    <Button 
-                                        variant="secondary" 
-                                        size="sm"
-                                        icon={<Eye size={16} />}
-                                        onClick={() => handleViewStock(product)}
-                                    >
-                                        View Stock
-                                    </Button>
-                                    <button
-                                        type="button"
-                                        className="action-btn"
-                                        title="Edit Product"
-                                        onClick={() => handleEditProduct(product)}
-                                    >
-                                        <Edit size={16} />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className="action-btn delete"
-                                        title="Delete Product"
-                                        onClick={() => handleDeleteProduct(product)}
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
+                                    {inlineEdit.editingId === product.id ? (
+                                        <>
+                                            <button type="button" className="action-btn" title="Save" onClick={() => handleInlineSave(product.id)}>
+                                                <Check size={16} />
+                                            </button>
+                                            <button type="button" className="action-btn" title="Cancel" onClick={inlineEdit.cancelEdit}>
+                                                <X size={16} />
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                icon={<Eye size={16} />}
+                                                onClick={() => handleViewStock(product)}
+                                            >
+                                                View Stock
+                                            </Button>
+                                            <button
+                                                type="button"
+                                                className="action-btn"
+                                                title="Inline Edit"
+                                                onClick={() => inlineEdit.startEdit(product.id, { name: product.name, list_price: product.list_price, qty_available: product.qty_available })}
+                                            >
+                                                <Edit size={16} />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="action-btn delete"
+                                                title="Delete Product"
+                                                onClick={() => handleDeleteProduct(product)}
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         );

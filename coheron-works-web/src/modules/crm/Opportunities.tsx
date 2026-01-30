@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Search, Plus, TrendingUp, Edit, Trash2, Eye } from 'lucide-react';
 import { Pagination } from '../../shared/components/Pagination';
 import { usePagination } from '../../hooks/usePagination';
@@ -24,6 +24,7 @@ import {
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
 import type { Lead, Partner } from '../../types/odoo';
 import { confirmAction } from '../../components/ConfirmDialog';
+import { useModalDismiss } from '../../hooks/useModalDismiss';
 import './Opportunities.css';
 
 // Opportunity is essentially a Lead with type='opportunity'
@@ -46,6 +47,9 @@ export const Opportunities = () => {
   const [activeId, setActiveId] = useState<number | null>(null);
   const [showOpportunityForm, setShowOpportunityForm] = useState(false);
   const [editingOpportunity, setEditingOpportunity] = useState<Opportunity | null>(null);
+
+  const closeDetailModal = useCallback(() => setSelectedOpportunity(null), []);
+  useModalDismiss(!!selectedOpportunity, closeDetailModal);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {

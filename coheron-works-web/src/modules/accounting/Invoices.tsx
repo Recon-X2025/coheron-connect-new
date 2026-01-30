@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Search, FileText, Plus, CheckCircle, Clock, Eye, Edit, Trash2, Download, X } from 'lucide-react';
 import { Pagination } from '../../shared/components/Pagination';
 import { usePagination } from '../../hooks/usePagination';
 import { Button } from '../../components/Button';
 import { invoiceService, partnerService } from '../../services/odooService';
+import { DateRangeFilter } from '../../components/DateRangeFilter';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
 import { showToast } from '../../components/Toast';
 import type { Invoice, Partner } from '../../types/odoo';
 import { confirmAction } from '../../components/ConfirmDialog';
+import { useModalDismiss } from '../../hooks/useModalDismiss';
 import './Invoices.css';
 
 export const Invoices = () => {
@@ -19,6 +21,13 @@ export const Invoices = () => {
     const [showViewModal, setShowViewModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+
+    const closeViewModal = useCallback(() => setShowViewModal(false), []);
+    const closeEditModal = useCallback(() => { setShowEditModal(false); setEditingInvoice(null); }, []);
+    useModalDismiss(showViewModal, closeViewModal);
+    useModalDismiss(showEditModal, closeEditModal);
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
 
     useEffect(() => {
         loadData();
@@ -152,15 +161,19 @@ export const Invoices = () => {
         }
     };
 
-    const filteredInvoices = invoices.filter(invoice =>
-        invoice.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        getPartnerName(invoice.partner_id).toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredInvoices = invoices.filter(invoice => {
+        const matchesSearch = invoice.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            getPartnerName(invoice.partner_id).toLowerCase().includes(searchTerm.toLowerCase());
+        const invDate = invoice.invoice_date ? (invoice.invoice_date.includes('T') ? invoice.invoice_date.split('T')[0] : invoice.invoice_date.split(' ')[0]) : '';
+        const matchesStart = !startDate || invDate >= startDate;
+        const matchesEnd = !endDate || invDate <= endDate;
+        return matchesSearch && matchesStart && matchesEnd;
+    });
 
     const { paginatedItems: paginatedInvoices, page, setPage, pageSize, setPageSize, totalPages, totalItems, resetPage } = usePagination(filteredInvoices);
 
     // Reset page when filters change
-    useEffect(() => { resetPage(); }, [searchTerm, resetPage]);
+    useEffect(() => { resetPage(); }, [searchTerm, startDate, endDate, resetPage]);
 
     const totalAmount = filteredInvoices.reduce((sum, inv) => sum + inv.amount_total, 0);
     const totalPaid = filteredInvoices.filter(inv => inv.payment_state === 'paid').reduce((sum, inv) => sum + inv.amount_total, 0);
@@ -216,6 +229,13 @@ export const Invoices = () => {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
+                    <DateRangeFilter
+                        startDate={startDate}
+                        endDate={endDate}
+                        onStartChange={setStartDate}
+                        onEndChange={setEndDate}
+                        onClear={() => { setStartDate(''); setEndDate(''); }}
+                    />
                 </div>
 
                 <div className="invoices-table-container">

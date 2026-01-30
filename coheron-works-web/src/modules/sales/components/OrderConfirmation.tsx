@@ -3,6 +3,7 @@ import { X, CheckCircle, AlertCircle } from 'lucide-react';
 import { odooService } from '../../../services/odooService';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import type { SaleOrder } from '../../../types/odoo';
+import { useModalDismiss } from '../../../hooks/useModalDismiss';
 import './OrderConfirmation.css';
 
 interface OrderConfirmationProps {
@@ -22,6 +23,8 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
   onClose,
   onSuccess,
 }) => {
+  useModalDismiss(true, onClose);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<ConfirmationData>({

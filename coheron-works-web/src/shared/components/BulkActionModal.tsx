@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '../../components/Button';
+import { useModalDismiss } from '../../hooks/useModalDismiss';
 import './BulkActionModal.css';
 
 interface BulkActionModalProps {
@@ -29,6 +30,8 @@ export const BulkActionModal = ({
   loading = false,
 }: BulkActionModalProps) => {
   const [value, setValue] = useState('');
+
+  useModalDismiss(isOpen, onClose);
 
   if (!isOpen) return null;
 

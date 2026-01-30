@@ -1,0 +1,76 @@
+.date-range-filter {
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  flex-wrap: wrap;
+}
+
+.date-range-inputs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.date-range-inputs input[type="date"] {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.date-range-inputs input[type="date"]:focus {
+  border-color: var(--primary);
+}
+
+.date-range-separator {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.date-range-presets {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.date-range-presets button {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.date-range-presets button:hover {
+  background: var(--muted-surface);
+  color: var(--text);
+}
+
+.date-range-presets button.active {
+  background: var(--glass);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.date-range-clear {
+  padding: 4px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.date-range-clear:hover {
+  color: var(--danger);
+}

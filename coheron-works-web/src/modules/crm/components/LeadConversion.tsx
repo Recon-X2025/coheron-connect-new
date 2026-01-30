@@ -3,6 +3,7 @@ import { X, CheckCircle, User, Building2, TrendingUp } from 'lucide-react';
 import { odooService } from '../../../services/odooService';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import type { Lead, Partner } from '../../../types/odoo';
+import { useModalDismiss } from '../../../hooks/useModalDismiss';
 import './LeadConversion.css';
 
 interface LeadConversionProps {
@@ -24,6 +25,8 @@ export const LeadConversion: React.FC<LeadConversionProps> = ({
   onClose,
   onSuccess,
 }) => {
+  useModalDismiss(true, onClose);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [options, setOptions] = useState<ConversionOptions>({

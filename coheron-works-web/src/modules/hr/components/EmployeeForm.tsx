@@ -1,6 +1,7 @@
 import { X } from 'lucide-react';
 import { Button } from '../../../components/Button';
 import type { Employee } from '../../../types/odoo';
+import { useModalDismiss } from '../../../hooks/useModalDismiss';
 import './EmployeeForm.css';
 
 interface EmployeeFormProps {
@@ -10,6 +11,7 @@ interface EmployeeFormProps {
 }
 
 export const EmployeeForm = ({ employee, onClose, onSave }: EmployeeFormProps) => {
+  useModalDismiss(true, onClose);
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Handle save logic
