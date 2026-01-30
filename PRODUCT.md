@@ -22,6 +22,10 @@ Coheron ERP is a unified business management platform that consolidates CRM, Sal
 | Database | MongoDB (Mongoose ODM) |
 | Auth | JWT with RBAC + record-level access control |
 | Jobs | BullMQ + Redis |
+| Real-Time | Socket.IO (WebSocket) |
+| Email | Nodemailer (SMTP) |
+| Payments | Razorpay |
+| File Storage | S3-compatible (AWS S3 / MinIO) |
 | Logging | Pino (structured JSON) |
 | Error Tracking | Sentry |
 | Deployment | Docker (multi-stage build), Docker Compose |
@@ -29,7 +33,7 @@ Coheron ERP is a unified business management platform that consolidates CRM, Sal
 
 **Infrastructure:**
 - Multi-tenant architecture with module-level access gating
-- 184 database models, 76+ route files, 150+ frontend components
+- 193 database models, 100 route files, 150+ frontend components
 - Route-level code splitting (React.lazy) — 75% bundle size reduction
 - Optimized for 512MB RAM VPS (Node heap 320MB + Redis 64MB)
 
@@ -147,13 +151,14 @@ Project management with financial tracking and agile support.
 
 ### 8. Support & Helpdesk
 
-Multi-channel customer support.
+Multi-channel customer support with real-time chat.
 
 | Feature | Description |
 |---------|-------------|
-| Ticket Management | Create, assign, track support tickets |
+| Ticket Management | Create, assign, track support tickets with workflow automation |
 | SLA Policies | Response/resolution time enforcement with escalation |
 | Email Integration | Inbound email-to-ticket via SendGrid/Mailgun webhooks |
+| Live Chat | Real-time chat via Socket.IO with visitor/agent rooms, typing indicators |
 | Agent Workbench | Unified agent interface with ticket queue |
 | Automation Rules | Auto-assign, auto-close, canned response triggers |
 | Knowledge Base | Self-service articles for customers |
@@ -174,19 +179,19 @@ Campaign management and marketing automation.
 
 ### 10. Point of Sale (POS)
 
-Retail and in-store sales.
+Retail and in-store sales with integrated payments.
 
 | Feature | Description |
 |---------|-------------|
 | POS Interface | Touch-optimized sales terminal |
 | Sessions | Shift-based session management with cash reconciliation |
 | Terminals | Multi-terminal support |
-| Payments | Multiple payment methods per transaction |
+| Payments | Multiple payment methods per transaction, Razorpay integration |
 | Order Management | POS orders linked to inventory |
 
 ### 11. Website & eCommerce
 
-Build and manage an online storefront.
+Build and manage an online storefront with integrated payments.
 
 | Feature | Description |
 |---------|-------------|
@@ -194,20 +199,23 @@ Build and manage an online storefront.
 | Product Catalog | Online product listings synced with inventory |
 | Shopping Cart | Customer cart with session management |
 | Order Processing | Online orders flowing into sales pipeline |
+| Payments | Razorpay payment gateway with order-level payment initiation |
 | Promotions | Discount codes, campaigns, promotional pricing |
 | Media Library | Centralized asset management |
 | Site Analytics | Traffic and conversion tracking |
 
 ### 12. E-Signature
 
-Digital document signing.
+Digital document signing with email notifications and S3 storage.
 
 | Feature | Description |
 |---------|-------------|
 | Templates | Reusable document templates with field placement |
 | Signing Interface | Browser-based document signing |
+| Email Notifications | Automated signing request and completion emails via Nodemailer |
 | Audit Trail | Complete signing history with timestamps |
 | Multi-Signer | Sequential signer workflows |
+| S3 Storage | Document files stored in S3-compatible storage when enabled |
 
 ### 13. Platform
 
@@ -215,10 +223,15 @@ Cross-cutting platform capabilities.
 
 | Feature | Description |
 |---------|-------------|
-| Workflow Engine | Trigger-based automation (on create, update, schedule, field change) |
+| Workflow Engine | Trigger-based automation with condition evaluation and 6 action types (update_field, send_email, send_notification, assign, create_task, webhook) |
+| Real-Time | Socket.IO WebSocket layer — chat rooms, per-user notifications, tenant-scoped dashboard broadcasts |
+| Email Service | Nodemailer SMTP transport with branded HTML templates (invoice, ticket reply, welcome, password reset) |
+| Payment Gateway | Razorpay integration — order creation, signature verification, webhooks, refunds |
+| File Storage | S3-compatible storage (AWS S3 / MinIO) — upload, presigned download URLs, metadata tracking |
 | Integrations | Gmail, Slack, WhatsApp, Razorpay, S3, webhooks, custom |
 | Custom Reports | Configurable reports with filters, grouping, charts |
 | Dashboards | Module-specific dashboards with KPI cards and sparklines |
+| Custom Fields | Tenant-scoped custom field definitions for any module |
 | RBAC | Roles, permissions, user assignments, audit logs |
 | Multi-Tenancy | Tenant-scoped data isolation with per-tenant module control |
 | CSV Export | Export data from any list view |
@@ -270,19 +283,19 @@ Cross-cutting platform capabilities.
 
 ## Data Model Summary
 
-**184 models** organized by domain:
+**193 models** organized by domain:
 
 | Domain | Model Count | Key Entities |
 |--------|-------------|-------------|
 | CRM | 10+ | Lead, Deal, Pipeline, CrmTask, LeadActivity, LeadScoringHistory |
 | Sales | 15+ | SaleOrder, Invoice, SalesContract, SalesForecast, Territory |
-| Inventory | 18+ | Product, Warehouse, StockQuant, StockLedger, GRN, StockTransfer |
+| Inventory | 18+ | Product, Warehouse, StockQuant, StockLedger, GRN, StockTransfer, StockReservation |
 | Manufacturing | 25+ | ManufacturingOrder, Bom, BomLine, Routing, WorkOrder, MoQualityInspection |
-| Accounting | 20+ | AccountMove, AccountJournal, AccountPayment, FixedAsset, TaxReport |
+| Accounting | 20+ | AccountMove, AccountJournal, AccountPayment, FixedAsset, TaxReport, GSTReturn, TDS, EInvoice |
 | HR | 25+ | Employee (60+ fields), Leave, Attendance, Payroll, Appraisal, Course |
 | Projects | 20+ | Project, ProjectTask, Sprint, ProjectBudget, ProjectRisk, WikiPage |
-| Support | 15+ | SupportTicket, SlaPolicy, CannedResponse, ChatMessage |
-| Platform | 8+ | Workflow, WorkflowRun, Integration, Report, Dashboard |
+| Support | 15+ | SupportTicket, SlaPolicy, CannedResponse, ChatSession, ChatMessage |
+| Platform | 12+ | Workflow, WorkflowRun, Integration, Report, Dashboard, Payment, FileStorage, CustomField |
 
 ---
 
@@ -322,10 +335,15 @@ Demo data includes sample partners, products, leads, sale orders, invoices, manu
 
 | Spec | Value |
 |------|-------|
-| API Endpoints | 76+ route files |
+| API Endpoints | 100 route files |
 | Frontend Components | 150+ React components |
-| Database Models | 184 Mongoose schemas |
+| Database Models | 193 Mongoose schemas |
 | Test Coverage | 24 integration tests (auth, CRUD, pagination, filtering) |
+| Real-Time | Socket.IO with JWT auth, chat/notification/dashboard rooms |
+| Email | Nodemailer SMTP with 4 branded HTML templates |
+| Payments | Razorpay (order, verify, webhook, refund) |
+| File Storage | S3-compatible (upload, presigned URLs, metadata) |
+| Workflow Actions | 6 types (update_field, send_email, send_notification, assign, create_task, webhook) |
 | Bundle Size | 333 KB (code-split from 1,321 KB) |
 | Min RAM | 512 MB |
 | Node.js | 20 LTS |
