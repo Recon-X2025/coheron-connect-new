@@ -91,6 +91,8 @@ import gstReturnsRoutes from './gstReturns.js';
 import eInvoiceRoutes from './eInvoice.js';
 import customFieldsRoutes from './customFields.js';
 import stockReservationsRoutes from './stockReservations.js';
+import paymentsRoutes from './payments.js';
+import filesRoutes from './files.js';
 
 const router = express.Router();
 
@@ -206,5 +208,11 @@ router.use('/accounting/e-invoice', requireModule('accounting'), eInvoiceRoutes)
 
 // Inventory - Stock Reservations
 router.use('/inventory/reservations', requireModule('inventory'), stockReservationsRoutes);
+
+// Payments (no module guard - cross-module)
+router.use('/payments', paymentsRoutes);
+
+// File Storage (no module guard - cross-module)
+router.use('/files', filesRoutes);
 
 export default router;

@@ -2,6 +2,7 @@ import express from 'express';
 import { SaleOrder } from '../models/SaleOrder.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
+import { triggerWorkflows } from '../middleware/workflowTrigger.js';
 
 const router = express.Router();
 
@@ -116,10 +117,16 @@ router.put('/:id', asyncHandler(async (req, res) => {
   if (state !== undefined) updateData.state = state;
   if (amount_total !== undefined) updateData.amount_total = amount_total;
 
+  const oldOrder = await SaleOrder.findById(req.params.id).lean();
   const order = await SaleOrder.findByIdAndUpdate(req.params.id, updateData, { new: true });
 
   if (!order) {
     return res.status(404).json({ error: 'Sale order not found' });
+  }
+
+  // Trigger workflows on status change
+  if (state && state !== (oldOrder as any)?.state) {
+    triggerWorkflows('on_update', 'SaleOrder', req.params.id);
   }
 
   res.json(order);

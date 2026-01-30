@@ -3,6 +3,7 @@ import { SupportTicket, TicketNote, TicketAttachment, TicketWatcher, TicketHisto
 import { SlaPolicy } from '../models/SlaPolicy.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
+import { triggerWorkflows } from '../middleware/workflowTrigger.js';
 
 const router = express.Router();
 
@@ -193,6 +194,9 @@ router.post('/', asyncHandler(async (req, res) => {
     console.warn('Failed to log ticket history (non-critical):', historyError);
   }
 
+  // Trigger workflows
+  triggerWorkflows('on_create', 'SupportTicket', ticket._id.toString());
+
   res.status(201).json(ticket);
 }));
 
@@ -233,6 +237,9 @@ router.put('/:id', asyncHandler(async (req, res) => {
   }
 
   const result = await SupportTicket.findByIdAndUpdate(req.params.id, updateData, { new: true });
+
+  // Trigger workflows
+  triggerWorkflows('on_update', 'SupportTicket', req.params.id);
 
   if (status && status !== oldTicket.status) {
     await TicketHistory.create({ ticket_id: req.params.id, action: 'status_changed', old_value: oldTicket.status, new_value: status, performed_by: req.body.updated_by || null });

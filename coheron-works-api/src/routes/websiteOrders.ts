@@ -5,6 +5,7 @@ import { WebsiteOrder, WebsiteOrderItem, WebsiteOrderStatusHistory } from '../mo
 import { WebsiteCart, WebsiteCartItem } from '../models/WebsiteCart.js';
 import Product from '../models/Product.js';
 import { SaleOrder } from '../models/SaleOrder.js';
+import { createOrder as createRazorpayOrder } from '../services/paymentService.js';
 
 const router = express.Router();
 
@@ -199,6 +200,23 @@ router.put('/:id/status', asyncHandler(async (req, res) => {
   }
 
   res.json({ message: 'Order status updated', status });
+}));
+
+// Initiate Razorpay payment for order
+router.post('/:id/pay', asyncHandler(async (req, res) => {
+  const order = await WebsiteOrder.findById(req.params.id).lean();
+  if (!order) {
+    return res.status(404).json({ error: 'Order not found' });
+  }
+
+  const razorpayOrder = await createRazorpayOrder({
+    amount: Math.round((order.total || 0) * 100), // convert to paise
+    currency: order.currency || 'INR',
+    receipt: order.order_number,
+    notes: { order_id: req.params.id },
+  });
+
+  res.json({ razorpay_order_id: razorpayOrder.id, amount: razorpayOrder.amount, currency: razorpayOrder.currency });
 }));
 
 // Update payment status

@@ -8,6 +8,7 @@ import mongoose, { connectDB } from './database/connection.js';
 import logger from './utils/logger.js';
 import app from './app.js';
 import { startWorkers } from './jobs/index.js';
+import { initSocket } from './socket/index.js';
 
 const PORT = process.env.PORT || 3000;
 
@@ -20,6 +21,7 @@ connectDB().then(() => {
     logger.info(`Health check: http://localhost:${PORT}/health`);
     logger.info(`API Base URL: http://localhost:${PORT}/api`);
   });
+  initSocket(server);
 });
 
 // Graceful shutdown

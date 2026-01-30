@@ -1,7 +1,12 @@
 import express from 'express';
+import { Queue } from 'bullmq';
 import { Invoice } from '../models/Invoice.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
+import { invoiceEmailTemplate } from '../templates/email/invoiceTemplate.js';
+import { redisConnection } from '../jobs/connection.js';
+
+const emailQueue = new Queue('email', { connection: redisConnection });
 
 const router = express.Router();
 
@@ -90,6 +95,35 @@ router.put('/:id', asyncHandler(async (req, res) => {
   }
 
   res.json(invoice);
+}));
+
+// Send invoice via email
+router.post('/:id/send', asyncHandler(async (req, res) => {
+  const invoice = await Invoice.findById(req.params.id).populate('partner_id', 'name email').lean() as any;
+  if (!invoice) {
+    return res.status(404).json({ error: 'Invoice not found' });
+  }
+
+  const email = req.body.email || invoice.partner_id?.email;
+  if (!email) {
+    return res.status(400).json({ error: 'No recipient email found' });
+  }
+
+  const html = invoiceEmailTemplate({
+    customerName: invoice.partner_id?.name || 'Customer',
+    invoiceNumber: invoice.name || invoice.invoice_number || 'N/A',
+    amount: invoice.amount_total || 0,
+    dueDate: invoice.due_date ? new Date(invoice.due_date).toLocaleDateString() : undefined,
+  });
+
+  await emailQueue.add('invoice-email', {
+    to: email,
+    subject: `Invoice ${invoice.name || invoice.invoice_number || ''}`,
+    body: html,
+    html,
+  });
+
+  res.json({ message: 'Invoice email queued', to: email });
 }));
 
 // Delete invoice

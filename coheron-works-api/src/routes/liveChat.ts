@@ -2,6 +2,7 @@ import express from 'express';
 import { ChatWidgetConfig, ChatSession, ChatMessage } from '../models/LiveChat.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
+import { emitChatMessage } from '../socket/events.js';
 
 const router = express.Router();
 
@@ -50,6 +51,9 @@ router.post('/sessions', asyncHandler(async (req, res) => {
 router.put('/sessions/:id', asyncHandler(async (req, res) => {
   const session = await ChatSession.findByIdAndUpdate(req.params.id, req.body, { new: true });
   if (!session) return res.status(404).json({ error: 'Session not found' });
+  if (req.body.status) {
+    emitChatMessage(req.params.id, { type: 'system', content: `Session status changed to ${req.body.status}`, status: req.body.status });
+  }
   res.json(session);
 }));
 
@@ -65,6 +69,7 @@ router.post('/sessions/:sessionId/messages', asyncHandler(async (req, res) => {
     ...req.body,
     session_id: req.params.sessionId,
   });
+  emitChatMessage(req.params.sessionId, message.toObject());
   res.status(201).json(message);
 }));
 

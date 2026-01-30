@@ -2,6 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { Queue } from 'bullmq';
 import EsignDocument from '../models/EsignDocument.js';
 import EsignSigner from '../models/EsignSigner.js';
 import EsignField from '../models/EsignField.js';
@@ -9,6 +10,10 @@ import EsignAuditTrail from '../models/EsignAuditTrail.js';
 import EsignTemplate from '../models/EsignTemplate.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
+import { redisConnection } from '../jobs/connection.js';
+import { uploadFile } from '../services/storageService.js';
+
+const emailQueue = new Queue('email', { connection: redisConnection });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -107,11 +112,24 @@ router.post('/documents', upload.single('file'), asyncHandler(async (req, res) =
     return res.status(400).json({ error: 'File is required' });
   }
 
+  let filePath = req.file.path;
+  let fileUrl = `/api/esignature/files/${req.file.filename}`;
+
+  // Use S3 if enabled
+  if (process.env.S3_ENABLED === 'true' && req.file.buffer) {
+    const crypto = await import('crypto');
+    const ext = (await import('path')).extname(req.file.originalname);
+    const key = `esignature/${Date.now()}-${crypto.randomBytes(8).toString('hex')}${ext}`;
+    await uploadFile(key, req.file.buffer, req.file.mimetype);
+    filePath = key;
+    fileUrl = key;
+  }
+
   const document = await EsignDocument.create({
     document_name,
     document_type: document_type || 'other',
-    file_path: req.file.path,
-    file_url: `/api/esignature/files/${req.file.filename}`,
+    file_path: filePath,
+    file_url: fileUrl,
     file_size: req.file.size,
     mime_type: req.file.mimetype,
     related_record_type, related_record_id, created_by, expires_at, message,
@@ -337,7 +355,12 @@ router.post('/templates', upload.single('file'), asyncHandler(async (req, res) =
 async function sendSigningEmail(signer: any, document: any) {
   try {
     const signingUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/esignature/sign/${document._id || document.id}/${signer._id || signer.id}`;
-    console.log('Email would be sent:', { to: signer.signer_email, subject: `Action Required: Please Sign ${document.document_name}` });
+    await emailQueue.add('esign-signing', {
+      to: signer.signer_email,
+      subject: `Action Required: Please Sign ${document.document_name}`,
+      body: `<p>Hi ${signer.signer_name},</p><p>You have been requested to sign <strong>${document.document_name}</strong>.</p><p><a href="${signingUrl}" style="display:inline-block;padding:12px 24px;background:#4F46E5;color:#fff;text-decoration:none;border-radius:6px;">Sign Document</a></p>`,
+      html: `<p>Hi ${signer.signer_name},</p><p>You have been requested to sign <strong>${document.document_name}</strong>.</p><p><a href="${signingUrl}" style="display:inline-block;padding:12px 24px;background:#4F46E5;color:#fff;text-decoration:none;border-radius:6px;">Sign Document</a></p>`,
+    });
     return true;
   } catch (error) {
     console.error('Error sending signing email:', error);
@@ -349,7 +372,12 @@ async function sendCompletionEmails(document: any) {
   try {
     const signers = await EsignSigner.find({ document_id: document._id || document.id });
     for (const signer of signers) {
-      console.log('Completion email would be sent to:', signer.signer_email);
+      await emailQueue.add('esign-completion', {
+        to: signer.signer_email,
+        subject: `Document Completed: ${document.document_name}`,
+        body: `<p>Hi ${signer.signer_name},</p><p>The document <strong>${document.document_name}</strong> has been signed by all parties and is now complete.</p>`,
+        html: `<p>Hi ${signer.signer_name},</p><p>The document <strong>${document.document_name}</strong> has been signed by all parties and is now complete.</p>`,
+      });
     }
     return true;
   } catch (error) {

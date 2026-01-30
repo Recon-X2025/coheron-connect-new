@@ -5,6 +5,7 @@ import PosTerminal from '../models/PosTerminal.js';
 import PosPayment from '../models/PosPayment.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
+import { createOrder as createRazorpayOrder } from '../services/paymentService.js';
 
 const router = express.Router();
 
@@ -429,6 +430,24 @@ router.post('/payments', asyncHandler(async (req, res) => {
   });
 
   res.status(201).json(payment);
+}));
+
+// Initiate Razorpay payment for POS order
+router.post('/payments/razorpay', asyncHandler(async (req, res) => {
+  const { order_id } = req.body;
+  const order = await PosOrder.findById(order_id).lean();
+  if (!order) {
+    return res.status(404).json({ error: 'POS order not found' });
+  }
+
+  const razorpayOrder = await createRazorpayOrder({
+    amount: Math.round((order.amount_total || 0) * 100),
+    currency: 'INR',
+    receipt: order.order_number,
+    notes: { pos_order_id: order_id },
+  });
+
+  res.json({ razorpay_order_id: razorpayOrder.id, amount: razorpayOrder.amount, currency: razorpayOrder.currency });
 }));
 
 // Process refund
