@@ -96,6 +96,8 @@ import filesRoutes from './files.js';
 import twoFactorRoutes from './twoFactor.js';
 import whatsappWebhookRoutes from './whatsappWebhook.js';
 import taxComplianceRoutes from './taxCompliance.js';
+import rfmRoutes from './rfm.js';
+import mrpRoutes from './mrp.js';
 
 const router = express.Router();
 
@@ -112,6 +114,7 @@ router.use('/email-webhook', emailWebhookRoutes);
 router.use('/tenant-config', tenantConfigRoutes);
 
 // CRM Module
+router.use('/crm/rfm', requireModule('crm'), rfmRoutes);
 router.use('/leads', requireModule('crm'), leadsRoutes);
 router.use('/deals', requireModule('crm'), dealsRoutes);
 router.use('/pipelines', requireModule('crm'), pipelinesRoutes);
@@ -153,6 +156,7 @@ router.use('/manufacturing/routing', requireModule('manufacturing'), manufacturi
 router.use('/manufacturing/work-orders', requireModule('manufacturing'), manufacturingWorkOrdersRoutes);
 router.use('/manufacturing/quality', requireModule('manufacturing'), manufacturingQualityRoutes);
 router.use('/manufacturing/costing', requireModule('manufacturing'), manufacturingCostingRoutes);
+router.use('/manufacturing/mrp', requireModule('manufacturing'), mrpRoutes);
 
 // Inventory Module
 router.use('/inventory', requireModule('inventory'), inventoryRoutes);
