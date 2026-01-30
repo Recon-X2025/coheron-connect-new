@@ -104,7 +104,7 @@ TicketCategorySchema.index({ is_active: 1 });
 export const KbArticle = mongoose.model<IKbArticle>('KbArticle', kbArticleSchema);
 export const KbArticleRevision = mongoose.model('KbArticleRevision', KbArticleRevisionSchema);
 export const KbArticleAttachment = mongoose.model('KbArticleAttachment', KbArticleAttachmentSchema);
-export const TicketChannel = mongoose.model('TicketChannel', TicketChannelSchema);
+export { default as TicketChannel } from './TicketChannel.js';
 export const TicketCategory = mongoose.model('TicketCategory', TicketCategorySchema);
 
 export default KbArticle;

@@ -98,6 +98,18 @@ import whatsappWebhookRoutes from './whatsappWebhook.js';
 import taxComplianceRoutes from './taxCompliance.js';
 import rfmRoutes from './rfm.js';
 import mrpRoutes from './mrp.js';
+// Support Module — additional routes
+import supportTeamsRoutes from './supportTeams.js';
+import supportSurveysRoutes from './supportSurveys.js';
+import supportChatRoutes from './supportChat.js';
+import supportAutomationRoutes from './supportAutomation.js';
+import supportReportsRoutes from './supportReports.js';
+import slaPoliciesRoutes from './slaPolicies.js';
+import cannedResponsesRoutes from './cannedResponses.js';
+import knowledgeBaseRoutes from './knowledgeBase.js';
+import itsmRoutes from './itsm.js';
+// Projects — standalone issue types
+import issueTypesRoutes from './issueTypes.js';
 
 const router = express.Router();
 
@@ -134,6 +146,15 @@ router.use('/invoices', requireModule('sales'), invoicesRoutes);
 
 // Support Module
 router.use('/support-tickets', requireModule('support'), supportTicketsRoutes);
+router.use('/support-teams', requireModule('support'), supportTeamsRoutes);
+router.use('/support-chat', requireModule('support'), supportChatRoutes);
+router.use('/support-surveys', requireModule('support'), supportSurveysRoutes);
+router.use('/support-automation', requireModule('support'), supportAutomationRoutes);
+router.use('/support-reports', requireModule('support'), supportReportsRoutes);
+router.use('/sla-policies', requireModule('support'), slaPoliciesRoutes);
+router.use('/canned-responses', requireModule('support'), cannedResponsesRoutes);
+router.use('/knowledge-base', requireModule('support'), knowledgeBaseRoutes);
+router.use('/itsm', requireModule('support'), itsmRoutes);
 
 // HR Module
 router.use('/employees', requireModule('hr'), employeesRoutes);
@@ -189,6 +210,7 @@ router.use('/projects', requireModule('projects'), projectResourcesRoutes);
 router.use('/projects', requireModule('projects'), projectProcurementRoutes);
 router.use('/projects', requireModule('projects'), projectChangeRequestsRoutes);
 router.use('/projects', requireModule('projects'), projectAnalyticsRoutes);
+router.use('/issue-types', requireModule('projects'), issueTypesRoutes);
 
 // POS Module
 router.use('/pos', requireModule('pos'), posRoutes);
