@@ -3,7 +3,7 @@ import mongoose from './connection.js';
 import AccountAccount from '../models/AccountAccount.js';
 import AccountJournal from '../models/AccountJournal.js';
 import AccountMove from '../models/AccountMove.js';
-import { Partner } from '../models/Partner.js';
+import { Partner } from '../shared/models/Partner.js';
 import AccountVendor from '../models/AccountVendor.js';
 import AccountBill from '../models/AccountBill.js';
 

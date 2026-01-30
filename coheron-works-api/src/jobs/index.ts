@@ -1,4 +1,4 @@
-import logger from '../utils/logger.js';
+import logger from '../shared/utils/logger.js';
 import { startEmailWorker } from './workers/emailWorker.js';
 import { startReportWorker } from './workers/reportWorker.js';
 import { startWorkflowWorker } from './workers/workflowWorker.js';

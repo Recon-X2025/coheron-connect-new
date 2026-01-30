@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import logger from '../../utils/logger.js';
+import logger from '../../shared/utils/logger.js';
 
 export async function executeAssign(config: any, context: any) {
   const { assignField, assignTo } = config;

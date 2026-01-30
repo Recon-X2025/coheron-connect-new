@@ -1,0 +1,22 @@
+import { lazy } from 'react';
+const SalesDashboard = lazy(() => import('./SalesDashboard').then(m => ({ default: m.SalesDashboard })));
+const SalesOrders = lazy(() => import('./SalesOrders').then(m => ({ default: m.SalesOrders })));
+const Quotations = lazy(() => import('./Quotations').then(m => ({ default: m.Quotations })));
+const PricingManagement = lazy(() => import('./PricingManagement').then(m => ({ default: m.PricingManagement })));
+const ContractsManagement = lazy(() => import('./ContractsManagement').then(m => ({ default: m.ContractsManagement })));
+const DeliveryTracking = lazy(() => import('./DeliveryTracking').then(m => ({ default: m.DeliveryTracking })));
+const ReturnsManagement = lazy(() => import('./ReturnsManagement').then(m => ({ default: m.ReturnsManagement })));
+const SalesForecasting = lazy(() => import('./SalesForecasting').then(m => ({ default: m.SalesForecasting })));
+const SalesTeamPerformance = lazy(() => import('./SalesTeamPerformance').then(m => ({ default: m.SalesTeamPerformance })));
+
+export const salesRoutes = [
+  { path: '/sales/dashboard', element: <SalesDashboard /> },
+  { path: '/sales/orders', element: <SalesOrders /> },
+  { path: '/sales/quotations', element: <Quotations /> },
+  { path: '/sales/pricing', element: <PricingManagement /> },
+  { path: '/sales/contracts', element: <ContractsManagement /> },
+  { path: '/sales/delivery', element: <DeliveryTracking /> },
+  { path: '/sales/returns', element: <ReturnsManagement /> },
+  { path: '/sales/forecasting', element: <SalesForecasting /> },
+  { path: '/sales/team', element: <SalesTeamPerformance /> },
+];

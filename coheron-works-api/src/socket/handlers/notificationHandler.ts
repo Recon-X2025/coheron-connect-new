@@ -1,5 +1,5 @@
 import type { Server, Socket } from 'socket.io';
-import logger from '../../utils/logger.js';
+import logger from '../../shared/utils/logger.js';
 
 export function registerNotificationHandlers(_io: Server, socket: Socket) {
   const userId = socket.data.userId;

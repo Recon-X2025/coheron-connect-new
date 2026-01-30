@@ -1,5 +1,5 @@
 import { getIO } from './index.js';
-import logger from '../utils/logger.js';
+import logger from '../shared/utils/logger.js';
 
 export function emitChatMessage(sessionId: string, message: any) {
   try {

@@ -1,5 +1,5 @@
 import { emitNotification } from '../../socket/events.js';
-import logger from '../../utils/logger.js';
+import logger from '../../shared/utils/logger.js';
 
 export async function executeSendNotification(config: any, _context: any) {
   const { userId, title, message, type } = config;

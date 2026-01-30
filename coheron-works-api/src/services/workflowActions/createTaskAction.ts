@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import logger from '../../utils/logger.js';
+import logger from '../../shared/utils/logger.js';
 
 export async function executeCreateTask(config: any, context: any) {
   const { title, description, assignee, priority, dueInDays } = config;

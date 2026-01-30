@@ -1,9 +1,9 @@
 import { connectDB } from './connection.js';
 import mongoose from './connection.js';
 import bcrypt from 'bcryptjs';
-import User from '../models/User.js';
-import { Partner } from '../models/Partner.js';
-import { Product } from '../models/Product.js';
+import User from '../shared/models/User.js';
+import { Partner } from '../shared/models/Partner.js';
+import { Product } from '../shared/models/Product.js';
 import { Lead } from '../models/Lead.js';
 import { SaleOrder } from '../models/SaleOrder.js';
 import { Invoice } from '../models/Invoice.js';

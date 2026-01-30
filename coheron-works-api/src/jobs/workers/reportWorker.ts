@@ -1,6 +1,6 @@
 import { Worker, Job } from 'bullmq';
 import { redisConnection } from '../connection.js';
-import logger from '../../utils/logger.js';
+import logger from '../../shared/utils/logger.js';
 
 export interface ReportJobData {
   reportId: string;

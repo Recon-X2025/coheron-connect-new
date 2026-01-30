@@ -1,5 +1,5 @@
 import axios from 'axios';
-import logger from '../../utils/logger.js';
+import logger from '../../shared/utils/logger.js';
 
 export async function executeWebhook(config: any, context: any) {
   const { url, method, headers, body } = config;

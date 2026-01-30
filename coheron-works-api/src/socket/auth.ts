@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import type { Socket } from 'socket.io';
-import logger from '../utils/logger.js';
+import logger from '../shared/utils/logger.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
 

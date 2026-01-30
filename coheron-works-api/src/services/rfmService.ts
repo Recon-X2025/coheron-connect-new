@@ -1,6 +1,6 @@
 import { CustomerRFM, RFMAnalysisRun } from '../models/RFMAnalysis.js';
 import { SaleOrder } from '../models/SaleOrder.js';
-import { Partner } from '../models/Partner.js';
+import { Partner } from '../shared/models/Partner.js';
 
 const RFM_SEGMENTS: Record<string, { name: string; code: string; patterns: string[]; action: string; color: string }> = {
   champions:          { name: 'Champions',          code: 'CHMP', patterns: ['555','554','545','544','455','454','445'], action: 'Reward them. Early adopters for new products.', color: '#22c55e' },

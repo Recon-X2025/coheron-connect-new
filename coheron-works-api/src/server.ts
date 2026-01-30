@@ -1,11 +1,11 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import { initSentry } from './utils/sentry.js';
+import { initSentry } from './shared/utils/sentry.js';
 initSentry();
 
 import mongoose, { connectDB } from './database/connection.js';
-import logger from './utils/logger.js';
+import logger from './shared/utils/logger.js';
 import app from './app.js';
 import { startWorkers } from './jobs/index.js';
 import { initSocket } from './socket/index.js';

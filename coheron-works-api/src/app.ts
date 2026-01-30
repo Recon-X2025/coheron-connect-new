@@ -7,11 +7,11 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import routes from './routes/index.js';
 import mongoose from 'mongoose';
-import { errorHandler } from './middleware/asyncHandler.js';
-import { requestLogger } from './middleware/requestLogger.js';
-import { Sentry } from './utils/sentry.js';
+import { errorHandler } from './shared/middleware/asyncHandler.js';
+import { requestLogger } from './shared/middleware/requestLogger.js';
+import { Sentry } from './shared/utils/sentry.js';
 import swaggerUi from 'swagger-ui-express';
-import { swaggerSpec } from './utils/swagger.js';
+import { swaggerSpec } from './shared/utils/swagger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

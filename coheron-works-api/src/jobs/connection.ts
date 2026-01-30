@@ -1,5 +1,5 @@
 import IORedis from 'ioredis';
-import logger from '../utils/logger.js';
+import logger from '../shared/utils/logger.js';
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 

@@ -1,7 +1,7 @@
 import { Worker, Job } from 'bullmq';
 import { redisConnection } from '../connection.js';
-import logger from '../../utils/logger.js';
-import { sendEmail } from '../../services/emailService.js';
+import logger from '../../shared/utils/logger.js';
+import { sendEmail } from '../../modules/crossmodule/services/emailService.js';
 
 export interface EmailJobData {
   to: string;

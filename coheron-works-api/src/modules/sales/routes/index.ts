@@ -1,0 +1,9 @@
+export { default as saleOrdersRoutes } from './saleOrders.js';
+export { default as invoicesRoutes } from './invoices.js';
+export { default as salesPricingRoutes } from './salesPricing.js';
+export { default as salesContractsRoutes } from './salesContracts.js';
+export { default as salesDeliveryRoutes } from './salesDelivery.js';
+export { default as salesReturnsRoutes } from './salesReturns.js';
+export { default as salesForecastingRoutes } from './salesForecasting.js';
+export { default as salesTeamRoutes } from './salesTeam.js';
+export { default as salesAnalyticsRoutes } from './salesAnalytics.js';

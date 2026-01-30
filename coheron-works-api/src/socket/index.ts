@@ -1,6 +1,6 @@
 import { Server as HttpServer } from 'http';
 import { Server } from 'socket.io';
-import logger from '../utils/logger.js';
+import logger from '../shared/utils/logger.js';
 import { socketAuthMiddleware } from './auth.js';
 import { registerChatHandlers } from './handlers/chatHandler.js';
 import { registerNotificationHandlers } from './handlers/notificationHandler.js';

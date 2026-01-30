@@ -1,0 +1,11 @@
+export { default as supportTickets } from './supportTickets.js';
+export { default as supportTeams } from './supportTeams.js';
+export { default as supportChat } from './supportChat.js';
+export { default as supportSurveys } from './supportSurveys.js';
+export { default as supportAutomation } from './supportAutomation.js';
+export { default as supportReports } from './supportReports.js';
+export { default as slaPolicies } from './slaPolicies.js';
+export { default as cannedResponses } from './cannedResponses.js';
+export { default as knowledgeBase } from './knowledgeBase.js';
+export { default as itsm } from './itsm.js';
+export { default as liveChat } from './liveChat.js';

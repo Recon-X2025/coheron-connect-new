@@ -1,6 +1,6 @@
 import { Queue } from 'bullmq';
 import { redisConnection } from '../../jobs/connection.js';
-import logger from '../../utils/logger.js';
+import logger from '../../shared/utils/logger.js';
 
 const emailQueue = new Queue('email', { connection: redisConnection });
 

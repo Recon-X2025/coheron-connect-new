@@ -13,14 +13,14 @@ async function initMongoDB() {
     console.log('Connected to MongoDB');
 
     // Import all models
-    const User = (await import('../models/User.js')).default;
-    const { Partner } = await import('../models/Partner.js');
-    const { Product } = await import('../models/Product.js');
-    const { Role } = await import('../models/Role.js');
-    const { Permission } = await import('../models/Permission.js');
-    const { UserRole } = await import('../models/UserRole.js');
-    const { RolePermission } = await import('../models/RolePermission.js');
-    const { TenantConfig } = await import('../models/TenantConfig.js');
+    const User = (await import('../shared/models/User.js')).default;
+    const { Partner } = await import('../shared/models/Partner.js');
+    const { Product } = await import('../shared/models/Product.js');
+    const { Role } = await import('../shared/models/Role.js');
+    const { Permission } = await import('../shared/models/Permission.js');
+    const { UserRole } = await import('../shared/models/UserRole.js');
+    const { RolePermission } = await import('../shared/models/RolePermission.js');
+    const { TenantConfig } = await import('../shared/models/TenantConfig.js');
     const { Lead } = await import('../models/Lead.js');
     const { SaleOrder } = await import('../models/SaleOrder.js');
     const { Invoice } = await import('../models/Invoice.js');

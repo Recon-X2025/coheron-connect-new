@@ -1,0 +1,10 @@
+export { default as employees } from './employees.js';
+export { default as attendance } from './attendance.js';
+export { default as leave } from './leave.js';
+export { default as payroll } from './payroll.js';
+export { default as appraisals } from './appraisals.js';
+export { default as goals } from './goals.js';
+export { default as courses } from './courses.js';
+export { default as applicants } from './applicants.js';
+export { default as policies } from './policies.js';
+export { default as taxCompliance } from './taxCompliance.js';

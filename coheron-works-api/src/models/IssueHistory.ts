@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { defaultSchemaOptions } from '../utils/mongoose-helpers.js';
+import { defaultSchemaOptions } from '../shared/utils/mongoose-helpers.js';
 
 export interface IIssueHistory extends Document {
   issue_id: mongoose.Types.ObjectId;

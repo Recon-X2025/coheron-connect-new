@@ -1,7 +1,7 @@
 import { Workflow } from '../models/Workflow.js';
 import { WorkflowRun } from '../models/WorkflowRun.js';
 import mongoose from 'mongoose';
-import logger from '../utils/logger.js';
+import logger from '../shared/utils/logger.js';
 import { executeUpdateField } from './workflowActions/updateFieldAction.js';
 import { executeSendEmail } from './workflowActions/sendEmailAction.js';
 import { executeSendNotification } from './workflowActions/sendNotificationAction.js';
