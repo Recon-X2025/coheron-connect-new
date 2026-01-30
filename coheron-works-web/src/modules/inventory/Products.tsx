@@ -80,10 +80,6 @@ export const Products = () => {
         setShowProductForm(true);
     };
 
-    const _handleEditProduct = (_product: Product) => {
-        void _product;
-    }; void _handleEditProduct;
-
     const handleDeleteProduct = async (product: Product) => {
         const ok = await confirmAction({
             title: 'Delete Product',

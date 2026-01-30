@@ -83,10 +83,6 @@ export const LeadsList = () => {
         setShowLeadForm(true);
     };
 
-    const _handleEditLead = (_lead: Lead) => {
-        void _lead;
-    }; void _handleEditLead;
-
     const handleLeadSaved = () => {
         loadData();
     };
