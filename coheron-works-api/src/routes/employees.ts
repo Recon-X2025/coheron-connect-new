@@ -75,4 +75,26 @@ router.delete('/:id', asyncHandler(async (req, res) => {
   res.json({ message: 'Employee deleted successfully' });
 }));
 
+// Get employee leave balances
+router.get('/:id/leave-balances', asyncHandler(async (req, res) => {
+  const employee = await Employee.findById(req.params.id).select('leave_balances name employee_id').lean();
+  if (!employee) {
+    return res.status(404).json({ error: 'Employee not found' });
+  }
+  res.json(employee);
+}));
+
+// Add document to employee
+router.post('/:id/documents', asyncHandler(async (req, res) => {
+  const employee = await Employee.findByIdAndUpdate(
+    req.params.id,
+    { $push: { documents: req.body } },
+    { new: true }
+  );
+  if (!employee) {
+    return res.status(404).json({ error: 'Employee not found' });
+  }
+  res.status(201).json(employee);
+}));
+
 export default router;

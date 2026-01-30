@@ -1,5 +1,6 @@
 import express from 'express';
 import { Lead, LeadActivity, LeadScoringHistory, CompetitorTracking, OpportunityDocument } from '../models/Lead.js';
+import { Deal } from '../models/Deal.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
@@ -107,29 +108,53 @@ router.delete('/:id', asyncHandler(async (req, res) => {
   res.json({ message: 'Lead deleted successfully' });
 }));
 
-// Convert lead to opportunity
+// Convert lead to opportunity and create a Deal
 router.post('/:id/convert', asyncHandler(async (req, res) => {
-  const { partner_id } = req.body;
+  const { partner_id, pipeline_id, stage_id, deal_name, owner_id, tenant_id } = req.body;
 
-  const lead = await Lead.findById(req.params.id).lean();
+  const lead = await Lead.findById(req.params.id).lean() as any;
   if (!lead) {
     return res.status(404).json({ error: 'Lead not found' });
   }
 
+  const now = new Date();
   const updateData: any = {
     type: 'opportunity',
     stage: 'qualified',
-    converted_at: new Date(),
+    converted_at: now,
   };
   if (partner_id) updateData.partner_id = partner_id;
 
   const updated = await Lead.findByIdAndUpdate(req.params.id, updateData, { new: true });
-  res.json(updated);
+
+  // Create a Deal from the lead
+  const dealData: any = {
+    name: deal_name || lead.name,
+    pipeline_id,
+    stage_id,
+    value: lead.expected_revenue || 0,
+    probability: lead.probability || 0,
+    partner_id: partner_id || lead.partner_id,
+    owner_id: owner_id || lead.user_id,
+    tenant_id: tenant_id || lead.tenant_id,
+  };
+
+  let deal = null;
+  if (pipeline_id) {
+    deal = await Deal.create(dealData);
+  }
+
+  res.json({ lead: updated, deal });
 }));
 
-// Add activity to lead
+// Add activity to lead and update engagement counters
 router.post('/:id/activities', asyncHandler(async (req, res) => {
   const { activity_type, subject, description, activity_date, duration_minutes, user_id } = req.body;
+
+  const lead = await Lead.findById(req.params.id);
+  if (!lead) {
+    return res.status(404).json({ error: 'Lead not found' });
+  }
 
   const activity = await LeadActivity.create({
     lead_id: req.params.id,
@@ -139,6 +164,13 @@ router.post('/:id/activities', asyncHandler(async (req, res) => {
     activity_date: activity_date || new Date(),
     duration_minutes,
     user_id,
+  });
+
+  // Update engagement counters on the lead
+  await Lead.findByIdAndUpdate(req.params.id, {
+    $inc: { activity_count: 1 },
+    last_activity_at: new Date(),
+    last_activity_type: activity_type,
   });
 
   res.status(201).json(activity);
@@ -191,6 +223,79 @@ router.post('/:id/documents', asyncHandler(async (req, res) => {
   });
 
   res.status(201).json(document);
+}));
+
+// Bulk assign leads to an owner
+router.post('/bulk-assign', asyncHandler(async (req, res) => {
+  const { lead_ids, user_id } = req.body;
+
+  if (!lead_ids || !Array.isArray(lead_ids) || lead_ids.length === 0) {
+    return res.status(400).json({ error: 'lead_ids must be a non-empty array' });
+  }
+  if (!user_id) {
+    return res.status(400).json({ error: 'user_id is required' });
+  }
+
+  const result = await Lead.updateMany(
+    { _id: { $in: lead_ids } },
+    { user_id, assigned_at: new Date() }
+  );
+
+  res.json({ matched: result.matchedCount, modified: result.modifiedCount });
+}));
+
+// Analytics: funnel metrics, source breakdown, conversion rates
+router.get('/analytics', asyncHandler(async (req, res) => {
+  const { tenant_id, date_from, date_to } = req.query;
+  const match: any = {};
+  if (tenant_id) match.tenant_id = tenant_id;
+  if (date_from || date_to) {
+    match.created_at = {};
+    if (date_from) match.created_at.$gte = new Date(date_from as string);
+    if (date_to) match.created_at.$lte = new Date(date_to as string);
+  }
+
+  const [funnelMetrics, sourceBreakdown, conversionStats] = await Promise.all([
+    // Funnel: count by stage
+    Lead.aggregate([
+      { $match: match },
+      { $group: { _id: '$stage', count: { $sum: 1 }, total_revenue: { $sum: '$expected_revenue' } } },
+      { $sort: { count: -1 } },
+    ]),
+    // Source breakdown
+    Lead.aggregate([
+      { $match: match },
+      { $group: { _id: '$source', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+    ]),
+    // Conversion rates
+    Lead.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          converted: { $sum: { $cond: [{ $eq: ['$type', 'opportunity'] }, 1, 0] } },
+          avg_score: { $avg: '$score' },
+          total_revenue: { $sum: '$expected_revenue' },
+        },
+      },
+    ]),
+  ]);
+
+  const conversion = conversionStats[0] || { total: 0, converted: 0, avg_score: 0, total_revenue: 0 };
+
+  res.json({
+    funnel: funnelMetrics,
+    sources: sourceBreakdown,
+    conversion: {
+      total_leads: conversion.total,
+      converted: conversion.converted,
+      conversion_rate: conversion.total > 0 ? ((conversion.converted / conversion.total) * 100).toFixed(2) : '0.00',
+      avg_score: conversion.avg_score ? conversion.avg_score.toFixed(2) : '0.00',
+      total_pipeline_revenue: conversion.total_revenue,
+    },
+  });
 }));
 
 export default router;

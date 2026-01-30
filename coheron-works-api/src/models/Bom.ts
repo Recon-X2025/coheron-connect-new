@@ -16,6 +16,12 @@ export interface IBom extends Document {
   ready_to_produce: string;
   user_id: mongoose.Types.ObjectId;
   notes: string;
+  // --- Enhanced fields ---
+  is_phantom: boolean;
+  consumption_type: string;
+  scrap_percentage: number;
+  total_cost: number;
+  tenant_id: mongoose.Types.ObjectId;
 }
 
 const bomSchema = new Schema<IBom>({
@@ -33,6 +39,12 @@ const bomSchema = new Schema<IBom>({
   ready_to_produce: { type: String, default: 'asap' },
   user_id: { type: Schema.Types.ObjectId, ref: 'User' },
   notes: { type: String },
+  // --- Enhanced fields ---
+  is_phantom: { type: Boolean, default: false },
+  consumption_type: { type: String, enum: ['strict', 'flexible'], default: 'strict' },
+  scrap_percentage: { type: Number, default: 0 },
+  total_cost: { type: Number, default: 0 },
+  tenant_id: { type: Schema.Types.ObjectId },
 }, defaultSchemaOptions);
 
 bomSchema.index({ product_id: 1 });
@@ -41,5 +53,6 @@ bomSchema.index({ user_id: 1 });
 bomSchema.index({ active: 1 });
 bomSchema.index({ type: 1 });
 bomSchema.index({ product_id: 1, active: 1 });
+bomSchema.index({ tenant_id: 1 });
 
 export default mongoose.model<IBom>('Bom', bomSchema);

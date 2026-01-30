@@ -42,8 +42,8 @@ const supportTicketSchema = new Schema({
   subject: { type: String, required: true },
   description: { type: String, required: true },
   ticket_type: { type: String, default: 'issue' },
-  status: { type: String, default: 'open' },
-  priority: { type: String, default: 'medium' },
+  status: { type: String, enum: ['new', 'open', 'pending', 'on_hold', 'waiting_on_customer', 'waiting_on_third_party', 'resolved', 'closed'], default: 'new' },
+  priority: { type: String, enum: ['low', 'medium', 'high', 'urgent', 'critical'], default: 'medium' },
   channel_id: { type: Schema.Types.ObjectId, ref: 'TicketChannel' },
   category_id: { type: Schema.Types.ObjectId, ref: 'TicketCategory' },
   partner_id: { type: Schema.Types.ObjectId, ref: 'Partner' },
@@ -66,6 +66,71 @@ const supportTicketSchema = new Schema({
   resolved_by: { type: Schema.Types.ObjectId },
   closed_at: { type: Date },
   closed_by: { type: Schema.Types.ObjectId },
+
+  // --- Requester info ---
+  requester: {
+    name: { type: String },
+    email: { type: String },
+    phone: { type: String },
+    company: { type: String },
+  },
+
+  // --- SLA tracking ---
+  sla_first_response_at: { type: Date },
+  sla_first_response_breached: { type: Boolean, default: false },
+  sla_resolution_breached: { type: Boolean, default: false },
+  sla_paused_at: { type: Date },
+  sla_paused_duration_minutes: { type: Number, default: 0 },
+
+  // --- Conversations ---
+  conversations: [{
+    type: { type: String, enum: ['reply', 'note', 'forward'] },
+    direction: { type: String, enum: ['inbound', 'outbound'] },
+    channel: { type: String },
+    from_email: { type: String },
+    to_emails: [{ type: String }],
+    body_text: { type: String },
+    body_html: { type: String },
+    attachments: [{
+      file_name: { type: String },
+      file_url: { type: String },
+      file_size: { type: Number },
+      mime_type: { type: String },
+    }],
+    is_private: { type: Boolean, default: false },
+    created_by: { type: Schema.Types.ObjectId, ref: 'User' },
+    created_at: { type: Date, default: Date.now },
+  }],
+
+  // --- Time entries ---
+  time_entries: [{
+    agent_id: { type: Schema.Types.ObjectId, ref: 'User' },
+    started_at: { type: Date },
+    ended_at: { type: Date },
+    duration_minutes: { type: Number },
+    billable: { type: Boolean, default: false },
+    note: { type: String },
+  }],
+  total_time_spent_minutes: { type: Number, default: 0 },
+
+  // --- Satisfaction ---
+  satisfaction: {
+    rating: { type: Number, min: 1, max: 5 },
+    feedback: { type: String },
+    responded_at: { type: Date },
+  },
+
+  // --- Escalation ---
+  escalation: {
+    is_escalated: { type: Boolean, default: false },
+    level: { type: Number, default: 0 },
+    reason: { type: String },
+    escalated_at: { type: Date },
+    escalated_by: { type: Schema.Types.ObjectId, ref: 'User' },
+  },
+
+  // --- Product reference ---
+  product_id: { type: Schema.Types.ObjectId, ref: 'Product' },
 }, schemaOptions);
 
 supportTicketSchema.index({ status: 1 });

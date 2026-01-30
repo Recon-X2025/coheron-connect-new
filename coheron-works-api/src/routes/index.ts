@@ -73,6 +73,14 @@ import accountingTaxRoutes from './accountingTax.js';
 import accountingFinancialReportsRoutes from './accountingFinancialReports.js';
 // E-Signature Module Routes
 import esignatureRoutes from './esignature.js';
+// CRM - Deals & Pipelines
+import dealsRoutes from './deals.js';
+import pipelinesRoutes from './pipelines.js';
+// Platform Module Routes
+import workflowsRoutes from './workflows.js';
+import integrationsRoutes from './integrations.js';
+import reportsRoutes from './reports.js';
+import dashboardsRoutes from './dashboards.js';
 
 const router = express.Router();
 
@@ -152,5 +160,13 @@ router.use('/accounting/tax', accountingTaxRoutes);
 router.use('/accounting/reports', accountingFinancialReportsRoutes);
 // E-Signature Module
 router.use('/esignature', esignatureRoutes);
+// CRM - Deals & Pipelines
+router.use('/deals', dealsRoutes);
+router.use('/pipelines', pipelinesRoutes);
+// Platform Module
+router.use('/workflows', workflowsRoutes);
+router.use('/integrations', integrationsRoutes);
+router.use('/reports', reportsRoutes);
+router.use('/dashboards', dashboardsRoutes);
 
 export default router;

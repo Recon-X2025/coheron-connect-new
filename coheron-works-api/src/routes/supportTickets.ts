@@ -402,4 +402,88 @@ router.delete('/:id/watchers/:userId', asyncHandler(async (req, res) => {
   res.json({ message: 'Watcher removed successfully' });
 }));
 
+// Add conversation
+router.post('/:id/conversations', asyncHandler(async (req, res) => {
+  const ticket = await SupportTicket.findByIdAndUpdate(
+    req.params.id,
+    { $push: { conversations: req.body } },
+    { new: true }
+  );
+  if (!ticket) {
+    return res.status(404).json({ error: 'Ticket not found' });
+  }
+  res.status(201).json(ticket);
+}));
+
+// Log time entry
+router.post('/:id/time-entries', asyncHandler(async (req, res) => {
+  const entry = req.body;
+  if (entry.started_at && entry.ended_at) {
+    entry.duration_minutes = Math.round((new Date(entry.ended_at).getTime() - new Date(entry.started_at).getTime()) / 60000);
+  }
+
+  const ticket = await SupportTicket.findByIdAndUpdate(
+    req.params.id,
+    {
+      $push: { time_entries: entry },
+      $inc: { total_time_spent_minutes: entry.duration_minutes || 0 },
+    },
+    { new: true }
+  );
+  if (!ticket) {
+    return res.status(404).json({ error: 'Ticket not found' });
+  }
+  res.status(201).json(ticket);
+}));
+
+// Escalate ticket
+router.post('/:id/escalate', asyncHandler(async (req, res) => {
+  const { level, reason, escalated_by } = req.body;
+  const ticket = await SupportTicket.findByIdAndUpdate(
+    req.params.id,
+    {
+      escalation: {
+        is_escalated: true,
+        level: level || 1,
+        reason,
+        escalated_at: new Date(),
+        escalated_by,
+      },
+    },
+    { new: true }
+  );
+  if (!ticket) {
+    return res.status(404).json({ error: 'Ticket not found' });
+  }
+
+  await TicketHistory.create({
+    ticket_id: req.params.id,
+    action: 'escalated',
+    new_value: `Escalated to level ${level || 1}. Reason: ${reason}`,
+    performed_by: escalated_by,
+  });
+
+  res.json(ticket);
+}));
+
+// Record satisfaction
+router.put('/:id/satisfaction', asyncHandler(async (req, res) => {
+  const { rating, feedback } = req.body;
+  const ticket = await SupportTicket.findByIdAndUpdate(
+    req.params.id,
+    {
+      satisfaction: {
+        rating,
+        feedback,
+        responded_at: new Date(),
+      },
+    },
+    { new: true }
+  );
+  if (!ticket) {
+    return res.status(404).json({ error: 'Ticket not found' });
+  }
+  res.json(ticket);
+}));
+
 export default router;

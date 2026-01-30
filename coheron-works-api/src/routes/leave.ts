@@ -2,6 +2,9 @@ import express from 'express';
 import { LeaveRequest, LeaveBalance } from '../models/Leave.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
+import { LeaveType } from '../models/LeaveType.js';
+import { LeavePolicy } from '../models/LeavePolicy.js';
+import { HolidayCalendar } from '../models/HolidayCalendar.js';
 
 const router = express.Router();
 
@@ -74,6 +77,87 @@ router.get('/balance/:employee_id', asyncHandler(async (req, res) => {
   }).lean();
 
   res.json(balances);
+}));
+
+// ============================================
+// LEAVE TYPES
+// ============================================
+
+router.get('/types', asyncHandler(async (req, res) => {
+  const types = await LeaveType.find(req.query.tenant_id ? { tenant_id: req.query.tenant_id } : {}).lean();
+  res.json(types);
+}));
+
+router.post('/types', asyncHandler(async (req, res) => {
+  const type = await LeaveType.create(req.body);
+  res.status(201).json(type);
+}));
+
+router.put('/types/:id', asyncHandler(async (req, res) => {
+  const type = await LeaveType.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  if (!type) return res.status(404).json({ error: 'Leave type not found' });
+  res.json(type);
+}));
+
+router.delete('/types/:id', asyncHandler(async (req, res) => {
+  const type = await LeaveType.findByIdAndDelete(req.params.id);
+  if (!type) return res.status(404).json({ error: 'Leave type not found' });
+  res.json({ message: 'Leave type deleted successfully' });
+}));
+
+// ============================================
+// LEAVE POLICIES
+// ============================================
+
+router.get('/policies', asyncHandler(async (req, res) => {
+  const policies = await LeavePolicy.find(req.query.tenant_id ? { tenant_id: req.query.tenant_id } : {}).populate('allocations.leave_type_id', 'name code').lean();
+  res.json(policies);
+}));
+
+router.post('/policies', asyncHandler(async (req, res) => {
+  const policy = await LeavePolicy.create(req.body);
+  res.status(201).json(policy);
+}));
+
+router.put('/policies/:id', asyncHandler(async (req, res) => {
+  const policy = await LeavePolicy.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  if (!policy) return res.status(404).json({ error: 'Leave policy not found' });
+  res.json(policy);
+}));
+
+router.delete('/policies/:id', asyncHandler(async (req, res) => {
+  const policy = await LeavePolicy.findByIdAndDelete(req.params.id);
+  if (!policy) return res.status(404).json({ error: 'Leave policy not found' });
+  res.json({ message: 'Leave policy deleted successfully' });
+}));
+
+// ============================================
+// HOLIDAY CALENDARS
+// ============================================
+
+router.get('/holidays', asyncHandler(async (req, res) => {
+  const filter: any = {};
+  if (req.query.tenant_id) filter.tenant_id = req.query.tenant_id;
+  if (req.query.year) filter.year = req.query.year;
+  const calendars = await HolidayCalendar.find(filter).lean();
+  res.json(calendars);
+}));
+
+router.post('/holidays', asyncHandler(async (req, res) => {
+  const calendar = await HolidayCalendar.create(req.body);
+  res.status(201).json(calendar);
+}));
+
+router.put('/holidays/:id', asyncHandler(async (req, res) => {
+  const calendar = await HolidayCalendar.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  if (!calendar) return res.status(404).json({ error: 'Holiday calendar not found' });
+  res.json(calendar);
+}));
+
+router.delete('/holidays/:id', asyncHandler(async (req, res) => {
+  const calendar = await HolidayCalendar.findByIdAndDelete(req.params.id);
+  if (!calendar) return res.status(404).json({ error: 'Holiday calendar not found' });
+  res.json({ message: 'Holiday calendar deleted successfully' });
 }));
 
 export default router;

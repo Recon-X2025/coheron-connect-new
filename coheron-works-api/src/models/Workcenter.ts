@@ -17,6 +17,20 @@ export interface IWorkcenter extends Document {
   resource_calendar_id: mongoose.Types.ObjectId;
   company_id: mongoose.Types.ObjectId;
   notes: string;
+  // --- Enhanced fields ---
+  maintenance: {
+    last_maintenance_date: Date;
+    next_maintenance_date: Date;
+    maintenance_interval_days: number;
+    maintenance_notes: string;
+  };
+  equipment: {
+    name: string;
+    serial_number: string;
+    status: string;
+    installed_date: Date;
+  }[];
+  tenant_id: mongoose.Types.ObjectId;
 }
 
 const workcenterSchema = new Schema<IWorkcenter>({
@@ -35,6 +49,24 @@ const workcenterSchema = new Schema<IWorkcenter>({
   resource_calendar_id: { type: Schema.Types.ObjectId },
   company_id: { type: Schema.Types.ObjectId },
   notes: { type: String },
+
+  // --- Maintenance ---
+  maintenance: {
+    last_maintenance_date: { type: Date },
+    next_maintenance_date: { type: Date },
+    maintenance_interval_days: { type: Number },
+    maintenance_notes: { type: String },
+  },
+
+  // --- Equipment ---
+  equipment: [{
+    name: { type: String },
+    serial_number: { type: String },
+    status: { type: String, enum: ['operational', 'maintenance', 'retired'], default: 'operational' },
+    installed_date: { type: Date },
+  }],
+
+  tenant_id: { type: Schema.Types.ObjectId },
 }, defaultSchemaOptions);
 
 workcenterSchema.index({ name: 1 });

@@ -63,4 +63,32 @@ router.delete('/:id', asyncHandler(async (req, res) => {
   res.json({ message: 'Product deleted successfully' });
 }));
 
+// Get stock by warehouse
+router.get('/:id/stock', asyncHandler(async (req, res) => {
+  const product = await Product.findById(req.params.id).select('stock name sku').lean();
+  if (!product) return res.status(404).json({ error: 'Product not found' });
+  res.json(product);
+}));
+
+// Manage suppliers
+router.post('/:id/suppliers', asyncHandler(async (req, res) => {
+  const product = await Product.findByIdAndUpdate(
+    req.params.id,
+    { $push: { suppliers: req.body } },
+    { new: true }
+  );
+  if (!product) return res.status(404).json({ error: 'Product not found' });
+  res.json(product);
+}));
+
+router.delete('/:id/suppliers/:supplierId', asyncHandler(async (req, res) => {
+  const product = await Product.findByIdAndUpdate(
+    req.params.id,
+    { $pull: { suppliers: { _id: req.params.supplierId } } },
+    { new: true }
+  );
+  if (!product) return res.status(404).json({ error: 'Product not found' });
+  res.json(product);
+}));
+
 export default router;

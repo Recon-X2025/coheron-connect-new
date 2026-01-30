@@ -20,6 +20,24 @@ export interface IWorkOrder extends Document {
   is_user_working: boolean;
   user_id: mongoose.Types.ObjectId;
   note: string;
+  // --- Enhanced fields ---
+  operations: {
+    name: string;
+    workcenter_id: mongoose.Types.ObjectId;
+    duration_expected: number;
+    duration_actual: number;
+    state: string;
+    started_at: Date;
+    finished_at: Date;
+  }[];
+  material_consumption: {
+    product_id: mongoose.Types.ObjectId;
+    planned_qty: number;
+    actual_qty: number;
+    uom: string;
+    warehouse_id: mongoose.Types.ObjectId;
+  }[];
+  tenant_id: mongoose.Types.ObjectId;
 }
 
 const workOrderSchema = new Schema<IWorkOrder>({
@@ -41,6 +59,28 @@ const workOrderSchema = new Schema<IWorkOrder>({
   is_user_working: { type: Boolean, default: false },
   user_id: { type: Schema.Types.ObjectId, ref: 'User' },
   note: { type: String },
+
+  // --- Operations (embedded) ---
+  operations: [{
+    name: { type: String },
+    workcenter_id: { type: Schema.Types.ObjectId, ref: 'Workcenter' },
+    duration_expected: { type: Number, default: 0 },
+    duration_actual: { type: Number, default: 0 },
+    state: { type: String, default: 'pending' },
+    started_at: { type: Date },
+    finished_at: { type: Date },
+  }],
+
+  // --- Material consumption ---
+  material_consumption: [{
+    product_id: { type: Schema.Types.ObjectId, ref: 'Product' },
+    planned_qty: { type: Number },
+    actual_qty: { type: Number },
+    uom: { type: String },
+    warehouse_id: { type: Schema.Types.ObjectId },
+  }],
+
+  tenant_id: { type: Schema.Types.ObjectId },
 }, defaultSchemaOptions);
 
 workOrderSchema.index({ mo_id: 1, sequence: 1 });

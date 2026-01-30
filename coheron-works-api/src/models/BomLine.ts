@@ -12,6 +12,10 @@ export interface IBomLine extends Document {
   date_start: Date;
   date_stop: Date;
   notes: string;
+  // --- Enhanced fields ---
+  scrap_percent: number;
+  optional: boolean;
+  substitute_product_ids: mongoose.Types.ObjectId[];
 }
 
 const bomLineSchema = new Schema<IBomLine>({
@@ -25,6 +29,10 @@ const bomLineSchema = new Schema<IBomLine>({
   date_start: { type: Date },
   date_stop: { type: Date },
   notes: { type: String },
+  // --- Enhanced fields ---
+  scrap_percent: { type: Number, default: 0 },
+  optional: { type: Boolean, default: false },
+  substitute_product_ids: [{ type: Schema.Types.ObjectId, ref: 'Product' }],
 }, defaultSchemaOptions);
 
 bomLineSchema.index({ bom_id: 1, sequence: 1 });
