@@ -124,11 +124,12 @@ Complete human resource management.
 | Employee Management | 60+ field profiles with documents, skills, certifications |
 | Attendance | Shift management, clock-in/out, work hours tracking |
 | Leave Management | Leave types, policies, balance tracking, approval workflows |
-| Payroll | Salary structures, CTC breakdown, statutory deductions (PF, ESI) |
+| Payroll | Salary structures, CTC breakdown, statutory deductions (PF, ESI), auto TDS computation on payslip creation |
 | Recruitment | Applicant tracking from sourcing to onboarding |
 | Appraisals | Performance reviews with goal tracking |
 | Learning (LMS) | Course management with content tracking |
 | Policies | Company policy management and acknowledgment |
+| Tax Compliance | Old/New regime tax calculation (full Indian slabs + 87A rebate + 4% cess), HRA/LTA/80C/80D/24B deductions, tax projection with monthly TDS, regime comparison, Form 16 (Part A + Part B) JSON generation |
 | Onboarding/Offboarding | Structured processes for new and departing employees |
 
 ### 7. Projects
@@ -165,6 +166,7 @@ Multi-channel customer support with real-time chat.
 | ITSM | Issue types, lifecycle tracking, attachments |
 | Customer Surveys | Post-resolution satisfaction surveys |
 | Team Management | Support team configuration and routing |
+| WhatsApp Channel | Meta Graph API integration — webhook verification, inbound message → auto ticket creation, outbound replies from ticket conversations |
 | Reports | Ticket volume, resolution times, agent performance |
 
 ### 9. Marketing
@@ -228,7 +230,7 @@ Cross-cutting platform capabilities.
 | Email Service | Nodemailer SMTP transport with branded HTML templates (invoice, ticket reply, welcome, password reset) |
 | Payment Gateway | Razorpay integration — order creation, signature verification, webhooks, refunds |
 | File Storage | S3-compatible storage (AWS S3 / MinIO) — upload, presigned download URLs, metadata tracking |
-| Integrations | Gmail, Slack, WhatsApp, Razorpay, S3, webhooks, custom |
+| Integrations | Gmail, Slack, WhatsApp (Meta Graph API), Razorpay, S3, webhooks, custom |
 | Custom Reports | Configurable reports with filters, grouping, charts |
 | Dashboards | Module-specific dashboards with KPI cards and sparklines |
 | Custom Fields | Tenant-scoped custom field definitions for any module |
@@ -243,7 +245,7 @@ Cross-cutting platform capabilities.
 
 | Capability | Implementation |
 |------------|---------------|
-| Authentication | JWT tokens (24h expiry) |
+| Authentication | JWT tokens (24h expiry) with 2FA partial-token flow |
 | Authorization | Permission-based + role-based access control |
 | Record Access | Own / team / department / all access levels |
 | Tenant Isolation | All data scoped by tenant_id |
@@ -251,7 +253,7 @@ Cross-cutting platform capabilities.
 | Rate Limiting | 1000 requests per 15-minute window |
 | Input Limits | 10MB JSON body limit |
 | Audit Logging | Access attempt tracking, RBAC audit log |
-| Two-Factor Auth | TOTP (Authenticator app) + SMS + Email |
+| Two-Factor Auth | TOTP (speakeasy + QR code), SMS, Email OTP; backup codes (10, bcrypt-hashed); partial JWT login flow with 5-min expiry |
 | Non-Root Container | Docker runs as unprivileged user |
 
 ---
