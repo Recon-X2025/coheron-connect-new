@@ -1,0 +1,12 @@
+.DS_Store
+*.log
+.env
+.claude/
+node_modules/
+dist/
+playwright-report/
+test-results/
+coverage/
+*.swp
+*.swo
+*~
