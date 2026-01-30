@@ -10,6 +10,7 @@ declare global {
         userId: string;
         uid: number;
         email: string;
+        tenant_id?: string;
         roles?: string[];
         permissions?: string[];
       };
@@ -41,7 +42,7 @@ export function requirePermission(permissionCode: string) {
         return res.status(403).json({ error: 'Insufficient permissions', required: permissionCode });
       }
 
-      req.user = { userId: decoded.userId, uid: decoded.uid, email: decoded.email, permissions: userPermissions };
+      req.user = { userId: decoded.userId, uid: decoded.uid, email: decoded.email, tenant_id: decoded.tenant_id, permissions: userPermissions };
       next();
     } catch (error: any) {
       if (error.name === 'JsonWebTokenError') return res.status(401).json({ error: 'Invalid token' });
@@ -76,7 +77,7 @@ export function requireAnyPermission(permissionCodes: string[]) {
         return res.status(403).json({ error: 'Insufficient permissions', required: permissionCodes });
       }
 
-      req.user = { userId: decoded.userId, uid: decoded.uid, email: decoded.email, permissions: userPermissions };
+      req.user = { userId: decoded.userId, uid: decoded.uid, email: decoded.email, tenant_id: decoded.tenant_id, permissions: userPermissions };
       next();
     } catch (error: any) {
       if (error.name === 'JsonWebTokenError') return res.status(401).json({ error: 'Invalid token' });
@@ -101,7 +102,7 @@ export function requireRole(roleCode: string) {
         return res.status(403).json({ error: 'Insufficient role', required: roleCode, userRoles });
       }
 
-      req.user = { userId: decoded.userId, uid: decoded.uid, email: decoded.email, roles: userRoles };
+      req.user = { userId: decoded.userId, uid: decoded.uid, email: decoded.email, tenant_id: decoded.tenant_id, roles: userRoles };
       next();
     } catch (error: any) {
       if (error.name === 'JsonWebTokenError') return res.status(401).json({ error: 'Invalid token' });
