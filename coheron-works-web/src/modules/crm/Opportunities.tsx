@@ -21,6 +21,7 @@ import {
 } from '@dnd-kit/core';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
 import type { Lead, Partner } from '../../types/odoo';
+import { confirmAction } from '../../components/ConfirmDialog';
 import './Opportunities.css';
 
 // Opportunity is essentially a Lead with type='opportunity'
@@ -131,14 +132,19 @@ export const Opportunities = () => {
   };
 
   const handleDelete = async (ids: number[]) => {
-    if (window.confirm(`Are you sure you want to delete ${ids.length} opportunity/ies?`)) {
-      try {
-        await odooService.unlink('crm.lead', ids);
-        await loadData();
-        setSelectedIds([]);
-      } catch (error) {
-        console.error('Failed to delete opportunities:', error);
-      }
+    const ok = await confirmAction({
+      title: 'Delete Opportunities',
+      message: `Are you sure you want to delete ${ids.length} opportunity/ies?`,
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
+    try {
+      await odooService.unlink('crm.lead', ids);
+      await loadData();
+      setSelectedIds([]);
+    } catch (error) {
+      console.error('Failed to delete opportunities:', error);
     }
   };
 

@@ -5,15 +5,17 @@ import { Card } from '../../../components/Card';
 import { apiService } from '../../../services/apiService';
 import { formatInLakhsCompact } from '../../../utils/currencyFormatter';
 import { ClaimForm } from './ClaimForm';
+import { useAuth } from '../../../contexts/AuthContext';
 import './EmployeeSelfService.css';
 
 export const EmployeeSelfService = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'payslips' | 'tax' | 'structure' | 'claims'>('payslips');
   const [payslips, setPayslips] = useState<any[]>([]);
   const [salaryStructure, setSalaryStructure] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showClaimForm, setShowClaimForm] = useState(false);
-  const employeeId = 1; // TODO: Get from auth context
+  const employeeId = Number(user?.userId) || 0;
 
   useEffect(() => {
     loadData();

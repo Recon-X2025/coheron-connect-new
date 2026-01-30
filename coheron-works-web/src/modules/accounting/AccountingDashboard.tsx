@@ -16,6 +16,7 @@ import { apiService } from '../../services/apiService';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { Card } from '../../components/Card';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
+import { showToast } from '../../components/Toast';
 import './AccountingDashboard.css';
 
 interface AccountingDashboardStats {
@@ -45,8 +46,8 @@ export const AccountingDashboard: React.FC = () => {
     try {
       setLoading(true);
       const [invoices, bills] = await Promise.all([
-        apiService.get<any>('/invoices').catch(() => []),
-        apiService.get<any>('/accounting/accounts-payable/bills').catch(() => []),
+        apiService.get<any>('/invoices').catch((err) => { console.error('Failed to load invoices:', err.userMessage || err.message); return []; }),
+        apiService.get<any>('/accounting/accounts-payable/bills').catch((err) => { console.error('Failed to load bills:', err.userMessage || err.message); return []; }),
       ]);
 
       const pendingInvoices = invoices.filter((inv: any) => 
@@ -113,8 +114,9 @@ export const AccountingDashboard: React.FC = () => {
 
       setRecentInvoices(pendingInvoices.slice(0, 5));
       setRecentBills(pendingBills.slice(0, 5));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load accounting dashboard data:', error);
+      showToast(error.userMessage || 'Failed to load accounting data', 'error');
     } finally {
       setLoading(false);
     }

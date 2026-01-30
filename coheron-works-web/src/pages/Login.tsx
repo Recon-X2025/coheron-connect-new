@@ -1,34 +1,42 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../services/authService';
-import { apiService } from '../services/apiService';
 import { AuthenticationError } from '../services/errorHandler';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { FormField } from '../components/FormField';
+import { useFormValidation, required } from '../hooks/useFormValidation';
 import './Auth.css';
 
 export const Login: React.FC = () => {
     const navigate = useNavigate();
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
+    const { login } = useAuth();
     const [database, setDatabase] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const form = useFormValidation(
+        { username: '' as string, password: '' as string },
+        {
+            username: [required('Username is required')],
+            password: [required('Password is required')],
+        }
+    );
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!form.validate()) return;
         setError(null);
         setLoading(true);
 
         try {
-            // Try new API first, fallback to Odoo if needed
             try {
-                await apiService.login(username, password);
+                await login(form.values.username, form.values.password);
                 navigate('/dashboard');
             } catch (apiError) {
-                // Fallback to Odoo authentication
                 await authService.login({
-                    username,
-                    password,
+                    username: form.values.username,
+                    password: form.values.password,
                     database: database || undefined,
                 });
                 navigate('/dashboard');
@@ -59,8 +67,7 @@ export const Login: React.FC = () => {
                         </div>
                     )}
 
-                    <div className="form-group">
-                        <label htmlFor="database">Database</label>
+                    <FormField label="Database" htmlFor="database">
                         <input
                             id="database"
                             type="text"
@@ -69,40 +76,48 @@ export const Login: React.FC = () => {
                             placeholder="Database name (optional)"
                             disabled={loading}
                         />
-                    </div>
+                    </FormField>
 
-                    <div className="form-group">
-                        <label htmlFor="username">Username</label>
+                    <FormField
+                        label="Username"
+                        htmlFor="username"
+                        required
+                        error={form.errors.username}
+                    >
                         <input
                             id="username"
                             type="text"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
+                            value={form.values.username}
+                            onChange={(e) => form.handleChange('username', e.target.value)}
+                            onBlur={() => form.handleBlur('username')}
                             placeholder="Enter your username"
-                            required
                             disabled={loading}
                             autoComplete="username"
                         />
-                    </div>
+                    </FormField>
 
-                    <div className="form-group">
-                        <label htmlFor="password">Password</label>
+                    <FormField
+                        label="Password"
+                        htmlFor="password"
+                        required
+                        error={form.errors.password}
+                    >
                         <input
                             id="password"
                             type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            value={form.values.password}
+                            onChange={(e) => form.handleChange('password', e.target.value)}
+                            onBlur={() => form.handleBlur('password')}
                             placeholder="Enter your password"
-                            required
                             disabled={loading}
                             autoComplete="current-password"
                         />
-                    </div>
+                    </FormField>
 
                     <button
                         type="submit"
                         className="auth-button"
-                        disabled={loading || !username || !password}
+                        disabled={loading || !form.values.username || !form.values.password}
                     >
                         {loading ? <LoadingSpinner size="small" /> : 'Sign In'}
                     </button>

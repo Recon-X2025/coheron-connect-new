@@ -20,8 +20,8 @@ export const PayrollProcessing = () => {
   const loadData = async () => {
     try {
       const [payslipsData, employeesData] = await Promise.all([
-        apiService.get<any>('/payroll/payslips').catch(() => []),
-        apiService.get<any>('/employees').catch(() => []),
+        apiService.get<any>('/payroll/payslips').catch((err) => { console.error('Failed to load payslips:', err.userMessage || err.message); return []; }),
+        apiService.get<any>('/employees').catch((err) => { console.error('Failed to load employees:', err.userMessage || err.message); return []; }),
       ]);
       
       // Group payslips by period
@@ -43,8 +43,9 @@ export const PayrollProcessing = () => {
       });
       setPayrollRuns(Array.from(runsMap.values()));
       setEmployees(employeesData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load payroll data:', error);
+      showToast(error.userMessage || 'Failed to load payroll data', 'error');
     }
   };
 

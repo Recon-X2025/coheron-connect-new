@@ -16,7 +16,34 @@ import { Card } from '../components/Card';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { apiService } from '../services/apiService';
 import { formatInLakhsCompact } from '../utils/currencyFormatter';
+import { showToast } from '../components/Toast';
+import { ActivityFeed } from '../components/ActivityFeed';
+import type { Activity } from '../components/ActivityFeed';
 import './Dashboard.css';
+
+function ago(minutes: number): string {
+  return new Date(Date.now() - minutes * 60000).toISOString();
+}
+
+const mockActivities: Activity[] = [
+  { id: '1',  user: 'Sarah Chen',     action: 'created',   entityType: 'Invoice',            entityName: 'INV-2024-0891',           timestamp: ago(2) },
+  { id: '2',  user: 'Mike Johnson',   action: 'updated',   entityType: 'Lead',               entityName: 'Acme Corp',               timestamp: ago(8),  details: 'Changed stage to Qualified' },
+  { id: '3',  user: 'System',         action: 'approved',  entityType: 'Leave Request',      entityName: '#45',                     timestamp: ago(15) },
+  { id: '4',  user: 'Priya Sharma',   action: 'completed', entityType: 'Manufacturing Order', entityName: 'MO-2024-0234',           timestamp: ago(22) },
+  { id: '5',  user: 'David Lee',      action: 'commented', entityType: 'Opportunity',        entityName: 'TechStart Deal',          timestamp: ago(35), details: 'Pricing looks good, let\'s proceed' },
+  { id: '6',  user: 'Emily Zhang',    action: 'created',   entityType: 'Sale Order',         entityName: 'SO-2024-1102',            timestamp: ago(47) },
+  { id: '7',  user: 'Raj Patel',      action: 'assigned',  entityType: 'Task',               entityName: 'Q4 Inventory Audit',      timestamp: ago(60) },
+  { id: '8',  user: 'Sarah Chen',     action: 'updated',   entityType: 'Product',            entityName: 'Widget Pro X200',         timestamp: ago(90),  details: 'Updated pricing from ₹1,200 to ₹1,350' },
+  { id: '9',  user: 'System',         action: 'rejected',  entityType: 'Purchase Order',     entityName: 'PO-2024-0567',            timestamp: ago(120), details: 'Budget exceeded' },
+  { id: '10', user: 'Mike Johnson',   action: 'created',   entityType: 'Campaign',           entityName: 'Winter Sale 2024',        timestamp: ago(180) },
+  { id: '11', user: 'Anita Roy',      action: 'deleted',   entityType: 'Draft Quotation',    entityName: 'QT-2024-0923',            timestamp: ago(240) },
+  { id: '12', user: 'David Lee',      action: 'approved',  entityType: 'Expense Report',     entityName: 'EXP-2024-0078',           timestamp: ago(300) },
+  { id: '13', user: 'Priya Sharma',   action: 'created',   entityType: 'Lead',               entityName: 'Global Logistics Ltd',    timestamp: ago(420) },
+  { id: '14', user: 'Emily Zhang',    action: 'completed', entityType: 'Task',               entityName: 'Monthly Reconciliation',  timestamp: ago(600) },
+  { id: '15', user: 'Raj Patel',      action: 'updated',   entityType: 'Inventory',          entityName: 'Warehouse B',             timestamp: ago(720), details: 'Stock count verified' },
+  { id: '16', user: 'Sarah Chen',     action: 'commented', entityType: 'Invoice',            entityName: 'INV-2024-0885',           timestamp: ago(900), details: 'Client requested 15-day extension' },
+  { id: '17', user: 'System',         action: 'assigned',  entityType: 'Support Ticket',     entityName: '#1204',                   timestamp: ago(1080) },
+];
 
 interface DashboardStats {
   totalLeads: number;
@@ -42,13 +69,13 @@ export const Dashboard: React.FC = () => {
       setLoading(true);
       const [leads, opportunities, saleOrders, invoices, campaigns, manufacturing, products] =
         await Promise.all([
-          apiService.get<any>('/leads', { type: 'lead' }).catch(() => []),
-          apiService.get<any>('/leads', { type: 'opportunity' }).catch(() => []),
-          apiService.get<any>('/sale-orders').catch(() => []),
-          apiService.get<any>('/invoices', { payment_state: 'not_paid' }).catch(() => []),
-          apiService.get<any>('/campaigns', { state: 'in_progress' }).catch(() => []),
-          apiService.get<any>('/manufacturing', { state: 'progress' }).catch(() => []),
-          apiService.get<any>('/products').catch(() => []),
+          apiService.get<any>('/leads', { type: 'lead' }).catch((err) => { console.error('Failed to load leads:', err.userMessage || err.message); return []; }),
+          apiService.get<any>('/leads', { type: 'opportunity' }).catch((err) => { console.error('Failed to load opportunities:', err.userMessage || err.message); return []; }),
+          apiService.get<any>('/sale-orders').catch((err) => { console.error('Failed to load sale orders:', err.userMessage || err.message); return []; }),
+          apiService.get<any>('/invoices', { payment_state: 'not_paid' }).catch((err) => { console.error('Failed to load invoices:', err.userMessage || err.message); return []; }),
+          apiService.get<any>('/campaigns', { state: 'in_progress' }).catch((err) => { console.error('Failed to load campaigns:', err.userMessage || err.message); return []; }),
+          apiService.get<any>('/manufacturing', { state: 'progress' }).catch((err) => { console.error('Failed to load manufacturing:', err.userMessage || err.message); return []; }),
+          apiService.get<any>('/products').catch((err) => { console.error('Failed to load products:', err.userMessage || err.message); return []; }),
         ]);
 
       const totalRevenue = saleOrders.reduce(
@@ -73,8 +100,9 @@ export const Dashboard: React.FC = () => {
         manufacturingOrders: manufacturing.length,
         lowStockProducts,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load dashboard data:', error);
+      showToast(error.userMessage || 'Failed to load dashboard data', 'error');
     } finally {
       setLoading(false);
     }
@@ -226,12 +254,7 @@ export const Dashboard: React.FC = () => {
 
           <Card className="dashboard-section">
             <h2>Recent Activity</h2>
-            <div className="recent-activity">
-              <p className="activity-empty">No recent activity to display</p>
-              <p className="activity-note">
-                Activity timeline will appear here as you use the system.
-              </p>
-            </div>
+            <ActivityFeed activities={mockActivities} />
           </Card>
         </div>
       </div>

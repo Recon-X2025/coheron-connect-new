@@ -5,6 +5,7 @@ import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import { salesService } from '../../../services/salesService';
 import { PromotionForm } from './PromotionForm';
 import { showToast } from '../../../components/Toast';
+import { confirmAction } from '../../../components/ConfirmDialog';
 import './Promotions.css';
 
 interface Promotion {
@@ -53,9 +54,13 @@ export const Promotions = () => {
   };
 
   const handleDeletePromotion = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this promotion?')) {
-      return;
-    }
+    const ok = await confirmAction({
+      title: 'Delete Promotion',
+      message: 'Are you sure you want to delete this promotion?',
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     try {
       await salesService.pricing.deletePromotion(id);

@@ -5,6 +5,7 @@ import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { manufacturingService, type BOM } from '../../services/manufacturingService';
 import { apiService } from '../../services/apiService';
 import { showToast } from '../../components/Toast';
+import { confirmAction } from '../../components/ConfirmDialog';
 import './BOMManagement.css';
 
 export const BOMManagement = () => {
@@ -62,14 +63,19 @@ export const BOMManagement = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this BOM?')) {
-      try {
-        await manufacturingService.deleteBOM(id);
-        await loadData();
-        showToast('BOM deleted successfully', 'success');
-      } catch (error) {
-        showToast('Failed to delete BOM', 'error');
-      }
+    const ok = await confirmAction({
+      title: 'Delete BOM',
+      message: 'Are you sure you want to delete this BOM?',
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
+    try {
+      await manufacturingService.deleteBOM(id);
+      await loadData();
+      showToast('BOM deleted successfully', 'success');
+    } catch (error) {
+      showToast('Failed to delete BOM', 'error');
     }
   };
 

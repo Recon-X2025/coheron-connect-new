@@ -7,6 +7,7 @@ import { showToast } from '../../components/Toast';
 import { BillForm } from './components/BillForm';
 import { PaymentForm } from './components/PaymentForm';
 import { VendorForm } from './components/VendorForm';
+import { confirmAction } from '../../components/ConfirmDialog';
 import './AccountsPayable.css';
 
 interface Bill {
@@ -86,9 +87,13 @@ export const AccountsPayable = () => {
   };
 
   const handlePostBill = async (billId: number) => {
-    if (!window.confirm('Are you sure you want to post this bill? This action cannot be undone.')) {
-      return;
-    }
+    const ok = await confirmAction({
+      title: 'Post Bill',
+      message: 'Are you sure you want to post this bill? This action cannot be undone.',
+      confirmLabel: 'Post',
+      variant: 'warning',
+    });
+    if (!ok) return;
 
     try {
       await accountsPayableService.postBill(billId);

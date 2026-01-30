@@ -5,6 +5,7 @@ import { invoiceService, partnerService } from '../../services/odooService';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
 import { showToast } from '../../components/Toast';
 import type { Invoice, Partner } from '../../types/odoo';
+import { confirmAction } from '../../components/ConfirmDialog';
 import './Invoices.css';
 
 export const Invoices = () => {
@@ -111,9 +112,13 @@ export const Invoices = () => {
     };
 
     const handleDeleteInvoice = async (invoiceId: number) => {
-        if (!window.confirm('Are you sure you want to delete this invoice? This action cannot be undone.')) {
-            return;
-        }
+        const ok = await confirmAction({
+            title: 'Delete Invoice',
+            message: 'Are you sure you want to delete this invoice? This action cannot be undone.',
+            confirmLabel: 'Delete',
+            variant: 'danger',
+        });
+        if (!ok) return;
 
         try {
             await invoiceService.delete(invoiceId);

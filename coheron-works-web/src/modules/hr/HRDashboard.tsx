@@ -14,6 +14,7 @@ import { apiService } from '../../services/apiService';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import LightKpiCard from '../../components/LightKpiCard';
 import { Card } from '../../components/Card';
+import { showToast } from '../../components/Toast';
 import './HRDashboard.css';
 
 interface HRDashboardStats {
@@ -40,12 +41,12 @@ export const HRDashboard = () => {
       setLoading(true);
       const [employees, leaveRequests, payslips, applicants, appraisals, attendance] =
         await Promise.all([
-          apiService.get<any>('/employees').catch(() => []),
-          apiService.get<any>('/leave/requests', { status: 'pending' }).catch(() => []),
-          apiService.get<any>('/payroll/payslips', { status: 'draft' }).catch(() => []),
-          apiService.get<any>('/applicants', { status: 'active' }).catch(() => []),
-          apiService.get<any>('/appraisals', { status: 'scheduled' }).catch(() => []),
-          apiService.get<any>('/attendance', { date: new Date().toISOString().split('T')[0] }).catch(() => []),
+          apiService.get<any>('/employees').catch((err) => { console.error('Failed to load employees:', err.userMessage || err.message); return []; }),
+          apiService.get<any>('/leave/requests', { status: 'pending' }).catch((err) => { console.error('Failed to load leave requests:', err.userMessage || err.message); return []; }),
+          apiService.get<any>('/payroll/payslips', { status: 'draft' }).catch((err) => { console.error('Failed to load payslips:', err.userMessage || err.message); return []; }),
+          apiService.get<any>('/applicants', { status: 'active' }).catch((err) => { console.error('Failed to load applicants:', err.userMessage || err.message); return []; }),
+          apiService.get<any>('/appraisals', { status: 'scheduled' }).catch((err) => { console.error('Failed to load appraisals:', err.userMessage || err.message); return []; }),
+          apiService.get<any>('/attendance', { date: new Date().toISOString().split('T')[0] }).catch((err) => { console.error('Failed to load attendance:', err.userMessage || err.message); return []; }),
         ]);
 
       const activeEmployees = employees.filter((e: any) => e.status === 'active' || e.employment_status === 'active').length;
@@ -64,8 +65,9 @@ export const HRDashboard = () => {
         attendanceToday: attendance.length,
         onLeaveToday,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load HR dashboard data:', error);
+      showToast(error.userMessage || 'Failed to load HR data', 'error');
     } finally {
       setLoading(false);
     }

@@ -7,6 +7,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   size?: 'sm' | 'md' | 'lg';
   icon?: React.ReactNode;
   fullWidth?: boolean;
+  'aria-label'?: string;
 }
 
 export const Button: React.FC<ButtonProps> = ({

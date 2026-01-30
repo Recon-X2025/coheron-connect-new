@@ -12,6 +12,7 @@ import {
 import { apiService } from '../../services/apiService';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { Card } from '../../components/Card';
+import { showToast } from '../../components/Toast';
 import './ManufacturingDashboard.css';
 
 interface ManufacturingDashboardStats {
@@ -39,8 +40,8 @@ export const ManufacturingDashboard: React.FC = () => {
     try {
       setLoading(true);
       const [orders, boms] = await Promise.all([
-        apiService.get<any>('/manufacturing').catch(() => []),
-        apiService.get<any>('/manufacturing/bom').catch(() => []),
+        apiService.get<any>('/manufacturing').catch((err) => { console.error('Failed to load manufacturing orders:', err.userMessage || err.message); return []; }),
+        apiService.get<any>('/manufacturing/bom').catch((err) => { console.error('Failed to load BOMs:', err.userMessage || err.message); return []; }),
       ]);
 
       const inProgressOrders = orders.filter((o: any) => 
@@ -62,8 +63,9 @@ export const ManufacturingDashboard: React.FC = () => {
 
       setRecentOrders(orders.slice(0, 5));
       setActiveOrders(inProgressOrders.slice(0, 5));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load manufacturing dashboard data:', error);
+      showToast(error.userMessage || 'Failed to load manufacturing data', 'error');
     } finally {
       setLoading(false);
     }

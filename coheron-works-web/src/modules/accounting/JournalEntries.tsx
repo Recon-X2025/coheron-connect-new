@@ -5,6 +5,7 @@ import { journalEntriesService } from '../../services/accountingService';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
 import { showToast } from '../../components/Toast';
 import { JournalEntryForm } from './components/JournalEntryForm';
+import { confirmAction } from '../../components/ConfirmDialog';
 import './JournalEntries.css';
 
 interface JournalEntry {
@@ -88,9 +89,13 @@ export const JournalEntries = () => {
   };
 
   const handleDeleteEntry = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this journal entry? This action cannot be undone.')) {
-      return;
-    }
+    const ok = await confirmAction({
+      title: 'Delete Journal Entry',
+      message: 'Are you sure you want to delete this journal entry? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     try {
       await journalEntriesService.delete(id);

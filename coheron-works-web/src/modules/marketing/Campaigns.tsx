@@ -8,6 +8,7 @@ import { BulkActions, createCommonBulkActions } from '../../shared/components/Bu
 import { CampaignForm } from './components/CampaignForm';
 import { CampaignAnalytics } from './components/CampaignAnalytics';
 import { CampaignFinancials } from './components/CampaignFinancials';
+import { confirmAction } from '../../components/ConfirmDialog';
 import './Campaigns.css';
 
 export interface Campaign {
@@ -124,14 +125,19 @@ export const Campaigns = () => {
   };
 
   const handleDelete = async (ids: number[]) => {
-    if (window.confirm(`Are you sure you want to delete ${ids.length} campaign(s)?`)) {
-      try {
-        await odooService.unlink('utm.campaign', ids);
-        await loadData();
-        setSelectedIds([]);
-      } catch (error) {
-        console.error('Failed to delete campaigns:', error);
-      }
+    const ok = await confirmAction({
+      title: 'Delete Campaigns',
+      message: `Are you sure you want to delete ${ids.length} campaign(s)?`,
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
+    try {
+      await odooService.unlink('utm.campaign', ids);
+      await loadData();
+      setSelectedIds([]);
+    } catch (error) {
+      console.error('Failed to delete campaigns:', error);
     }
   };
 

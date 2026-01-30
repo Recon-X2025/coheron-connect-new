@@ -3,6 +3,7 @@ import { Plus, Edit, Trash2, Search, Download, Upload } from 'lucide-react';
 import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
 import { formatInLakhsCompact } from '../../../utils/currencyFormatter';
+import { exportToCSV } from '../../../utils/exportCSV';
 import './EmployeeMasterData.css';
 
 export const EmployeeMasterData = () => {
@@ -47,7 +48,15 @@ export const EmployeeMasterData = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button variant="secondary" icon={<Download size={18} />}>
+          <Button variant="secondary" icon={<Download size={18} />} onClick={() => exportToCSV(employees, 'employee-master-data', [
+            { key: 'employeeId', label: 'Employee ID' },
+            { key: 'name', label: 'Name' },
+            { key: 'department', label: 'Department' },
+            { key: 'position', label: 'Position' },
+            { key: 'hireDate', label: 'Hire Date' },
+            { key: 'ctc', label: 'CTC' },
+            { key: 'status', label: 'Status' },
+          ])}>
             Export
           </Button>
           <Button variant="secondary" icon={<Upload size={18} />}>

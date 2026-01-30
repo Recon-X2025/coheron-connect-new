@@ -5,6 +5,7 @@ import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { apiService } from '../../services/apiService';
 import { JobPostingForm } from './components/JobPostingForm';
+import { exportToCSV } from '../../utils/exportCSV';
 import './Recruitment.css';
 
 const RECRUITMENT_STAGES = [
@@ -81,7 +82,13 @@ export const Recruitment = () => {
             <p className="recruitment-subtitle">Applicant tracking and job postings</p>
           </div>
           <div className="header-actions">
-            <Button variant="secondary" icon={<Download size={18} />}>
+            <Button variant="secondary" icon={<Download size={18} />} onClick={() => exportToCSV(applicants, 'recruitment-applicants', [
+              { key: 'partner_name', label: 'Name' },
+              { key: 'name', label: 'Position' },
+              { key: 'email_from', label: 'Email' },
+              { key: 'stage_id', label: 'Stage' },
+              { key: 'priority', label: 'Priority' },
+            ])}>
               Export
             </Button>
             <Button icon={<Plus size={18} />} onClick={() => setShowJobForm(true)}>

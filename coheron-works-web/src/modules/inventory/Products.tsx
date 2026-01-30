@@ -7,6 +7,7 @@ import { inventoryService, type StockSummary, type StockQuant } from '../../serv
 import { ProductForm } from './components/ProductForm';
 import { showToast } from '../../components/Toast';
 import type { Product } from '../../types/odoo';
+import { confirmAction } from '../../components/ConfirmDialog';
 import './Products.css';
 
 export const Products = () => {
@@ -76,9 +77,13 @@ export const Products = () => {
     };
 
     const handleDeleteProduct = async (product: Product) => {
-        if (!window.confirm(`Are you sure you want to delete "${product.name}"? This action cannot be undone.`)) {
-            return;
-        }
+        const ok = await confirmAction({
+            title: 'Delete Product',
+            message: `Are you sure you want to delete "${product.name}"? This action cannot be undone.`,
+            confirmLabel: 'Delete',
+            variant: 'danger',
+        });
+        if (!ok) return;
 
         try {
             await productService.delete(product.id);

@@ -15,6 +15,7 @@ import { Card } from '../components/Card';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { supportDeskService, type Survey, type SurveyResponse } from '../services/supportDeskService';
 import { showToast } from '../components/Toast';
+import { confirmAction } from '../components/ConfirmDialog';
 import './SurveyManagement.css';
 
 type SurveyType = 'csat' | 'ces' | 'nps' | 'custom';
@@ -158,9 +159,13 @@ export const SurveyManagement: React.FC = () => {
   };
 
   const handleDeleteSurvey = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this survey? This action cannot be undone.')) {
-      return;
-    }
+    const ok = await confirmAction({
+      title: 'Delete Survey',
+      message: 'Are you sure you want to delete this survey? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     try {
       await supportDeskService.deleteSurvey(id);

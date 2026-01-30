@@ -1,0 +1,10 @@
+node_modules
+dist
+.env
+.git
+.claude
+*.log
+playwright-report
+test-results
+coverage
+.DS_Store

@@ -41,13 +41,14 @@ export const RMAForm = ({ onClose, onSave, initialData }: RMAFormProps) => {
   const loadData = async () => {
     try {
       const [ordersData, partnersData] = await Promise.all([
-        apiService.get<any[]>('sale-orders').catch(() => []),
-        apiService.get<any[]>('partners').catch(() => []),
+        apiService.get<any[]>('sale-orders').catch((err) => { console.error('Failed to load sale orders:', err.userMessage || err.message); return []; }),
+        apiService.get<any[]>('partners').catch((err) => { console.error('Failed to load partners:', err.userMessage || err.message); return []; }),
       ]);
       setSaleOrders(ordersData);
       setPartners(partnersData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading data:', error);
+      showToast(error.userMessage || 'Failed to load form data', 'error');
     }
   };
 

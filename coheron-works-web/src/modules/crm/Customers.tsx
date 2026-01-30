@@ -6,6 +6,7 @@ import { partnerService } from '../../services/odooService';
 import { PartnerForm } from './components/PartnerForm';
 import { showToast } from '../../components/Toast';
 import type { Partner } from '../../types/odoo';
+import { confirmAction } from '../../components/ConfirmDialog';
 import './Customers.css';
 
 export const Customers = () => {
@@ -113,14 +114,19 @@ export const Customers = () => {
                                         <Edit size={16} />
                                     </button>
                                     <button className="action-btn delete" title="Delete" onClick={async () => {
-                                        if (window.confirm(`Are you sure you want to delete ${partner.name}?`)) {
-                                            try {
-                                                await partnerService.delete(partner.id);
-                                                showToast('Customer deleted successfully', 'success');
-                                                await loadData();
-                                            } catch (error: any) {
-                                                showToast(error?.message || 'Failed to delete customer', 'error');
-                                            }
+                                        const ok = await confirmAction({
+                                            title: 'Delete Customer',
+                                            message: `Are you sure you want to delete ${partner.name}?`,
+                                            confirmLabel: 'Delete',
+                                            variant: 'danger',
+                                        });
+                                        if (!ok) return;
+                                        try {
+                                            await partnerService.delete(partner.id);
+                                            showToast('Customer deleted successfully', 'success');
+                                            await loadData();
+                                        } catch (error: any) {
+                                            showToast(error?.message || 'Failed to delete customer', 'error');
                                         }
                                     }}>
                                         <Trash2 size={16} />

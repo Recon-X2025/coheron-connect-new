@@ -57,9 +57,9 @@ export const JournalEntryForm = ({ onClose, onSave, initialData }: JournalEntryF
   const loadData = async () => {
     try {
       const [journalsData, accountsData, partnersData] = await Promise.all([
-        apiService.get<any[]>('accounting/journal-entries').catch(() => []),
-        apiService.get<any[]>('accounting/chart-of-accounts').catch(() => []),
-        apiService.get<any[]>('partners').catch(() => []),
+        apiService.get<any[]>('accounting/journal-entries').catch((err) => { console.error('Failed to load journal entries:', err.userMessage || err.message); return []; }),
+        apiService.get<any[]>('accounting/chart-of-accounts').catch((err) => { console.error('Failed to load chart of accounts:', err.userMessage || err.message); return []; }),
+        apiService.get<any[]>('partners').catch((err) => { console.error('Failed to load partners:', err.userMessage || err.message); return []; }),
       ]);
 
       // Get journals from a different endpoint or create default
@@ -69,8 +69,9 @@ export const JournalEntryForm = ({ onClose, onSave, initialData }: JournalEntryF
       setJournals(journalsList);
       setAccounts(accountsData);
       setPartners(partnersData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading data:', error);
+      showToast(error.userMessage || 'Failed to load form data', 'error');
     }
   };
 

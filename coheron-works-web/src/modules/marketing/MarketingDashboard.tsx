@@ -12,6 +12,7 @@ import { apiService } from '../../services/apiService';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { Card } from '../../components/Card';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
+import { showToast } from '../../components/Toast';
 import './MarketingDashboard.css';
 
 interface MarketingDashboardStats {
@@ -40,8 +41,8 @@ export const MarketingDashboard: React.FC = () => {
     try {
       setLoading(true);
       const [campaigns, leads] = await Promise.all([
-        apiService.get<any>('/campaigns').catch(() => []),
-        apiService.get<any>('/leads', { type: 'lead' }).catch(() => []),
+        apiService.get<any>('/campaigns').catch((err) => { console.error('Failed to load campaigns:', err.userMessage || err.message); return []; }),
+        apiService.get<any>('/leads', { type: 'lead' }).catch((err) => { console.error('Failed to load leads:', err.userMessage || err.message); return []; }),
       ]);
 
       const activeCampaigns = campaigns.filter((c: any) => 
@@ -87,8 +88,9 @@ export const MarketingDashboard: React.FC = () => {
 
       setRecentCampaigns(campaigns.slice(0, 5));
       setActiveCampaigns(activeCampaigns.slice(0, 5));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load marketing dashboard data:', error);
+      showToast(error.userMessage || 'Failed to load marketing data', 'error');
     } finally {
       setLoading(false);
     }

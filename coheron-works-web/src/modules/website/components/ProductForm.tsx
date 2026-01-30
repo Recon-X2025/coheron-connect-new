@@ -35,10 +35,11 @@ export const ProductForm = ({ onClose, onSave, initialData }: ProductFormProps) 
 
   const loadProducts = async () => {
     try {
-      const data = await apiService.get<any[]>('products').catch(() => []);
+      const data = await apiService.get<any[]>('products').catch((err) => { console.error('Failed to load products:', err.userMessage || err.message); return []; });
       setProducts(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading products:', error);
+      showToast(error.userMessage || 'Failed to load products', 'error');
     }
   };
 

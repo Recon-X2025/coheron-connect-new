@@ -4,12 +4,17 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { showToast } from '../components/Toast';
+import { confirmAction } from '../components/ConfirmDialog';
+import { useTheme } from '../contexts/ThemeContext';
+import { FormField } from '../components/FormField';
+import { useFormValidation, required, email } from '../hooks/useFormValidation';
 import './Settings.css';
 
 type Tab = 'profile' | 'notifications' | 'security' | 'appearance' | 'integrations';
 
 export const Settings = () => {
   const [activeTab, setActiveTab] = useState<Tab>('profile');
+  const { theme, setTheme } = useTheme();
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -18,6 +23,14 @@ export const Settings = () => {
     email: '',
     bio: '',
   });
+
+  const profileForm = useFormValidation(
+    { name: '' as string, email: '' as string },
+    {
+      name: [required('Name is required')],
+      email: [required('Email is required'), email()],
+    }
+  );
 
   const [preferences, setPreferences] = useState({
     emailNotifications: true,
@@ -40,12 +53,15 @@ export const Settings = () => {
         email: storedEmail,
         bio: 'Product designer passionate about creating beautiful user experiences.',
       });
+      profileForm.handleChange('name', storedName);
+      profileForm.handleChange('email', storedEmail);
     } catch (error) {
       console.error('Failed to load user data:', error);
     }
   };
 
   const handleSaveProfile = async () => {
+    if (!profileForm.validate()) return;
     setLoading(true);
     setSaved(false);
     try {
@@ -70,11 +86,16 @@ export const Settings = () => {
     localStorage.setItem('preferences', JSON.stringify(preferences));
   };
 
-  const handleDeleteAccount = () => {
-    if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      // In a real implementation, call API to delete account
-      showToast('Account deletion will be processed here', 'info');
-    }
+  const handleDeleteAccount = async () => {
+    const ok = await confirmAction({
+      title: 'Delete Account',
+      message: 'Are you sure you want to delete your account? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
+    // In a real implementation, call API to delete account
+    showToast('Account deletion will be processed here', 'info');
   };
 
   return (
@@ -130,25 +151,33 @@ export const Settings = () => {
                 <h2 className="section-title">Profile Information</h2>
                 <p className="section-description">Update your personal information and email address</p>
 
-                <div className="form-group">
-                  <label>Full Name</label>
+                <FormField label="Full Name" htmlFor="profile-name" required error={profileForm.errors.name}>
                   <input
+                    id="profile-name"
                     type="text"
                     placeholder="John Doe"
-                    value={profileData.name}
-                    onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                    value={profileForm.values.name}
+                    onChange={(e) => {
+                      profileForm.handleChange('name', e.target.value);
+                      setProfileData((prev) => ({ ...prev, name: e.target.value }));
+                    }}
+                    onBlur={() => profileForm.handleBlur('name')}
                   />
-                </div>
+                </FormField>
 
-                <div className="form-group">
-                  <label>Email Address</label>
+                <FormField label="Email Address" htmlFor="profile-email" required error={profileForm.errors.email}>
                   <input
+                    id="profile-email"
                     type="email"
                     placeholder="email@example.com"
-                    value={profileData.email}
-                    onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                    value={profileForm.values.email}
+                    onChange={(e) => {
+                      profileForm.handleChange('email', e.target.value);
+                      setProfileData((prev) => ({ ...prev, email: e.target.value }));
+                    }}
+                    onBlur={() => profileForm.handleBlur('email')}
                   />
-                </div>
+                </FormField>
 
                 <div className="form-group">
                   <label>Bio</label>
@@ -210,8 +239,8 @@ export const Settings = () => {
                   <label className="toggle">
                     <input
                       type="checkbox"
-                      checked={preferences.darkMode}
-                      onChange={() => handlePreferenceChange('darkMode')}
+                      checked={theme === 'dark'}
+                      onChange={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                     />
                     <span className="toggle-slider"></span>
                   </label>
@@ -270,10 +299,14 @@ export const Settings = () => {
                     <h3>Theme</h3>
                     <p>Choose your preferred color theme</p>
                   </div>
-                  <select className="theme-select">
-                    <option>Light</option>
-                    <option>Dark</option>
-                    <option>Auto</option>
+                  <select
+                    className="theme-select"
+                    value={theme}
+                    onChange={(e) => setTheme(e.target.value as 'light' | 'dark' | 'auto')}
+                  >
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                    <option value="auto">Auto</option>
                   </select>
                 </div>
 

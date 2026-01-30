@@ -13,6 +13,7 @@ import {
 import { apiService } from '../../services/apiService';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { Card } from '../../components/Card';
+import { showToast } from '../../components/Toast';
 import './WebsiteDashboard.css';
 
 interface WebsiteDashboardStats {
@@ -38,9 +39,9 @@ export const WebsiteDashboard: React.FC = () => {
     try {
       setLoading(true);
       const [pages, products, orders] = await Promise.all([
-        apiService.get<any>('/website/sites/pages').catch(() => []),
-        apiService.get<any>('/website/products').catch(() => []),
-        apiService.get<any>('/website/orders').catch(() => []),
+        apiService.get<any>('/website/sites/pages').catch((err) => { console.error('Failed to load pages:', err.userMessage || err.message); return []; }),
+        apiService.get<any>('/website/products').catch((err) => { console.error('Failed to load products:', err.userMessage || err.message); return []; }),
+        apiService.get<any>('/website/orders').catch((err) => { console.error('Failed to load orders:', err.userMessage || err.message); return []; }),
       ]);
 
       // Placeholder calculations for analytics
@@ -62,8 +63,9 @@ export const WebsiteDashboard: React.FC = () => {
       });
 
       setRecentPages(pages.slice(0, 5));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load website dashboard data:', error);
+      showToast(error.userMessage || 'Failed to load website data', 'error');
     } finally {
       setLoading(false);
     }

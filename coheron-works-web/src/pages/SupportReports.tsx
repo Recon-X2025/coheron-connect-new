@@ -10,6 +10,7 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { supportDeskService } from '../services/supportDeskService';
+import { exportToCSV } from '../utils/exportCSV';
 import './SupportReports.css';
 
 export const SupportReports: React.FC = () => {
@@ -118,7 +119,15 @@ export const SupportReports: React.FC = () => {
               className="date-input"
             />
           </div>
-          <Button variant="secondary" icon={<Download size={18} />}>
+          <Button variant="secondary" icon={<Download size={18} />} onClick={() => exportToCSV(agentPerformance, 'support-agent-performance', [
+            { key: 'agent_name', label: 'Agent' },
+            { key: 'tickets_assigned', label: 'Assigned' },
+            { key: 'tickets_resolved', label: 'Resolved' },
+            { key: 'avg_first_response_minutes', label: 'Avg Response (min)' },
+            { key: 'avg_resolution_minutes', label: 'Avg Resolution (min)' },
+            { key: 'sla_met_count', label: 'SLA Met' },
+            { key: 'sla_breached_count', label: 'SLA Breached' },
+          ])}>
             Export
           </Button>
         </div>

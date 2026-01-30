@@ -13,6 +13,7 @@ import { apiService } from '../../services/apiService';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { Card } from '../../components/Card';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
+import { showToast } from '../../components/Toast';
 import './POSDashboard.css';
 
 interface POSDashboardStats {
@@ -40,7 +41,7 @@ export const POSDashboard: React.FC = () => {
       const today = new Date().toISOString().split('T')[0];
       
       const [sessions] = await Promise.all([
-        apiService.get<any>('/pos/sessions').catch(() => []),
+        apiService.get<any>('/pos/sessions').catch((err) => { console.error('Failed to load POS sessions:', err.userMessage || err.message); return []; }),
       ]);
 
       const todaySessions = sessions.filter((s: any) => {
@@ -72,8 +73,9 @@ export const POSDashboard: React.FC = () => {
       });
 
       setRecentSessions(todaySessions.slice(0, 5));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load POS dashboard data:', error);
+      showToast(error.userMessage || 'Failed to load POS data', 'error');
     } finally {
       setLoading(false);
     }

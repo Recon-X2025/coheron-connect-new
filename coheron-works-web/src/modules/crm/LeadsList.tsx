@@ -11,6 +11,7 @@ import { LeadConversion } from './components/LeadConversion';
 import { LeadForm } from './components/LeadForm';
 import { showToast } from '../../components/Toast';
 import type { Lead, Partner } from '../../types/odoo';
+import { confirmAction } from '../../components/ConfirmDialog';
 import './LeadsList.css';
 
 export const LeadsList = () => {
@@ -54,16 +55,21 @@ export const LeadsList = () => {
     };
 
     const handleDelete = async (ids: number[]) => {
-        if (window.confirm(`Are you sure you want to delete ${ids.length} lead(s)?`)) {
-            try {
-                await leadService.delete(ids[0]); // For now, delete one at a time
-                showToast('Lead deleted successfully', 'success');
-                await loadData();
-                setSelectedIds([]);
-            } catch (error: any) {
-                console.error('Failed to delete lead:', error);
-                showToast(error?.message || 'Failed to delete lead. Please try again.', 'error');
-            }
+        const ok = await confirmAction({
+            title: 'Delete Leads',
+            message: `Are you sure you want to delete ${ids.length} lead(s)?`,
+            confirmLabel: 'Delete',
+            variant: 'danger',
+        });
+        if (!ok) return;
+        try {
+            await leadService.delete(ids[0]); // For now, delete one at a time
+            showToast('Lead deleted successfully', 'success');
+            await loadData();
+            setSelectedIds([]);
+        } catch (error: any) {
+            console.error('Failed to delete lead:', error);
+            showToast(error?.message || 'Failed to delete lead. Please try again.', 'error');
         }
     };
 

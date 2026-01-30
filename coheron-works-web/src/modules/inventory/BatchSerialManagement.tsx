@@ -6,6 +6,7 @@ import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { inventoryService, type StockLot } from '../../services/inventoryService';
 import { apiService } from '../../services/apiService';
 import { SerialForm } from './components/SerialForm';
+import { confirmAction } from '../../components/ConfirmDialog';
 import './BatchSerialManagement.css';
 
 interface SerialNumber {
@@ -155,9 +156,13 @@ export const BatchSerialManagement = () => {
   };
 
   const handleDeleteBatch = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this batch? This action cannot be undone.')) {
-      return;
-    }
+    const ok = await confirmAction({
+      title: 'Delete Batch',
+      message: 'Are you sure you want to delete this batch? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     try {
       await inventoryService.deleteLot(id);
@@ -175,9 +180,13 @@ export const BatchSerialManagement = () => {
   };
 
   const handleDeleteSerial = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this serial number? This action cannot be undone.')) {
-      return;
-    }
+    const ok = await confirmAction({
+      title: 'Delete Serial Number',
+      message: 'Are you sure you want to delete this serial number? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     try {
       await inventoryService.deleteSerial(id);

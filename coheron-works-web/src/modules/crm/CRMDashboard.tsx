@@ -15,6 +15,7 @@ import { apiService } from '../../services/apiService';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { Card } from '../../components/Card';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
+import { showToast } from '../../components/Toast';
 import './CRMDashboard.css';
 
 interface CRMDashboardStats {
@@ -47,11 +48,11 @@ export const CRMDashboard: React.FC = () => {
     try {
       setLoading(true);
       const [leads, opportunities, customers, tasks] = await Promise.all([
-        apiService.get<any>('/leads', { type: 'lead' }).catch(() => []),
-        apiService.get<any>('/leads', { type: 'opportunity' }).catch(() => []),
-        apiService.get<any>('/partners', { is_customer: true }).catch(() => []),
-        apiService.get<any>('/crm/tasks', { status: 'pending' }).catch(() => []),
-        apiService.get<any>('/crm/pipeline/stages').catch(() => []),
+        apiService.get<any>('/leads', { type: 'lead' }).catch((err) => { console.error('Failed to load leads:', err.userMessage || err.message); return []; }),
+        apiService.get<any>('/leads', { type: 'opportunity' }).catch((err) => { console.error('Failed to load opportunities:', err.userMessage || err.message); return []; }),
+        apiService.get<any>('/partners', { is_customer: true }).catch((err) => { console.error('Failed to load customers:', err.userMessage || err.message); return []; }),
+        apiService.get<any>('/crm/tasks', { status: 'pending' }).catch((err) => { console.error('Failed to load tasks:', err.userMessage || err.message); return []; }),
+        apiService.get<any>('/crm/pipeline/stages').catch((err) => { console.error('Failed to load pipeline stages:', err.userMessage || err.message); return []; }),
       ]);
 
       const convertedLeads = leads.filter((l: any) => l.stage === 'converted' || l.is_converted).length;
@@ -115,8 +116,9 @@ export const CRMDashboard: React.FC = () => {
         count: data.count,
         value: data.value,
       })));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load CRM dashboard data:', error);
+      showToast(error.userMessage || 'Failed to load CRM data', 'error');
     } finally {
       setLoading(false);
     }

@@ -43,13 +43,14 @@ export const PaymentForm = ({ onClose, onSave, initialData }: PaymentFormProps) 
   const loadData = async () => {
     try {
       const [billsData, vendorsData] = await Promise.all([
-        apiService.get<any[]>('accounting/accounts-payable/bills').catch(() => []),
-        apiService.get<any[]>('accounting/accounts-payable/vendors').catch(() => []),
+        apiService.get<any[]>('accounting/accounts-payable/bills').catch((err) => { console.error('Failed to load bills:', err.userMessage || err.message); return []; }),
+        apiService.get<any[]>('accounting/accounts-payable/vendors').catch((err) => { console.error('Failed to load vendors:', err.userMessage || err.message); return []; }),
       ]);
       setBills(billsData);
       setVendors(vendorsData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading data:', error);
+      showToast(error.userMessage || 'Failed to load form data', 'error');
     }
   };
 

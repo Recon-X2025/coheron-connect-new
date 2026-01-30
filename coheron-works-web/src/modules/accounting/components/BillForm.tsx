@@ -39,10 +39,11 @@ export const BillForm = ({ onClose, onSave, initialData }: BillFormProps) => {
 
   const loadVendors = async () => {
     try {
-      const data = await apiService.get<any[]>('accounting/accounts-payable/vendors').catch(() => []);
+      const data = await apiService.get<any[]>('accounting/accounts-payable/vendors').catch((err) => { console.error('Failed to load vendors:', err.userMessage || err.message); return []; });
       setVendors(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading vendors:', error);
+      showToast(error.userMessage || 'Failed to load vendors', 'error');
     }
   };
 

@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { Button } from '../../../components/Button';
 import { apiService } from '../../../services/apiService';
 import { showToast } from '../../../components/Toast';
+import { useAuth } from '../../../contexts/AuthContext';
 import './LeaveRequestForm.css';
 
 interface LeaveRequestFormProps {
@@ -11,6 +12,7 @@ interface LeaveRequestFormProps {
 }
 
 export const LeaveRequestForm = ({ onClose, onSave }: LeaveRequestFormProps) => {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     leave_type: 'annual',
     from_date: '',
@@ -27,7 +29,7 @@ export const LeaveRequestForm = ({ onClose, onSave }: LeaveRequestFormProps) => 
       const days = Math.ceil((toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
       await apiService.create('/leave/requests', {
-        employee_id: 1, // TODO: Get from auth context
+        employee_id: user?.userId || '',
         leave_type: formData.leave_type,
         from_date: formData.from_date,
         to_date: formData.to_date,

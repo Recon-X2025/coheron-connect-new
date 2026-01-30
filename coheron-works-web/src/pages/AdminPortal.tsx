@@ -8,6 +8,7 @@ import { RolesManagement } from '../modules/admin/RolesManagement';
 import { PermissionsManagement } from '../modules/admin/PermissionsManagement';
 import { UserRoleAssignments } from '../modules/admin/UserRoleAssignments';
 import { AuditLogsViewer } from '../modules/admin/AuditLogsViewer';
+import { showToast } from '../components/Toast';
 import './AdminPortal.css';
 
 interface Subscription {
@@ -34,7 +35,7 @@ export const AdminPortal: React.FC = () => {
     try {
       setLoading(true);
       // Load users and subscription data
-      const usersData = await apiService.get<any>('/partners').catch(() => []);
+      const usersData = await apiService.get<any>('/partners').catch((err) => { console.error('Failed to load partners:', err.userMessage || err.message); return []; });
       setUsers(usersData.slice(0, 5)); // Show first 5
 
       // Mock subscription data (would come from API in production)
@@ -45,8 +46,9 @@ export const AdminPortal: React.FC = () => {
         maxUsers: 50,
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load admin data:', error);
+      showToast(error.userMessage || 'Failed to load admin data', 'error');
     } finally {
       setLoading(false);
     }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { TrendingUp, DollarSign, Users, MousePointerClick, Eye, Target, BarChart3, PieChart } from 'lucide-react';
 import { apiService } from '../../../services/apiService';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
+import { showToast } from '../../../components/Toast';
 import './CampaignAnalytics.css';
 
 interface CampaignAnalyticsProps {
@@ -75,7 +76,7 @@ export const CampaignAnalytics: React.FC<CampaignAnalyticsProps> = ({
       const roi = cost > 0 ? ((revenue - cost) / cost) * 100 : 0;
 
       // Load performance data
-      const performanceResponse = await apiService.get<any[]>(`/campaigns/${campaignId}/performance`).catch(() => []);
+      const performanceResponse = await apiService.get<any[]>(`/campaigns/${campaignId}/performance`).catch((err) => { console.error('Failed to load performance data:', err.userMessage || err.message); return []; });
       const performanceData = Array.isArray(performanceResponse) && performanceResponse.length > 0 && Array.isArray(performanceResponse[0])
         ? performanceResponse[0]
         : Array.isArray(performanceResponse) ? performanceResponse : [];
@@ -102,8 +103,9 @@ export const CampaignAnalytics: React.FC<CampaignAnalyticsProps> = ({
         }>,
         channelBreakdown: [], // Would be loaded from actual data
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load analytics:', error);
+      showToast(error.userMessage || 'Failed to load analytics data', 'error');
     } finally {
       setLoading(false);
     }

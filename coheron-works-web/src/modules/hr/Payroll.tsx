@@ -17,6 +17,7 @@ import { PayrollRunForm } from './components/PayrollRunForm';
 import { AttendanceLeaveIntegration } from './components/AttendanceLeaveIntegration';
 import { PayoutFinancial } from './components/PayoutFinancial';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
+import { showToast } from '../../components/Toast';
 import './Payroll.css';
 
 type PayrollTab = 
@@ -142,8 +143,8 @@ const PayrollOverview = () => {
     try {
       setLoading(true);
       const [statsData, payslipsData] = await Promise.all([
-        apiService.get<any>('/payroll/stats').catch(() => ({ total_employees: 0, this_month_payroll: 0, pending_approvals: 0, compliance_status: 98 })),
-        apiService.get<any>('/payroll/payslips').catch(() => []),
+        apiService.get<any>('/payroll/stats').catch((err) => { console.error('Failed to load payroll stats:', err.userMessage || err.message); return { total_employees: 0, this_month_payroll: 0, pending_approvals: 0, compliance_status: 98 }; }),
+        apiService.get<any>('/payroll/payslips').catch((err) => { console.error('Failed to load payslips:', err.userMessage || err.message); return []; }),
       ]);
       
       // Handle stats data - it might be an array or object
@@ -155,8 +156,9 @@ const PayrollOverview = () => {
         compliance_status: statsObj.compliance_status || 98,
       });
       setPayslips(payslipsData.slice(0, 3)); // Get recent 3
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load payroll data:', error);
+      showToast(error.userMessage || 'Failed to load payroll data', 'error');
     } finally {
       setLoading(false);
     }

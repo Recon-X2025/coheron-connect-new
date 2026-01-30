@@ -1,6 +1,7 @@
 @import './styles/variables.css';
 @import './styles/reset.css';
 @import './styles/typography.css';
+@import './styles/responsive.css';
 
 /* Global Utilities */
 .container {

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, Upload, Plus, Trash2, Calendar } from 'lucide-react';
 import { Button } from '../../../components/Button';
 import { apiService } from '../../../services/apiService';
+import { useAuth } from '../../../contexts/AuthContext';
 import './CreateDocumentModal.css';
 
 interface Signer {
@@ -40,6 +41,7 @@ export const CreateDocumentModal = ({
   const [reminderFrequency, setReminderFrequency] = useState(3);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
+  const { user } = useAuth();
 
   if (!isOpen) return null;
 
@@ -143,8 +145,7 @@ export const CreateDocumentModal = ({
         formData.append('related_record_id', relatedRecordId.toString());
       }
 
-      // Get current user ID (you may need to adjust this based on your auth system)
-      const userId = 1; // TODO: Get from auth context
+      const userId = user?.userId || '';
       formData.append('created_by', userId.toString());
 
       await apiService.getAxiosInstance().post('/esignature/documents', formData, {

@@ -41,13 +41,14 @@ export const DeliveryOrderForm = ({ onClose, onSave, initialData }: DeliveryOrde
   const loadData = async () => {
     try {
       const [ordersData, warehousesData] = await Promise.all([
-        apiService.get<any[]>('sale-orders').catch(() => []),
-        apiService.get<any[]>('inventory/warehouses').catch(() => []),
+        apiService.get<any[]>('sale-orders').catch((err) => { console.error('Failed to load sale orders:', err.userMessage || err.message); return []; }),
+        apiService.get<any[]>('inventory/warehouses').catch((err) => { console.error('Failed to load warehouses:', err.userMessage || err.message); return []; }),
       ]);
       setSaleOrders(ordersData);
       setWarehouses(warehousesData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading data:', error);
+      showToast(error.userMessage || 'Failed to load form data', 'error');
     }
   };
 

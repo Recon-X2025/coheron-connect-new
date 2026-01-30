@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DollarSign, TrendingUp, AlertCircle, Receipt, FileText, Users, Target } from 'lucide-react';
 import { apiService } from '../../../services/apiService';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
+import { showToast } from '../../../components/Toast';
 import './CampaignFinancials.css';
 
 interface CampaignFinancialsProps {
@@ -48,7 +49,7 @@ export const CampaignFinancials: React.FC<CampaignFinancialsProps> = ({
       setLoading(true);
       const campaignResponse = await apiService.get<any>(`/campaigns/${campaignId}`);
       const campaign = Array.isArray(campaignResponse) ? campaignResponse[0] : campaignResponse;
-      const transactions = await apiService.get<any[]>(`/campaigns/${campaignId}/financials`).catch(() => []);
+      const transactions = await apiService.get<any[]>(`/campaigns/${campaignId}/financials`).catch((err) => { console.error('Failed to load financials:', err.userMessage || err.message); return []; });
 
       const totalSpend = campaign?.total_cost || 0;
       const totalRevenue = campaign?.revenue || 0;
@@ -88,8 +89,9 @@ export const CampaignFinancials: React.FC<CampaignFinancialsProps> = ({
         budgetVariance: parseFloat(budgetVariance.toFixed(2)),
         projectedSpend: parseFloat(projectedSpend.toFixed(2)),
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load financials:', error);
+      showToast(error.userMessage || 'Failed to load financial data', 'error');
     } finally {
       setLoading(false);
     }

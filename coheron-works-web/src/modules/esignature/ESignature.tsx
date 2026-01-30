@@ -7,6 +7,7 @@ import { apiService } from '../../services/apiService';
 import { showToast } from '../../components/Toast';
 import { CreateDocumentModal } from './components/CreateDocumentModal';
 import { SigningInterface } from './components/SigningInterface';
+import { useAuth } from '../../contexts/AuthContext';
 import './ESignature.css';
 
 interface ESignDocument {
@@ -23,6 +24,7 @@ interface ESignDocument {
 }
 
 export const ESignature = () => {
+  const { user } = useAuth();
   const [documents, setDocuments] = useState<ESignDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -289,8 +291,7 @@ export const ESignature = () => {
       const doc = await apiService.get(`/esignature/documents/${documentId}`) as any;
       const docData = Array.isArray(doc) ? doc[0] : doc;
       // Find pending signer for current user
-      // TODO: Get current user email from auth context
-      const currentUserEmail = 'user@example.com'; // Replace with actual user email
+      const currentUserEmail = user?.email || '';
       
       const signers = docData?.signers || [];
       const pendingSigner = signers.find(

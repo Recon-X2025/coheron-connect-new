@@ -351,7 +351,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCollapseChange }) => {
                 </button>
             </div>
 
-            <nav className="sidebar-nav">
+            <nav className="sidebar-nav" aria-label="Main navigation">
                 <div className="nav-main">
                     {navigationItems.map(item => renderNavItem(item))}
                 </div>

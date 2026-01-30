@@ -6,6 +6,7 @@ import { apiService } from '../../../services/apiService';
 import { formatInLakhsCompact } from '../../../utils/currencyFormatter';
 import { showToast } from '../../../components/Toast';
 import { SalaryComponentForm } from './SalaryComponentForm';
+import { confirmAction } from '../../../components/ConfirmDialog';
 import './SalaryStructure.css';
 
 export const SalaryStructure = () => {
@@ -62,14 +63,19 @@ export const SalaryStructure = () => {
   const netSalary = totalEarnings - totalDeductions;
 
   const handleDeleteComponent = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this component?')) {
-      try {
-        await apiService.delete('/payroll/salary-structure', id);
-        loadSalaryStructure();
-      } catch (error) {
-        console.error('Failed to delete component:', error);
-        showToast('Failed to delete component', 'error');
-      }
+    const ok = await confirmAction({
+      title: 'Delete Component',
+      message: 'Are you sure you want to delete this component?',
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
+    try {
+      await apiService.delete('/payroll/salary-structure', id);
+      loadSalaryStructure();
+    } catch (error) {
+      console.error('Failed to delete component:', error);
+      showToast('Failed to delete component', 'error');
     }
   };
 

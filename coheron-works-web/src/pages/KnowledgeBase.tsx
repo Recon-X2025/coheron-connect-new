@@ -20,6 +20,7 @@ import { Button } from '../components/Button';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { supportDeskService, type KBArticle } from '../services/supportDeskService';
 import { showToast } from '../components/Toast';
+import { confirmAction } from '../components/ConfirmDialog';
 import './KnowledgeBase.css';
 
 type ArticleType = 'article' | 'faq' | 'how_to' | 'troubleshooting';
@@ -103,9 +104,13 @@ export const KnowledgeBase: React.FC = () => {
   };
 
   const handleDeleteArticle = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this article? This action cannot be undone.')) {
-      return;
-    }
+    const ok = await confirmAction({
+      title: 'Delete Article',
+      message: 'Are you sure you want to delete this article? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     try {
       await supportDeskService.deleteKBArticle(id);

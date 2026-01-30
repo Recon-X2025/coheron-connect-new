@@ -1,67 +1,232 @@
-/* Responsive Design Styles (Sprint 7) */
+/* ============================================
+   Responsive Design System
+   Breakpoints: 480 (phone), 768 (tablet), 1024 (desktop), 1440 (wide)
+   ============================================ */
 
-/* Mobile First Approach */
+/* ---- Mobile (max-width: 768px) ---- */
 @media (max-width: 768px) {
   .container {
-    padding: 1rem;
+    padding: 0.75rem;
   }
 
-  /* Hide desktop-only elements */
   .desktop-only {
     display: none !important;
   }
 
-  /* Stack elements vertically */
   .flex-row {
     flex-direction: column;
   }
 
-  /* Full width on mobile */
   .full-width-mobile {
     width: 100% !important;
   }
 
-  /* Adjust font sizes */
-  h1 {
-    font-size: 1.5rem !important;
-  }
+  h1 { font-size: 1.5rem !important; }
+  h2 { font-size: 1.25rem !important; }
+  h3 { font-size: 1.1rem !important; }
 
-  h2 {
-    font-size: 1.25rem !important;
-  }
-
-  /* Touch-friendly buttons */
-  button,
-  .btn {
+  /* Touch-friendly targets */
+  button, .btn, a.btn, select, input[type="checkbox"], input[type="radio"] {
     min-height: 44px;
     min-width: 44px;
   }
 
-  /* Responsive tables */
-  .table-container {
-    overflow-x: auto;
+  /* Sidebar & Layout */
+  .main-content.with-sidebar {
+    margin-left: 0 !important;
   }
 
-  table {
-    min-width: 600px;
+  .main-content.with-sidebar.collapsed {
+    margin-left: 0 !important;
+  }
+
+  .main-content {
+    padding: var(--space-md) 0;
+  }
+
+  .footer {
+    padding: var(--space-md) 0;
+  }
+
+  /* Mobile hamburger button */
+  .mobile-menu-toggle {
+    display: flex !important;
+  }
+
+  /* Sidebar overlay on mobile */
+  .sidebar-overlay {
+    display: block !important;
+  }
+
+  /* ---- Responsive tables → card layout ---- */
+  .responsive-table {
+    border: 0;
+  }
+
+  .responsive-table thead {
+    display: none;
+  }
+
+  .responsive-table tbody tr {
+    display: block;
+    margin-bottom: 12px;
+    background: var(--surface, #fff);
+    border: 1px solid var(--border, #e6e9ee);
+    border-radius: var(--radius, 8px);
+    padding: 12px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .responsive-table tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 4px;
+    border: none;
+    border-bottom: 1px solid var(--border, #e6e9ee);
+    font-size: 14px;
+  }
+
+  .responsive-table tbody td:last-child {
+    border-bottom: none;
+  }
+
+  .responsive-table tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--text-muted, #556074);
+    font-size: 12px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+    margin-right: 12px;
+  }
+
+  /* Generic table scroll fallback */
+  table:not(.responsive-table) {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+
+  /* Dashboard grids → stack */
+  .dashboard-grid,
+  .stats-grid,
+  .kpi-grid,
+  .card-grid,
+  .module-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* Two-column grids → single column */
+  .two-col-grid,
+  .form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Modal fullscreen on mobile */
+  .modal-content,
+  .dialog-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Action bars → stack */
+  .action-bar,
+  .toolbar,
+  .page-header-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .action-bar > *,
+  .toolbar > * {
+    flex: 1 1 auto;
+  }
+
+  /* Filters collapse on mobile */
+  .filter-bar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .filter-bar > * {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 120px;
+  }
+
+  /* Tabs → scrollable */
+  .tabs, .tab-list {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+
+  .tabs::-webkit-scrollbar, .tab-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Page padding */
+  .page, .page-content, .module-page {
+    padding: 12px !important;
   }
 }
 
-/* Tablet */
+/* ---- Small phone (max-width: 480px) ---- */
+@media (max-width: 480px) {
+  .container {
+    padding: 0.5rem;
+  }
+
+  /* Stack everything */
+  .filter-bar > * {
+    flex: 1 1 100%;
+  }
+
+  .action-bar {
+    flex-direction: column;
+  }
+
+  .confirm-dialog {
+    width: 95% !important;
+    padding: 20px !important;
+  }
+}
+
+/* ---- Tablet (769px - 1024px) ---- */
 @media (min-width: 769px) and (max-width: 1024px) {
   .container {
     padding: 1.5rem;
   }
+
+  .dashboard-grid,
+  .stats-grid,
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
 }
 
-/* Desktop */
-@media (min-width: 1025px) {
+/* ---- Desktop ---- */
+@media (min-width: 769px) {
   .mobile-only {
+    display: none !important;
+  }
+
+  .mobile-menu-toggle {
+    display: none !important;
+  }
+
+  .sidebar-overlay {
     display: none !important;
   }
 }
 
-/* Large Desktop */
+/* ---- Large Desktop (1440px+) ---- */
 @media (min-width: 1440px) {
   .container {
     max-width: 1400px;
@@ -69,19 +234,60 @@
   }
 }
 
-/* Touch optimizations */
+/* ---- Touch device optimizations ---- */
 @media (hover: none) and (pointer: coarse) {
-  /* Larger touch targets */
-  a,
-  button,
-  .clickable {
+  a, button, .clickable {
     min-height: 44px;
     min-width: 44px;
   }
 
-  /* Remove hover effects on touch devices */
   .hover-effect:hover {
+    transform: none;
+  }
+
+  /* Larger checkboxes/radios on touch */
+  input[type="checkbox"],
+  input[type="radio"] {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Disable hover states on touch */
+  .btn:hover,
+  .card:hover,
+  .nav-item:hover {
     transform: none;
   }
 }
 
+/* ---- Mobile hamburger button styling ---- */
+.mobile-menu-toggle {
+  display: none;
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 1001;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius, 8px);
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, #e6e9ee);
+  box-shadow: var(--shadow-sm);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text, #0f1724);
+}
+
+.mobile-menu-toggle:hover {
+  background: var(--muted-surface, #f3f5f7);
+}
+
+/* Sidebar overlay backdrop */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  z-index: 999;
+}

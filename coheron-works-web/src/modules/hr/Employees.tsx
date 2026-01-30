@@ -10,6 +10,8 @@ import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { apiService } from '../../services/apiService';
 import { EmployeeDetailView } from './components/EmployeeDetailView';
 import { EmployeeForm } from './components/EmployeeForm';
+import { confirmAction } from '../../components/ConfirmDialog';
+import { exportToCSV } from '../../utils/exportCSV';
 import './Employees.css';
 
 type ViewMode = 'list' | 'grid' | 'detail';
@@ -96,7 +98,14 @@ export const Employees = () => {
             <p className="employees-subtitle">Comprehensive employee information management</p>
           </div>
           <div className="header-actions">
-            <Button variant="secondary" icon={<Download size={18} />}>
+            <Button variant="secondary" icon={<Download size={18} />} onClick={() => exportToCSV(filteredEmployees, 'employees', [
+              { key: 'name', label: 'Employee' },
+              { key: 'job_title', label: 'Job Title' },
+              { key: 'department_id', label: 'Department' },
+              { key: 'work_email', label: 'Email' },
+              { key: 'work_phone', label: 'Phone' },
+              { key: 'attendance_state', label: 'Status' },
+            ])}>
               Export
             </Button>
             <Button variant="secondary" icon={<Upload size={18} />}>
@@ -257,11 +266,16 @@ export const Employees = () => {
                   </button>
                   <button
                     className="delete"
-                    onClick={(e) => {
+                    onClick={async (e) => {
                       e.stopPropagation();
-                      if (window.confirm('Are you sure you want to delete this employee?')) {
-                        // Handle delete
-                      }
+                      const ok = await confirmAction({
+                        title: 'Delete Employee',
+                        message: 'Are you sure you want to delete this employee?',
+                        confirmLabel: 'Delete',
+                        variant: 'danger',
+                      });
+                      if (!ok) return;
+                      // Handle delete
                     }}
                   >
                     <Trash2 size={16} />
@@ -322,11 +336,16 @@ export const Employees = () => {
                         </button>
                         <button
                           className="delete"
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation();
-                            if (window.confirm('Delete employee?')) {
-                              // Handle delete
-                            }
+                            const ok = await confirmAction({
+                              title: 'Delete Employee',
+                              message: 'Are you sure you want to delete this employee?',
+                              confirmLabel: 'Delete',
+                              variant: 'danger',
+                            });
+                            if (!ok) return;
+                            // Handle delete
                           }}
                         >
                           <Trash2 size={16} />

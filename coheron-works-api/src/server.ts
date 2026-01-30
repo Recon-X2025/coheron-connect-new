@@ -1,4 +1,6 @@
 import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -7,6 +9,9 @@ import dotenv from 'dotenv';
 import routes from './routes/index.js';
 import mongoose, { connectDB } from './database/connection.js';
 import { errorHandler } from './middleware/asyncHandler.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
@@ -50,7 +55,17 @@ app.use('/api', routes);
 // Centralized error handler
 app.use(errorHandler);
 
-// 404 handler
+// Serve static frontend in production (single-container deployment)
+const publicDir = path.join(__dirname, '..', 'public');
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(publicDir));
+  app.get('*', (_req, res, next) => {
+    if (_req.path.startsWith('/api') || _req.path === '/health') return next();
+    res.sendFile(path.join(publicDir, 'index.html'));
+  });
+}
+
+// 404 handler for API routes
 app.use((req: express.Request, res: express.Response) => {
   res.status(404).json({ error: 'Route not found' });
 });

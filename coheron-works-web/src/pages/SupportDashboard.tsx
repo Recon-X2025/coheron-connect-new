@@ -12,6 +12,7 @@ import {
 import { apiService } from '../services/apiService';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Card } from '../components/Card';
+import { showToast } from '../components/Toast';
 import './SupportDashboard.css';
 
 interface SupportDashboardStats {
@@ -38,7 +39,7 @@ export const SupportDashboard: React.FC = () => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const tickets = await apiService.get<any>('support-tickets').catch(() => []);
+      const tickets = await apiService.get<any>('support-tickets').catch((err) => { console.error('Failed to load tickets:', err.userMessage || err.message); return []; });
 
       const openTickets = tickets.filter((t: any) => t.status === 'open' || t.state === 'open');
       const inProgressTickets = tickets.filter((t: any) => t.status === 'in_progress' || t.state === 'in_progress');
@@ -63,8 +64,9 @@ export const SupportDashboard: React.FC = () => {
 
       setRecentTickets(tickets.slice(0, 5));
       setOpenTickets(openTickets.slice(0, 5));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load support dashboard data:', error);
+      showToast(error.userMessage || 'Failed to load support data', 'error');
     } finally {
       setLoading(false);
     }

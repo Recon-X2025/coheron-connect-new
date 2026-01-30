@@ -45,10 +45,11 @@ export const QualityInspectionForm = ({ onClose, onSave, initialData }: QualityI
 
   const loadManufacturingOrders = async () => {
     try {
-      const data = await apiService.get<any[]>('manufacturing').catch(() => []);
+      const data = await apiService.get<any[]>('manufacturing').catch((err) => { console.error('Failed to load manufacturing orders:', err.userMessage || err.message); return []; });
       setManufacturingOrders(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading manufacturing orders:', error);
+      showToast(error.userMessage || 'Failed to load manufacturing orders', 'error');
     }
   };
 

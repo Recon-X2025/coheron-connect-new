@@ -14,6 +14,7 @@ import { apiService } from '../services/apiService';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Card } from '../components/Card';
 import { formatInLakhsCompact } from '../utils/currencyFormatter';
+import { showToast } from '../components/Toast';
 import './ProjectsDashboard.css';
 
 interface ProjectsDashboardStats {
@@ -41,8 +42,8 @@ export const ProjectsDashboard: React.FC = () => {
     try {
       setLoading(true);
       const [projects, tasks] = await Promise.all([
-        apiService.get<any>('/projects').catch(() => []),
-        apiService.get<any>('/projects/tasks').catch(() => []),
+        apiService.get<any>('/projects').catch((err) => { console.error('Failed to load projects:', err.userMessage || err.message); return []; }),
+        apiService.get<any>('/projects/tasks').catch((err) => { console.error('Failed to load tasks:', err.userMessage || err.message); return []; }),
       ]);
 
       const activeProjects = projects.filter((p: any) => 
@@ -92,8 +93,9 @@ export const ProjectsDashboard: React.FC = () => {
 
       setRecentProjects(projects.slice(0, 5));
       setActiveProjects(activeProjects.slice(0, 5));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load projects dashboard data:', error);
+      showToast(error.userMessage || 'Failed to load projects data', 'error');
     } finally {
       setLoading(false);
     }

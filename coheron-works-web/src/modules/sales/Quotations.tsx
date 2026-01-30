@@ -8,6 +8,7 @@ import { AdvancedFilter } from '../../shared/components/AdvancedFilter';
 import { BulkActions, createCommonBulkActions } from '../../shared/components/BulkActions';
 import { OrderForm } from './components/OrderForm';
 import type { SaleOrder, Partner } from '../../types/odoo';
+import { confirmAction } from '../../components/ConfirmDialog';
 import './Quotations.css';
 
 export const Quotations = () => {
@@ -72,14 +73,19 @@ export const Quotations = () => {
   };
 
   const handleDelete = async (ids: number[]) => {
-    if (window.confirm(`Are you sure you want to delete ${ids.length} quotation(s)?`)) {
-      try {
-        await saleOrderService.delete(ids[0]);
-        await loadData();
-        setSelectedIds([]);
-      } catch (error) {
-        console.error('Failed to delete quotations:', error);
-      }
+    const ok = await confirmAction({
+      title: 'Delete Quotations',
+      message: `Are you sure you want to delete ${ids.length} quotation(s)?`,
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
+    try {
+      await saleOrderService.delete(ids[0]);
+      await loadData();
+      setSelectedIds([]);
+    } catch (error) {
+      console.error('Failed to delete quotations:', error);
     }
   };
 

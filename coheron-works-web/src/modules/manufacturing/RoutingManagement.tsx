@@ -8,6 +8,7 @@ import {
   type WorkCenter,
 } from '../../services/manufacturingService';
 import { showToast } from '../../components/Toast';
+import { confirmAction } from '../../components/ConfirmDialog';
 import './RoutingManagement.css';
 
 export const RoutingManagement = () => {
@@ -58,14 +59,19 @@ export const RoutingManagement = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this routing?')) {
-      try {
-        await manufacturingService.deleteRouting(id);
-        await loadData();
-        showToast('Routing deleted successfully', 'success');
-      } catch (error) {
-        showToast('Failed to delete routing', 'error');
-      }
+    const ok = await confirmAction({
+      title: 'Delete Routing',
+      message: 'Are you sure you want to delete this routing?',
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
+    try {
+      await manufacturingService.deleteRouting(id);
+      await loadData();
+      showToast('Routing deleted successfully', 'success');
+    } catch (error) {
+      showToast('Failed to delete routing', 'error');
     }
   };
 

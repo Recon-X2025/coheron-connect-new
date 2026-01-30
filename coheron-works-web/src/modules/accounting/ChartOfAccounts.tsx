@@ -4,6 +4,7 @@ import { Button } from '../../components/Button';
 import { chartOfAccountsService } from '../../services/accountingService';
 import { showToast } from '../../components/Toast';
 import { AccountForm } from './components/AccountForm';
+import { confirmAction } from '../../components/ConfirmDialog';
 import './ChartOfAccounts.css';
 
 interface Account {
@@ -34,9 +35,13 @@ export const ChartOfAccounts = () => {
   };
 
   const handleDeleteAccount = async (accountId: number) => {
-    if (!window.confirm('Are you sure you want to delete this account? This action cannot be undone.')) {
-      return;
-    }
+    const ok = await confirmAction({
+      title: 'Delete Account',
+      message: 'Are you sure you want to delete this account? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     try {
       await chartOfAccountsService.delete(accountId);

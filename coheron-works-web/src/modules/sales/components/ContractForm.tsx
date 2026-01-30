@@ -42,10 +42,11 @@ export const ContractForm = ({ onClose, onSave, type, initialData }: ContractFor
 
   const loadPartners = async () => {
     try {
-      const data = await apiService.get<any[]>('partners').catch(() => []);
+      const data = await apiService.get<any[]>('partners').catch((err) => { console.error('Failed to load partners:', err.userMessage || err.message); return []; });
       setPartners(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading partners:', error);
+      showToast(error.userMessage || 'Failed to load partners', 'error');
     }
   };
 

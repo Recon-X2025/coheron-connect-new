@@ -4,6 +4,7 @@ import { inventoryService, type StockIssue } from '../../../services/inventorySe
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import { StockIssueForm } from './StockIssueForm';
 import { showToast } from '../../../components/Toast';
+import { confirmAction } from '../../../components/ConfirmDialog';
 import './StockIssueList.css';
 
 interface StockIssueListProps {
@@ -48,7 +49,13 @@ export const StockIssueList = ({ onRefresh }: StockIssueListProps) => {
   };
 
   const handleApprove = async (id: number) => {
-    if (!confirm('Approve this stock issue?')) return;
+    const ok = await confirmAction({
+      title: 'Approve Stock Issue',
+      message: 'Approve this stock issue?',
+      confirmLabel: 'Approve',
+      variant: 'warning',
+    });
+    if (!ok) return;
     try {
       await inventoryService.approveStockIssue(id);
       loadIssues();
@@ -60,7 +67,13 @@ export const StockIssueList = ({ onRefresh }: StockIssueListProps) => {
   };
 
   const handleIssue = async (id: number) => {
-    if (!confirm('Issue this stock? This will reduce inventory.')) return;
+    const ok2 = await confirmAction({
+      title: 'Issue Stock',
+      message: 'Issue this stock? This will reduce inventory.',
+      confirmLabel: 'Issue',
+      variant: 'warning',
+    });
+    if (!ok2) return;
     try {
       await inventoryService.issueStockIssue(id);
       loadIssues();
@@ -72,9 +85,13 @@ export const StockIssueList = ({ onRefresh }: StockIssueListProps) => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this stock issue? This action cannot be undone.')) {
-      return;
-    }
+    const ok = await confirmAction({
+      title: 'Delete Stock Issue',
+      message: 'Are you sure you want to delete this stock issue? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     try {
       await inventoryService.deleteStockIssue(id);
@@ -88,7 +105,13 @@ export const StockIssueList = ({ onRefresh }: StockIssueListProps) => {
   };
 
   const handleCancel = async (id: number) => {
-    if (!window.confirm('Cancel this stock issue?')) return;
+    const ok = await confirmAction({
+      title: 'Cancel Stock Issue',
+      message: 'Cancel this stock issue?',
+      confirmLabel: 'Cancel Issue',
+      variant: 'warning',
+    });
+    if (!ok) return;
     try {
       await inventoryService.updateStockIssue(id, { state: 'cancel' });
       loadIssues();

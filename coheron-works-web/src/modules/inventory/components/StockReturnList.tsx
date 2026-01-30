@@ -4,6 +4,7 @@ import { inventoryService, type StockReturn } from '../../../services/inventoryS
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import { StockReturnForm } from './StockReturnForm';
 import { showToast } from '../../../components/Toast';
+import { confirmAction } from '../../../components/ConfirmDialog';
 import './StockReturnList.css';
 
 interface StockReturnListProps {
@@ -48,7 +49,13 @@ export const StockReturnList = ({ onRefresh }: StockReturnListProps) => {
   };
 
   const handleApprove = async (id: number) => {
-    if (!confirm('Approve this stock return?')) return;
+    const ok = await confirmAction({
+      title: 'Approve Stock Return',
+      message: 'Approve this stock return?',
+      confirmLabel: 'Approve',
+      variant: 'warning',
+    });
+    if (!ok) return;
     try {
       await inventoryService.approveStockReturn(id);
       loadReturns();
@@ -60,7 +67,13 @@ export const StockReturnList = ({ onRefresh }: StockReturnListProps) => {
   };
 
   const handleReceive = async (id: number) => {
-    if (!confirm('Receive this stock return?')) return;
+    const ok = await confirmAction({
+      title: 'Receive Stock Return',
+      message: 'Receive this stock return?',
+      confirmLabel: 'Receive',
+      variant: 'warning',
+    });
+    if (!ok) return;
     try {
       await inventoryService.receiveStockReturn(id);
       loadReturns();
@@ -72,7 +85,13 @@ export const StockReturnList = ({ onRefresh }: StockReturnListProps) => {
   };
 
   const handleRestock = async (id: number) => {
-    if (!confirm('Restock this return? This will add inventory back.')) return;
+    const ok = await confirmAction({
+      title: 'Restock Return',
+      message: 'Restock this return? This will add inventory back.',
+      confirmLabel: 'Restock',
+      variant: 'warning',
+    });
+    if (!ok) return;
     try {
       await inventoryService.restockStockReturn(id);
       loadReturns();
@@ -84,9 +103,13 @@ export const StockReturnList = ({ onRefresh }: StockReturnListProps) => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this stock return? This action cannot be undone.')) {
-      return;
-    }
+    const ok = await confirmAction({
+      title: 'Delete Stock Return',
+      message: 'Are you sure you want to delete this stock return? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     try {
       await inventoryService.deleteStockReturn(id);
@@ -100,7 +123,13 @@ export const StockReturnList = ({ onRefresh }: StockReturnListProps) => {
   };
 
   const handleCancel = async (id: number) => {
-    if (!window.confirm('Cancel this stock return?')) return;
+    const ok = await confirmAction({
+      title: 'Cancel Stock Return',
+      message: 'Cancel this stock return?',
+      confirmLabel: 'Cancel Return',
+      variant: 'warning',
+    });
+    if (!ok) return;
     try {
       await inventoryService.updateStockReturn(id, { state: 'cancel' });
       loadReturns();

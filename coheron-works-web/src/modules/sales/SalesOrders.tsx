@@ -13,6 +13,7 @@ import { OrderForm } from './components/OrderForm';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
 import { showToast } from '../../components/Toast';
 import type { SaleOrder, Partner } from '../../types/odoo';
+import { confirmAction } from '../../components/ConfirmDialog';
 import './SalesOrders.css';
 
 export const SalesOrders = () => {
@@ -57,14 +58,19 @@ export const SalesOrders = () => {
     };
 
     const handleDelete = async (ids: number[]) => {
-        if (window.confirm(`Are you sure you want to delete ${ids.length} order(s)?`)) {
-            try {
-                await saleOrderService.delete(ids[0]);
-                await loadData();
-                setSelectedIds([]);
-            } catch (error) {
-                console.error('Failed to delete orders:', error);
-            }
+        const ok = await confirmAction({
+            title: 'Delete Orders',
+            message: `Are you sure you want to delete ${ids.length} order(s)?`,
+            confirmLabel: 'Delete',
+            variant: 'danger',
+        });
+        if (!ok) return;
+        try {
+            await saleOrderService.delete(ids[0]);
+            await loadData();
+            setSelectedIds([]);
+        } catch (error) {
+            console.error('Failed to delete orders:', error);
         }
     };
 

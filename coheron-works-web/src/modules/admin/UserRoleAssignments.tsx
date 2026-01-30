@@ -42,7 +42,7 @@ export const UserRoleAssignments: React.FC = () => {
     try {
       setLoading(true);
       const [usersData, rolesData] = await Promise.all([
-        apiService.get<User[]>('/partners').catch(() => []),
+        apiService.get<User[]>('/partners').catch((err) => { console.error('Failed to load partners:', err.userMessage || err.message); return []; }),
         rbacService.getRoles()
       ]);
       const usersArray = Array.isArray(usersData) 
@@ -50,8 +50,9 @@ export const UserRoleAssignments: React.FC = () => {
         : [];
       setUsers(usersArray as unknown as User[]);
       setRoles(rolesData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load data:', error);
+      showToast(error.userMessage || 'Failed to load data', 'error');
     } finally {
       setLoading(false);
     }

@@ -4,11 +4,15 @@ import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { apiService } from '../../services/apiService';
 import { LeaveRequestForm } from './components/LeaveRequestForm';
+import { useAuth } from '../../contexts/AuthContext';
+import { showToast } from '../../components/Toast';
+import { exportToCSV } from '../../utils/exportCSV';
 import './LeaveManagement.css';
 
 type LeaveTab = 'overview' | 'requests' | 'policies' | 'calendar' | 'balance';
 
 export const LeaveManagement = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<LeaveTab>('overview');
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
@@ -21,8 +25,8 @@ export const LeaveManagement = () => {
   const loadData = async () => {
     try {
       const [requests, balance] = await Promise.all([
-        apiService.get<any>('/leave/requests').catch(() => []),
-        apiService.get<any>('/leave/balance/1').catch(() => []), // TODO: Get current employee ID
+        apiService.get<any>('/leave/requests').catch((err) => { console.error('Failed to load leave requests:', err.userMessage || err.message); return []; }),
+        apiService.get<any>(`/leave/balance/${user?.userId || '1'}`).catch((err) => { console.error('Failed to load leave balance:', err.userMessage || err.message); return []; }),
       ]);
       setLeaveRequests(requests);
       
@@ -36,8 +40,9 @@ export const LeaveManagement = () => {
         };
       });
       setLeaveBalance(balanceMap);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load leave data:', error);
+      showToast(error.userMessage || 'Failed to load leave data', 'error');
     }
   };
 
@@ -65,7 +70,14 @@ export const LeaveManagement = () => {
             <p className="leave-subtitle">Manage employee leave requests and policies</p>
           </div>
           <div className="header-actions">
-            <Button variant="secondary" icon={<Download size={18} />}>
+            <Button variant="secondary" icon={<Download size={18} />} onClick={() => exportToCSV(leaveRequests, 'leave-requests', [
+              { key: 'employee_name', label: 'Employee' },
+              { key: 'leave_type', label: 'Leave Type' },
+              { key: 'from_date', label: 'From' },
+              { key: 'to_date', label: 'To' },
+              { key: 'days', label: 'Days' },
+              { key: 'status', label: 'Status' },
+            ])}>
               Export
             </Button>
             <Button icon={<Plus size={18} />} onClick={() => setShowRequestForm(true)}>

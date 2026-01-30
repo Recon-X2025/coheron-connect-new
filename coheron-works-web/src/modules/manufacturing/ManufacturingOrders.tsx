@@ -19,6 +19,7 @@ import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { manufacturingService, type ManufacturingOrder } from '../../services/manufacturingService';
 import { apiService } from '../../services/apiService';
 import { showToast } from '../../components/Toast';
+import { confirmAction } from '../../components/ConfirmDialog';
 import './ManufacturingOrders.css';
 
 export const ManufacturingOrders = () => {
@@ -159,14 +160,19 @@ export const ManufacturingOrders = () => {
   };
 
   const handleCancel = async (id: number) => {
-    if (window.confirm('Are you sure you want to cancel this manufacturing order?')) {
-      try {
-        await manufacturingService.cancelMO(id);
-        await loadData();
-        showToast('Manufacturing order cancelled successfully', 'success');
-      } catch (error: any) {
-        showToast(error.response?.data?.error || 'Failed to cancel order', 'error');
-      }
+    const ok = await confirmAction({
+      title: 'Cancel Manufacturing Order',
+      message: 'Are you sure you want to cancel this manufacturing order?',
+      confirmLabel: 'Cancel Order',
+      variant: 'warning',
+    });
+    if (!ok) return;
+    try {
+      await manufacturingService.cancelMO(id);
+      await loadData();
+      showToast('Manufacturing order cancelled successfully', 'success');
+    } catch (error: any) {
+      showToast(error.response?.data?.error || 'Failed to cancel order', 'error');
     }
   };
 

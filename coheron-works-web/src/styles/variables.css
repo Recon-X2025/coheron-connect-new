@@ -61,6 +61,86 @@
   --transition-normal: 300ms ease;
 }
 
+/* Dark theme overrides */
+[data-theme="dark"] {
+  --page-bg: #0F1117;
+  --surface: #1A1D27;
+  --muted-surface: #252833;
+  --border: #2E3344;
+
+  --text: #E4E7EC;
+  --text-muted: #9BA3B5;
+
+  --primary: #3B82F6;
+  --primary-press: #60A5FA;
+  --accent: #A78BFA;
+  --success: #34D399;
+  --warning: #FBBF24;
+  --danger: #F87171;
+
+  --glass: rgba(59, 130, 246, 0.1);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+
+  color-scheme: dark;
+}
+
+[data-theme="dark"] .chip.success {
+  background: rgba(52, 211, 153, 0.12);
+  border-color: rgba(52, 211, 153, 0.2);
+}
+
+[data-theme="dark"] .chip.warning {
+  background: rgba(251, 191, 36, 0.12);
+  border-color: rgba(251, 191, 36, 0.2);
+}
+
+[data-theme="dark"] .chip.danger {
+  background: rgba(248, 113, 113, 0.12);
+  border-color: rgba(248, 113, 113, 0.2);
+}
+
+[data-theme="dark"] .chip.info {
+  background: rgba(167, 139, 250, 0.1);
+  border-color: rgba(167, 139, 250, 0.15);
+}
+
+/* Dark mode form inputs */
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+  background: var(--muted-surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] input:focus,
+[data-theme="dark"] textarea:focus,
+[data-theme="dark"] select:focus {
+  border-color: var(--primary);
+  outline-color: var(--primary);
+}
+
+/* Dark mode table */
+[data-theme="dark"] table th {
+  background: var(--muted-surface);
+  color: var(--text-muted);
+}
+
+[data-theme="dark"] table td {
+  border-color: var(--border);
+}
+
+[data-theme="dark"] table tr:hover {
+  background: var(--muted-surface);
+}
+
 html,
 body {
   height: 100%;

@@ -37,10 +37,11 @@ export const OffboardingForm = ({ onClose, onSave, initialData }: OffboardingFor
 
   const loadEmployees = async () => {
     try {
-      const data = await apiService.get<any[]>('employees').catch(() => []);
+      const data = await apiService.get<any[]>('employees').catch((err) => { console.error('Failed to load employees:', err.userMessage || err.message); return []; });
       setEmployees(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading employees:', error);
+      showToast(error.userMessage || 'Failed to load employees', 'error');
     }
   };
 

@@ -15,7 +15,7 @@ const schemaOptions = {
 };
 
 const tenantConfigSchema = new Schema({
-  tenant_id: { type: Schema.Types.ObjectId, required: true, unique: true },
+  tenant_id: { type: Schema.Types.ObjectId, required: true },
   enabled_modules: [{ type: String }],
   is_active: { type: Boolean, default: true },
 }, schemaOptions);

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CheckSquare, Square, MoreVertical, Trash2, Edit, UserPlus } from 'lucide-react';
+import { confirmAction } from '../../components/ConfirmDialog';
 import './BulkActions.css';
 
 export interface BulkAction {
@@ -65,9 +66,12 @@ export const BulkActions: React.FC<BulkActionsProps> = ({
 
     // Show confirmation if required
     if (action.confirmMessage) {
-      const confirmed = window.confirm(
-        `${action.confirmMessage}\n\nThis will affect ${selectedIds.length} item(s).`
-      );
+      const confirmed = await confirmAction({
+        title: 'Confirm Action',
+        message: `${action.confirmMessage}\n\nThis will affect ${selectedIds.length} item(s).`,
+        confirmLabel: 'Confirm',
+        variant: action.variant === 'danger' ? 'danger' : 'warning',
+      });
       if (!confirmed) {
         return;
       }
