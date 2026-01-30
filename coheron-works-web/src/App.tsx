@@ -1,103 +1,136 @@
+import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { Layout } from './components/Layout';
-import { LandingPage } from './pages/LandingPage';
-import { Dashboard } from './pages/Dashboard';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import SupportTickets from './pages/SupportTickets';
-import { SupportDashboard } from './pages/SupportDashboard';
-import { AgentWorkbench } from './pages/AgentWorkbench';
-import { KnowledgeBase } from './pages/KnowledgeBase';
-import { SupportReports } from './pages/SupportReports';
-import { SurveyManagement } from './pages/SurveyManagement';
-import ITSM from './pages/ITSM';
-import AutomationBuilder from './pages/AutomationBuilder';
-import { Subscription } from './pages/Subscription';
-import AdminPortal from './pages/AdminPortal';
-import Pricing from './pages/Pricing';
-import { CRMPipeline } from './modules/crm/CRMPipeline';
-import { CRMDashboard } from './modules/crm/CRMDashboard';
-import { LeadsList } from './modules/crm/LeadsList';
-import { Customers } from './modules/crm/Customers';
-import { TasksCalendar } from './modules/crm/TasksCalendar';
-import { AutomationEngine } from './modules/crm/AutomationEngine';
-import { SalesOrders } from './modules/sales/SalesOrders';
-import { Quotations } from './modules/sales/Quotations';
-import { SalesDashboard } from './modules/sales/SalesDashboard';
-import { PricingManagement } from './modules/sales/PricingManagement';
-import { ContractsManagement } from './modules/sales/ContractsManagement';
-import { DeliveryTracking } from './modules/sales/DeliveryTracking';
-import { ReturnsManagement } from './modules/sales/ReturnsManagement';
-import { SalesForecasting } from './modules/sales/SalesForecasting';
-import { SalesTeamPerformance } from './modules/sales/SalesTeamPerformance';
-import { Products } from './modules/inventory/Products';
-import { Inventory } from './modules/inventory/Inventory';
-import { Warehouses } from './modules/inventory/Warehouses';
-import { InventoryDashboard } from './modules/inventory/InventoryDashboard';
-import { StockMovements } from './modules/inventory/StockMovements';
-import { BatchSerialManagement } from './modules/inventory/BatchSerialManagement';
-import { WarehouseOperations } from './modules/inventory/WarehouseOperations';
-import { StockReports } from './modules/inventory/StockReports';
-import { InventorySettings } from './modules/inventory/InventorySettings';
-import { Invoices } from './modules/accounting/Invoices';
-import { AccountingDashboard } from './modules/accounting/AccountingDashboard';
-import { ChartOfAccounts } from './modules/accounting/ChartOfAccounts';
-import { JournalEntries } from './modules/accounting/JournalEntries';
-import { AccountsPayable } from './modules/accounting/AccountsPayable';
-import { FinancialReports } from './modules/accounting/FinancialReports';
-import { Employees } from './modules/hr/Employees';
-import { Opportunities } from './modules/crm/Opportunities';
-import { ManufacturingOrders } from './modules/manufacturing/ManufacturingOrders';
-import { ManufacturingDashboard } from './modules/manufacturing/ManufacturingDashboard';
-import BOMManagement from './modules/manufacturing/BOMManagement';
-import RoutingManagement from './modules/manufacturing/RoutingManagement';
-import WorkOrders from './modules/manufacturing/WorkOrders';
-import QualityControl from './modules/manufacturing/QualityControl';
-import CostingAnalytics from './modules/manufacturing/CostingAnalytics';
-import { Campaigns } from './modules/marketing/Campaigns';
-import { MarketingDashboard } from './modules/marketing/MarketingDashboard';
-import POSInterface from './modules/pos/POSInterface';
-import { POSDashboard } from './modules/pos/POSDashboard';
-import { POSSessions } from './modules/pos/POSSessions';
-import { POSTerminals } from './modules/pos/POSTerminals';
-import { Settings } from './pages/Settings';
-import { Payroll } from './modules/hr/Payroll';
-import { Recruitment } from './modules/hr/Recruitment';
-import { Policies } from './modules/hr/Policies';
-import { Appraisals } from './modules/hr/Appraisals';
-import { LMS } from './modules/hr/LMS';
-import { HRDashboard } from './modules/hr/HRDashboard';
-import { HRModules } from './modules/hr/HRModules';
-import { Attendance } from './modules/hr/Attendance';
-import { LeaveManagement } from './modules/hr/LeaveManagement';
-import { Onboarding } from './modules/hr/Onboarding';
-import { Offboarding } from './modules/hr/Offboarding';
-import { CustomerPortal } from './modules/support/CustomerPortal';
-import { Projects } from './pages/Projects';
-import { ProjectsDashboard } from './pages/ProjectsDashboard';
-import { ProjectDetail } from './pages/ProjectDetail';
-import Website from './modules/website/Website';
-import { WebsiteDashboard } from './modules/website/WebsiteDashboard';
-import { WebsiteAnalytics } from './modules/website/components/WebsiteAnalytics';
-import { PageBuilder } from './modules/website/components/PageBuilder';
-import { ProductCatalog } from './modules/website/components/ProductCatalog';
-import { SiteSettings } from './modules/website/components/SiteSettings';
-import { Promotions } from './modules/website/components/Promotions';
-import { MediaLibrary } from './modules/website/components/MediaLibrary';
-import { CartCheckout } from './modules/website/components/CartCheckout';
-import { RolesManagement } from './modules/admin/RolesManagement';
-import { PermissionsManagement } from './modules/admin/PermissionsManagement';
-import { UserRoleAssignments } from './modules/admin/UserRoleAssignments';
-import { AuditLogsViewer } from './modules/admin/AuditLogsViewer';
-import { ESignature } from './modules/esignature/ESignature';
+import { LoadingSpinner } from './components/LoadingSpinner';
+
+// Lazy-loaded pages & modules
+const LandingPage = lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })));
+const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
+const Login = lazy(() => import('./pages/Login'));
+const Signup = lazy(() => import('./pages/Signup'));
+const Pricing = lazy(() => import('./pages/Pricing'));
+const Settings = lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
+const Subscription = lazy(() => import('./pages/Subscription').then(m => ({ default: m.Subscription })));
+const AdminPortal = lazy(() => import('./pages/AdminPortal'));
+
+// Support pages
+const SupportTickets = lazy(() => import('./pages/SupportTickets'));
+const SupportDashboard = lazy(() => import('./pages/SupportDashboard').then(m => ({ default: m.SupportDashboard })));
+const AgentWorkbench = lazy(() => import('./pages/AgentWorkbench').then(m => ({ default: m.AgentWorkbench })));
+const KnowledgeBase = lazy(() => import('./pages/KnowledgeBase').then(m => ({ default: m.KnowledgeBase })));
+const SupportReports = lazy(() => import('./pages/SupportReports').then(m => ({ default: m.SupportReports })));
+const SurveyManagement = lazy(() => import('./pages/SurveyManagement').then(m => ({ default: m.SurveyManagement })));
+const ITSM = lazy(() => import('./pages/ITSM'));
+const AutomationBuilder = lazy(() => import('./pages/AutomationBuilder'));
+
+// Projects
+const Projects = lazy(() => import('./pages/Projects').then(m => ({ default: m.Projects })));
+const ProjectsDashboard = lazy(() => import('./pages/ProjectsDashboard').then(m => ({ default: m.ProjectsDashboard })));
+const ProjectDetail = lazy(() => import('./pages/ProjectDetail').then(m => ({ default: m.ProjectDetail })));
+
+// CRM
+const CRMDashboard = lazy(() => import('./modules/crm/CRMDashboard').then(m => ({ default: m.CRMDashboard })));
+const CRMPipeline = lazy(() => import('./modules/crm/CRMPipeline').then(m => ({ default: m.CRMPipeline })));
+const LeadsList = lazy(() => import('./modules/crm/LeadsList').then(m => ({ default: m.LeadsList })));
+const Opportunities = lazy(() => import('./modules/crm/Opportunities').then(m => ({ default: m.Opportunities })));
+const Customers = lazy(() => import('./modules/crm/Customers').then(m => ({ default: m.Customers })));
+const TasksCalendar = lazy(() => import('./modules/crm/TasksCalendar').then(m => ({ default: m.TasksCalendar })));
+const AutomationEngine = lazy(() => import('./modules/crm/AutomationEngine').then(m => ({ default: m.AutomationEngine })));
+
+// Sales
+const SalesDashboard = lazy(() => import('./modules/sales/SalesDashboard').then(m => ({ default: m.SalesDashboard })));
+const SalesOrders = lazy(() => import('./modules/sales/SalesOrders').then(m => ({ default: m.SalesOrders })));
+const Quotations = lazy(() => import('./modules/sales/Quotations').then(m => ({ default: m.Quotations })));
+const PricingManagement = lazy(() => import('./modules/sales/PricingManagement').then(m => ({ default: m.PricingManagement })));
+const ContractsManagement = lazy(() => import('./modules/sales/ContractsManagement').then(m => ({ default: m.ContractsManagement })));
+const DeliveryTracking = lazy(() => import('./modules/sales/DeliveryTracking').then(m => ({ default: m.DeliveryTracking })));
+const ReturnsManagement = lazy(() => import('./modules/sales/ReturnsManagement').then(m => ({ default: m.ReturnsManagement })));
+const SalesForecasting = lazy(() => import('./modules/sales/SalesForecasting').then(m => ({ default: m.SalesForecasting })));
+const SalesTeamPerformance = lazy(() => import('./modules/sales/SalesTeamPerformance').then(m => ({ default: m.SalesTeamPerformance })));
+
+// Inventory
+const Products = lazy(() => import('./modules/inventory/Products').then(m => ({ default: m.Products })));
+const Inventory = lazy(() => import('./modules/inventory/Inventory').then(m => ({ default: m.Inventory })));
+const Warehouses = lazy(() => import('./modules/inventory/Warehouses').then(m => ({ default: m.Warehouses })));
+const InventoryDashboard = lazy(() => import('./modules/inventory/InventoryDashboard').then(m => ({ default: m.InventoryDashboard })));
+const StockMovements = lazy(() => import('./modules/inventory/StockMovements').then(m => ({ default: m.StockMovements })));
+const BatchSerialManagement = lazy(() => import('./modules/inventory/BatchSerialManagement').then(m => ({ default: m.BatchSerialManagement })));
+const WarehouseOperations = lazy(() => import('./modules/inventory/WarehouseOperations').then(m => ({ default: m.WarehouseOperations })));
+const StockReports = lazy(() => import('./modules/inventory/StockReports').then(m => ({ default: m.StockReports })));
+const InventorySettings = lazy(() => import('./modules/inventory/InventorySettings').then(m => ({ default: m.InventorySettings })));
+
+// Accounting
+const Invoices = lazy(() => import('./modules/accounting/Invoices').then(m => ({ default: m.Invoices })));
+const AccountingDashboard = lazy(() => import('./modules/accounting/AccountingDashboard').then(m => ({ default: m.AccountingDashboard })));
+const ChartOfAccounts = lazy(() => import('./modules/accounting/ChartOfAccounts').then(m => ({ default: m.ChartOfAccounts })));
+const JournalEntries = lazy(() => import('./modules/accounting/JournalEntries').then(m => ({ default: m.JournalEntries })));
+const AccountsPayable = lazy(() => import('./modules/accounting/AccountsPayable').then(m => ({ default: m.AccountsPayable })));
+const FinancialReports = lazy(() => import('./modules/accounting/FinancialReports').then(m => ({ default: m.FinancialReports })));
+
+// HR
+const Employees = lazy(() => import('./modules/hr/Employees').then(m => ({ default: m.Employees })));
+const HRDashboard = lazy(() => import('./modules/hr/HRDashboard').then(m => ({ default: m.HRDashboard })));
+const HRModules = lazy(() => import('./modules/hr/HRModules').then(m => ({ default: m.HRModules })));
+const Payroll = lazy(() => import('./modules/hr/Payroll').then(m => ({ default: m.Payroll })));
+const Recruitment = lazy(() => import('./modules/hr/Recruitment').then(m => ({ default: m.Recruitment })));
+const Policies = lazy(() => import('./modules/hr/Policies').then(m => ({ default: m.Policies })));
+const Appraisals = lazy(() => import('./modules/hr/Appraisals').then(m => ({ default: m.Appraisals })));
+const LMS = lazy(() => import('./modules/hr/LMS').then(m => ({ default: m.LMS })));
+const Attendance = lazy(() => import('./modules/hr/Attendance').then(m => ({ default: m.Attendance })));
+const LeaveManagement = lazy(() => import('./modules/hr/LeaveManagement').then(m => ({ default: m.LeaveManagement })));
+const Onboarding = lazy(() => import('./modules/hr/Onboarding').then(m => ({ default: m.Onboarding })));
+const Offboarding = lazy(() => import('./modules/hr/Offboarding').then(m => ({ default: m.Offboarding })));
+
+// Manufacturing
+const ManufacturingOrders = lazy(() => import('./modules/manufacturing/ManufacturingOrders').then(m => ({ default: m.ManufacturingOrders })));
+const ManufacturingDashboard = lazy(() => import('./modules/manufacturing/ManufacturingDashboard').then(m => ({ default: m.ManufacturingDashboard })));
+const BOMManagement = lazy(() => import('./modules/manufacturing/BOMManagement'));
+const RoutingManagement = lazy(() => import('./modules/manufacturing/RoutingManagement'));
+const WorkOrders = lazy(() => import('./modules/manufacturing/WorkOrders'));
+const QualityControl = lazy(() => import('./modules/manufacturing/QualityControl'));
+const CostingAnalytics = lazy(() => import('./modules/manufacturing/CostingAnalytics'));
+
+// Marketing
+const Campaigns = lazy(() => import('./modules/marketing/Campaigns').then(m => ({ default: m.Campaigns })));
+const MarketingDashboard = lazy(() => import('./modules/marketing/MarketingDashboard').then(m => ({ default: m.MarketingDashboard })));
+
+// POS
+const POSInterface = lazy(() => import('./modules/pos/POSInterface'));
+const POSDashboard = lazy(() => import('./modules/pos/POSDashboard').then(m => ({ default: m.POSDashboard })));
+const POSSessions = lazy(() => import('./modules/pos/POSSessions').then(m => ({ default: m.POSSessions })));
+const POSTerminals = lazy(() => import('./modules/pos/POSTerminals').then(m => ({ default: m.POSTerminals })));
+
+// Support module
+const CustomerPortal = lazy(() => import('./modules/support/CustomerPortal').then(m => ({ default: m.CustomerPortal })));
+
+// Website
+const Website = lazy(() => import('./modules/website/Website'));
+const WebsiteDashboard = lazy(() => import('./modules/website/WebsiteDashboard').then(m => ({ default: m.WebsiteDashboard })));
+const WebsiteAnalytics = lazy(() => import('./modules/website/components/WebsiteAnalytics').then(m => ({ default: m.WebsiteAnalytics })));
+const PageBuilder = lazy(() => import('./modules/website/components/PageBuilder').then(m => ({ default: m.PageBuilder })));
+const ProductCatalog = lazy(() => import('./modules/website/components/ProductCatalog').then(m => ({ default: m.ProductCatalog })));
+const SiteSettings = lazy(() => import('./modules/website/components/SiteSettings').then(m => ({ default: m.SiteSettings })));
+const Promotions = lazy(() => import('./modules/website/components/Promotions').then(m => ({ default: m.Promotions })));
+const MediaLibrary = lazy(() => import('./modules/website/components/MediaLibrary').then(m => ({ default: m.MediaLibrary })));
+const CartCheckout = lazy(() => import('./modules/website/components/CartCheckout').then(m => ({ default: m.CartCheckout })));
+
+// Admin
+const RolesManagement = lazy(() => import('./modules/admin/RolesManagement').then(m => ({ default: m.RolesManagement })));
+const PermissionsManagement = lazy(() => import('./modules/admin/PermissionsManagement').then(m => ({ default: m.PermissionsManagement })));
+const UserRoleAssignments = lazy(() => import('./modules/admin/UserRoleAssignments').then(m => ({ default: m.UserRoleAssignments })));
+const AuditLogsViewer = lazy(() => import('./modules/admin/AuditLogsViewer').then(m => ({ default: m.AuditLogsViewer })));
+
+// E-Signature
+const ESignature = lazy(() => import('./modules/esignature/ESignature').then(m => ({ default: m.ESignature })));
 
 function App() {
   return (
     <ThemeProvider>
     <BrowserRouter>
       <AuthProvider>
+        <Suspense fallback={<LoadingSpinner size="large" message="Loading..." />}>
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<Layout><LandingPage /></Layout>} />
@@ -223,6 +256,7 @@ function App() {
           {/* E-Signature */}
           <Route path="/esignature" element={<Layout><ESignature /></Layout>} />
         </Routes>
+        </Suspense>
       </AuthProvider>
     </BrowserRouter>
     </ThemeProvider>
