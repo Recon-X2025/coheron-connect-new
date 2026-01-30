@@ -71,8 +71,13 @@ class ApiService {
 
   // Generic CRUD methods
   async get<T>(endpoint: string, params?: any): Promise<T[]> {
-    const response = await this.axiosInstance.get<T[]>(endpoint, { params });
-    return response.data;
+    const response = await this.axiosInstance.get<any>(endpoint, { params });
+    const body = response.data;
+    // Backend returns { data: [...], pagination: {...} } for list endpoints
+    if (body && !Array.isArray(body) && Array.isArray(body.data)) {
+      return body.data;
+    }
+    return body;
   }
 
   async getById<T>(endpoint: string, id: number): Promise<T> {
