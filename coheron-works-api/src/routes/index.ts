@@ -90,6 +90,11 @@ import tdsRoutes from '../modules/accounting/routes/tds.js';
 import gstReturnsRoutes from '../modules/accounting/routes/gstReturns.js';
 import eInvoiceRoutes from '../modules/accounting/routes/eInvoice.js';
 import customFieldsRoutes from '../modules/platform/routes/customFields.js';
+import securityDashboardRoutes from '../modules/platform/routes/security-dashboard.js';
+// GDPR / Compliance Routes
+import consentRoutes from '../modules/platform/routes/consent.js';
+import dsarRoutes from '../modules/platform/routes/dsar.js';
+import complianceRoutes from '../modules/platform/routes/compliance.js';
 import stockReservationsRoutes from '../modules/inventory/routes/stockReservations.js';
 import paymentsRoutes from '../modules/crossmodule/routes/payments.js';
 import filesRoutes from '../modules/crossmodule/routes/files.js';
@@ -233,6 +238,10 @@ router.use('/integrations', requireModule('platform'), integrationsRoutes);
 router.use('/reports', requireModule('platform'), reportsRoutes);
 router.use('/dashboards', requireModule('platform'), dashboardsRoutes);
 router.use('/custom-fields', requireModule('platform'), customFieldsRoutes);
+router.use('/consent', consentRoutes);
+router.use('/dsar', requireModule('platform'), dsarRoutes);
+router.use('/compliance', requireModule('platform'), complianceRoutes);
+router.use('/security-dashboard', requireModule('platform'), securityDashboardRoutes);
 
 // Live Chat (Support Module)
 router.use('/live-chat', requireModule('support'), liveChatRoutes);

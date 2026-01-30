@@ -17,6 +17,12 @@ export interface IUser extends Document {
   tenant_id: mongoose.Types.ObjectId;
   role_id: mongoose.Types.ObjectId;
   last_login_at: Date;
+  password_changed_at: Date;
+  password_history: string[];
+  failed_login_attempts: number;
+  account_locked_until: Date;
+  last_login_ip: string;
+  last_login_user_agent: string;
 }
 
 const userSchema = new Schema<IUser>({
@@ -35,10 +41,18 @@ const userSchema = new Schema<IUser>({
   tenant_id: { type: Schema.Types.ObjectId },
   role_id: { type: Schema.Types.ObjectId },
   last_login_at: { type: Date },
+  // --- Password & security ---
+  password_changed_at: { type: Date },
+  password_history: [{ type: String }],
+  failed_login_attempts: { type: Number, default: 0 },
+  account_locked_until: { type: Date },
+  last_login_ip: { type: String },
+  last_login_user_agent: { type: String },
 }, defaultSchemaOptions);
 
 // Indexes
 userSchema.index({ active: 1 });
 userSchema.index({ created_at: -1 });
+userSchema.index({ account_locked_until: 1 }, { sparse: true });
 
 export default mongoose.model<IUser>('User', userSchema);

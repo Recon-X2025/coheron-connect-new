@@ -1,7 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { getUserPermissions, getUserRoles } from '../utils/permissions.js';
+import { getJwtSecret } from '../utils/auth-config.js';
+import { TokenBlacklist } from '../models/TokenBlacklist.js';
 import AccessAttempt from '../models/AccessAttempt.js';
+import User from '../models/User.js';
 import logger from '../utils/logger.js';
 
 declare global {
@@ -25,8 +28,26 @@ export function requirePermission(permissionCode: string) {
       const token = req.headers.authorization?.replace('Bearer ', '');
       if (!token) return res.status(401).json({ error: 'No token provided' });
 
-      const jwtSecret = process.env.JWT_SECRET || 'secret';
-      const decoded = jwt.verify(token, jwtSecret) as any;
+      const decoded = jwt.verify(token, getJwtSecret()) as any;
+
+      // Check if token has been revoked
+      if (decoded.jti) {
+        const blacklisted = await TokenBlacklist.exists({ jti: decoded.jti });
+        if (blacklisted) {
+          return res.status(401).json({ error: 'Token has been revoked' });
+        }
+      }
+
+      // Check if token was issued before password change
+      if (decoded.iat && decoded.userId) {
+        const user = await User.findById(decoded.userId).select('password_changed_at').lean();
+        if (user?.password_changed_at) {
+          const changedAt = Math.floor(new Date(user.password_changed_at).getTime() / 1000);
+          if (decoded.iat < changedAt) {
+            return res.status(401).json({ error: 'Token issued before password change' });
+          }
+        }
+      }
 
       const userPermissions = await getUserPermissions(decoded.userId);
 
@@ -59,8 +80,26 @@ export function requireAnyPermission(permissionCodes: string[]) {
       const token = req.headers.authorization?.replace('Bearer ', '');
       if (!token) return res.status(401).json({ error: 'No token provided' });
 
-      const jwtSecret = process.env.JWT_SECRET || 'secret';
-      const decoded = jwt.verify(token, jwtSecret) as any;
+      const decoded = jwt.verify(token, getJwtSecret()) as any;
+
+      // Check if token has been revoked
+      if (decoded.jti) {
+        const blacklisted = await TokenBlacklist.exists({ jti: decoded.jti });
+        if (blacklisted) {
+          return res.status(401).json({ error: 'Token has been revoked' });
+        }
+      }
+
+      // Check if token was issued before password change
+      if (decoded.iat && decoded.userId) {
+        const user = await User.findById(decoded.userId).select('password_changed_at').lean();
+        if (user?.password_changed_at) {
+          const changedAt = Math.floor(new Date(user.password_changed_at).getTime() / 1000);
+          if (decoded.iat < changedAt) {
+            return res.status(401).json({ error: 'Token issued before password change' });
+          }
+        }
+      }
 
       const userPermissions = await getUserPermissions(decoded.userId);
       const hasPermission = permissionCodes.some(code => userPermissions.includes(code));
@@ -94,8 +133,26 @@ export function requireRole(roleCode: string) {
       const token = req.headers.authorization?.replace('Bearer ', '');
       if (!token) return res.status(401).json({ error: 'No token provided' });
 
-      const jwtSecret = process.env.JWT_SECRET || 'secret';
-      const decoded = jwt.verify(token, jwtSecret) as any;
+      const decoded = jwt.verify(token, getJwtSecret()) as any;
+
+      // Check if token has been revoked
+      if (decoded.jti) {
+        const blacklisted = await TokenBlacklist.exists({ jti: decoded.jti });
+        if (blacklisted) {
+          return res.status(401).json({ error: 'Token has been revoked' });
+        }
+      }
+
+      // Check if token was issued before password change
+      if (decoded.iat && decoded.userId) {
+        const user = await User.findById(decoded.userId).select('password_changed_at').lean();
+        if (user?.password_changed_at) {
+          const changedAt = Math.floor(new Date(user.password_changed_at).getTime() / 1000);
+          if (decoded.iat < changedAt) {
+            return res.status(401).json({ error: 'Token issued before password change' });
+          }
+        }
+      }
 
       const userRoles = await getUserRoles(decoded.userId);
 

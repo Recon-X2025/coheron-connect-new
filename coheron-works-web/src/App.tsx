@@ -19,6 +19,7 @@ import { projectsRoutes } from './modules/projects/routes';
 import { websiteRoutes } from './modules/website/routes';
 import { adminRoutes } from './modules/admin/routes';
 import { esignatureRoutes } from './modules/esignature/routes';
+import { complianceRoutes } from './modules/compliance/routes';
 
 // Shared pages (not module-specific)
 const LandingPage = lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })));
@@ -44,6 +45,7 @@ const moduleRoutes = [
   ...websiteRoutes,
   ...adminRoutes,
   ...esignatureRoutes,
+  ...complianceRoutes,
 ];
 
 function App() {

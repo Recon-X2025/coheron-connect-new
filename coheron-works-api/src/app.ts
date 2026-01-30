@@ -9,6 +9,7 @@ import routes from './routes/index.js';
 import mongoose from 'mongoose';
 import { errorHandler } from './shared/middleware/asyncHandler.js';
 import { requestLogger } from './shared/middleware/requestLogger.js';
+import { auditTrailMiddleware } from './shared/middleware/auditTrail.js';
 import { Sentry } from './shared/utils/sentry.js';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './shared/utils/swagger.js';
@@ -20,6 +21,14 @@ const app = express();
 
 // Security & performance middleware
 app.use(helmet());
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  next();
+});
 app.use(compression());
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -54,6 +63,21 @@ app.get('/health', async (req, res) => {
     res.status(500).json({ status: 'error', database: 'disconnected' });
   }
 });
+
+// Stricter rate limit for auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10,
+  message: { error: 'Too many auth requests, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/auth', authLimiter);
+
+// TODO: Add CSRF protection (requires csrf-csrf package)
+
+// Audit trail for API mutations
+app.use(auditTrailMiddleware());
 
 // API Routes
 app.use('/api', routes);
