@@ -48,11 +48,22 @@ Manage the full customer lifecycle from lead capture to deal closure.
 | Feature | Description |
 |---------|-------------|
 | Lead Management | Capture, score, and nurture leads with activity tracking |
+| BANT Qualification | Budget (amount, currency, status, fiscal year, decision date), Authority (decision maker, title, level 1-10, org chart), Need (pain points, current solution, gap analysis, urgency, impact, compelling event), Timeline (target date, urgency, buying stage, blockers) — auto-scored 0-25 per dimension, overall 0-100 |
+| UTM & Attribution | Full UTM tracking (source, medium, campaign, term, content) + landing page, referrer, gclid, fbclid, li_fat_id, msclkid; multi-touch attribution with first/last/creation touchpoints, attribution model selection |
+| Engagement Tracking | Per-channel metrics: emails (sent/opened/clicked/replied/bounced), calls (total/connected/duration/recorded), meetings (scheduled/completed/no-show/total duration), WhatsApp (sent/delivered/read/replied), website (visits/pages/time/last visit), content (downloads/webinars/forms/demos); auto-computed engagement score & level |
+| Lead Enrichment | Company enrichment (industry, employee count, revenue, tech stack, founding year, social profiles) + person enrichment (title, seniority, department, education, certifications, social profiles); enrichment source & timestamp tracking |
+| Duplicate Detection | Potential match tracking with match score (0-100), matched fields, auto-detected vs manual, merge status (pending/merged/rejected/ignored), master record reference |
 | Pipeline View | Visual deal pipeline with drag-and-drop stage progression |
-| Opportunity Tracking | Revenue forecasting, probability scoring, competitor tracking |
+| MEDDIC Qualification | Metrics (quantified value, business impact, ROI, payback period), Economic Buyer (name, title, engagement level, relationship, access, last meeting), Decision Criteria (technical/business/economic criteria, weighting, competitor comparison), Decision Process (steps with owners/dates/status, approval levels, paper process, legal review), Identify Pain (pains with severity/impact/current cost/quantified), Champion (name, title, influence level, engagement, reliability, coaching status) — scored per dimension |
+| Buying Committee | Track each committee member: name, title, role (champion/economic buyer/technical buyer/user/influencer/blocker/coach), influence level, sentiment, engagement level, concerns, relationship owner, last contact |
+| Competitor Tracking | Per-deal competitor: name, strengths/weaknesses, pricing details, relationship status, differentiation strategy, threat level (low/medium/high/critical), win probability impact |
+| Deal Health | Health grade (A-F), risk factors with category/severity/likelihood/impact/mitigation/owner/status, engagement score & trend (improving/stable/declining/critical), staleness tracking (days since activity/communication/stage change) |
+| Win/Loss Analysis | Close analysis: win/loss reasons, primary reason, competitor lost/won to, lessons learned, success factors, improvement areas, decision factors, champion effectiveness, sales process adherence score, next steps |
+| Forecast & Prediction | Forecast category (omitted/pipeline/best case/commit/closed), weighted/unweighted amount, manual override, AI prediction (win probability, expected close, confidence, predicted value, risk factors, next best action, last calculated), forecast history |
+| RFM Analysis | Recency/Frequency/Monetary customer segmentation — quintile scoring (1-5 per dimension), 11 segments (Champions, Loyal, Potential Loyalist, New, Promising, Need Attention, About to Sleep, At Risk, Can't Lose, Hibernating, Lost), churn prediction (risk level + probability), batch analysis runs with configurable periods |
 | Contact Management | Unified partner/customer database shared across modules |
 | Activity Feed | Calls, emails, meetings, notes linked to leads and deals |
-| Lead Scoring | Automated scoring with history tracking |
+| Lead Scoring | Automated BANT scoring service with qualification status (unqualified/partially/qualified/highly) |
 | RBAC | CRM-specific role-based access with audit logging |
 
 ### 2. Sales
@@ -98,6 +109,7 @@ Production planning and execution.
 | Quality Control | Inspections, non-conformance reports, checklists |
 | Costing | Track production costs per operation and material |
 | Material Consumption | Track raw material usage against planned quantities |
+| MRP (Material Requirements Planning) | MRP runs with configurable horizon (days), demand sources (sales orders, forecasts, safety/min stock), lot size consolidation; demand analysis per product/warehouse with shortage calculation; planned order generation (manufacturing or purchase) with lead time scheduling, cost estimation; confirm/cancel planned orders with audit trail |
 
 ### 5. Accounting
 
@@ -238,6 +250,8 @@ Cross-cutting platform capabilities.
 | Custom Fields | Tenant-scoped custom field definitions for any module |
 | RBAC | Roles, permissions, user assignments, audit logs |
 | Multi-Tenancy | Tenant-scoped data isolation with per-tenant module control |
+| Customer Portal | Self-service portal with branded login (logo, colors, support info); configurable feature toggles (tickets, orders, invoices, quotes, knowledge base, live chat, projects); portal user registration with email verification, password reset, domain allowlisting, optional admin approval; user preferences (language, timezone, email/SMS notifications) |
+| SSO / SAML | SAML 2.0 and OIDC single sign-on with provider presets (Google, Microsoft, Okta, Auth0); configurable attribute mapping (email, name, groups); role mapping (group → role); auto-provisioning and login-time profile sync; force-SSO mode with optional password fallback; SP metadata (entity ID, ACS URL, SLO URL) |
 | CSV Export | Export data from any list view |
 | Global Search | Cmd+K cross-module search |
 
@@ -256,6 +270,7 @@ Cross-cutting platform capabilities.
 | Input Limits | 10MB JSON body limit |
 | Audit Logging | Access attempt tracking, RBAC audit log |
 | Two-Factor Auth | TOTP (speakeasy + QR code), SMS, Email OTP; backup codes (10, bcrypt-hashed); partial JWT login flow with 5-min expiry |
+| SSO | SAML 2.0 + OIDC federation with Google, Microsoft, Okta, Auth0; auto-provisioning, group-to-role mapping, force-SSO mode |
 | Non-Root Container | Docker runs as unprivileged user |
 
 ---
@@ -292,15 +307,15 @@ Cross-cutting platform capabilities.
 
 | Domain | Model Count | Key Entities |
 |--------|-------------|-------------|
-| CRM | 10+ | Lead, Deal, Pipeline, CrmTask, LeadActivity, LeadScoringHistory |
+| CRM | 12+ | Lead (BANT, UTM, Engagement, Enrichment, Duplicates), Deal (MEDDIC, Buying Committee, Health, Forecast), Pipeline, CrmTask, LeadActivity, LeadScoringHistory, CustomerRFM, RFMAnalysisRun |
 | Sales | 15+ | SaleOrder, Invoice, SalesContract, SalesForecast, Territory |
 | Inventory | 18+ | Product, Warehouse, StockQuant, StockLedger, GRN, StockTransfer, StockReservation |
-| Manufacturing | 25+ | ManufacturingOrder, Bom, BomLine, Routing, WorkOrder, MoQualityInspection |
+| Manufacturing | 28+ | ManufacturingOrder, Bom, BomLine, Routing, WorkOrder, MoQualityInspection, MRPRun, MRPDemand, MRPPlannedOrder |
 | Accounting | 20+ | AccountMove, AccountJournal, AccountPayment, FixedAsset, TaxReport, GSTReturn, TDS, EInvoice |
 | HR | 25+ | Employee (60+ fields), Leave, Attendance, Payroll, Appraisal, Course |
 | Projects | 20+ | Project, ProjectTask, Sprint, ProjectBudget, ProjectRisk, WikiPage |
 | Support | 15+ | SupportTicket, SlaPolicy, CannedResponse, ChatSession, ChatMessage |
-| Platform | 12+ | Workflow, WorkflowRun, Integration, Report, Dashboard, Payment, FileStorage, CustomField |
+| Platform | 15+ | Workflow, WorkflowRun, Integration, Report, Dashboard, Payment, FileStorage, CustomField, PortalUser, PortalSettings, SSOConfig |
 
 ---
 
