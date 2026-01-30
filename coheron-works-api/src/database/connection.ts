@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import logger from '../utils/logger.js';
 
 dotenv.config();
 
@@ -13,21 +14,21 @@ export async function connectDB(): Promise<void> {
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
     });
-    console.log('Connected to MongoDB database');
+    logger.info('Connected to MongoDB database');
   } catch (error) {
-    console.error('MongoDB connection error:', error);
+    logger.error({ err: error }, 'MongoDB connection error');
     process.exit(1);
   }
 }
 
 mongoose.connection.on('error', (err) => {
-  console.error('MongoDB connection error:', err);
+  logger.error({ err }, 'MongoDB connection error');
 });
 
 mongoose.connection.on('disconnected', () => {
-  console.log('MongoDB disconnected. Attempting reconnection...');
+  logger.info('MongoDB disconnected. Attempting reconnection...');
   setTimeout(() => {
-    connectDB().catch(err => console.error('Reconnection failed:', err));
+    connectDB().catch(err => logger.error({ err }, 'Reconnection failed'));
   }, 5000);
 });
 

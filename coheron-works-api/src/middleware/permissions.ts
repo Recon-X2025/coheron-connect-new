@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { getUserPermissions, getUserRoles } from '../utils/permissions.js';
 import AccessAttempt from '../models/AccessAttempt.js';
+import logger from '../utils/logger.js';
 
 declare global {
   namespace Express {
@@ -46,7 +47,7 @@ export function requirePermission(permissionCode: string) {
       next();
     } catch (error: any) {
       if (error.name === 'JsonWebTokenError') return res.status(401).json({ error: 'Invalid token' });
-      console.error('Permission check error:', error);
+      logger.error({ err: error }, 'Permission check error');
       return res.status(500).json({ error: 'Internal server error' });
     }
   };
@@ -81,7 +82,7 @@ export function requireAnyPermission(permissionCodes: string[]) {
       next();
     } catch (error: any) {
       if (error.name === 'JsonWebTokenError') return res.status(401).json({ error: 'Invalid token' });
-      console.error('Permission check error:', error);
+      logger.error({ err: error }, 'Permission check error');
       return res.status(500).json({ error: 'Internal server error' });
     }
   };
@@ -106,7 +107,7 @@ export function requireRole(roleCode: string) {
       next();
     } catch (error: any) {
       if (error.name === 'JsonWebTokenError') return res.status(401).json({ error: 'Invalid token' });
-      console.error('Role check error:', error);
+      logger.error({ err: error }, 'Role check error');
       return res.status(500).json({ error: 'Internal server error' });
     }
   };
@@ -124,7 +125,7 @@ export function checkRecordAccess(
       // Simplified: allow all for now
       next();
     } catch (error) {
-      console.error('Record access check error:', error);
+      logger.error({ err: error }, 'Record access check error');
       return res.status(500).json({ error: 'Internal server error' });
     }
   };

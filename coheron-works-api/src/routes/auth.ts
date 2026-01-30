@@ -7,7 +7,29 @@ import { asyncHandler } from '../middleware/asyncHandler.js';
 
 const router = express.Router();
 
-// Login
+/**
+ * @swagger
+ * /auth/login:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Login with email and password
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, password]
+ *             properties:
+ *               email: { type: string }
+ *               password: { type: string }
+ *     responses:
+ *       200:
+ *         description: JWT token and user info
+ *       401:
+ *         description: Invalid credentials
+ */
 router.post('/login', asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
@@ -51,7 +73,30 @@ router.post('/login', asyncHandler(async (req, res) => {
   });
 }));
 
-// Register
+/**
+ * @swagger
+ * /auth/register:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Register a new user
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, email, password]
+ *             properties:
+ *               name: { type: string }
+ *               email: { type: string }
+ *               password: { type: string }
+ *     responses:
+ *       201:
+ *         description: User created with JWT token
+ *       400:
+ *         description: Duplicate email
+ */
 router.post('/register', asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
 

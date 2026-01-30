@@ -1,5 +1,6 @@
 import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
+import * as Sentry from '@sentry/react';
 import './ErrorBoundary.css';
 
 interface Props {
@@ -46,9 +47,9 @@ export class ErrorBoundary extends Component<Props, State> {
       this.props.onError(error, errorInfo);
     }
 
-    // In production, send to error tracking service
+    // Send to Sentry in production
     if (import.meta.env.PROD) {
-      // TODO: Send to Sentry, LogRocket, etc.
+      Sentry.captureException(error, { extra: { componentStack: errorInfo.componentStack } });
     }
   }
 

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { TenantConfig } from '../models/TenantConfig.js';
+import logger from '../utils/logger.js';
 
 // 5-minute in-memory cache for tenant configs
 const tenantConfigCache = new Map<string, { modules: string[]; expiry: number }>();
@@ -41,7 +42,7 @@ export function requireModule(moduleName: string) {
 
       next();
     } catch (error) {
-      console.error('Module guard error:', error);
+      logger.error({ err: error }, 'Module guard error');
       return res.status(500).json({ error: 'Internal server error' });
     }
   };

@@ -1,7 +1,8 @@
 /**
  * Error Handler
- * Centralized error handling for Odoo API calls and application errors
+ * Centralized error handling for API calls and application errors
  */
+import * as Sentry from '@sentry/react';
 
 export interface OdooError {
   code: number;
@@ -127,10 +128,11 @@ export function logError(error: Error | OdooError, context?: string): void {
     timestamp: new Date().toISOString(),
   };
 
-  // In production, send to error tracking service (Sentry, etc.)
+  // In production, send to Sentry
   if (import.meta.env.PROD) {
-    // TODO: Integrate with error tracking service
-    console.error('Error logged:', errorInfo);
+    Sentry.captureException(error instanceof Error ? error : new Error(error.message), {
+      extra: { ...errorInfo },
+    });
   } else {
     console.error('Error:', errorInfo);
   }

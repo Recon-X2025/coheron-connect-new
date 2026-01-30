@@ -5,7 +5,51 @@ import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
-// Get all sale orders
+/**
+ * @swagger
+ * /sale-orders:
+ *   get:
+ *     tags: [Sales]
+ *     summary: List sale orders with pagination
+ *     parameters:
+ *       - in: query
+ *         name: state
+ *         schema: { type: string }
+ *       - in: query
+ *         name: search
+ *         schema: { type: string }
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *     responses:
+ *       200:
+ *         description: Paginated list of sale orders
+ *   post:
+ *     tags: [Sales]
+ *     summary: Create a new sale order
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name]
+ *             properties:
+ *               name: { type: string }
+ *               partner_id: { type: string }
+ *               date_order: { type: string, format: date-time }
+ *               order_line:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     product_id: { type: string }
+ *                     product_uom_qty: { type: number }
+ *                     price_unit: { type: number }
+ *     responses:
+ *       201:
+ *         description: Sale order created
+ */
 router.get('/', asyncHandler(async (req, res) => {
   const { state, search } = req.query;
   const filter: any = {};

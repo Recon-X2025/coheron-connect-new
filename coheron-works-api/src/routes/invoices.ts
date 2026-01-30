@@ -5,7 +5,26 @@ import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
-// Get all invoices
+/**
+ * @swagger
+ * /invoices:
+ *   get:
+ *     tags: [Sales]
+ *     summary: List invoices with pagination
+ *     parameters:
+ *       - in: query
+ *         name: state
+ *         schema: { type: string, enum: [draft, posted, cancel] }
+ *       - in: query
+ *         name: payment_state
+ *         schema: { type: string, enum: [not_paid, partial, paid] }
+ *       - in: query
+ *         name: search
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Paginated list of invoices
+ */
 router.get('/', asyncHandler(async (req, res) => {
   const { state, payment_state, search } = req.query;
   const filter: any = {};

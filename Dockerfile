@@ -41,5 +41,5 @@ ENV PORT=3000
 
 EXPOSE 3000
 
-# Limit Node.js heap to 384MB (leaves ~128MB for OS + overhead)
-CMD ["node", "--max-old-space-size=384", "dist/server.js"]
+# Limit Node.js heap to 320MB (leaves room for Redis + OS overhead on 512MB VPS)
+CMD ["node", "--max-old-space-size=320", "dist/server.js"]

@@ -6,7 +6,32 @@ import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
-// Get all leads
+/**
+ * @swagger
+ * /leads:
+ *   get:
+ *     tags: [CRM]
+ *     summary: List leads with pagination and filters
+ *     parameters:
+ *       - in: query
+ *         name: type
+ *         schema: { type: string, enum: [lead, opportunity] }
+ *       - in: query
+ *         name: stage
+ *         schema: { type: string }
+ *       - in: query
+ *         name: search
+ *         schema: { type: string }
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 50 }
+ *     responses:
+ *       200:
+ *         description: Paginated list of leads
+ */
 router.get('/', asyncHandler(async (req, res) => {
   const { type, stage, search } = req.query;
   const filter: any = {};
@@ -54,7 +79,31 @@ router.get('/:id', asyncHandler(async (req, res) => {
   });
 }));
 
-// Create lead
+/**
+ * @swagger
+ * /leads:
+ *   post:
+ *     tags: [CRM]
+ *     summary: Create a new lead
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name]
+ *             properties:
+ *               name: { type: string }
+ *               email: { type: string }
+ *               phone: { type: string }
+ *               expected_revenue: { type: number }
+ *               probability: { type: number }
+ *               stage: { type: string }
+ *               type: { type: string, enum: [lead, opportunity] }
+ *     responses:
+ *       201:
+ *         description: Lead created
+ */
 router.post('/', asyncHandler(async (req, res) => {
   const {
     name, partner_id, email, phone, expected_revenue,

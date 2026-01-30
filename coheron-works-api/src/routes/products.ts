@@ -5,7 +5,29 @@ import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
-// Get all products
+/**
+ * @swagger
+ * /products:
+ *   get:
+ *     tags: [Products]
+ *     summary: List products with pagination
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema: { type: string }
+ *       - in: query
+ *         name: type
+ *         schema: { type: string, enum: [product, service, consumable] }
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 50 }
+ *     responses:
+ *       200:
+ *         description: Paginated list of products
+ */
 router.get('/', asyncHandler(async (req, res) => {
   const { search, type } = req.query;
   const filter: any = {};
@@ -30,7 +52,30 @@ router.get('/:id', asyncHandler(async (req, res) => {
   res.json(product);
 }));
 
-// Create product
+/**
+ * @swagger
+ * /products:
+ *   post:
+ *     tags: [Products]
+ *     summary: Create a new product
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name]
+ *             properties:
+ *               name: { type: string }
+ *               default_code: { type: string }
+ *               list_price: { type: number }
+ *               standard_price: { type: number }
+ *               qty_available: { type: number }
+ *               type: { type: string, enum: [product, service, consumable] }
+ *     responses:
+ *       201:
+ *         description: Product created
+ */
 router.post('/', asyncHandler(async (req, res) => {
   const { name, default_code, list_price, standard_price, qty_available, type, categ_id, image_url } = req.body;
   const product = await Product.create({
