@@ -19,20 +19,7 @@
   "exclude": [
     "node_modules",
     "dist",
-    "src/database/setup-db.ts",
     "src/database/seed.ts",
-    "src/database/seed-accounting.ts",
-    "src/database/seed-crm-rbac.ts",
-    "src/database/seed-rbac.ts",
-    "src/database/verify-crm-rbac.ts",
-    "src/database/assign-roles-example.ts",
-    "src/database/check-rbac-tables.ts",
-    "src/database/create-rbac-tables-only.ts",
-    "src/database/migrate-accounting.ts",
-    "src/database/migrate.ts",
-    "src/database/run-campaign-migration.ts",
-    "src/database/run-crm-rbac-migration.ts",
-    "src/database/run-inventory-migration.ts"
+    "src/database/seed-accounting.ts"
   ]
 }
-

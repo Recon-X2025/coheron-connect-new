@@ -251,6 +251,7 @@ Cross-cutting platform capabilities.
 | Rate Limiting | 1000 requests per 15-minute window |
 | Input Limits | 10MB JSON body limit |
 | Audit Logging | Access attempt tracking, RBAC audit log |
+| Two-Factor Auth | TOTP (Authenticator app) + SMS + Email |
 | Non-Root Container | Docker runs as unprivileged user |
 
 ---

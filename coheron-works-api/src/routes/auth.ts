@@ -53,12 +53,16 @@ router.post('/login', asyncHandler(async (req, res) => {
       userId: user._id.toString(),
       uid: user.uid,
       email: user.email,
+      tenant_id: user.tenant_id?.toString(),
       roles,
       permissions
     },
     jwtSecret,
     { expiresIn } as SignOptions
   );
+
+  // Update last login
+  await User.findByIdAndUpdate(user._id, { last_login_at: new Date() });
 
   res.json({
     token,
@@ -67,6 +71,7 @@ router.post('/login', asyncHandler(async (req, res) => {
       uid: user.uid,
       name: user.name,
       email: user.email,
+      tenant_id: user.tenant_id,
       roles,
       permissions
     },
@@ -98,7 +103,7 @@ router.post('/login', asyncHandler(async (req, res) => {
  *         description: Duplicate email
  */
 router.post('/register', asyncHandler(async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, tenant_id } = req.body;
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -111,6 +116,7 @@ router.post('/register', asyncHandler(async (req, res) => {
     name,
     email,
     password_hash: hashedPassword,
+    tenant_id: tenant_id || undefined,
   });
 
   const roles = await getUserRoles(user._id.toString());
@@ -123,6 +129,7 @@ router.post('/register', asyncHandler(async (req, res) => {
       userId: user._id.toString(),
       uid: user.uid,
       email: user.email,
+      tenant_id: user.tenant_id?.toString(),
       roles,
       permissions
     },
@@ -137,6 +144,7 @@ router.post('/register', asyncHandler(async (req, res) => {
       uid: user.uid,
       name: user.name,
       email: user.email,
+      tenant_id: user.tenant_id,
       roles,
       permissions
     },
