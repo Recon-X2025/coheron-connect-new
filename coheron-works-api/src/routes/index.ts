@@ -84,6 +84,13 @@ import reportsRoutes from './reports.js';
 import dashboardsRoutes from './dashboards.js';
 // Tenant Config Routes
 import tenantConfigRoutes from './tenantConfig.js';
+// New module routes
+import liveChatRoutes from './liveChat.js';
+import tdsRoutes from './tds.js';
+import gstReturnsRoutes from './gstReturns.js';
+import eInvoiceRoutes from './eInvoice.js';
+import customFieldsRoutes from './customFields.js';
+import stockReservationsRoutes from './stockReservations.js';
 
 const router = express.Router();
 
@@ -187,5 +194,17 @@ router.use('/workflows', requireModule('platform'), workflowsRoutes);
 router.use('/integrations', requireModule('platform'), integrationsRoutes);
 router.use('/reports', requireModule('platform'), reportsRoutes);
 router.use('/dashboards', requireModule('platform'), dashboardsRoutes);
+router.use('/custom-fields', requireModule('platform'), customFieldsRoutes);
+
+// Live Chat (Support Module)
+router.use('/live-chat', requireModule('support'), liveChatRoutes);
+
+// Accounting - India Compliance
+router.use('/accounting/tds', requireModule('accounting'), tdsRoutes);
+router.use('/accounting/gst-returns', requireModule('accounting'), gstReturnsRoutes);
+router.use('/accounting/e-invoice', requireModule('accounting'), eInvoiceRoutes);
+
+// Inventory - Stock Reservations
+router.use('/inventory/reservations', requireModule('inventory'), stockReservationsRoutes);
 
 export default router;

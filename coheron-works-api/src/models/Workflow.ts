@@ -13,7 +13,7 @@ const conditionSchema = new Schema({
 }, { _id: false });
 
 const actionSchema = new Schema({
-  type: { type: String, enum: ['update_field', 'send_email', 'send_notification', 'assign', 'create_task', 'webhook', 'wait'] },
+  type: { type: String, enum: ['update_field', 'send_email', 'send_notification', 'assign', 'create_task', 'webhook', 'wait', 'delay', 'condition', 'loop', 'stop', 'send_sms', 'send_whatsapp', 'send_slack'] },
   config: { type: Schema.Types.Mixed },
   order: { type: Number, default: 0 },
 }, { _id: true });
@@ -29,11 +29,30 @@ const workflowSchema = new Schema({
   name: { type: String, required: true },
   module: { type: String, required: true },
   trigger: {
-    type: { type: String, enum: ['on_create', 'on_update', 'on_field_change', 'on_schedule', 'on_delete'] },
+    type: { type: String, enum: ['on_create', 'on_update', 'on_field_change', 'on_schedule', 'on_delete', 'on_webhook'] },
     entity: { type: String },
     field: { type: String },
     schedule: { type: String },
   },
+  // --- Schedule configuration ---
+  schedule_config: {
+    frequency: { type: String, enum: ['once', 'hourly', 'daily', 'weekly', 'monthly', 'cron'] },
+    timezone: { type: String, default: 'Asia/Kolkata' },
+    cron_expression: { type: String },
+    next_run_at: { type: Date },
+    last_run_at: { type: Date },
+  },
+  // --- Webhook configuration ---
+  webhook_config: {
+    url: { type: String },
+    method: { type: String, enum: ['GET', 'POST', 'PUT'], default: 'POST' },
+    headers: { type: Schema.Types.Mixed },
+    secret: { type: String },
+  },
+  // --- Execution stats ---
+  execution_count: { type: Number, default: 0 },
+  last_executed_at: { type: Date },
+  last_execution_status: { type: String, enum: ['success', 'failure', 'partial'] },
   conditions: [conditionSchema],
   actions: [actionSchema],
   is_active: { type: Boolean, default: true },

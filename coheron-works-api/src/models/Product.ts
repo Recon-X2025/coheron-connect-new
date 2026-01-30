@@ -104,6 +104,10 @@ const productSchema = new Schema({
   brand: { type: String },
   manufacturer: { type: String },
   is_active: { type: Boolean, default: true },
+  // --- Expiry tracking ---
+  track_expiry: { type: Boolean, default: false },
+  expiry_warning_days: { type: Number, default: 30 },
+  allow_negative_stock: { type: Boolean, default: false },
   tenant_id: { type: Schema.Types.ObjectId },
 }, defaultSchemaOptions);
 

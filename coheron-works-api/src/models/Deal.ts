@@ -11,6 +11,7 @@ const stageHistorySchema = new Schema({
   entered_at: { type: Date, default: Date.now },
   exited_at: { type: Date },
   duration_seconds: { type: Number },
+  changed_by: { type: Schema.Types.ObjectId, ref: 'User' },
 }, { _id: false });
 
 const contactRoleSchema = new Schema({
@@ -66,6 +67,47 @@ const dealSchema = new Schema({
   win_reason: { type: String },
   lost_reason: { type: String },
   lost_competitor: { type: String },
+
+  // --- MEDDIC qualification ---
+  meddic: {
+    metrics: { type: String },
+    economic_buyer: { type: String },
+    decision_criteria: { type: String },
+    decision_process: { type: String },
+    identify_pain: { type: String },
+    champion: { type: String },
+    score: { type: Number, default: 0, min: 0, max: 100 },
+  },
+
+  // --- Competitors ---
+  competitors: [{
+    name: { type: String },
+    strengths: { type: String },
+    weaknesses: { type: String },
+    status: { type: String, enum: ['active', 'eliminated', 'unknown'], default: 'active' },
+  }],
+
+  // --- Health scoring ---
+  health: {
+    score: { type: Number, default: 100 },
+    last_activity_at: { type: Date },
+    days_since_activity: { type: Number, default: 0 },
+    risk_factors: [{ type: String }],
+  },
+
+  // --- Close analysis ---
+  close_analysis: {
+    sales_cycle_days: { type: Number },
+    discount_given_percent: { type: Number },
+    total_activities: { type: Number },
+    key_decision_date: { type: Date },
+  },
+
+  // --- Forecast ---
+  forecast: {
+    weighted_amount: { type: Number, default: 0 },
+    confidence_level: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
+  },
 
   owner_id: { type: Schema.Types.ObjectId, ref: 'User' },
   team_id: { type: Schema.Types.ObjectId, ref: 'Team' },

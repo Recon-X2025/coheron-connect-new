@@ -110,6 +110,8 @@ const supportTicketSchema = new Schema({
     duration_minutes: { type: Number },
     billable: { type: Boolean, default: false },
     note: { type: String },
+    activity_type: { type: String, enum: ['work', 'research', 'communication', 'testing'] },
+    hourly_rate: { type: Number },
   }],
   total_time_spent_minutes: { type: Number, default: 0 },
 
@@ -118,6 +120,7 @@ const supportTicketSchema = new Schema({
     rating: { type: Number, min: 1, max: 5 },
     feedback: { type: String },
     responded_at: { type: Date },
+    follow_up_required: { type: Boolean, default: false },
   },
 
   // --- Escalation ---
@@ -131,6 +134,26 @@ const supportTicketSchema = new Schema({
 
   // --- Product reference ---
   product_id: { type: Schema.Types.ObjectId, ref: 'Product' },
+
+  // --- Tenant ---
+  tenant_id: { type: Schema.Types.ObjectId },
+
+  // --- Channel type ---
+  channel_type: { type: String, enum: ['email', 'phone', 'chat', 'portal', 'social', 'whatsapp', 'api'] },
+
+  // --- Child/merged tickets ---
+  child_tickets: [{ type: Schema.Types.ObjectId, ref: 'SupportTicket' }],
+  merged_tickets: [{ type: Schema.Types.ObjectId, ref: 'SupportTicket' }],
+  merged_at: { type: Date },
+  merged_by: { type: Schema.Types.ObjectId, ref: 'User' },
+
+  // --- SLA pause history ---
+  sla_pause_history: [{
+    paused_at: { type: Date },
+    resumed_at: { type: Date },
+    reason: { type: String },
+  }],
+  sla_business_hours_elapsed_minutes: { type: Number, default: 0 },
 }, schemaOptions);
 
 supportTicketSchema.index({ status: 1 });
@@ -140,6 +163,9 @@ supportTicketSchema.index({ assigned_team_id: 1 });
 supportTicketSchema.index({ partner_id: 1 });
 supportTicketSchema.index({ status: 1, created_at: -1 });
 supportTicketSchema.index({ partner_id: 1, created_at: -1 });
+supportTicketSchema.index({ tenant_id: 1 });
+supportTicketSchema.index({ tenant_id: 1, status: 1 });
+supportTicketSchema.index({ channel_type: 1 });
 
 export const TicketNoteSchema = new Schema({
   ticket_id: { type: Schema.Types.ObjectId, ref: 'SupportTicket', required: true },

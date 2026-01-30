@@ -98,6 +98,25 @@ const employeeSchema = new Schema({
     tax_regime: { type: String, enum: ['old', 'new'], default: 'new' },
   },
 
+  // --- Tax declarations (India) ---
+  tax_declarations: {
+    section_80c: { type: Number, default: 0 },
+    section_80d: { type: Number, default: 0 },
+    section_80e: { type: Number, default: 0 },
+    section_80g: { type: Number, default: 0 },
+    section_24b: { type: Number, default: 0 },
+    hra_exemption: { type: Number, default: 0 },
+    lta_claimed: { type: Number, default: 0 },
+    other_exemptions: { type: Number, default: 0 },
+    financial_year: { type: String },
+    declaration_status: { type: String, enum: ['draft', 'submitted', 'verified'], default: 'draft' },
+  },
+
+  // --- Enhanced statutory ---
+  professional_tax: { type: Number, default: 0 },
+  lwf: { type: Number, default: 0 },
+  gratuity_eligible: { type: Boolean, default: false },
+
   // --- Leave balances ---
   leave_balances: [{
     leave_type: { type: String },
@@ -154,6 +173,20 @@ const employeeSchema = new Schema({
     assigned_date: { type: Date },
     return_date: { type: Date },
   }],
+
+  // --- Separation / Exit ---
+  separation: {
+    type: { type: String, enum: ['resignation', 'termination', 'retirement', 'absconding', 'contract_end'] },
+    reason: { type: String },
+    exit_interview_done: { type: Boolean, default: false },
+    exit_interview_notes: { type: String },
+    clearance_status: { type: String, enum: ['pending', 'in_progress', 'completed'], default: 'pending' },
+    fnf_status: { type: String, enum: ['pending', 'calculated', 'paid'], default: 'pending' },
+    fnf_amount: { type: Number },
+    last_working_day: { type: Date },
+    rehire_eligible: { type: Boolean },
+    rehire_notes: { type: String },
+  },
 
   // --- Tenant ---
   tenant_id: { type: Schema.Types.ObjectId },

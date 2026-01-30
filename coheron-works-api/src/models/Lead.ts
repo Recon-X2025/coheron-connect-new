@@ -81,6 +81,8 @@ const leadSchema = new Schema({
     engagement: { type: Number, default: 0 },
     recency: { type: Number, default: 0 },
   },
+  score_grade: { type: String, enum: ['A', 'B', 'C', 'D', 'F'] },
+  last_scored_at: { type: Date },
 
   // --- 4. BANT qualification ---
   budget: {
@@ -129,11 +131,34 @@ const leadSchema = new Schema({
     total_activities: { type: Number, default: 0 },
     emails_sent: { type: Number, default: 0 },
     emails_opened: { type: Number, default: 0 },
+    emails_clicked: { type: Number, default: 0 },
     calls_made: { type: Number, default: 0 },
     calls_connected: { type: Number, default: 0 },
     meetings_held: { type: Number, default: 0 },
+    meetings_scheduled: { type: Number, default: 0 },
+    website_visits: { type: Number, default: 0 },
     last_activity_at: { type: Date },
+    last_engagement_at: { type: Date },
   },
+
+  // --- Attribution ---
+  attribution: {
+    first_touch: { source: { type: String }, campaign: { type: String }, date: { type: Date } },
+    last_touch: { source: { type: String }, campaign: { type: String }, date: { type: Date } },
+    touchpoints: [{
+      source: { type: String },
+      campaign: { type: String },
+      date: { type: Date },
+      page_url: { type: String },
+    }],
+  },
+
+  // --- Qualification status ---
+  qualification_status: { type: String, enum: ['unqualified', 'in_progress', 'qualified', 'disqualified'], default: 'unqualified' },
+  disqualification_reason: { type: String },
+
+  // --- Duplicate detection ---
+  potential_duplicates: [{ type: Schema.Types.ObjectId, ref: 'Lead' }],
 
   // --- 9. Conversion ---
   conversion: {
