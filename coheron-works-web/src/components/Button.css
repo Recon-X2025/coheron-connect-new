@@ -3,52 +3,66 @@
     align-items: center;
     justify-content: center;
     font-weight: 600;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-sm);
     transition: all var(--transition-fast);
     cursor: pointer;
     gap: var(--space-sm);
     position: relative;
     z-index: 1;
     pointer-events: auto;
+    border: none;
 }
 
 .btn:disabled {
-    opacity: 0.6;
+    opacity: 0.5;
     cursor: not-allowed;
 }
 
-/* Variants */
+/* Primary — Coheron Green Gradient */
 .btn-primary {
-    background-color: var(--color-primary);
+    background: var(--gradient-primary);
     color: white;
-    box-shadow: var(--shadow-md);
+    box-shadow: none;
 }
 
 .btn-primary:hover:not(:disabled) {
-    background-color: var(--color-primary-hover);
+    box-shadow: 0 4px 20px rgba(0, 201, 113, 0.4);
     transform: translateY(-1px);
-    box-shadow: var(--shadow-lg);
 }
 
+/* Secondary */
 .btn-secondary {
-    background-color: var(--bg-surface);
-    color: var(--text-main);
-    border: 1px solid var(--border-light);
+    background-color: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
 }
 
 .btn-secondary:hover:not(:disabled) {
-    background-color: var(--bg-surface-hover);
-    border-color: var(--color-primary);
+    background-color: var(--muted-surface);
+    border-color: rgba(255, 255, 255, 0.15);
 }
 
+/* Danger */
+.btn-danger {
+    background: #FF4D4D;
+    color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: #CC3D3D;
+    box-shadow: 0 4px 20px rgba(255, 77, 77, 0.4);
+    transform: translateY(-1px);
+}
+
+/* Ghost */
 .btn-ghost {
     background-color: transparent;
     color: var(--text-muted);
 }
 
 .btn-ghost:hover:not(:disabled) {
-    color: var(--color-primary);
-    background-color: rgba(99, 102, 241, 0.1);
+    color: #00C971;
+    background-color: rgba(0, 201, 113, 0.1);
 }
 
 /* Sizes */

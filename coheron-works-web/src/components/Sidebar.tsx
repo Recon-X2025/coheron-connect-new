@@ -338,9 +338,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCollapseChange }) => {
             <div className="sidebar-header">
                 <Link to="/dashboard" className="sidebar-brand">
                     <div className="logo-icon">
-                        <LayoutDashboard size={24} />
+                        <svg width="24" height="24" viewBox="0 0 40 40">
+                            <circle cx="20" cy="20" r="16" fill="none" stroke="#FFFFFF" strokeWidth="2" />
+                            <circle cx="20" cy="20" r="10" fill="none" stroke="#FFFFFF" strokeWidth="2" />
+                            <circle cx="20" cy="20" r="4" fill="#FFFFFF" />
+                        </svg>
                     </div>
-                    {sidebarExpanded && <span className="brand-name">CoheronWorks</span>}
+                    {sidebarExpanded && <span className="brand-name">COHERON</span>}
                 </Link>
                 <button
                     className="collapse-btn"

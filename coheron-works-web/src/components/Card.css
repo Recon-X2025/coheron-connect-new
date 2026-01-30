@@ -1,6 +1,6 @@
 .card {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-light);
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     padding: var(--space-lg);
     box-shadow: var(--shadow-sm);
@@ -10,5 +10,5 @@
 .card-hover:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-lg);
-    border-color: var(--color-primary);
+    border-color: rgba(255, 255, 255, 0.15);
 }

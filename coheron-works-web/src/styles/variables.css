@@ -1,40 +1,44 @@
 :root {
+  /* Coheron Tech Brand — Dark-First Design */
+
   /* Layout / Surfaces */
-  --page-bg: #F6F8FA;
-  --surface: #FFFFFF;
-  --muted-surface: #F3F5F7;
-  --border: #E6E9EE;
+  --page-bg: #000000;
+  --surface: #141414;
+  --muted-surface: #1F1F1F;
+  --border: rgba(255, 255, 255, 0.1);
 
   /* Typography */
-  --text: #0F1724;
-  --text-muted: #556074;
+  --text: #FFFFFF;
+  --text-muted: #939393;
 
   /* Actions */
-  --primary: #2563EB;
-  --primary-press: #1E40AF;
-  --accent: #7C3AED;
-  --success: #059669;
-  --warning: #D97706;
-  --danger: #DC2626;
+  --primary: #00C971;
+  --primary-press: #00A35C;
+  --accent: #004FFB;
+  --success: #00C971;
+  --warning: #FFB020;
+  --danger: #FF4D4D;
 
   /* UI niceties */
-  --glass: rgba(37, 99, 235, 0.08);
+  --glass: rgba(255, 255, 255, 0.08);
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04);
-  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.06);
+  /* Shadows (dark theme appropriate) */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
 
   /* Spacing & radius */
-  --radius-sm: 6px;
-  --radius: 8px;
-  --radius-lg: 12px;
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
   --gap: 8px;
 
-  /* Legacy compatibility - mapped to new tokens */
+  /* Legacy compatibility */
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-press);
   --color-primary-press: var(--primary-press);
   --color-accent: var(--accent);
+  --color-secondary: var(--accent);
   --bg-body: var(--page-bg);
   --bg-main: var(--surface);
   --bg-surface: var(--surface);
@@ -43,9 +47,12 @@
   --bg-glass: var(--glass);
   --text-main: var(--text);
   --text-primary: var(--text);
-  --text-secondary: var(--text-muted);
-  --text-muted: var(--text-muted);
+  --text-secondary: #C2C2C2;
+  --text-tertiary: #6E6E6E;
   --border-light: var(--border);
+  --border-medium: rgba(255, 255, 255, 0.15);
+  --border-strong: rgba(255, 255, 255, 0.25);
+  --border-accent: rgba(0, 201, 113, 0.5);
   --border-focus: var(--primary);
   --space-xs: 4px;
   --space-sm: 8px;
@@ -54,90 +61,88 @@
   --space-xl: 32px;
   --space-2xl: 48px;
   --radius-md: var(--radius);
-  --radius-xl: var(--radius-lg);
   --radius-full: 9999px;
-  --shadow-lg: var(--shadow-md);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(0, 201, 113, 0.3);
   --transition-fast: 150ms ease;
-  --transition-normal: 300ms ease;
-}
+  --transition-normal: 250ms ease;
+  --transition-slow: 350ms ease;
 
-/* Dark theme overrides */
-[data-theme="dark"] {
-  --page-bg: #0F1117;
-  --surface: #1A1D27;
-  --muted-surface: #252833;
-  --border: #2E3344;
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, #00C971 0%, #00A35C 100%);
+  --gradient-secondary: linear-gradient(135deg, #004FFB 0%, #003FC9 100%);
+  --gradient-sidebar: linear-gradient(180deg, #0A0A0A 0%, #000000 100%);
+  --gradient-hero-blue: linear-gradient(171deg, #000000 20%, #004FFB 100%);
+  --gradient-hero-green: linear-gradient(190deg, #000000 18%, #00C971 100%);
 
-  --text: #E4E7EC;
-  --text-muted: #9BA3B5;
-
-  --primary: #3B82F6;
-  --primary-press: #60A5FA;
-  --accent: #A78BFA;
-  --success: #34D399;
-  --warning: #FBBF24;
-  --danger: #F87171;
-
-  --glass: rgba(59, 130, 246, 0.1);
-
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+  /* Semantic */
+  --success-bg: rgba(0, 201, 113, 0.1);
+  --success-border: rgba(0, 201, 113, 0.3);
+  --error-bg: rgba(255, 77, 77, 0.1);
+  --error-border: rgba(255, 77, 77, 0.3);
+  --warning-bg: rgba(255, 176, 32, 0.1);
+  --warning-border: rgba(255, 176, 32, 0.3);
+  --info-bg: rgba(26, 106, 255, 0.1);
+  --info-border: rgba(26, 106, 255, 0.3);
 
   color-scheme: dark;
 }
 
-[data-theme="dark"] .chip.success {
-  background: rgba(52, 211, 153, 0.12);
-  border-color: rgba(52, 211, 153, 0.2);
-}
-
-[data-theme="dark"] .chip.warning {
-  background: rgba(251, 191, 36, 0.12);
-  border-color: rgba(251, 191, 36, 0.2);
-}
-
-[data-theme="dark"] .chip.danger {
-  background: rgba(248, 113, 113, 0.12);
-  border-color: rgba(248, 113, 113, 0.2);
-}
-
-[data-theme="dark"] .chip.info {
-  background: rgba(167, 139, 250, 0.1);
-  border-color: rgba(167, 139, 250, 0.15);
+/* Light theme override (optional) */
+[data-theme="light"] {
+  --page-bg: #F6F8FA;
+  --surface: #FFFFFF;
+  --muted-surface: #F3F5F7;
+  --border: #E6E9EE;
+  --text: #0F1724;
+  --text-muted: #556074;
+  --primary: #00C971;
+  --primary-press: #00A35C;
+  --accent: #004FFB;
+  --success: #00C971;
+  --warning: #D97706;
+  --danger: #DC2626;
+  --glass: rgba(0, 201, 113, 0.08);
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04);
+  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.06);
+  --text-secondary: #556074;
+  --text-tertiary: #8A94A6;
+  --shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.08);
+  color-scheme: light;
 }
 
 /* Dark mode form inputs */
-[data-theme="dark"] input,
-[data-theme="dark"] textarea,
-[data-theme="dark"] select {
+input,
+textarea,
+select {
   background: var(--muted-surface);
   color: var(--text);
   border-color: var(--border);
 }
 
-[data-theme="dark"] input::placeholder,
-[data-theme="dark"] textarea::placeholder {
+input::placeholder,
+textarea::placeholder {
   color: var(--text-muted);
 }
 
-[data-theme="dark"] input:focus,
-[data-theme="dark"] textarea:focus,
-[data-theme="dark"] select:focus {
+input:focus,
+textarea:focus,
+select:focus {
   border-color: var(--primary);
   outline-color: var(--primary);
 }
 
-/* Dark mode table */
-[data-theme="dark"] table th {
+/* Table */
+table th {
   background: var(--muted-surface);
   color: var(--text-muted);
 }
 
-[data-theme="dark"] table td {
+table td {
   border-color: var(--border);
 }
 
-[data-theme="dark"] table tr:hover {
+table tr:hover {
   background: var(--muted-surface);
 }
 
@@ -154,7 +159,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Example surface/card */
+/* Card */
 .card {
   background: var(--surface);
   border-radius: var(--radius);
@@ -165,19 +170,18 @@ body {
 
 /* Primary button */
 .btn-primary {
-  background: var(--primary);
+  background: var(--gradient-primary);
   color: #ffffff;
   padding: 8px 14px;
   border-radius: 8px;
   font-weight: 600;
   border: none;
-  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.08);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .btn-primary:hover {
-  background: var(--primary-press);
+  box-shadow: var(--shadow-glow);
   transform: translateY(-1px);
 }
 
@@ -185,7 +189,7 @@ body {
   transform: translateY(0);
 }
 
-/* Secondary / outline */
+/* Outline button */
 .btn-outline {
   background: transparent;
   color: var(--text);
@@ -198,9 +202,10 @@ body {
 
 .btn-outline:hover {
   background: var(--muted-surface);
+  border-color: var(--border-medium);
 }
 
-/* Chip examples */
+/* Chips */
 .chip {
   display: inline-flex;
   gap: 8px;
@@ -212,25 +217,25 @@ body {
 }
 
 .chip.success {
-  background: #ECFDF6;
+  background: var(--success-bg);
   color: var(--success);
-  border-color: rgba(5, 150, 105, 0.12);
+  border-color: var(--success-border);
 }
 
 .chip.warning {
-  background: #FFFBEB;
+  background: var(--warning-bg);
   color: var(--warning);
-  border-color: rgba(217, 119, 6, 0.12);
+  border-color: var(--warning-border);
 }
 
 .chip.danger {
-  background: #FEF2F2;
+  background: var(--error-bg);
   color: var(--danger);
-  border-color: rgba(220, 38, 38, 0.12);
+  border-color: var(--error-border);
 }
 
 .chip.info {
-  background: rgba(124, 58, 237, 0.06);
+  background: var(--info-bg);
   color: var(--accent);
-  border-color: rgba(124, 58, 237, 0.08);
+  border-color: var(--info-border);
 }

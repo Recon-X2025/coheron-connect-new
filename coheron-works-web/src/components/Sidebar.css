@@ -1,8 +1,8 @@
 .sidebar {
     width: 280px;
     height: 100vh;
-    background: var(--bg-surface);
-    border-right: 1px solid var(--border-light);
+    background: linear-gradient(180deg, #0A0A0A 0%, #000000 100%);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
     flex-direction: column;
     position: fixed;
@@ -12,7 +12,6 @@
     transition: width 0.3s ease, box-shadow 0.3s ease;
     overflow-x: hidden;
     overflow-y: auto;
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
 }
 
 .sidebar.collapsed {
@@ -22,13 +21,13 @@
 .sidebar.collapsed:hover,
 .sidebar.collapsed.hover-expanded {
     width: 280px;
-    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.15);
+    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.4);
     z-index: 1001;
 }
 
 .sidebar-header {
     padding: var(--space-md) var(--space-lg);
-    border-bottom: 1px solid var(--border-light);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -47,18 +46,19 @@
 .sidebar .logo-icon {
     width: 40px;
     height: 40px;
-    background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+    background: linear-gradient(135deg, #00C971, #00A35C);
     border-radius: var(--radius-lg);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    color: #FFFFFF;
 }
 
 .sidebar .brand-name {
     font-size: 1.25rem;
     font-weight: 700;
-    background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+    background: linear-gradient(135deg, #00C971, #33D48D);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -82,9 +82,9 @@
     background: none;
     border: none;
     cursor: pointer;
-    color: var(--text-secondary);
+    color: #939393;
     padding: var(--space-sm);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-sm);
     transition: all 0.2s;
     display: flex;
     align-items: center;
@@ -92,8 +92,8 @@
 }
 
 .collapse-btn:hover {
-    background: var(--bg-surface-hover);
-    color: var(--color-primary);
+    background: rgba(255, 255, 255, 0.05);
+    color: #00C971;
 }
 
 .sidebar-nav {
@@ -110,7 +110,7 @@
 }
 
 .nav-bottom {
-    border-top: 1px solid var(--border-light);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
     padding: var(--space-md) 0;
 }
 
@@ -123,7 +123,7 @@
     align-items: center;
     justify-content: space-between;
     padding: var(--space-sm) var(--space-lg);
-    color: var(--text-secondary);
+    color: #C2C2C2;
     text-decoration: none;
     transition: all 0.2s;
     cursor: pointer;
@@ -136,19 +136,19 @@
 }
 
 .nav-item:hover {
-    background: var(--bg-surface-hover);
-    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+    color: #FFFFFF;
 }
 
 .nav-item.active {
-    background: rgba(99, 102, 241, 0.1);
-    color: var(--color-primary);
-    border-left-color: var(--color-primary);
+    background: rgba(0, 201, 113, 0.1);
+    color: #00C971;
+    border-left-color: #00C971;
     font-weight: 600;
 }
 
 .nav-item.active .nav-icon {
-    color: var(--color-primary);
+    color: #00C971;
 }
 
 .nav-item.nav-child {
@@ -205,7 +205,7 @@
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    color: var(--text-tertiary);
+    color: #6E6E6E;
     transition: transform 0.2s, opacity 0.2s ease;
     opacity: 1;
 }
@@ -224,9 +224,17 @@
 .nav-children {
     display: flex;
     flex-direction: column;
+    background: rgba(255, 255, 255, 0.02);
+    margin-left: var(--space-md);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    padding-left: var(--space-sm);
 }
 
-/* Scrollbar styling */
+.nav-item.nav-child.active {
+    background: rgba(0, 201, 113, 0.15);
+}
+
+/* Scrollbar */
 .sidebar-nav::-webkit-scrollbar {
     width: 6px;
 }
@@ -236,25 +244,12 @@
 }
 
 .sidebar-nav::-webkit-scrollbar-thumb {
-    background: var(--border-light);
+    background: rgba(255, 255, 255, 0.2);
     border-radius: var(--radius-full);
 }
 
 .sidebar-nav::-webkit-scrollbar-thumb:hover {
-    background: var(--text-tertiary);
-}
-
-.nav-children {
-    display: flex;
-    flex-direction: column;
-    background: rgba(0, 0, 0, 0.02);
-    margin-left: var(--space-md);
-    border-left: 1px solid var(--border-light);
-    padding-left: var(--space-sm);
-}
-
-.nav-item.nav-child.active {
-    background: rgba(99, 102, 241, 0.15);
+    background: rgba(255, 255, 255, 0.3);
 }
 
 /* Responsive */
