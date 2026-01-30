@@ -113,6 +113,8 @@ Double-entry accounting with Indian tax compliance.
 | Bank Management | Bank reconciliation and statement import |
 | Fixed Assets | Asset register with depreciation tracking |
 | Tax Management | GST configuration, HSN codes, tax reports |
+| GST Returns | GSTR-1 (B2B, B2C, exports, credit/debit notes, HSN summary), GSTR-3B (outward/inward supplies, ITC available/reversed, tax payable/paid with IGST/CGST/SGST/cess split, interest & late fee), GSTR-9/9C annual returns; draft → pending review → ready to file → filed workflow; ARN & acknowledgement tracking |
+| E-Invoice | IRN generation with NIC API integration, signed invoice & QR code storage, acknowledgement number/date, e-Way Bill (EWB number, date, validity), cancellation with reason/remark, error tracking (code + message), per-invoice status lifecycle (pending → generated → cancelled/failed) |
 | Financial Reports | P&L, Balance Sheet, Cash Flow, Trial Balance |
 
 ### 6. HR & People
