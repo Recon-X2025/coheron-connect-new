@@ -1,48 +1,34 @@
-import pg from 'pg';
+import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const { Pool } = pg;
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/coheron_erp';
 
-// Support Railway's DATABASE_URL or individual variables
-let poolConfig: pg.PoolConfig;
-
-if (process.env.DATABASE_URL) {
-  // Railway provides DATABASE_URL in format: postgresql://user:password@host:port/database
-  poolConfig = {
-    connectionString: process.env.DATABASE_URL,
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  };
-} else {
-  // Use individual variables (Railway also provides PGHOST, PGPORT, etc.)
-  poolConfig = {
-    host: process.env.DB_HOST || process.env.PGHOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || process.env.PGPORT || '5432'),
-    database: process.env.DB_NAME || process.env.PGDATABASE || 'coheron_erp',
-    user: process.env.DB_USER || process.env.PGUSER || 'coheron_user',
-    password: process.env.DB_PASSWORD || process.env.PGPASSWORD || 'coheron_password',
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  };
+export async function connectDB(): Promise<void> {
+  try {
+    await mongoose.connect(MONGO_URI, {
+      maxPoolSize: 10,
+      minPoolSize: 2,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
+    console.log('Connected to MongoDB database');
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    process.exit(1);
+  }
 }
 
-const pool = new Pool(poolConfig);
-
-// Test connection
-pool.on('connect', () => {
-  console.log('✅ Connected to PostgreSQL database');
+mongoose.connection.on('error', (err) => {
+  console.error('MongoDB connection error:', err);
 });
 
-pool.on('error', (err) => {
-  console.error('❌ Unexpected error on idle client', err);
-  process.exit(-1);
+mongoose.connection.on('disconnected', () => {
+  console.log('MongoDB disconnected. Attempting reconnection...');
+  setTimeout(() => {
+    connectDB().catch(err => console.error('Reconnection failed:', err));
+  }, 5000);
 });
 
-export default pool;
-
+export default mongoose;

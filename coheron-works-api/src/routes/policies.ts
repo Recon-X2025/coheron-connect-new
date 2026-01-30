@@ -1,53 +1,39 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import { Policy } from '../models/Policy.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
 // Get policies
-router.get('/', async (req, res) => {
-  try {
-    const { category, is_active } = req.query;
-    let query = 'SELECT * FROM policies WHERE 1=1';
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/', asyncHandler(async (req, res) => {
+  const { category, is_active } = req.query;
+  const filter: any = {};
 
-    if (category) {
-      query += ` AND category = $${paramCount}`;
-      params.push(category);
-      paramCount++;
-    }
-    if (is_active !== undefined) {
-      query += ` AND is_active = $${paramCount}`;
-      params.push(is_active === 'true');
-      paramCount++;
-    }
-
-    query += ' ORDER BY created_at DESC';
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching policies:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (category) {
+    filter.category = category;
   }
-});
+  if (is_active !== undefined) {
+    filter.is_active = is_active === 'true';
+  }
+
+  const pagination = getPaginationParams(req);
+  const result = await paginateQuery(
+    Policy.find(filter).sort({ created_at: -1 }).lean(),
+    pagination,
+    filter,
+    Policy
+  );
+  res.json(result);
+}));
 
 // Create policy
-router.post('/', async (req, res) => {
-  try {
-    const { name, category, body } = req.body;
+router.post('/', asyncHandler(async (req, res) => {
+  const { name, category, body } = req.body;
 
-    const result = await pool.query(`
-      INSERT INTO policies (name, category, body)
-      VALUES ($1, $2, $3)
-      RETURNING *
-    `, [name, category, body]);
+  const policy = await Policy.create({ name, category, body });
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating policy:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.status(201).json(policy);
+}));
 
 export default router;
-

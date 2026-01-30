@@ -1,232 +1,159 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import { Payslip, SalaryStructure } from '../models/Payroll.js';
+import { Employee } from '../models/Employee.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
 // Get payslips
-router.get('/payslips', async (req, res) => {
-  try {
-    const { employee_id, from_date, to_date } = req.query;
-    let query = `
-      SELECT p.*, e.name as employee_name, e.employee_id as emp_id
-      FROM payslips p
-      JOIN employees e ON p.employee_id = e.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/payslips', asyncHandler(async (req, res) => {
+  const { employee_id, from_date, to_date } = req.query;
+  const filter: any = {};
 
-    if (employee_id) {
-      query += ` AND p.employee_id = $${paramCount}`;
-      params.push(employee_id);
-      paramCount++;
-    }
-    if (from_date && to_date) {
-      query += ` AND p.date_from BETWEEN $${paramCount} AND $${paramCount + 1}`;
-      params.push(from_date, to_date);
-      paramCount += 2;
-    }
-
-    query += ' ORDER BY p.date_from DESC';
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching payslips:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (employee_id) {
+    filter.employee_id = employee_id;
   }
-});
+  if (from_date && to_date) {
+    filter.date_from = { $gte: from_date, $lte: to_date };
+  }
+
+  const payslips = await Payslip.find(filter)
+    .populate('employee_id', 'name employee_id')
+    .sort({ date_from: -1 });
+
+  const result = payslips.map((p: any) => {
+    const obj = p.toJSON();
+    if (obj.employee_id && typeof obj.employee_id === 'object') {
+      obj.employee_name = obj.employee_id.name;
+      obj.emp_id = obj.employee_id.employee_id;
+      obj.employee_id = obj.employee_id._id;
+    }
+    return obj;
+  });
+
+  res.json(result);
+}));
 
 // Get salary structure
-router.get('/salary-structure/:employee_id', async (req, res) => {
-  try {
-    const { employee_id } = req.params;
-    const result = await pool.query(`
-      SELECT * FROM salary_structures
-      WHERE employee_id = $1 AND is_active = true
-      ORDER BY component_type, component_name
-    `, [employee_id]);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching salary structure:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.get('/salary-structure/:employee_id', asyncHandler(async (req, res) => {
+  const { employee_id } = req.params;
+  const structures = await SalaryStructure.find({
+    employee_id,
+    is_active: true,
+  }).sort({ component_type: 1, component_name: 1 }).lean();
 
-// Create/Update salary structure
-router.post('/salary-structure', async (req, res) => {
-  try {
-    const { employee_id, component_type, component_name, amount, calculation_type, percentage } = req.body;
+  res.json(structures);
+}));
 
-    const result = await pool.query(`
-      INSERT INTO salary_structures (employee_id, component_type, component_name, amount, calculation_type, percentage)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING *
-    `, [employee_id, component_type, component_name, amount, calculation_type, percentage]);
+// Create salary structure
+router.post('/salary-structure', asyncHandler(async (req, res) => {
+  const { employee_id, component_type, component_name, amount, calculation_type, percentage } = req.body;
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating salary structure:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  const structure = await SalaryStructure.create({
+    employee_id, component_type, component_name, amount, calculation_type, percentage
+  });
+
+  res.status(201).json(structure);
+}));
 
 // Update salary structure
-router.put('/salary-structure/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { amount, calculation_type, percentage, is_active } = req.body;
+router.put('/salary-structure/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { amount, calculation_type, percentage, is_active } = req.body;
 
-    const updates: string[] = [];
-    const params: any[] = [];
-    let paramCount = 1;
+  const updateFields: any = {};
+  if (amount !== undefined) updateFields.amount = amount;
+  if (calculation_type !== undefined) updateFields.calculation_type = calculation_type;
+  if (percentage !== undefined) updateFields.percentage = percentage;
+  if (is_active !== undefined) updateFields.is_active = is_active;
 
-    if (amount !== undefined) {
-      updates.push(`amount = $${paramCount}`);
-      params.push(amount);
-      paramCount++;
-    }
-    if (calculation_type !== undefined) {
-      updates.push(`calculation_type = $${paramCount}`);
-      params.push(calculation_type);
-      paramCount++;
-    }
-    if (percentage !== undefined) {
-      updates.push(`percentage = $${paramCount}`);
-      params.push(percentage);
-      paramCount++;
-    }
-    if (is_active !== undefined) {
-      updates.push(`is_active = $${paramCount}`);
-      params.push(is_active);
-      paramCount++;
-    }
-
-    if (updates.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-
-    params.push(id);
-    const query = `UPDATE salary_structures SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`;
-    const result = await pool.query(query, params);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Salary structure not found' });
-    }
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating salary structure:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (Object.keys(updateFields).length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
   }
-});
+
+  const structure = await SalaryStructure.findByIdAndUpdate(id, updateFields, { new: true });
+
+  if (!structure) {
+    return res.status(404).json({ error: 'Salary structure not found' });
+  }
+  res.json(structure);
+}));
 
 // Delete salary structure
-router.delete('/salary-structure/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const result = await pool.query('DELETE FROM salary_structures WHERE id = $1 RETURNING *', [id]);
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Salary structure not found' });
-    }
-    res.json({ message: 'Salary structure deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting salary structure:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.delete('/salary-structure/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const structure = await SalaryStructure.findByIdAndDelete(id);
+
+  if (!structure) {
+    return res.status(404).json({ error: 'Salary structure not found' });
   }
-});
+  res.json({ message: 'Salary structure deleted successfully' });
+}));
 
 // Create payslip
-router.post('/payslips', async (req, res) => {
-  try {
-    const { employee_id, name, date_from, date_to, basic_wage, gross_wage, net_wage } = req.body;
+router.post('/payslips', asyncHandler(async (req, res) => {
+  const { employee_id, name, date_from, date_to, basic_wage, gross_wage, net_wage } = req.body;
 
-    const result = await pool.query(`
-      INSERT INTO payslips (employee_id, name, date_from, date_to, basic_wage, gross_wage, net_wage, state)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, 'draft')
-      RETURNING *
-    `, [employee_id, name, date_from, date_to, basic_wage, gross_wage, net_wage]);
+  const payslip = await Payslip.create({
+    employee_id, name, date_from, date_to, basic_wage, gross_wage, net_wage, state: 'draft'
+  });
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating payslip:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.status(201).json(payslip);
+}));
 
 // Update payslip
-router.put('/payslips/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { basic_wage, gross_wage, net_wage, state } = req.body;
+router.put('/payslips/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { basic_wage, gross_wage, net_wage, state } = req.body;
 
-    const updates: string[] = [];
-    const params: any[] = [];
-    let paramCount = 1;
+  const updateFields: any = {};
+  if (basic_wage !== undefined) updateFields.basic_wage = basic_wage;
+  if (gross_wage !== undefined) updateFields.gross_wage = gross_wage;
+  if (net_wage !== undefined) updateFields.net_wage = net_wage;
+  if (state !== undefined) updateFields.state = state;
 
-    if (basic_wage !== undefined) {
-      updates.push(`basic_wage = $${paramCount}`);
-      params.push(basic_wage);
-      paramCount++;
-    }
-    if (gross_wage !== undefined) {
-      updates.push(`gross_wage = $${paramCount}`);
-      params.push(gross_wage);
-      paramCount++;
-    }
-    if (net_wage !== undefined) {
-      updates.push(`net_wage = $${paramCount}`);
-      params.push(net_wage);
-      paramCount++;
-    }
-    if (state !== undefined) {
-      updates.push(`state = $${paramCount}`);
-      params.push(state);
-      paramCount++;
-    }
-
-    if (updates.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-
-    params.push(id);
-    const query = `UPDATE payslips SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`;
-    const result = await pool.query(query, params);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Payslip not found' });
-    }
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating payslip:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (Object.keys(updateFields).length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
   }
-});
+
+  const payslip = await Payslip.findByIdAndUpdate(id, updateFields, { new: true });
+
+  if (!payslip) {
+    return res.status(404).json({ error: 'Payslip not found' });
+  }
+  res.json(payslip);
+}));
 
 // Get payroll statistics
-router.get('/stats', async (req, res) => {
-  try {
-    const employeeCount = await pool.query('SELECT COUNT(*) as count FROM employees');
-    const payslipStats = await pool.query(`
-      SELECT 
-        COUNT(*) as total_payslips,
-        COALESCE(SUM(net_wage), 0) as total_amount,
-        COUNT(CASE WHEN state = 'done' THEN 1 END) as completed,
-        COUNT(CASE WHEN state = 'draft' THEN 1 END) as pending
-      FROM payslips
-      WHERE date_from >= DATE_TRUNC('month', CURRENT_DATE)
-    `);
+router.get('/stats', asyncHandler(async (req, res) => {
+  const employeeCount = await Employee.countDocuments();
 
-    res.json({
-      total_employees: parseInt(employeeCount.rows[0]?.count || '0'),
-      this_month_payroll: parseFloat(payslipStats.rows[0]?.total_amount || '0'),
-      pending_approvals: parseInt(payslipStats.rows[0]?.pending || '0'),
-      compliance_status: 98,
-    });
-  } catch (error) {
-    console.error('Error fetching payroll stats:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+
+  const payslipStats = await Payslip.aggregate([
+    { $match: { date_from: { $gte: startOfMonth } } },
+    {
+      $group: {
+        _id: null,
+        total_payslips: { $sum: 1 },
+        total_amount: { $sum: '$net_wage' },
+        completed: { $sum: { $cond: [{ $eq: ['$state', 'done'] }, 1, 0] } },
+        pending: { $sum: { $cond: [{ $eq: ['$state', 'draft'] }, 1, 0] } },
+      },
+    },
+  ]);
+
+  const stats = payslipStats[0] || { total_amount: 0, pending: 0 };
+
+  res.json({
+    total_employees: employeeCount,
+    this_month_payroll: stats.total_amount || 0,
+    pending_approvals: stats.pending || 0,
+    compliance_status: 98,
+  });
+}));
 
 export default router;
-

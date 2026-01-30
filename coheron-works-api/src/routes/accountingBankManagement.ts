@@ -1,176 +1,154 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import mongoose from 'mongoose';
+import BankAccount from '../models/BankAccount.js';
+import BankStatement from '../models/BankStatement.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
 // ========== BANK ACCOUNTS ==========
 
 // Get all bank accounts
-router.get('/accounts', async (req, res) => {
-  try {
-    const { is_active } = req.query;
-    let query = `
-      SELECT b.*, 
-             j.name as journal_name,
-             a.code as account_code,
-             a.name as account_name
-      FROM account_bank_account b
-      LEFT JOIN account_journal j ON b.journal_id = j.id
-      LEFT JOIN account_account a ON b.account_id = a.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
+router.get('/accounts', asyncHandler(async (req, res) => {
+  const { is_active } = req.query;
+  const filter: any = {};
 
-    if (is_active !== undefined) {
-      query += ` AND b.is_active = $1`;
-      params.push(is_active === 'true');
-    }
-
-    query += ' ORDER BY b.name';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching bank accounts:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (is_active !== undefined) {
+    filter.is_active = is_active === 'true';
   }
-});
+
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    BankAccount.find(filter)
+      .populate('journal_id', 'name')
+      .populate('account_id', 'code name')
+      .sort({ name: 1 })
+      .lean(),
+    pagination, filter, BankAccount
+  );
+
+  const data = paginatedResult.data.map((b: any) => ({
+    ...b,
+    id: b._id,
+    journal_name: b.journal_id?.name || null,
+    account_code: b.account_id?.code || null,
+    account_name: b.account_id?.name || null,
+    journal_id: b.journal_id?._id || b.journal_id,
+    account_id: b.account_id?._id || b.account_id,
+  }));
+
+  res.json({ data, pagination: paginatedResult.pagination });
+}));
 
 // Create bank account
-router.post('/accounts', async (req, res) => {
-  try {
-    const {
-      name,
-      bank_name,
-      account_number,
-      routing_number,
-      iban,
-      swift_code,
-      account_type,
-      currency_id,
-      journal_id,
-      account_id,
-      balance_start,
-    } = req.body;
+router.post('/accounts', asyncHandler(async (req, res) => {
+  const {
+    name,
+    bank_name,
+    account_number,
+    routing_number,
+    iban,
+    swift_code,
+    account_type,
+    currency_id,
+    journal_id,
+    account_id,
+    balance_start,
+  } = req.body;
 
-    const result = await pool.query(
-      `INSERT INTO account_bank_account 
-       (name, bank_name, account_number, routing_number, iban, swift_code, account_type, 
-        currency_id, journal_id, account_id, balance_start, balance_end)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $11)
-       RETURNING *`,
-      [
-        name,
-        bank_name || null,
-        account_number || null,
-        routing_number || null,
-        iban || null,
-        swift_code || null,
-        account_type || 'checking',
-        currency_id || null,
-        journal_id || null,
-        account_id || null,
-        balance_start || 0,
-      ]
-    );
+  const bankAccount = await BankAccount.create({
+    name,
+    bank_name: bank_name || null,
+    account_number: account_number || null,
+    routing_number: routing_number || null,
+    iban: iban || null,
+    swift_code: swift_code || null,
+    account_type: account_type || 'checking',
+    currency_id: currency_id || null,
+    journal_id: journal_id || null,
+    account_id: account_id || null,
+    balance_start: balance_start || 0,
+    balance_end: balance_start || 0,
+  });
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating bank account:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.status(201).json(bankAccount);
+}));
 
 // ========== BANK STATEMENTS ==========
 
 // Get all bank statements
-router.get('/statements', async (req, res) => {
-  try {
-    const { bank_account_id, state, date_from, date_to } = req.query;
-    let query = `
-      SELECT s.*, 
-             b.name as bank_account_name,
-             b.account_number
-      FROM account_bank_statement s
-      LEFT JOIN account_bank_account b ON s.bank_account_id = b.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/statements', asyncHandler(async (req, res) => {
+  const { bank_account_id, state, date_from, date_to } = req.query;
+  const filter: any = {};
 
-    if (bank_account_id) {
-      query += ` AND s.bank_account_id = $${paramCount++}`;
-      params.push(bank_account_id);
-    }
+  if (bank_account_id) filter.bank_account_id = bank_account_id;
+  if (state) filter.state = state;
 
-    if (state) {
-      query += ` AND s.state = $${paramCount++}`;
-      params.push(state);
-    }
-
+  if (date_from || date_to) {
     if (date_from) {
-      query += ` AND s.date_start >= $${paramCount++}`;
-      params.push(date_from);
+      filter.date_start = { ...filter.date_start, $gte: new Date(date_from as string) };
     }
-
     if (date_to) {
-      query += ` AND s.date_end <= $${paramCount++}`;
-      params.push(date_to);
+      filter.date_end = { ...filter.date_end, $lte: new Date(date_to as string) };
     }
-
-    query += ' ORDER BY s.date_start DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching bank statements:', error);
-    res.status(500).json({ error: 'Internal server error' });
   }
-});
+
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    BankStatement.find(filter)
+      .populate('bank_account_id', 'name account_number')
+      .sort({ date_start: -1 })
+      .lean(),
+    pagination, filter, BankStatement
+  );
+
+  const data = paginatedResult.data.map((s: any) => ({
+    ...s,
+    id: s._id,
+    bank_account_name: s.bank_account_id?.name || null,
+    account_number: s.bank_account_id?.account_number || null,
+    bank_account_id: s.bank_account_id?._id || s.bank_account_id,
+  }));
+
+  res.json({ data, pagination: paginatedResult.pagination });
+}));
 
 // Get statement by ID with lines
-router.get('/statements/:id', async (req, res) => {
-  try {
-    const statementResult = await pool.query(
-      `SELECT s.*, b.name as bank_account_name
-       FROM account_bank_statement s
-       LEFT JOIN account_bank_account b ON s.bank_account_id = b.id
-       WHERE s.id = $1`,
-      [req.params.id]
-    );
+router.get('/statements/:id', asyncHandler(async (req, res) => {
+  const statement = await BankStatement.findById(req.params.id)
+    .populate('bank_account_id', 'name')
+    .populate('lines.partner_id', 'name')
+    .populate('lines.move_id', 'name')
+    .lean();
 
-    if (statementResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Bank statement not found' });
-    }
-
-    const linesResult = await pool.query(
-      `SELECT l.*, 
-              p.name as partner_name,
-              m.name as move_name
-       FROM account_bank_statement_line l
-       LEFT JOIN partners p ON l.partner_id = p.id
-       LEFT JOIN account_move m ON l.move_id = m.id
-       WHERE l.statement_id = $1
-       ORDER BY l.date, l.id`,
-      [req.params.id]
-    );
-
-    res.json({
-      ...statementResult.rows[0],
-      lines: linesResult.rows,
-    });
-  } catch (error) {
-    console.error('Error fetching bank statement:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!statement) {
+    return res.status(404).json({ error: 'Bank statement not found' });
   }
-});
+
+  const result: any = {
+    ...statement,
+    id: statement._id,
+    bank_account_name: (statement.bank_account_id as any)?.name || null,
+    bank_account_id: (statement.bank_account_id as any)?._id || statement.bank_account_id,
+    lines: (statement.lines || []).map((l: any) => ({
+      ...l,
+      id: l._id,
+      partner_name: l.partner_id?.name || null,
+      move_name: l.move_id?.name || null,
+      partner_id: l.partner_id?._id || l.partner_id,
+      move_id: l.move_id?._id || l.move_id,
+    })),
+  };
+
+  res.json(result);
+}));
 
 // Create bank statement
 router.post('/statements', async (req, res) => {
-  const client = await pool.connect();
+  const session = await mongoose.startSession();
+  session.startTransaction();
   try {
-    await client.query('BEGIN');
-
     const {
       name,
       bank_account_id,
@@ -183,122 +161,100 @@ router.post('/statements', async (req, res) => {
 
     // Calculate balance_end from lines
     let balanceEnd = balance_start;
+    const statementLines: any[] = [];
     if (lines && lines.length > 0) {
       for (const line of lines) {
         balanceEnd += parseFloat(line.amount || 0);
+        statementLines.push({
+          date: line.date || date_start,
+          name: line.name || '',
+          amount: line.amount || 0,
+          partner_id: line.partner_id || null,
+          ref: line.ref || null,
+          note: line.note || null,
+        });
       }
     }
 
-    // Create statement
-    const statementResult = await client.query(
-      `INSERT INTO account_bank_statement 
-       (name, bank_account_id, date_start, date_end, balance_start, balance_end, imported_file_path, state)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'draft')
-       RETURNING *`,
-      [
-        name,
-        bank_account_id,
-        date_start,
-        date_end,
-        balance_start,
-        balanceEnd,
-        imported_file_path || null,
-      ]
-    );
+    const [statement] = await BankStatement.create([{
+      name,
+      bank_account_id,
+      date_start,
+      date_end,
+      balance_start,
+      balance_end: balanceEnd,
+      imported_file_path: imported_file_path || null,
+      state: 'draft',
+      lines: statementLines,
+    }], { session });
 
-    const statementId = statementResult.rows[0].id;
+    await session.commitTransaction();
 
-    // Create statement lines
-    if (lines && lines.length > 0) {
-      for (const line of lines) {
-        await client.query(
-          `INSERT INTO account_bank_statement_line 
-           (statement_id, date, name, amount, partner_id, ref, note)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [
-            statementId,
-            line.date || date_start,
-            line.name || '',
-            line.amount || 0,
-            line.partner_id || null,
-            line.ref || null,
-            line.note || null,
-          ]
-        );
-      }
-    }
-
-    await client.query('COMMIT');
-
-    // Fetch complete statement
-    const completeResult = await pool.query(
-      'SELECT * FROM account_bank_statement WHERE id = $1',
-      [statementId]
-    );
-
-    const linesResult = await pool.query(
-      'SELECT * FROM account_bank_statement_line WHERE statement_id = $1 ORDER BY date, id',
-      [statementId]
-    );
-
-    res.status(201).json({
-      ...completeResult.rows[0],
-      lines: linesResult.rows,
-    });
+    res.status(201).json(statement);
   } catch (error: any) {
-    await client.query('ROLLBACK');
+    await session.abortTransaction();
     console.error('Error creating bank statement:', error);
     res.status(500).json({ error: error.message || 'Internal server error' });
   } finally {
-    client.release();
+    session.endSession();
   }
 });
 
 // Reconcile statement line
-router.post('/statements/:statementId/lines/:lineId/reconcile', async (req, res) => {
-  try {
-    const { move_id, payment_id, receipt_id } = req.body;
+router.post('/statements/:statementId/lines/:lineId/reconcile', asyncHandler(async (req, res) => {
+  const { move_id, payment_id, receipt_id } = req.body;
 
-    const result = await pool.query(
-      `UPDATE account_bank_statement_line 
-       SET reconciled = true, move_id = $1, payment_id = $2, receipt_id = $3
-       WHERE id = $4 AND statement_id = $5
-       RETURNING *`,
-      [move_id || null, payment_id || null, receipt_id || null, req.params.lineId, req.params.statementId]
-    );
+  const statement = await BankStatement.findOneAndUpdate(
+    {
+      _id: req.params.statementId,
+      'lines._id': req.params.lineId,
+    },
+    {
+      $set: {
+        'lines.$.reconciled': true,
+        'lines.$.move_id': move_id || null,
+        'lines.$.payment_id': payment_id || null,
+        'lines.$.receipt_id': receipt_id || null,
+      },
+    },
+    { new: true }
+  );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Statement line not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error reconciling statement line:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!statement) {
+    return res.status(404).json({ error: 'Statement line not found' });
   }
-});
+
+  const line = statement.lines.find(
+    (l: any) => l._id?.toString() === req.params.lineId
+  );
+
+  res.json(line);
+}));
 
 // Confirm statement (finalize reconciliation)
-router.post('/statements/:id/confirm', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `UPDATE account_bank_statement 
-       SET state = 'confirm', balance_end_real = balance_end, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $1 AND state = 'open'
-       RETURNING *`,
-      [req.params.id]
-    );
+router.post('/statements/:id/confirm', asyncHandler(async (req, res) => {
+  const statement = await BankStatement.findOneAndUpdate(
+    { _id: req.params.id, state: 'open' },
+    {
+      state: 'confirm',
+      $expr: { balance_end_real: '$balance_end' },
+    },
+    { new: true }
+  );
 
-    if (result.rows.length === 0) {
+  if (!statement) {
+    // Try a two-step approach since $expr in update doesn't work cleanly
+    const doc = await BankStatement.findOne({ _id: req.params.id, state: 'open' });
+    if (!doc) {
       return res.status(404).json({ error: 'Statement not found or cannot be confirmed' });
     }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error confirming statement:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    doc.state = 'confirm';
+    doc.balance_end_real = doc.balance_end;
+    await doc.save();
+    return res.json(doc);
   }
-});
+
+  res.json(statement);
+}));
 
 export default router;
-

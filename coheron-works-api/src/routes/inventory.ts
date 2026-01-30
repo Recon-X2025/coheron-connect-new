@@ -1,5 +1,25 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import mongoose from 'mongoose';
+import Warehouse from '../models/Warehouse.js';
+import StockLocation from '../models/StockLocation.js';
+import StockQuant from '../models/StockQuant.js';
+import StockGrn from '../models/StockGrn.js';
+import StockTransfer from '../models/StockTransfer.js';
+import StockAdjustment from '../models/StockAdjustment.js';
+import StockProductionLot from '../models/StockProductionLot.js';
+import StockSerial from '../models/StockSerial.js';
+import StockLedger from '../models/StockLedger.js';
+import StockReorderSuggestion from '../models/StockReorderSuggestion.js';
+import StockIssue from '../models/StockIssue.js';
+import StockReturn from '../models/StockReturn.js';
+import PutawayTask from '../models/PutawayTask.js';
+import PickingTask from '../models/PickingTask.js';
+import PackingTask from '../models/PackingTask.js';
+import CycleCount from '../models/CycleCount.js';
+import InventorySettings from '../models/InventorySettings.js';
+import Product from '../models/Product.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
@@ -8,2119 +28,1267 @@ const router = express.Router();
 // ============================================
 
 // Get all warehouses
-router.get('/warehouses', async (req, res) => {
-  try {
-    const { search, active } = req.query;
-    let query = `
-      SELECT w.*, 
-             u.name as manager_name,
-             p.name as partner_name
-      FROM warehouses w
-      LEFT JOIN users u ON w.manager_id = u.id
-      LEFT JOIN partners p ON w.partner_id = p.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/warehouses', asyncHandler(async (req, res) => {
+  const { search, active } = req.query;
+  const filter: any = {};
 
-    if (active !== undefined) {
-      query += ` AND w.active = $${paramCount++}`;
-      params.push(active === 'true');
-    }
-
-    if (search) {
-      query += ` AND (w.name ILIKE $${paramCount} OR w.code ILIKE $${paramCount})`;
-      params.push(`%${search}%`);
-    }
-
-    query += ' ORDER BY w.name';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching warehouses:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (active !== undefined) {
+    filter.active = active === 'true';
   }
-});
+
+  if (search) {
+    filter.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { code: { $regex: search, $options: 'i' } },
+    ];
+  }
+
+  const pagination = getPaginationParams(req);
+  const result = await paginateQuery(
+    Warehouse.find(filter)
+      .populate('manager_id', 'name')
+      .populate('partner_id', 'name')
+      .sort({ name: 1 })
+      .lean(),
+    pagination,
+    filter,
+    Warehouse
+  );
+
+  const mapItem = (w: any) => ({
+    ...w,
+    manager_name: w.manager_id?.name,
+    partner_name: w.partner_id?.name,
+  });
+
+  res.json({ ...result, data: result.data.map(mapItem) });
+}));
 
 // Get warehouse by ID
-router.get('/warehouses/:id', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT w.*, 
-              u.name as manager_name,
-              p.name as partner_name
-       FROM warehouses w
-       LEFT JOIN users u ON w.manager_id = u.id
-       LEFT JOIN partners p ON w.partner_id = p.id
-       WHERE w.id = $1`,
-      [req.params.id]
-    );
+router.get('/warehouses/:id', asyncHandler(async (req, res) => {
+  const warehouse = await Warehouse.findById(req.params.id)
+    .populate('manager_id', 'name')
+    .populate('partner_id', 'name')
+    .lean();
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Warehouse not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error fetching warehouse:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!warehouse) {
+    return res.status(404).json({ error: 'Warehouse not found' });
   }
-});
+
+  res.json({
+    ...warehouse,
+    manager_name: (warehouse as any).manager_id?.name,
+    partner_name: (warehouse as any).partner_id?.name,
+  });
+}));
 
 // Create warehouse
-router.post('/warehouses', async (req, res) => {
-  try {
-    const {
-      code,
-      name,
-      warehouse_type,
-      partner_id,
-      address,
-      city,
-      state,
-      country,
-      zip_code,
-      phone,
-      email,
-      manager_id,
-      active,
-      temperature_controlled,
-      humidity_controlled,
-      security_level,
-      operating_hours,
-      capacity_cubic_meters,
-      notes,
-    } = req.body;
+router.post('/warehouses', asyncHandler(async (req, res) => {
+  const {
+    code, name, warehouse_type, partner_id, address, city, state, country,
+    zip_code, phone, email, manager_id, active, temperature_controlled,
+    humidity_controlled, security_level, operating_hours, capacity_cubic_meters, notes,
+  } = req.body;
 
-    const result = await pool.query(
-      `INSERT INTO warehouses (
-        code, name, warehouse_type, partner_id, address, city, state, country,
-        zip_code, phone, email, manager_id, active, temperature_controlled,
-        humidity_controlled, security_level, operating_hours, capacity_cubic_meters, notes
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
-      RETURNING *`,
-      [
-        code,
-        name,
-        warehouse_type || 'internal',
-        partner_id,
-        address,
-        city,
-        state,
-        country,
-        zip_code,
-        phone,
-        email,
-        manager_id,
-        active !== undefined ? active : true,
-        temperature_controlled || false,
-        humidity_controlled || false,
-        security_level,
-        operating_hours,
-        capacity_cubic_meters,
-        notes,
-      ]
-    );
+  const warehouse = await Warehouse.create({
+    code, name,
+    warehouse_type: warehouse_type || 'internal',
+    partner_id, address, city, state, country, zip_code, phone, email, manager_id,
+    active: active !== undefined ? active : true,
+    temperature_controlled: temperature_controlled || false,
+    humidity_controlled: humidity_controlled || false,
+    security_level, operating_hours, capacity_cubic_meters, notes,
+  });
 
-    res.status(201).json(result.rows[0]);
-  } catch (error: any) {
-    console.error('Error creating warehouse:', error);
-    if (error.code === '23505') {
-      res.status(400).json({ error: 'Warehouse code already exists' });
-    } else {
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  }
-});
+  res.status(201).json(warehouse);
+}));
 
 // Update warehouse
-router.put('/warehouses/:id', async (req, res) => {
-  try {
-    const {
-      code,
-      name,
-      warehouse_type,
-      partner_id,
-      address,
-      city,
-      state,
-      country,
-      zip_code,
-      phone,
-      email,
-      manager_id,
-      active,
-      temperature_controlled,
-      humidity_controlled,
-      security_level,
-      operating_hours,
-      capacity_cubic_meters,
-      notes,
-    } = req.body;
+router.put('/warehouses/:id', asyncHandler(async (req, res) => {
+  const {
+    code, name, warehouse_type, partner_id, address, city, state, country,
+    zip_code, phone, email, manager_id, active, temperature_controlled,
+    humidity_controlled, security_level, operating_hours, capacity_cubic_meters, notes,
+  } = req.body;
 
-    const result = await pool.query(
-      `UPDATE warehouses 
-       SET code = $1, name = $2, warehouse_type = $3, partner_id = $4,
-           address = $5, city = $6, state = $7, country = $8,
-           zip_code = $9, phone = $10, email = $11, manager_id = $12,
-           active = $13, temperature_controlled = $14, humidity_controlled = $15,
-           security_level = $16, operating_hours = $17, capacity_cubic_meters = $18,
-           notes = $19, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $20
-       RETURNING *`,
-      [
-        code,
-        name,
-        warehouse_type,
-        partner_id,
-        address,
-        city,
-        state,
-        country,
-        zip_code,
-        phone,
-        email,
-        manager_id,
-        active,
-        temperature_controlled,
-        humidity_controlled,
-        security_level,
-        operating_hours,
-        capacity_cubic_meters,
-        notes,
-        req.params.id,
-      ]
-    );
+  const warehouse = await Warehouse.findByIdAndUpdate(
+    req.params.id,
+    {
+      code, name, warehouse_type, partner_id, address, city, state, country,
+      zip_code, phone, email, manager_id, active, temperature_controlled,
+      humidity_controlled, security_level, operating_hours, capacity_cubic_meters, notes,
+    },
+    { new: true }
+  );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Warehouse not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error: any) {
-    console.error('Error updating warehouse:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!warehouse) {
+    return res.status(404).json({ error: 'Warehouse not found' });
   }
-});
+
+  res.json(warehouse);
+}));
 
 // ============================================
 // STOCK LOCATIONS
 // ============================================
 
 // Get locations by warehouse
-router.get('/warehouses/:warehouseId/locations', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT * FROM stock_locations 
-       WHERE warehouse_id = $1 
-       ORDER BY name`,
-      [req.params.warehouseId]
-    );
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching locations:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.get('/warehouses/:warehouseId/locations', asyncHandler(async (req, res) => {
+  const locations = await StockLocation.find({ warehouse_id: req.params.warehouseId })
+    .sort({ name: 1 })
+    .lean();
+  res.json(locations);
+}));
 
 // Create location
-router.post('/locations', async (req, res) => {
-  try {
-    const {
-      name,
-      location_id,
-      warehouse_id,
-      usage,
-      active,
-      scrap_location,
-      return_location,
-      posx,
-      posy,
-      posz,
-      removal_strategy,
-      barcode,
-      notes,
-    } = req.body;
+router.post('/locations', asyncHandler(async (req, res) => {
+  const {
+    name, location_id, warehouse_id, usage, active, scrap_location,
+    return_location, posx, posy, posz, removal_strategy, barcode, notes,
+  } = req.body;
 
-    // Generate complete_name
-    let completeName = name;
-    if (location_id) {
-      const parentResult = await pool.query(
-        'SELECT complete_name FROM stock_locations WHERE id = $1',
-        [location_id]
-      );
-      if (parentResult.rows.length > 0) {
-        completeName = `${parentResult.rows[0].complete_name} / ${name}`;
-      }
+  // Generate complete_name
+  let completeName = name;
+  if (location_id) {
+    const parent = await StockLocation.findById(location_id).lean();
+    if (parent) {
+      completeName = `${parent.complete_name} / ${name}`;
     }
-
-    const result = await pool.query(
-      `INSERT INTO stock_locations (
-        name, complete_name, location_id, warehouse_id, usage, active,
-        scrap_location, return_location, posx, posy, posz, removal_strategy,
-        barcode, notes
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-      RETURNING *`,
-      [
-        name,
-        completeName,
-        location_id,
-        warehouse_id,
-        usage || 'internal',
-        active !== undefined ? active : true,
-        scrap_location || false,
-        return_location || false,
-        posx,
-        posy,
-        posz,
-        removal_strategy || 'fifo',
-        barcode,
-        notes,
-      ]
-    );
-
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating location:', error);
-    res.status(500).json({ error: 'Internal server error' });
   }
-});
+
+  const location = await StockLocation.create({
+    name, complete_name: completeName, location_id, warehouse_id,
+    usage: usage || 'internal',
+    active: active !== undefined ? active : true,
+    scrap_location: scrap_location || false,
+    return_location: return_location || false,
+    posx, posy, posz,
+    removal_strategy: removal_strategy || 'fifo',
+    barcode, notes,
+  });
+
+  res.status(201).json(location);
+}));
 
 // ============================================
 // STOCK QUANTITY (Stock on Hand)
 // ============================================
 
 // Get stock quantity by product and location
-router.get('/stock-quant', async (req, res) => {
-  try {
-    const { product_id, location_id, warehouse_id } = req.query;
-    let query = `
-      SELECT sq.*, 
-             p.name as product_name,
-             p.default_code as product_code,
-             sl.name as location_name,
-             w.name as warehouse_name,
-             spl.name as lot_name
-      FROM stock_quant sq
-      JOIN products p ON sq.product_id = p.id
-      JOIN stock_locations sl ON sq.location_id = sl.id
-      LEFT JOIN warehouses w ON sl.warehouse_id = w.id
-      LEFT JOIN stock_production_lot spl ON sq.lot_id = spl.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/stock-quant', asyncHandler(async (req, res) => {
+  const { product_id, location_id, warehouse_id } = req.query;
+  const filter: any = {};
 
-    if (product_id) {
-      query += ` AND sq.product_id = $${paramCount++}`;
-      params.push(product_id);
-    }
+  if (product_id) filter.product_id = product_id;
+  if (location_id) filter.location_id = location_id;
 
-    if (location_id) {
-      query += ` AND sq.location_id = $${paramCount++}`;
-      params.push(location_id);
-    }
+  let quants = await StockQuant.find(filter)
+    .populate('product_id', 'name default_code')
+    .populate('lot_id', 'name')
+    .populate({
+      path: 'location_id',
+      select: 'name warehouse_id',
+      populate: { path: 'warehouse_id', select: 'name' },
+    })
+    .sort({ 'product_id.name': 1 })
+    .lean();
 
-    if (warehouse_id) {
-      query += ` AND w.id = $${paramCount++}`;
-      params.push(warehouse_id);
-    }
-
-    query += ' ORDER BY p.name, sl.name';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching stock quantity:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  // Filter by warehouse_id if needed (post-populate filter)
+  if (warehouse_id) {
+    quants = quants.filter((q: any) => {
+      const loc = q.location_id;
+      return loc?.warehouse_id?._id?.toString() === warehouse_id ||
+             loc?.warehouse_id?.toString() === warehouse_id;
+    });
   }
-});
+
+  const result = quants.map((q: any) => ({
+    ...q,
+    product_name: q.product_id?.name,
+    product_code: q.product_id?.default_code,
+    location_name: q.location_id?.name,
+    warehouse_name: q.location_id?.warehouse_id?.name,
+    lot_name: q.lot_id?.name,
+  }));
+
+  res.json(result);
+}));
 
 // Get stock summary by product
-router.get('/stock-summary', async (req, res) => {
-  try {
-    const { product_id, warehouse_id } = req.query;
-    let query = `
-      SELECT 
-        sq.product_id,
-        p.name as product_name,
-        p.default_code as product_code,
-        COALESCE(SUM(sq.quantity), 0) as total_qty,
-        COALESCE(SUM(sq.reserved_quantity), 0) as total_reserved,
-        COALESCE(SUM(sq.quantity) - SUM(sq.reserved_quantity), 0) as available_qty,
-        COUNT(DISTINCT sq.location_id) as location_count
-      FROM stock_quant sq
-      JOIN products p ON sq.product_id = p.id
-      JOIN stock_locations sl ON sq.location_id = sl.id
-      LEFT JOIN warehouses w ON sl.warehouse_id = w.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/stock-summary', asyncHandler(async (req, res) => {
+  const { product_id, warehouse_id } = req.query;
 
-    if (product_id) {
-      query += ` AND sq.product_id = $${paramCount++}`;
-      params.push(product_id);
-    }
+  const matchStage: any = {};
+  if (product_id) matchStage.product_id = new mongoose.Types.ObjectId(product_id as string);
 
-    if (warehouse_id) {
-      query += ` AND w.id = $${paramCount++}`;
-      params.push(warehouse_id);
-    }
+  const pipeline: any[] = [
+    { $match: matchStage },
+    {
+      $lookup: {
+        from: 'stocklocations',
+        localField: 'location_id',
+        foreignField: '_id',
+        as: 'location',
+      },
+    },
+    { $unwind: { path: '$location', preserveNullAndEmptyArrays: true } },
+  ];
 
-    query += ' GROUP BY sq.product_id, p.name, p.default_code ORDER BY p.name';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching stock summary:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (warehouse_id) {
+    pipeline.push({
+      $match: { 'location.warehouse_id': new mongoose.Types.ObjectId(warehouse_id as string) },
+    });
   }
-});
+
+  pipeline.push(
+    {
+      $lookup: {
+        from: 'products',
+        localField: 'product_id',
+        foreignField: '_id',
+        as: 'product',
+      },
+    },
+    { $unwind: { path: '$product', preserveNullAndEmptyArrays: true } },
+    {
+      $group: {
+        _id: '$product_id',
+        product_id: { $first: '$product_id' },
+        product_name: { $first: '$product.name' },
+        product_code: { $first: '$product.default_code' },
+        total_qty: { $sum: '$quantity' },
+        total_reserved: { $sum: '$reserved_quantity' },
+        location_count: { $addToSet: '$location_id' },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        product_id: 1,
+        product_name: 1,
+        product_code: 1,
+        total_qty: 1,
+        total_reserved: 1,
+        available_qty: { $subtract: ['$total_qty', '$total_reserved'] },
+        location_count: { $size: '$location_count' },
+      },
+    },
+    { $sort: { product_name: 1 } }
+  );
+
+  const result = await StockQuant.aggregate(pipeline);
+  res.json(result);
+}));
 
 // ============================================
 // GOODS RECEIPT NOTE (GRN)
 // ============================================
 
 // Get all GRNs
-router.get('/grn', async (req, res) => {
-  try {
-    const { state, partner_id, warehouse_id, start_date, end_date } = req.query;
-    let query = `
-      SELECT g.*,
-             p.name as partner_name,
-             w.name as warehouse_name,
-             u1.name as received_by_name,
-             u2.name as approved_by_name,
-             u3.name as qc_inspector_name
-      FROM stock_grn g
-      LEFT JOIN partners p ON g.partner_id = p.id
-      LEFT JOIN warehouses w ON g.warehouse_id = w.id
-      LEFT JOIN users u1 ON g.received_by = u1.id
-      LEFT JOIN users u2 ON g.approved_by = u2.id
-      LEFT JOIN users u3 ON g.qc_inspector_id = u3.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/grn', asyncHandler(async (req, res) => {
+  const { state, partner_id, warehouse_id, start_date, end_date } = req.query;
+  const filter: any = {};
 
-    if (state) {
-      query += ` AND g.state = $${paramCount++}`;
-      params.push(state);
-    }
+  if (state) filter.state = state;
+  if (partner_id) filter.partner_id = partner_id;
+  if (warehouse_id) filter.warehouse_id = warehouse_id;
+  if (start_date) filter.grn_date = { ...(filter.grn_date || {}), $gte: new Date(start_date as string) };
+  if (end_date) filter.grn_date = { ...(filter.grn_date || {}), $lte: new Date(end_date as string) };
 
-    if (partner_id) {
-      query += ` AND g.partner_id = $${paramCount++}`;
-      params.push(partner_id);
-    }
+  const pagination = getPaginationParams(req);
+  const result = await paginateQuery(
+    StockGrn.find(filter)
+      .populate('partner_id', 'name')
+      .populate('warehouse_id', 'name')
+      .populate('received_by', 'name')
+      .populate('approved_by', 'name')
+      .populate('qc_inspector_id', 'name')
+      .sort({ grn_date: -1, grn_number: -1 })
+      .lean(),
+    pagination,
+    filter,
+    StockGrn
+  );
 
-    if (warehouse_id) {
-      query += ` AND g.warehouse_id = $${paramCount++}`;
-      params.push(warehouse_id);
-    }
+  const mapItem = (g: any) => ({
+    ...g,
+    partner_name: g.partner_id?.name,
+    warehouse_name: g.warehouse_id?.name,
+    received_by_name: g.received_by?.name,
+    approved_by_name: g.approved_by?.name,
+    qc_inspector_name: g.qc_inspector_id?.name,
+  });
 
-    if (start_date) {
-      query += ` AND g.grn_date >= $${paramCount++}`;
-      params.push(start_date);
-    }
-
-    if (end_date) {
-      query += ` AND g.grn_date <= $${paramCount++}`;
-      params.push(end_date);
-    }
-
-    query += ' ORDER BY g.grn_date DESC, g.grn_number DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching GRNs:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json({ ...result, data: result.data.map(mapItem) });
+}));
 
 // Get GRN by ID with lines
-router.get('/grn/:id', async (req, res) => {
-  try {
-    const grnResult = await pool.query(
-      `SELECT g.*,
-              p.name as partner_name,
-              w.name as warehouse_name
-       FROM stock_grn g
-       LEFT JOIN partners p ON g.partner_id = p.id
-       LEFT JOIN warehouses w ON g.warehouse_id = w.id
-       WHERE g.id = $1`,
-      [req.params.id]
-    );
+router.get('/grn/:id', asyncHandler(async (req, res) => {
+  const grn = await StockGrn.findById(req.params.id)
+    .populate('partner_id', 'name')
+    .populate('warehouse_id', 'name')
+    .populate('lines.product_id', 'name default_code')
+    .lean();
 
-    if (grnResult.rows.length === 0) {
-      return res.status(404).json({ error: 'GRN not found' });
-    }
-
-    const linesResult = await pool.query(
-      `SELECT gl.*,
-              p.name as product_name,
-              p.default_code as product_code
-       FROM stock_grn_lines gl
-       JOIN products p ON gl.product_id = p.id
-       WHERE gl.grn_id = $1
-       ORDER BY gl.id`,
-      [req.params.id]
-    );
-
-    res.json({
-      ...grnResult.rows[0],
-      lines: linesResult.rows,
-    });
-  } catch (error) {
-    console.error('Error fetching GRN:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!grn) {
+    return res.status(404).json({ error: 'GRN not found' });
   }
-});
+
+  const lines = (grn.lines || []).map((l: any) => ({
+    ...l,
+    product_name: l.product_id?.name,
+    product_code: l.product_id?.default_code,
+  }));
+
+  res.json({
+    ...grn,
+    partner_name: (grn as any).partner_id?.name,
+    warehouse_name: (grn as any).warehouse_id?.name,
+    lines,
+  });
+}));
 
 // Create GRN
-router.post('/grn', async (req, res) => {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
+router.post('/grn', asyncHandler(async (req, res) => {
+  // Generate GRN number
+  const count = await StockGrn.countDocuments({ grn_number: { $regex: /^GRN-/ } });
+  const grnNumber = `GRN-${String(count + 1).padStart(6, '0')}`;
 
-    // Generate GRN number
-    const grnCountResult = await client.query(
-      "SELECT COUNT(*) as count FROM stock_grn WHERE grn_number LIKE 'GRN-%'"
-    );
-    const grnNumber = `GRN-${String(parseInt(grnCountResult.rows[0].count) + 1).padStart(6, '0')}`;
+  const {
+    partner_id, warehouse_id, grn_date, expected_date, purchase_order_id,
+    delivery_challan_number, supplier_invoice_number, notes, lines,
+  } = req.body;
 
-    const {
-      partner_id,
-      warehouse_id,
-      grn_date,
-      expected_date,
-      purchase_order_id,
-      delivery_challan_number,
-      supplier_invoice_number,
-      notes,
-      lines,
-    } = req.body;
+  const grnLines = (lines || []).map((line: any) => ({
+    product_id: line.product_id,
+    purchase_line_id: line.purchase_line_id,
+    product_uom_id: line.product_uom_id,
+    ordered_qty: line.ordered_qty,
+    received_qty: line.received_qty || 0,
+    unit_price: line.unit_price || 0,
+    landed_cost: line.landed_cost || 0,
+  }));
 
-    // Insert GRN header
-    const grnResult = await client.query(
-      `INSERT INTO stock_grn (
-        grn_number, partner_id, warehouse_id, grn_date, expected_date,
-        purchase_order_id, delivery_challan_number, supplier_invoice_number,
-        notes, state
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'draft')
-      RETURNING *`,
-      [
-        grnNumber,
-        partner_id,
-        warehouse_id,
-        grn_date || new Date(),
-        expected_date,
-        purchase_order_id,
-        delivery_challan_number,
-        supplier_invoice_number,
-        notes,
-      ]
-    );
+  const grn = await StockGrn.create({
+    grn_number: grnNumber,
+    partner_id, warehouse_id,
+    grn_date: grn_date || new Date(),
+    expected_date, purchase_order_id,
+    delivery_challan_number, supplier_invoice_number,
+    notes, state: 'draft',
+    lines: grnLines,
+  });
 
-    const grnId = grnResult.rows[0].id;
+  const populated = await StockGrn.findById(grn._id)
+    .populate('partner_id', 'name')
+    .populate('warehouse_id', 'name')
+    .lean();
 
-    // Insert GRN lines
-    if (lines && Array.isArray(lines)) {
-      for (const line of lines) {
-        await client.query(
-          `INSERT INTO stock_grn_lines (
-            grn_id, product_id, purchase_line_id, product_uom_id,
-            ordered_qty, received_qty, unit_price, landed_cost
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-          [
-            grnId,
-            line.product_id,
-            line.purchase_line_id,
-            line.product_uom_id,
-            line.ordered_qty,
-            line.received_qty || 0,
-            line.unit_price || 0,
-            line.landed_cost || 0,
-          ]
-        );
-      }
-    }
-
-    await client.query('COMMIT');
-
-    // Fetch complete GRN with lines
-    const completeGrn = await pool.query(
-      `SELECT g.*,
-              p.name as partner_name,
-              w.name as warehouse_name
-       FROM stock_grn g
-       LEFT JOIN partners p ON g.partner_id = p.id
-       LEFT JOIN warehouses w ON g.warehouse_id = w.id
-       WHERE g.id = $1`,
-      [grnId]
-    );
-
-    res.status(201).json(completeGrn.rows[0]);
-  } catch (error: any) {
-    await client.query('ROLLBACK');
-    console.error('Error creating GRN:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  } finally {
-    client.release();
-  }
-});
+  res.status(201).json({
+    ...populated,
+    partner_name: (populated as any)?.partner_id?.name,
+    warehouse_name: (populated as any)?.warehouse_id?.name,
+  });
+}));
 
 // Update GRN
-router.put('/grn/:id', async (req, res) => {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
+router.put('/grn/:id', asyncHandler(async (req, res) => {
+  const {
+    grn_date, expected_date, delivery_challan_number, supplier_invoice_number,
+    qc_status, qc_inspector_id, qc_date, qc_remarks, received_by, approved_by,
+    state, notes, lines,
+  } = req.body;
 
-    const {
-      grn_date,
-      expected_date,
-      delivery_challan_number,
-      supplier_invoice_number,
-      qc_status,
-      qc_inspector_id,
-      qc_date,
-      qc_remarks,
-      received_by,
-      approved_by,
-      state,
-      notes,
-      lines,
-    } = req.body;
+  const updateData: any = {
+    grn_date, expected_date, delivery_challan_number, supplier_invoice_number,
+    qc_status, qc_inspector_id, qc_date, qc_remarks, received_by, approved_by,
+    state, notes,
+  };
 
-    // Update GRN header
-    await client.query(
-      `UPDATE stock_grn 
-       SET grn_date = $1, expected_date = $2, delivery_challan_number = $3,
-           supplier_invoice_number = $4, qc_status = $5, qc_inspector_id = $6,
-           qc_date = $7, qc_remarks = $8, received_by = $9, approved_by = $10,
-           state = $11, notes = $12, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $13`,
-      [
-        grn_date,
-        expected_date,
-        delivery_challan_number,
-        supplier_invoice_number,
-        qc_status,
-        qc_inspector_id,
-        qc_date,
-        qc_remarks,
-        received_by,
-        approved_by,
-        state,
-        notes,
-        req.params.id,
-      ]
-    );
-
-    // Update lines if provided
-    if (lines && Array.isArray(lines)) {
-      // Delete existing lines
-      await client.query('DELETE FROM stock_grn_lines WHERE grn_id = $1', [req.params.id]);
-
-      // Insert new lines
-      for (const line of lines) {
-        await client.query(
-          `INSERT INTO stock_grn_lines (
-            grn_id, product_id, purchase_line_id, product_uom_id,
-            ordered_qty, received_qty, accepted_qty, rejected_qty,
-            unit_price, landed_cost, qc_status, qc_remarks
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
-          [
-            req.params.id,
-            line.product_id,
-            line.purchase_line_id,
-            line.product_uom_id,
-            line.ordered_qty,
-            line.received_qty || 0,
-            line.accepted_qty || 0,
-            line.rejected_qty || 0,
-            line.unit_price || 0,
-            line.landed_cost || 0,
-            line.qc_status || 'pending',
-            line.qc_remarks,
-          ]
-        );
-      }
-    }
-
-    await client.query('COMMIT');
-
-    // Fetch updated GRN
-    const result = await pool.query(
-      `SELECT g.*,
-              p.name as partner_name,
-              w.name as warehouse_name
-       FROM stock_grn g
-       LEFT JOIN partners p ON g.partner_id = p.id
-       LEFT JOIN warehouses w ON g.warehouse_id = w.id
-       WHERE g.id = $1`,
-      [req.params.id]
-    );
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Error updating GRN:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  } finally {
-    client.release();
+  if (lines && Array.isArray(lines)) {
+    updateData.lines = lines.map((line: any) => ({
+      product_id: line.product_id,
+      purchase_line_id: line.purchase_line_id,
+      product_uom_id: line.product_uom_id,
+      ordered_qty: line.ordered_qty,
+      received_qty: line.received_qty || 0,
+      accepted_qty: line.accepted_qty || 0,
+      rejected_qty: line.rejected_qty || 0,
+      unit_price: line.unit_price || 0,
+      landed_cost: line.landed_cost || 0,
+      qc_status: line.qc_status || 'pending',
+      qc_remarks: line.qc_remarks,
+    }));
   }
-});
+
+  const grn = await StockGrn.findByIdAndUpdate(req.params.id, updateData, { new: true })
+    .populate('partner_id', 'name')
+    .populate('warehouse_id', 'name')
+    .lean();
+
+  if (!grn) {
+    return res.status(404).json({ error: 'GRN not found' });
+  }
+
+  res.json({
+    ...grn,
+    partner_name: (grn as any).partner_id?.name,
+    warehouse_name: (grn as any).warehouse_id?.name,
+  });
+}));
 
 // ============================================
 // STOCK TRANSFERS
 // ============================================
 
 // Get all transfers
-router.get('/transfers', async (req, res) => {
-  try {
-    const { state, from_warehouse_id, to_warehouse_id } = req.query;
-    let query = `
-      SELECT t.*,
-             w1.name as from_warehouse_name,
-             w2.name as to_warehouse_name,
-             u1.name as initiated_by_name,
-             u2.name as received_by_name
-      FROM stock_transfer t
-      LEFT JOIN warehouses w1 ON t.from_warehouse_id = w1.id
-      LEFT JOIN warehouses w2 ON t.to_warehouse_id = w2.id
-      LEFT JOIN users u1 ON t.initiated_by = u1.id
-      LEFT JOIN users u2 ON t.received_by = u2.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/transfers', asyncHandler(async (req, res) => {
+  const { state, from_warehouse_id, to_warehouse_id } = req.query;
+  const filter: any = {};
 
-    if (state) {
-      query += ` AND t.state = $${paramCount++}`;
-      params.push(state);
-    }
+  if (state) filter.state = state;
+  if (from_warehouse_id) filter.from_warehouse_id = from_warehouse_id;
+  if (to_warehouse_id) filter.to_warehouse_id = to_warehouse_id;
 
-    if (from_warehouse_id) {
-      query += ` AND t.from_warehouse_id = $${paramCount++}`;
-      params.push(from_warehouse_id);
-    }
+  const pagination = getPaginationParams(req);
+  const result = await paginateQuery(
+    StockTransfer.find(filter)
+      .populate('from_warehouse_id', 'name')
+      .populate('to_warehouse_id', 'name')
+      .populate('initiated_by', 'name')
+      .populate('received_by', 'name')
+      .sort({ transfer_date: -1, transfer_number: -1 })
+      .lean(),
+    pagination,
+    filter,
+    StockTransfer
+  );
 
-    if (to_warehouse_id) {
-      query += ` AND t.to_warehouse_id = $${paramCount++}`;
-      params.push(to_warehouse_id);
-    }
+  const mapItem = (t: any) => ({
+    ...t,
+    from_warehouse_name: t.from_warehouse_id?.name,
+    to_warehouse_name: t.to_warehouse_id?.name,
+    initiated_by_name: t.initiated_by?.name,
+    received_by_name: t.received_by?.name,
+  });
 
-    query += ' ORDER BY t.transfer_date DESC, t.transfer_number DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching transfers:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json({ ...result, data: result.data.map(mapItem) });
+}));
 
 // Create transfer
-router.post('/transfers', async (req, res) => {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
+router.post('/transfers', asyncHandler(async (req, res) => {
+  const count = await StockTransfer.countDocuments({ transfer_number: { $regex: /^TRF-/ } });
+  const transferNumber = `TRF-${String(count + 1).padStart(6, '0')}`;
 
-    // Generate transfer number
-    const transferCountResult = await client.query(
-      "SELECT COUNT(*) as count FROM stock_transfer WHERE transfer_number LIKE 'TRF-%'"
-    );
-    const transferNumber = `TRF-${String(parseInt(transferCountResult.rows[0].count) + 1).padStart(6, '0')}`;
+  const {
+    from_warehouse_id, to_warehouse_id, from_location_id, to_location_id,
+    transfer_date, expected_delivery_date, transfer_type, initiated_by, notes, lines,
+  } = req.body;
 
-    const {
-      from_warehouse_id,
-      to_warehouse_id,
-      from_location_id,
-      to_location_id,
-      transfer_date,
-      expected_delivery_date,
-      transfer_type,
-      initiated_by,
-      notes,
-      lines,
-    } = req.body;
+  const transferLines = (lines || []).map((line: any) => ({
+    product_id: line.product_id,
+    product_uom_id: line.product_uom_id,
+    quantity: line.quantity,
+    lot_id: line.lot_id,
+    unit_cost: line.unit_cost || 0,
+  }));
 
-    const transferResult = await client.query(
-      `INSERT INTO stock_transfer (
-        transfer_number, from_warehouse_id, to_warehouse_id,
-        from_location_id, to_location_id, transfer_date,
-        expected_delivery_date, transfer_type, initiated_by, notes, state
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'draft')
-      RETURNING *`,
-      [
-        transferNumber,
-        from_warehouse_id,
-        to_warehouse_id,
-        from_location_id,
-        to_location_id,
-        transfer_date || new Date(),
-        expected_delivery_date,
-        transfer_type || 'warehouse_to_warehouse',
-        initiated_by,
-        notes,
-      ]
-    );
+  const transfer = await StockTransfer.create({
+    transfer_number: transferNumber,
+    from_warehouse_id, to_warehouse_id, from_location_id, to_location_id,
+    transfer_date: transfer_date || new Date(),
+    expected_delivery_date,
+    transfer_type: transfer_type || 'warehouse_to_warehouse',
+    initiated_by, notes, state: 'draft',
+    lines: transferLines,
+  });
 
-    const transferId = transferResult.rows[0].id;
-
-    // Insert transfer lines
-    if (lines && Array.isArray(lines)) {
-      for (const line of lines) {
-        await client.query(
-          `INSERT INTO stock_transfer_lines (
-            transfer_id, product_id, product_uom_id, quantity, lot_id, unit_cost
-          ) VALUES ($1, $2, $3, $4, $5, $6)`,
-          [
-            transferId,
-            line.product_id,
-            line.product_uom_id,
-            line.quantity,
-            line.lot_id,
-            line.unit_cost || 0,
-          ]
-        );
-      }
-    }
-
-    await client.query('COMMIT');
-    res.status(201).json(transferResult.rows[0]);
-  } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Error creating transfer:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  } finally {
-    client.release();
-  }
-});
+  res.status(201).json(transfer);
+}));
 
 // ============================================
 // STOCK ADJUSTMENTS
 // ============================================
 
 // Get all adjustments
-router.get('/adjustments', async (req, res) => {
-  try {
-    const { state, warehouse_id, adjustment_type, start_date, end_date } = req.query;
-    let query = `
-      SELECT a.*,
-             w.name as warehouse_name,
-             u1.name as adjusted_by_name,
-             u2.name as approved_by_name
-      FROM stock_adjustment a
-      LEFT JOIN warehouses w ON a.warehouse_id = w.id
-      LEFT JOIN users u1 ON a.adjusted_by = u1.id
-      LEFT JOIN users u2 ON a.approved_by = u2.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/adjustments', asyncHandler(async (req, res) => {
+  const { state, warehouse_id, adjustment_type, start_date, end_date } = req.query;
+  const filter: any = {};
 
-    if (state) {
-      query += ` AND a.state = $${paramCount++}`;
-      params.push(state);
-    }
+  if (state) filter.state = state;
+  if (warehouse_id) filter.warehouse_id = warehouse_id;
+  if (adjustment_type) filter.adjustment_type = adjustment_type;
+  if (start_date) filter.adjustment_date = { ...(filter.adjustment_date || {}), $gte: new Date(start_date as string) };
+  if (end_date) filter.adjustment_date = { ...(filter.adjustment_date || {}), $lte: new Date(end_date as string) };
 
-    if (warehouse_id) {
-      query += ` AND a.warehouse_id = $${paramCount++}`;
-      params.push(warehouse_id);
-    }
+  const pagination = getPaginationParams(req);
+  const result = await paginateQuery(
+    StockAdjustment.find(filter)
+      .populate('warehouse_id', 'name')
+      .populate('adjusted_by', 'name')
+      .populate('approved_by', 'name')
+      .sort({ adjustment_date: -1, adjustment_number: -1 })
+      .lean(),
+    pagination,
+    filter,
+    StockAdjustment
+  );
 
-    if (adjustment_type) {
-      query += ` AND a.adjustment_type = $${paramCount++}`;
-      params.push(adjustment_type);
-    }
+  const mapItem = (a: any) => ({
+    ...a,
+    warehouse_name: a.warehouse_id?.name,
+    adjusted_by_name: a.adjusted_by?.name,
+    approved_by_name: a.approved_by?.name,
+  });
 
-    if (start_date) {
-      query += ` AND a.adjustment_date >= $${paramCount++}`;
-      params.push(start_date);
-    }
-
-    if (end_date) {
-      query += ` AND a.adjustment_date <= $${paramCount++}`;
-      params.push(end_date);
-    }
-
-    query += ' ORDER BY a.adjustment_date DESC, a.adjustment_number DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching adjustments:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json({ ...result, data: result.data.map(mapItem) });
+}));
 
 // Create adjustment
-router.post('/adjustments', async (req, res) => {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
+router.post('/adjustments', asyncHandler(async (req, res) => {
+  const count = await StockAdjustment.countDocuments({ adjustment_number: { $regex: /^ADJ-/ } });
+  const adjustmentNumber = `ADJ-${String(count + 1).padStart(6, '0')}`;
 
-    // Generate adjustment number
-    const adjCountResult = await client.query(
-      "SELECT COUNT(*) as count FROM stock_adjustment WHERE adjustment_number LIKE 'ADJ-%'"
-    );
-    const adjustmentNumber = `ADJ-${String(parseInt(adjCountResult.rows[0].count) + 1).padStart(6, '0')}`;
+  const {
+    warehouse_id, location_id, adjustment_date, adjustment_type,
+    reason_code, reason_description, adjusted_by, notes, lines,
+  } = req.body;
 
-    const {
-      warehouse_id,
-      location_id,
-      adjustment_date,
-      adjustment_type,
-      reason_code,
-      reason_description,
-      adjusted_by,
-      notes,
-      lines,
-    } = req.body;
+  // Calculate total value and build lines
+  let totalValue = 0;
+  const adjustmentLines: any[] = [];
 
-    // Calculate total value
-    let totalValue = 0;
-    if (lines && Array.isArray(lines)) {
-      for (const line of lines) {
-        const productResult = await client.query(
-          'SELECT standard_price FROM products WHERE id = $1',
-          [line.product_id]
-        );
-        const unitCost = productResult.rows[0]?.standard_price || line.unit_cost || 0;
-        const adjustmentValue = Math.abs(line.adjustment_qty) * unitCost;
-        totalValue += adjustmentValue;
-      }
+  if (lines && Array.isArray(lines)) {
+    const productIds = lines.map((l: any) => new mongoose.Types.ObjectId(l.product_id));
+    const [products, quantAggs] = await Promise.all([
+      Product.find({ _id: { $in: productIds } }).lean(),
+      StockQuant.aggregate([
+        { $match: { product_id: { $in: productIds }, location_id: new mongoose.Types.ObjectId(location_id || warehouse_id) } },
+        { $group: { _id: '$product_id', qty: { $sum: '$quantity' } } }
+      ]),
+    ]);
+    const productMap = new Map(products.map((p: any) => [p._id.toString(), p]));
+    const quantMap = new Map(quantAggs.map((q: any) => [q._id.toString(), q.qty]));
+
+    for (const line of lines) {
+      const product = productMap.get(line.product_id.toString());
+      const unitCost = (product as any)?.standard_price || line.unit_cost || 0;
+      const systemQty = quantMap.get(line.product_id.toString()) || 0;
+
+      const adjustmentQty = line.physical_qty - systemQty;
+      const adjustmentValue = adjustmentQty * unitCost;
+      totalValue += Math.abs(line.adjustment_qty || adjustmentQty) * unitCost;
+
+      adjustmentLines.push({
+        product_id: line.product_id,
+        product_uom_id: line.product_uom_id,
+        system_qty: systemQty,
+        physical_qty: line.physical_qty,
+        adjustment_qty: adjustmentQty,
+        lot_id: line.lot_id,
+        unit_cost: unitCost,
+        adjustment_value: adjustmentValue,
+        reason_code: line.reason_code,
+      });
     }
-
-    const adjustmentResult = await client.query(
-      `INSERT INTO stock_adjustment (
-        adjustment_number, warehouse_id, location_id, adjustment_date,
-        adjustment_type, reason_code, reason_description, adjusted_by,
-        total_value, notes, state
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'draft')
-      RETURNING *`,
-      [
-        adjustmentNumber,
-        warehouse_id,
-        location_id,
-        adjustment_date || new Date(),
-        adjustment_type,
-        reason_code,
-        reason_description,
-        adjusted_by,
-        totalValue,
-        notes,
-      ]
-    );
-
-    const adjustmentId = adjustmentResult.rows[0].id;
-
-    // Insert adjustment lines
-    if (lines && Array.isArray(lines)) {
-      for (const line of lines) {
-        // Get system quantity
-        const systemQtyResult = await client.query(
-          `SELECT COALESCE(SUM(quantity), 0) as qty 
-           FROM stock_quant 
-           WHERE product_id = $1 AND location_id = $2`,
-          [line.product_id, location_id || warehouse_id]
-        );
-        const systemQty = parseFloat(systemQtyResult.rows[0].qty);
-
-        const productResult = await client.query(
-          'SELECT standard_price FROM products WHERE id = $1',
-          [line.product_id]
-        );
-        const unitCost = productResult.rows[0]?.standard_price || line.unit_cost || 0;
-        const adjustmentQty = line.physical_qty - systemQty;
-        const adjustmentValue = adjustmentQty * unitCost;
-
-        await client.query(
-          `INSERT INTO stock_adjustment_lines (
-            adjustment_id, product_id, product_uom_id, system_qty,
-            physical_qty, adjustment_qty, lot_id, unit_cost, adjustment_value, reason_code
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-          [
-            adjustmentId,
-            line.product_id,
-            line.product_uom_id,
-            systemQty,
-            line.physical_qty,
-            adjustmentQty,
-            line.lot_id,
-            unitCost,
-            adjustmentValue,
-            line.reason_code,
-          ]
-        );
-      }
-    }
-
-    await client.query('COMMIT');
-    res.status(201).json(adjustmentResult.rows[0]);
-  } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Error creating adjustment:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  } finally {
-    client.release();
   }
-});
+
+  const adjustment = await StockAdjustment.create({
+    adjustment_number: adjustmentNumber,
+    warehouse_id, location_id,
+    adjustment_date: adjustment_date || new Date(),
+    adjustment_type, reason_code, reason_description, adjusted_by,
+    total_value: totalValue, notes, state: 'draft',
+    lines: adjustmentLines,
+  });
+
+  res.status(201).json(adjustment);
+}));
 
 // ============================================
 // BATCH/LOT MANAGEMENT
 // ============================================
 
 // Get lots by product
-router.get('/lots', async (req, res) => {
-  try {
-    const { product_id, name } = req.query;
-    let query = `
-      SELECT l.*, p.name as product_name, p.default_code as product_code
-      FROM stock_production_lot l
-      JOIN products p ON l.product_id = p.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/lots', asyncHandler(async (req, res) => {
+  const { product_id, name } = req.query;
+  const filter: any = {};
 
-    if (product_id) {
-      query += ` AND l.product_id = $${paramCount++}`;
-      params.push(product_id);
-    }
+  if (product_id) filter.product_id = product_id;
+  if (name) filter.name = { $regex: name, $options: 'i' };
 
-    if (name) {
-      query += ` AND l.name ILIKE $${paramCount}`;
-      params.push(`%${name}%`);
-    }
+  const pagination = getPaginationParams(req);
+  const result = await paginateQuery(
+    StockProductionLot.find(filter)
+      .populate('product_id', 'name default_code')
+      .sort({ name: -1 })
+      .lean(),
+    pagination,
+    filter,
+    StockProductionLot
+  );
 
-    query += ' ORDER BY l.name DESC';
+  const mapItem = (l: any) => ({
+    ...l,
+    product_name: l.product_id?.name,
+    product_code: l.product_id?.default_code,
+  });
 
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching lots:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json({ ...result, data: result.data.map(mapItem) });
+}));
 
 // Create lot
-router.post('/lots', async (req, res) => {
-  try {
-    const { name, product_id, ref, note } = req.body;
-
-    const result = await pool.query(
-      `INSERT INTO stock_production_lot (name, product_id, ref, note)
-       VALUES ($1, $2, $3, $4)
-       RETURNING *`,
-      [name, product_id, ref, note]
-    );
-
-    res.status(201).json(result.rows[0]);
-  } catch (error: any) {
-    console.error('Error creating lot:', error);
-    if (error.code === '23505') {
-      res.status(400).json({ error: 'Lot name already exists for this product' });
-    } else {
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  }
-});
+router.post('/lots', asyncHandler(async (req, res) => {
+  const { name, product_id, ref, note } = req.body;
+  const lot = await StockProductionLot.create({ name, product_id, ref, note });
+  res.status(201).json(lot);
+}));
 
 // Update lot
-router.put('/lots/:id', async (req, res) => {
-  try {
-    const { name, ref, note } = req.body;
+router.put('/lots/:id', asyncHandler(async (req, res) => {
+  const { name, ref, note } = req.body;
+  const updateData: any = {};
+  if (name !== undefined) updateData.name = name;
+  if (ref !== undefined) updateData.ref = ref;
+  if (note !== undefined) updateData.note = note;
 
-    const result = await pool.query(
-      `UPDATE stock_production_lot 
-       SET name = COALESCE($1, name), ref = COALESCE($2, ref), note = COALESCE($3, note), updated_at = CURRENT_TIMESTAMP
-       WHERE id = $4
-       RETURNING *`,
-      [name, ref, note, req.params.id]
-    );
+  const lot = await StockProductionLot.findByIdAndUpdate(req.params.id, updateData, { new: true });
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Lot not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error: any) {
-    console.error('Error updating lot:', error);
-    if (error.code === '23505') {
-      res.status(400).json({ error: 'Lot name already exists for this product' });
-    } else {
-      res.status(500).json({ error: 'Internal server error' });
-    }
+  if (!lot) {
+    return res.status(404).json({ error: 'Lot not found' });
   }
-});
+
+  res.json(lot);
+}));
 
 // Delete lot
-router.delete('/lots/:id', async (req, res) => {
-  try {
-    const result = await pool.query('DELETE FROM stock_production_lot WHERE id = $1 RETURNING id', [req.params.id]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Lot not found' });
-    }
-
-    res.json({ message: 'Lot deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting lot:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.delete('/lots/:id', asyncHandler(async (req, res) => {
+  const lot = await StockProductionLot.findByIdAndDelete(req.params.id);
+  if (!lot) {
+    return res.status(404).json({ error: 'Lot not found' });
   }
-});
+  res.json({ message: 'Lot deleted successfully' });
+}));
 
 // Get serials
-router.get('/serials', async (req, res) => {
-  try {
-    const { product_id, name } = req.query;
-    let query = `
-      SELECT s.*, p.name as product_name, p.default_code as product_code
-      FROM stock_serial s
-      JOIN products p ON s.product_id = p.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/serials', asyncHandler(async (req, res) => {
+  const { product_id, name } = req.query;
+  const filter: any = {};
 
-    if (product_id) {
-      query += ` AND s.product_id = $${paramCount++}`;
-      params.push(product_id);
-    }
+  if (product_id) filter.product_id = product_id;
+  if (name) filter.name = { $regex: name, $options: 'i' };
 
-    if (name) {
-      query += ` AND s.name ILIKE $${paramCount}`;
-      params.push(`%${name}%`);
-    }
+  const pagination = getPaginationParams(req);
+  const result = await paginateQuery(
+    StockSerial.find(filter)
+      .populate('product_id', 'name default_code')
+      .sort({ name: -1 })
+      .lean(),
+    pagination,
+    filter,
+    StockSerial
+  );
 
-    query += ' ORDER BY s.name DESC';
+  const mapItem = (s: any) => ({
+    ...s,
+    product_name: s.product_id?.name,
+    product_code: s.product_id?.default_code,
+  });
 
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching serials:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json({ ...result, data: result.data.map(mapItem) });
+}));
 
 // Get serial by ID
-router.get('/serials/:id', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT s.*, p.name as product_name, p.default_code as product_code
-       FROM stock_serial s
-       JOIN products p ON s.product_id = p.id
-       WHERE s.id = $1`,
-      [req.params.id]
-    );
+router.get('/serials/:id', asyncHandler(async (req, res) => {
+  const serial = await StockSerial.findById(req.params.id)
+    .populate('product_id', 'name default_code')
+    .lean();
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Serial not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error fetching serial:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!serial) {
+    return res.status(404).json({ error: 'Serial not found' });
   }
-});
+
+  res.json({
+    ...serial,
+    product_name: (serial as any).product_id?.name,
+    product_code: (serial as any).product_id?.default_code,
+  });
+}));
 
 // Create serial
-router.post('/serials', async (req, res) => {
-  try {
-    const { name, product_id, lot_id, warranty_start_date, warranty_end_date, notes } = req.body;
-
-    const result = await pool.query(
-      `INSERT INTO stock_serial (name, product_id, lot_id, warranty_start_date, warranty_end_date, notes)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING *`,
-      [name, product_id, lot_id, warranty_start_date, warranty_end_date, notes]
-    );
-
-    res.status(201).json(result.rows[0]);
-  } catch (error: any) {
-    console.error('Error creating serial:', error);
-    if (error.code === '23505') {
-      res.status(400).json({ error: 'Serial number already exists' });
-    } else {
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  }
-});
+router.post('/serials', asyncHandler(async (req, res) => {
+  const { name, product_id, lot_id, warranty_start_date, warranty_end_date, notes } = req.body;
+  const serial = await StockSerial.create({ name, product_id, lot_id, warranty_start_date, warranty_end_date, notes });
+  res.status(201).json(serial);
+}));
 
 // Update serial
-router.put('/serials/:id', async (req, res) => {
-  try {
-    const { name, lot_id, warranty_start_date, warranty_end_date, notes } = req.body;
+router.put('/serials/:id', asyncHandler(async (req, res) => {
+  const { name, lot_id, warranty_start_date, warranty_end_date, notes } = req.body;
+  const updateData: any = {};
+  if (name !== undefined) updateData.name = name;
+  if (lot_id !== undefined) updateData.lot_id = lot_id;
+  if (warranty_start_date !== undefined) updateData.warranty_start_date = warranty_start_date;
+  if (warranty_end_date !== undefined) updateData.warranty_end_date = warranty_end_date;
+  if (notes !== undefined) updateData.notes = notes;
 
-    const result = await pool.query(
-      `UPDATE stock_serial 
-       SET name = COALESCE($1, name), lot_id = COALESCE($2, lot_id),
-           warranty_start_date = COALESCE($3, warranty_start_date),
-           warranty_end_date = COALESCE($4, warranty_end_date),
-           notes = COALESCE($5, notes), updated_at = CURRENT_TIMESTAMP
-       WHERE id = $6
-       RETURNING *`,
-      [name, lot_id, warranty_start_date, warranty_end_date, notes, req.params.id]
-    );
+  const serial = await StockSerial.findByIdAndUpdate(req.params.id, updateData, { new: true });
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Serial not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error: any) {
-    console.error('Error updating serial:', error);
-    if (error.code === '23505') {
-      res.status(400).json({ error: 'Serial number already exists' });
-    } else {
-      res.status(500).json({ error: 'Internal server error' });
-    }
+  if (!serial) {
+    return res.status(404).json({ error: 'Serial not found' });
   }
-});
+
+  res.json(serial);
+}));
 
 // Delete serial
-router.delete('/serials/:id', async (req, res) => {
-  try {
-    const result = await pool.query('DELETE FROM stock_serial WHERE id = $1 RETURNING id', [req.params.id]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Serial not found' });
-    }
-
-    res.json({ message: 'Serial deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting serial:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.delete('/serials/:id', asyncHandler(async (req, res) => {
+  const serial = await StockSerial.findByIdAndDelete(req.params.id);
+  if (!serial) {
+    return res.status(404).json({ error: 'Serial not found' });
   }
-});
+  res.json({ message: 'Serial deleted successfully' });
+}));
 
 // ============================================
 // REPLENISHMENT & REORDER SUGGESTIONS
 // ============================================
 
 // Get reorder suggestions
-router.get('/reorder-suggestions', async (req, res) => {
-  try {
-    const { warehouse_id, state } = req.query;
-    let query = `
-      SELECT rs.*,
-             p.name as product_name,
-             p.default_code as product_code,
-             w.name as warehouse_name
-      FROM stock_reorder_suggestion rs
-      JOIN products p ON rs.product_id = p.id
-      LEFT JOIN warehouses w ON rs.warehouse_id = w.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/reorder-suggestions', asyncHandler(async (req, res) => {
+  const { warehouse_id, state } = req.query;
+  const filter: any = {};
 
-    if (warehouse_id) {
-      query += ` AND rs.warehouse_id = $${paramCount++}`;
-      params.push(warehouse_id);
-    }
+  if (warehouse_id) filter.warehouse_id = warehouse_id;
+  if (state) filter.state = state;
 
-    if (state) {
-      query += ` AND rs.state = $${paramCount++}`;
-      params.push(state);
-    }
+  const pagination = getPaginationParams(req);
+  const result = await paginateQuery(
+    StockReorderSuggestion.find(filter)
+      .populate('product_id', 'name default_code')
+      .populate('warehouse_id', 'name')
+      .sort({ suggested_qty: -1 })
+      .lean(),
+    pagination,
+    filter,
+    StockReorderSuggestion
+  );
 
-    query += ' ORDER BY rs.suggested_qty DESC';
+  const mapItem = (rs: any) => ({
+    ...rs,
+    product_name: rs.product_id?.name,
+    product_code: rs.product_id?.default_code,
+    warehouse_name: rs.warehouse_id?.name,
+  });
 
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching reorder suggestions:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json({ ...result, data: result.data.map(mapItem) });
+}));
 
 // ============================================
 // STOCK ISSUES
 // ============================================
 
 // Get all stock issues
-router.get('/stock-issues', async (req, res) => {
-  try {
-    const { state, issue_type, warehouse_id, start_date, end_date } = req.query;
-    let query = `
-      SELECT si.*,
-             w.name as from_warehouse_name,
-             u1.name as issued_by_name,
-             u2.name as approved_by_name
-      FROM stock_issue si
-      LEFT JOIN warehouses w ON si.from_warehouse_id = w.id
-      LEFT JOIN users u1 ON si.issued_by = u1.id
-      LEFT JOIN users u2 ON si.approved_by = u2.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/stock-issues', asyncHandler(async (req, res) => {
+  const { state, issue_type, warehouse_id, start_date, end_date } = req.query;
+  const filter: any = {};
 
-    if (state) {
-      query += ` AND si.state = $${paramCount++}`;
-      params.push(state);
-    }
+  if (state) filter.state = state;
+  if (issue_type) filter.issue_type = issue_type;
+  if (warehouse_id) filter.from_warehouse_id = warehouse_id;
+  if (start_date) filter.issue_date = { ...(filter.issue_date || {}), $gte: new Date(start_date as string) };
+  if (end_date) filter.issue_date = { ...(filter.issue_date || {}), $lte: new Date(end_date as string) };
 
-    if (issue_type) {
-      query += ` AND si.issue_type = $${paramCount++}`;
-      params.push(issue_type);
-    }
+  const pagination = getPaginationParams(req);
+  const result = await paginateQuery(
+    StockIssue.find(filter)
+      .populate('from_warehouse_id', 'name')
+      .populate('issued_by', 'name')
+      .populate('approved_by', 'name')
+      .sort({ issue_date: -1, issue_number: -1 })
+      .lean(),
+    pagination,
+    filter,
+    StockIssue
+  );
 
-    if (warehouse_id) {
-      query += ` AND si.from_warehouse_id = $${paramCount++}`;
-      params.push(warehouse_id);
-    }
+  const mapItem = (si: any) => ({
+    ...si,
+    from_warehouse_name: si.from_warehouse_id?.name,
+    issued_by_name: si.issued_by?.name,
+    approved_by_name: si.approved_by?.name,
+  });
 
-    if (start_date) {
-      query += ` AND si.issue_date >= $${paramCount++}`;
-      params.push(start_date);
-    }
-
-    if (end_date) {
-      query += ` AND si.issue_date <= $${paramCount++}`;
-      params.push(end_date);
-    }
-
-    query += ' ORDER BY si.issue_date DESC, si.issue_number DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching stock issues:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json({ ...result, data: result.data.map(mapItem) });
+}));
 
 // Get stock issue by ID
-router.get('/stock-issues/:id', async (req, res) => {
-  try {
-    const issueResult = await pool.query(
-      `SELECT si.*, w.name as from_warehouse_name
-       FROM stock_issue si
-       LEFT JOIN warehouses w ON si.from_warehouse_id = w.id
-       WHERE si.id = $1`,
-      [req.params.id]
-    );
+router.get('/stock-issues/:id', asyncHandler(async (req, res) => {
+  const issue = await StockIssue.findById(req.params.id)
+    .populate('from_warehouse_id', 'name')
+    .populate('lines.product_id', 'name default_code')
+    .lean();
 
-    if (issueResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Stock issue not found' });
-    }
-
-    const linesResult = await pool.query(
-      `SELECT sil.*, p.name as product_name, p.default_code as product_code
-       FROM stock_issue_lines sil
-       JOIN products p ON sil.product_id = p.id
-       WHERE sil.issue_id = $1
-       ORDER BY sil.id`,
-      [req.params.id]
-    );
-
-    res.json({
-      ...issueResult.rows[0],
-      lines: linesResult.rows,
-    });
-  } catch (error) {
-    console.error('Error fetching stock issue:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!issue) {
+    return res.status(404).json({ error: 'Stock issue not found' });
   }
-});
+
+  const lines = (issue.lines || []).map((l: any) => ({
+    ...l,
+    product_name: l.product_id?.name,
+    product_code: l.product_id?.default_code,
+  }));
+
+  res.json({
+    ...issue,
+    from_warehouse_name: (issue as any).from_warehouse_id?.name,
+    lines,
+  });
+}));
 
 // Create stock issue
-router.post('/stock-issues', async (req, res) => {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
+router.post('/stock-issues', asyncHandler(async (req, res) => {
+  const count = await StockIssue.countDocuments({ issue_number: { $regex: /^ISSUE-/ } });
+  const issueNumber = `ISSUE-${String(count + 1).padStart(6, '0')}`;
 
-    const issueCountResult = await client.query(
-      "SELECT COUNT(*) as count FROM stock_issue WHERE issue_number LIKE 'ISSUE-%'"
-    );
-    const issueNumber = `ISSUE-${String(parseInt(issueCountResult.rows[0].count) + 1).padStart(6, '0')}`;
+  const { issue_type, from_warehouse_id, to_entity_id, issue_date, issued_by, notes, lines } = req.body;
 
-    const {
-      issue_type,
-      from_warehouse_id,
-      to_entity_id,
-      issue_date,
-      issued_by,
-      notes,
-      lines,
-    } = req.body;
+  const issueLines = (lines || []).map((line: any) => ({
+    product_id: line.product_id,
+    product_uom_id: line.product_uom_id,
+    quantity: line.quantity,
+    lot_id: line.lot_id,
+  }));
 
-    const issueResult = await client.query(
-      `INSERT INTO stock_issue (
-        issue_number, issue_type, from_warehouse_id, to_entity_id,
-        issue_date, issued_by, notes, state
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'draft')
-      RETURNING *`,
-      [
-        issueNumber,
-        issue_type,
-        from_warehouse_id,
-        to_entity_id,
-        issue_date || new Date(),
-        issued_by,
-        notes,
-      ]
-    );
+  const issue = await StockIssue.create({
+    issue_number: issueNumber,
+    issue_type, from_warehouse_id, to_entity_id,
+    issue_date: issue_date || new Date(),
+    issued_by, notes, state: 'draft',
+    lines: issueLines,
+  });
 
-    const issueId = issueResult.rows[0].id;
-
-    if (lines && Array.isArray(lines)) {
-      for (const line of lines) {
-        await client.query(
-          `INSERT INTO stock_issue_lines (
-            issue_id, product_id, product_uom_id, quantity, lot_id
-          ) VALUES ($1, $2, $3, $4, $5)`,
-          [
-            issueId,
-            line.product_id,
-            line.product_uom_id,
-            line.quantity,
-            line.lot_id,
-          ]
-        );
-      }
-    }
-
-    await client.query('COMMIT');
-    res.status(201).json(issueResult.rows[0]);
-  } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Error creating stock issue:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  } finally {
-    client.release();
-  }
-});
+  res.status(201).json(issue);
+}));
 
 // Update stock issue
-router.put('/stock-issues/:id', async (req, res) => {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
+router.put('/stock-issues/:id', asyncHandler(async (req, res) => {
+  const { issue_date, notes, state, approved_by, lines } = req.body;
 
-    const {
-      issue_date,
-      notes,
-      state,
-      approved_by,
-      lines,
-    } = req.body;
+  const updateData: any = { issue_date, notes, state, approved_by };
 
-    await client.query(
-      `UPDATE stock_issue 
-       SET issue_date = $1, notes = $2, state = $3, approved_by = $4, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $5`,
-      [issue_date, notes, state, approved_by, req.params.id]
-    );
-
-    if (lines && Array.isArray(lines)) {
-      await client.query('DELETE FROM stock_issue_lines WHERE issue_id = $1', [req.params.id]);
-      for (const line of lines) {
-        await client.query(
-          `INSERT INTO stock_issue_lines (
-            issue_id, product_id, product_uom_id, quantity, lot_id
-          ) VALUES ($1, $2, $3, $4, $5)`,
-          [
-            req.params.id,
-            line.product_id,
-            line.product_uom_id,
-            line.quantity,
-            line.lot_id,
-          ]
-        );
-      }
-    }
-
-    await client.query('COMMIT');
-
-    const result = await pool.query(
-      `SELECT si.*, w.name as from_warehouse_name
-       FROM stock_issue si
-       LEFT JOIN warehouses w ON si.from_warehouse_id = w.id
-       WHERE si.id = $1`,
-      [req.params.id]
-    );
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Error updating stock issue:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  } finally {
-    client.release();
+  if (lines && Array.isArray(lines)) {
+    updateData.lines = lines.map((line: any) => ({
+      product_id: line.product_id,
+      product_uom_id: line.product_uom_id,
+      quantity: line.quantity,
+      lot_id: line.lot_id,
+    }));
   }
-});
+
+  const issue = await StockIssue.findByIdAndUpdate(req.params.id, updateData, { new: true })
+    .populate('from_warehouse_id', 'name')
+    .lean();
+
+  if (!issue) {
+    return res.status(404).json({ error: 'Stock issue not found' });
+  }
+
+  res.json({
+    ...issue,
+    from_warehouse_name: (issue as any).from_warehouse_id?.name,
+  });
+}));
 
 // Approve stock issue
-router.post('/stock-issues/:id/approve', async (req, res) => {
-  try {
-    const { approved_by } = req.body;
-    await pool.query(
-      `UPDATE stock_issue 
-       SET state = 'approved', approved_by = $1, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $2`,
-      [approved_by, req.params.id]
-    );
-    res.json({ message: 'Stock issue approved' });
-  } catch (error) {
-    console.error('Error approving stock issue:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.post('/stock-issues/:id/approve', asyncHandler(async (req, res) => {
+  const { approved_by } = req.body;
+  await StockIssue.findByIdAndUpdate(req.params.id, { state: 'approved', approved_by });
+  res.json({ message: 'Stock issue approved' });
+}));
 
 // Issue stock (execute)
-router.post('/stock-issues/:id/issue', async (req, res) => {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-
-    // Update state
-    await client.query(
-      `UPDATE stock_issue 
-       SET state = 'issued', updated_at = CURRENT_TIMESTAMP
-       WHERE id = $1`,
-      [req.params.id]
-    );
-
-    // TODO: Update stock quantities (reduce from warehouse)
-
-    await client.query('COMMIT');
-    res.json({ message: 'Stock issued successfully' });
-  } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Error issuing stock:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  } finally {
-    client.release();
-  }
-});
+router.post('/stock-issues/:id/issue', asyncHandler(async (req, res) => {
+  await StockIssue.findByIdAndUpdate(req.params.id, { state: 'issued' });
+  // TODO: Update stock quantities (reduce from warehouse)
+  res.json({ message: 'Stock issued successfully' });
+}));
 
 // Delete stock issue
-router.delete('/stock-issues/:id', async (req, res) => {
-  try {
-    const result = await pool.query('DELETE FROM stock_issue WHERE id = $1 RETURNING id', [req.params.id]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Stock issue not found' });
-    }
-
-    res.json({ message: 'Stock issue deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting stock issue:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.delete('/stock-issues/:id', asyncHandler(async (req, res) => {
+  const issue = await StockIssue.findByIdAndDelete(req.params.id);
+  if (!issue) {
+    return res.status(404).json({ error: 'Stock issue not found' });
   }
-});
+  res.json({ message: 'Stock issue deleted successfully' });
+}));
 
 // ============================================
 // STOCK RETURNS
 // ============================================
 
 // Get all stock returns
-router.get('/stock-returns', async (req, res) => {
-  try {
-    const { state, return_type, warehouse_id, start_date, end_date } = req.query;
-    let query = `
-      SELECT sr.*,
-             w.name as warehouse_name,
-             u1.name as returned_by_name,
-             u2.name as approved_by_name
-      FROM stock_return sr
-      LEFT JOIN warehouses w ON sr.warehouse_id = w.id
-      LEFT JOIN users u1 ON sr.returned_by = u1.id
-      LEFT JOIN users u2 ON sr.approved_by = u2.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/stock-returns', asyncHandler(async (req, res) => {
+  const { state, return_type, warehouse_id, start_date, end_date } = req.query;
+  const filter: any = {};
 
-    if (state) {
-      query += ` AND sr.state = $${paramCount++}`;
-      params.push(state);
-    }
+  if (state) filter.state = state;
+  if (return_type) filter.return_type = return_type;
+  if (warehouse_id) filter.warehouse_id = warehouse_id;
+  if (start_date) filter.return_date = { ...(filter.return_date || {}), $gte: new Date(start_date as string) };
+  if (end_date) filter.return_date = { ...(filter.return_date || {}), $lte: new Date(end_date as string) };
 
-    if (return_type) {
-      query += ` AND sr.return_type = $${paramCount++}`;
-      params.push(return_type);
-    }
+  const pagination = getPaginationParams(req);
+  const result = await paginateQuery(
+    StockReturn.find(filter)
+      .populate('warehouse_id', 'name')
+      .populate('returned_by', 'name')
+      .populate('approved_by', 'name')
+      .sort({ return_date: -1, return_number: -1 })
+      .lean(),
+    pagination,
+    filter,
+    StockReturn
+  );
 
-    if (warehouse_id) {
-      query += ` AND sr.warehouse_id = $${paramCount++}`;
-      params.push(warehouse_id);
-    }
+  const mapItem = (sr: any) => ({
+    ...sr,
+    warehouse_name: sr.warehouse_id?.name,
+    returned_by_name: sr.returned_by?.name,
+    approved_by_name: sr.approved_by?.name,
+  });
 
-    if (start_date) {
-      query += ` AND sr.return_date >= $${paramCount++}`;
-      params.push(start_date);
-    }
-
-    if (end_date) {
-      query += ` AND sr.return_date <= $${paramCount++}`;
-      params.push(end_date);
-    }
-
-    query += ' ORDER BY sr.return_date DESC, sr.return_number DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching stock returns:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json({ ...result, data: result.data.map(mapItem) });
+}));
 
 // Get stock return by ID
-router.get('/stock-returns/:id', async (req, res) => {
-  try {
-    const returnResult = await pool.query(
-      `SELECT sr.*, w.name as warehouse_name
-       FROM stock_return sr
-       LEFT JOIN warehouses w ON sr.warehouse_id = w.id
-       WHERE sr.id = $1`,
-      [req.params.id]
-    );
+router.get('/stock-returns/:id', asyncHandler(async (req, res) => {
+  const stockReturn = await StockReturn.findById(req.params.id)
+    .populate('warehouse_id', 'name')
+    .populate('lines.product_id', 'name default_code')
+    .lean();
 
-    if (returnResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Stock return not found' });
-    }
-
-    const linesResult = await pool.query(
-      `SELECT srl.*, p.name as product_name, p.default_code as product_code
-       FROM stock_return_lines srl
-       JOIN products p ON srl.product_id = p.id
-       WHERE srl.return_id = $1
-       ORDER BY srl.id`,
-      [req.params.id]
-    );
-
-    res.json({
-      ...returnResult.rows[0],
-      lines: linesResult.rows,
-    });
-  } catch (error) {
-    console.error('Error fetching stock return:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!stockReturn) {
+    return res.status(404).json({ error: 'Stock return not found' });
   }
-});
+
+  const lines = (stockReturn.lines || []).map((l: any) => ({
+    ...l,
+    product_name: l.product_id?.name,
+    product_code: l.product_id?.default_code,
+  }));
+
+  res.json({
+    ...stockReturn,
+    warehouse_name: (stockReturn as any).warehouse_id?.name,
+    lines,
+  });
+}));
 
 // Create stock return
-router.post('/stock-returns', async (req, res) => {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
+router.post('/stock-returns', asyncHandler(async (req, res) => {
+  const count = await StockReturn.countDocuments({ return_number: { $regex: /^RET-/ } });
+  const returnNumber = `RET-${String(count + 1).padStart(6, '0')}`;
 
-    const returnCountResult = await client.query(
-      "SELECT COUNT(*) as count FROM stock_return WHERE return_number LIKE 'RET-%'"
-    );
-    const returnNumber = `RET-${String(parseInt(returnCountResult.rows[0].count) + 1).padStart(6, '0')}`;
+  const { return_type, original_transaction_id, warehouse_id, return_date, returned_by, notes, lines } = req.body;
 
-    const {
-      return_type,
-      original_transaction_id,
-      warehouse_id,
-      return_date,
-      returned_by,
-      notes,
-      lines,
-    } = req.body;
+  const returnLines = (lines || []).map((line: any) => ({
+    product_id: line.product_id,
+    product_uom_id: line.product_uom_id,
+    quantity: line.quantity,
+    reason_code: line.reason_code,
+    lot_id: line.lot_id,
+  }));
 
-    const returnResult = await client.query(
-      `INSERT INTO stock_return (
-        return_number, return_type, original_transaction_id, warehouse_id,
-        return_date, returned_by, notes, state
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'draft')
-      RETURNING *`,
-      [
-        returnNumber,
-        return_type,
-        original_transaction_id,
-        warehouse_id,
-        return_date || new Date(),
-        returned_by,
-        notes,
-      ]
-    );
+  const stockReturn = await StockReturn.create({
+    return_number: returnNumber,
+    return_type, original_transaction_id, warehouse_id,
+    return_date: return_date || new Date(),
+    returned_by, notes, state: 'draft',
+    lines: returnLines,
+  });
 
-    const returnId = returnResult.rows[0].id;
-
-    if (lines && Array.isArray(lines)) {
-      for (const line of lines) {
-        await client.query(
-          `INSERT INTO stock_return_lines (
-            return_id, product_id, product_uom_id, quantity, reason_code, lot_id
-          ) VALUES ($1, $2, $3, $4, $5, $6)`,
-          [
-            returnId,
-            line.product_id,
-            line.product_uom_id,
-            line.quantity,
-            line.reason_code,
-            line.lot_id,
-          ]
-        );
-      }
-    }
-
-    await client.query('COMMIT');
-    res.status(201).json(returnResult.rows[0]);
-  } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Error creating stock return:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  } finally {
-    client.release();
-  }
-});
+  res.status(201).json(stockReturn);
+}));
 
 // Update stock return
-router.put('/stock-returns/:id', async (req, res) => {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
+router.put('/stock-returns/:id', asyncHandler(async (req, res) => {
+  const { return_date, notes, state, approved_by, qc_status, lines } = req.body;
 
-    const {
-      return_date,
-      notes,
-      state,
-      approved_by,
-      qc_status,
-      lines,
-    } = req.body;
+  const updateData: any = { return_date, notes, state, approved_by, qc_status };
 
-    await client.query(
-      `UPDATE stock_return 
-       SET return_date = $1, notes = $2, state = $3, approved_by = $4, qc_status = $5, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $6`,
-      [return_date, notes, state, approved_by, qc_status, req.params.id]
-    );
-
-    if (lines && Array.isArray(lines)) {
-      await client.query('DELETE FROM stock_return_lines WHERE return_id = $1', [req.params.id]);
-      for (const line of lines) {
-        await client.query(
-          `INSERT INTO stock_return_lines (
-            return_id, product_id, product_uom_id, quantity, reason_code, lot_id
-          ) VALUES ($1, $2, $3, $4, $5, $6)`,
-          [
-            req.params.id,
-            line.product_id,
-            line.product_uom_id,
-            line.quantity,
-            line.reason_code,
-            line.lot_id,
-          ]
-        );
-      }
-    }
-
-    await client.query('COMMIT');
-
-    const result = await pool.query(
-      `SELECT sr.*, w.name as warehouse_name
-       FROM stock_return sr
-       LEFT JOIN warehouses w ON sr.warehouse_id = w.id
-       WHERE sr.id = $1`,
-      [req.params.id]
-    );
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Error updating stock return:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  } finally {
-    client.release();
+  if (lines && Array.isArray(lines)) {
+    updateData.lines = lines.map((line: any) => ({
+      product_id: line.product_id,
+      product_uom_id: line.product_uom_id,
+      quantity: line.quantity,
+      reason_code: line.reason_code,
+      lot_id: line.lot_id,
+    }));
   }
-});
+
+  const stockReturn = await StockReturn.findByIdAndUpdate(req.params.id, updateData, { new: true })
+    .populate('warehouse_id', 'name')
+    .lean();
+
+  if (!stockReturn) {
+    return res.status(404).json({ error: 'Stock return not found' });
+  }
+
+  res.json({
+    ...stockReturn,
+    warehouse_name: (stockReturn as any).warehouse_id?.name,
+  });
+}));
 
 // Delete stock return
-router.delete('/stock-returns/:id', async (req, res) => {
-  try {
-    const result = await pool.query('DELETE FROM stock_return WHERE id = $1 RETURNING id', [req.params.id]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Stock return not found' });
-    }
-
-    res.json({ message: 'Stock return deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting stock return:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.delete('/stock-returns/:id', asyncHandler(async (req, res) => {
+  const stockReturn = await StockReturn.findByIdAndDelete(req.params.id);
+  if (!stockReturn) {
+    return res.status(404).json({ error: 'Stock return not found' });
   }
-});
+  res.json({ message: 'Stock return deleted successfully' });
+}));
 
 // ============================================
 // WAREHOUSE OPERATIONS
 // ============================================
 
 // Get putaway tasks
-router.get('/warehouse-operations/putaway', async (req, res) => {
-  try {
-    const { state, warehouse_id } = req.query;
-    let query = `
-      SELECT pt.*,
-             g.grn_number,
-             p.name as product_name,
-             p.default_code as product_code
-      FROM putaway_tasks pt
-      LEFT JOIN stock_grn g ON pt.grn_id = g.id
-      LEFT JOIN products p ON pt.product_id = p.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/warehouse-operations/putaway', asyncHandler(async (req, res) => {
+  const { state, warehouse_id } = req.query;
+  const filter: any = {};
 
-    if (state) {
-      query += ` AND pt.state = $${paramCount++}`;
-      params.push(state);
-    }
+  if (state) filter.state = state;
+  if (warehouse_id) filter.warehouse_id = warehouse_id;
 
-    if (warehouse_id) {
-      query += ` AND pt.warehouse_id = $${paramCount++}`;
-      params.push(warehouse_id);
-    }
+  const pagination = getPaginationParams(req);
+  const result = await paginateQuery(
+    PutawayTask.find(filter)
+      .populate('grn_id', 'grn_number')
+      .populate('product_id', 'name default_code')
+      .sort({ created_at: -1 })
+      .lean(),
+    pagination,
+    filter,
+    PutawayTask
+  );
 
-    query += ' ORDER BY pt.created_at DESC';
+  const mapItem = (pt: any) => ({
+    ...pt,
+    grn_number: pt.grn_id?.grn_number,
+    product_name: pt.product_id?.name,
+    product_code: pt.product_id?.default_code,
+  });
 
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching putaway tasks:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json({ ...result, data: result.data.map(mapItem) });
+}));
 
 // Start putaway task
-router.post('/warehouse-operations/putaway/:id/start', async (req, res) => {
-  try {
-    await pool.query(
-      `UPDATE putaway_tasks 
-       SET state = 'in_progress', started_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $1`,
-      [req.params.id]
-    );
-    res.json({ message: 'Putaway task started' });
-  } catch (error) {
-    console.error('Error starting putaway task:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.post('/warehouse-operations/putaway/:id/start', asyncHandler(async (req, res) => {
+  await PutawayTask.findByIdAndUpdate(req.params.id, {
+    state: 'in_progress',
+    started_at: new Date(),
+  });
+  res.json({ message: 'Putaway task started' });
+}));
 
 // Complete putaway task
-router.post('/warehouse-operations/putaway/:id/complete', async (req, res) => {
-  try {
-    const { actual_location } = req.body;
-    const taskResult = await pool.query(
-      'SELECT started_at FROM putaway_tasks WHERE id = $1',
-      [req.params.id]
-    );
-    const startedAt = taskResult.rows[0]?.started_at;
-    const putawayTime = startedAt 
-      ? Math.round((new Date().getTime() - new Date(startedAt).getTime()) / 60000)
-      : 0;
+router.post('/warehouse-operations/putaway/:id/complete', asyncHandler(async (req, res) => {
+  const { actual_location } = req.body;
+  const task = await PutawayTask.findById(req.params.id).lean();
+  const startedAt = task?.started_at;
+  const putawayTime = startedAt
+    ? Math.round((new Date().getTime() - new Date(startedAt).getTime()) / 60000)
+    : 0;
 
-    await pool.query(
-      `UPDATE putaway_tasks 
-       SET state = 'completed', actual_location = $1, completed_at = CURRENT_TIMESTAMP,
-           putaway_time_minutes = $2, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $3`,
-      [actual_location, putawayTime, req.params.id]
-    );
-    res.json({ message: 'Putaway task completed' });
-  } catch (error) {
-    console.error('Error completing putaway task:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  await PutawayTask.findByIdAndUpdate(req.params.id, {
+    state: 'completed',
+    actual_location,
+    completed_at: new Date(),
+    putaway_time_minutes: putawayTime,
+  });
+  res.json({ message: 'Putaway task completed' });
+}));
 
 // Get picking tasks
-router.get('/warehouse-operations/picking', async (req, res) => {
-  try {
-    const { state, warehouse_id } = req.query;
-    let query = `
-      SELECT pt.*,
-             p.name as product_name,
-             p.default_code as product_code
-      FROM picking_tasks pt
-      LEFT JOIN products p ON pt.product_id = p.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/warehouse-operations/picking', asyncHandler(async (req, res) => {
+  const { state, warehouse_id } = req.query;
+  const filter: any = {};
 
-    if (state) {
-      query += ` AND pt.state = $${paramCount++}`;
-      params.push(state);
-    }
+  if (state) filter.state = state;
+  if (warehouse_id) filter.warehouse_id = warehouse_id;
 
-    if (warehouse_id) {
-      query += ` AND pt.warehouse_id = $${paramCount++}`;
-      params.push(warehouse_id);
-    }
+  const pagination = getPaginationParams(req);
+  const result = await paginateQuery(
+    PickingTask.find(filter)
+      .populate('product_id', 'name default_code')
+      .sort({ created_at: -1 })
+      .lean(),
+    pagination,
+    filter,
+    PickingTask
+  );
 
-    query += ' ORDER BY pt.created_at DESC';
+  const mapItem = (pt: any) => ({
+    ...pt,
+    product_name: pt.product_id?.name,
+    product_code: pt.product_id?.default_code,
+  });
 
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching picking tasks:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json({ ...result, data: result.data.map(mapItem) });
+}));
 
 // Start picking task
-router.post('/warehouse-operations/picking/:id/start', async (req, res) => {
-  try {
-    await pool.query(
-      `UPDATE picking_tasks 
-       SET state = 'in_progress', started_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $1`,
-      [req.params.id]
-    );
-    res.json({ message: 'Picking task started' });
-  } catch (error) {
-    console.error('Error starting picking task:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.post('/warehouse-operations/picking/:id/start', asyncHandler(async (req, res) => {
+  await PickingTask.findByIdAndUpdate(req.params.id, {
+    state: 'in_progress',
+    started_at: new Date(),
+  });
+  res.json({ message: 'Picking task started' });
+}));
 
 // Complete picking task
-router.post('/warehouse-operations/picking/:id/complete', async (req, res) => {
-  try {
-    const { quantity_picked } = req.body;
-    const taskResult = await pool.query(
-      'SELECT started_at FROM picking_tasks WHERE id = $1',
-      [req.params.id]
-    );
-    const startedAt = taskResult.rows[0]?.started_at;
-    const pickingTime = startedAt 
-      ? Math.round((new Date().getTime() - new Date(startedAt).getTime()) / 60000)
-      : 0;
+router.post('/warehouse-operations/picking/:id/complete', asyncHandler(async (req, res) => {
+  const { quantity_picked } = req.body;
+  const task = await PickingTask.findById(req.params.id).lean();
+  const startedAt = task?.started_at;
+  const pickingTime = startedAt
+    ? Math.round((new Date().getTime() - new Date(startedAt).getTime()) / 60000)
+    : 0;
 
-    await pool.query(
-      `UPDATE picking_tasks 
-       SET state = 'completed', quantity_picked = $1, completed_at = CURRENT_TIMESTAMP,
-           picking_time_minutes = $2, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $3`,
-      [quantity_picked, pickingTime, req.params.id]
-    );
-    res.json({ message: 'Picking task completed' });
-  } catch (error) {
-    console.error('Error completing picking task:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  await PickingTask.findByIdAndUpdate(req.params.id, {
+    state: 'completed',
+    quantity_picked,
+    completed_at: new Date(),
+    picking_time_minutes: pickingTime,
+  });
+  res.json({ message: 'Picking task completed' });
+}));
 
 // Get packing tasks
-router.get('/warehouse-operations/packing', async (req, res) => {
-  try {
-    const { state } = req.query;
-    let query = `
-      SELECT pt.*
-      FROM packing_tasks pt
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/warehouse-operations/packing', asyncHandler(async (req, res) => {
+  const { state } = req.query;
+  const filter: any = {};
 
-    if (state) {
-      query += ` AND pt.state = $${paramCount++}`;
-      params.push(state);
-    }
+  if (state) filter.state = state;
 
-    query += ' ORDER BY pt.created_at DESC';
+  const pagination = getPaginationParams(req);
+  const result = await paginateQuery(
+    PackingTask.find(filter).sort({ created_at: -1 }).lean(),
+    pagination,
+    filter,
+    PackingTask
+  );
 
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching packing tasks:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json(result);
+}));
 
 // Get cycle counts
-router.get('/warehouse-operations/cycle-counts', async (req, res) => {
-  try {
-    const { state, warehouse_id } = req.query;
-    let query = `
-      SELECT cc.*, w.name as warehouse_name
-      FROM cycle_counts cc
-      LEFT JOIN warehouses w ON cc.warehouse_id = w.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/warehouse-operations/cycle-counts', asyncHandler(async (req, res) => {
+  const { state, warehouse_id } = req.query;
+  const filter: any = {};
 
-    if (state) {
-      query += ` AND cc.state = $${paramCount++}`;
-      params.push(state);
-    }
+  if (state) filter.state = state;
+  if (warehouse_id) filter.warehouse_id = warehouse_id;
 
-    if (warehouse_id) {
-      query += ` AND cc.warehouse_id = $${paramCount++}`;
-      params.push(warehouse_id);
-    }
+  const pagination = getPaginationParams(req);
+  const result = await paginateQuery(
+    CycleCount.find(filter)
+      .populate('warehouse_id', 'name')
+      .sort({ created_at: -1 })
+      .lean(),
+    pagination,
+    filter,
+    CycleCount
+  );
 
-    query += ' ORDER BY cc.created_at DESC';
+  const mapItem = (cc: any) => ({
+    ...cc,
+    warehouse_name: cc.warehouse_id?.name,
+  });
 
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching cycle counts:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json({ ...result, data: result.data.map(mapItem) });
+}));
 
 // ============================================
 // SETTINGS
 // ============================================
 
 // Get inventory settings
-router.get('/settings', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM inventory_settings LIMIT 1');
-    if (result.rows.length === 0) {
-      // Return defaults
-      res.json({
-        default_removal_strategy: 'fifo',
-        default_cost_method: 'fifo',
-        auto_create_lots: false,
-        auto_assign_lots: false,
-        require_qc_on_grn: false,
-        require_approval_for_adjustments: true,
-        adjustment_approval_threshold: 10000,
-        enable_abc_analysis: true,
-        enable_cycle_counting: true,
-        cycle_count_frequency_days: 30,
-      });
-    } else {
-      res.json(result.rows[0]);
-    }
-  } catch (error) {
-    console.error('Error fetching settings:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.get('/settings', asyncHandler(async (req, res) => {
+  const settings = await InventorySettings.findOne().lean();
+  if (!settings) {
+    res.json({
+      default_removal_strategy: 'fifo',
+      default_cost_method: 'fifo',
+      auto_create_lots: false,
+      auto_assign_lots: false,
+      require_qc_on_grn: false,
+      require_approval_for_adjustments: true,
+      adjustment_approval_threshold: 10000,
+      enable_abc_analysis: true,
+      enable_cycle_counting: true,
+      cycle_count_frequency_days: 30,
+    });
+  } else {
+    res.json(settings);
   }
-});
+}));
 
 // Update inventory settings
-router.put('/settings', async (req, res) => {
-  try {
-    const settings = req.body;
-    const existing = await pool.query('SELECT id FROM inventory_settings LIMIT 1');
-    
-    if (existing.rows.length > 0) {
-      await pool.query(
-        `UPDATE inventory_settings 
-         SET default_removal_strategy = $1, default_cost_method = $2,
-             auto_create_lots = $3, auto_assign_lots = $4,
-             require_qc_on_grn = $5, require_approval_for_adjustments = $6,
-             adjustment_approval_threshold = $7, enable_abc_analysis = $8,
-             enable_cycle_counting = $9, cycle_count_frequency_days = $10,
-             updated_at = CURRENT_TIMESTAMP
-         WHERE id = $11`,
-        [
-          settings.default_removal_strategy,
-          settings.default_cost_method,
-          settings.auto_create_lots,
-          settings.auto_assign_lots,
-          settings.require_qc_on_grn,
-          settings.require_approval_for_adjustments,
-          settings.adjustment_approval_threshold,
-          settings.enable_abc_analysis,
-          settings.enable_cycle_counting,
-          settings.cycle_count_frequency_days,
-          existing.rows[0].id,
-        ]
-      );
-    } else {
-      await pool.query(
-        `INSERT INTO inventory_settings (
-          default_removal_strategy, default_cost_method, auto_create_lots,
-          auto_assign_lots, require_qc_on_grn, require_approval_for_adjustments,
-          adjustment_approval_threshold, enable_abc_analysis, enable_cycle_counting,
-          cycle_count_frequency_days
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-        [
-          settings.default_removal_strategy,
-          settings.default_cost_method,
-          settings.auto_create_lots,
-          settings.auto_assign_lots,
-          settings.require_qc_on_grn,
-          settings.require_approval_for_adjustments,
-          settings.adjustment_approval_threshold,
-          settings.enable_abc_analysis,
-          settings.enable_cycle_counting,
-          settings.cycle_count_frequency_days,
-        ]
-      );
-    }
+router.put('/settings', asyncHandler(async (req, res) => {
+  const settings = req.body;
+  const existing = await InventorySettings.findOne();
 
-    res.json({ message: 'Settings updated successfully' });
-  } catch (error) {
-    console.error('Error updating settings:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (existing) {
+    await InventorySettings.findByIdAndUpdate(existing._id, settings);
+  } else {
+    await InventorySettings.create(settings);
   }
-});
+
+  res.json({ message: 'Settings updated successfully' });
+}));
 
 // ============================================
 // STOCK LEDGER
 // ============================================
 
 // Get stock ledger
-router.get('/stock-ledger', async (req, res) => {
-  try {
-    const { product_id, location_id, start_date, end_date } = req.query;
-    let query = `
-      SELECT sl.*,
-             p.name as product_name,
-             p.default_code as product_code,
-             loc.name as location_name,
-             w.name as warehouse_name
-      FROM stock_ledger sl
-      JOIN products p ON sl.product_id = p.id
-      JOIN stock_locations loc ON sl.location_id = loc.id
-      LEFT JOIN warehouses w ON loc.warehouse_id = w.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/stock-ledger', asyncHandler(async (req, res) => {
+  const { product_id, location_id, start_date, end_date } = req.query;
+  const filter: any = {};
 
-    if (product_id) {
-      query += ` AND sl.product_id = $${paramCount++}`;
-      params.push(product_id);
-    }
+  if (product_id) filter.product_id = product_id;
+  if (location_id) filter.location_id = location_id;
+  if (start_date) filter.transaction_date = { ...(filter.transaction_date || {}), $gte: new Date(start_date as string) };
+  if (end_date) filter.transaction_date = { ...(filter.transaction_date || {}), $lte: new Date(end_date as string) };
 
-    if (location_id) {
-      query += ` AND sl.location_id = $${paramCount++}`;
-      params.push(location_id);
-    }
+  const pagination = getPaginationParams(req);
+  const result = await paginateQuery(
+    StockLedger.find(filter)
+      .populate('product_id', 'name default_code')
+      .populate({
+        path: 'location_id',
+        select: 'name warehouse_id',
+        populate: { path: 'warehouse_id', select: 'name' },
+      })
+      .sort({ transaction_date: -1, created_at: -1 })
+      .lean(),
+    pagination,
+    filter,
+    StockLedger
+  );
 
-    if (start_date) {
-      query += ` AND sl.transaction_date >= $${paramCount++}`;
-      params.push(start_date);
-    }
+  const mapItem = (sl: any) => ({
+    ...sl,
+    product_name: sl.product_id?.name,
+    product_code: sl.product_id?.default_code,
+    location_name: sl.location_id?.name,
+    warehouse_name: sl.location_id?.warehouse_id?.name,
+  });
 
-    if (end_date) {
-      query += ` AND sl.transaction_date <= $${paramCount++}`;
-      params.push(end_date);
-    }
-
-    query += ' ORDER BY sl.transaction_date DESC, sl.created_at DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching stock ledger:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json({ ...result, data: result.data.map(mapItem) });
+}));
 
 export default router;
-

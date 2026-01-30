@@ -1,5 +1,9 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { WebsiteOrder, WebsiteOrderItem, WebsiteOrderStatusHistory } from '../models/WebsiteOrder.js';
+import { WebsiteCart, WebsiteCartItem } from '../models/WebsiteCart.js';
+import Product from '../models/Product.js';
+import { SaleOrder } from '../models/SaleOrder.js';
 
 const router = express.Router();
 
@@ -7,39 +11,38 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const { site_id, customer_id, status, search } = req.query;
-    let query = `
-      SELECT wo.*, p.name as customer_name, p.email as customer_email
-      FROM website_orders wo
-      LEFT JOIN partners p ON wo.customer_id = p.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+    const filter: any = {};
 
-    if (site_id) {
-      query += ` AND wo.site_id = $${paramCount++}`;
-      params.push(site_id);
+    if (site_id) filter.site_id = site_id;
+    if (customer_id) filter.customer_id = customer_id;
+    if (status) filter.status = status;
+    if (search) {
+      filter.$or = [
+        { order_number: { $regex: search, $options: 'i' } },
+      ];
     }
 
-    if (customer_id) {
-      query += ` AND wo.customer_id = $${paramCount++}`;
-      params.push(customer_id);
-    }
+    const orders = await WebsiteOrder.find(filter)
+      .populate('customer_id', 'name email')
+      .sort({ created_at: -1 })
+      .lean();
 
-    if (status) {
-      query += ` AND wo.status = $${paramCount++}`;
-      params.push(status);
-    }
+    // If search includes partner name, we need post-filter
+    let result = orders.map((o: any) => ({
+      ...o,
+      id: o._id,
+      customer_name: o.customer_id?.name,
+      customer_email: o.customer_id?.email,
+    }));
 
     if (search) {
-      query += ` AND (wo.order_number ILIKE $${paramCount} OR p.name ILIKE $${paramCount})`;
-      params.push(`%${search}%`);
+      const searchRegex = new RegExp(search as string, 'i');
+      result = result.filter((o: any) =>
+        searchRegex.test(o.order_number) || searchRegex.test(o.customer_name)
+      );
     }
 
-    query += ' ORDER BY wo.created_at DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
+    res.json(result);
   } catch (error) {
     console.error('Error fetching orders:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -49,37 +52,37 @@ router.get('/', async (req, res) => {
 // Get order by ID
 router.get('/:id', async (req, res) => {
   try {
-    const result = await pool.query(
-      `SELECT wo.*, p.name as customer_name, p.email as customer_email, p.phone
-       FROM website_orders wo
-       LEFT JOIN partners p ON wo.customer_id = p.id
-       WHERE wo.id = $1`,
-      [req.params.id]
-    );
+    const order = await WebsiteOrder.findById(req.params.id)
+      .populate('customer_id', 'name email phone')
+      .lean();
 
-    if (result.rows.length === 0) {
+    if (!order) {
       return res.status(404).json({ error: 'Order not found' });
     }
 
-    // Get order items
-    const itemsResult = await pool.query(
-      `SELECT oi.*, p.name as product_name, p.image_url
-       FROM website_order_items oi
-       LEFT JOIN products p ON oi.product_id = p.id
-       WHERE oi.order_id = $1`,
-      [req.params.id]
-    );
+    const [items, history] = await Promise.all([
+      WebsiteOrderItem.find({ order_id: req.params.id })
+        .populate('product_id', 'name image_url')
+        .lean(),
+      WebsiteOrderStatusHistory.find({ order_id: req.params.id })
+        .sort({ created_at: -1 })
+        .lean(),
+    ]);
 
-    // Get status history
-    const historyResult = await pool.query(
-      'SELECT * FROM website_order_status_history WHERE order_id = $1 ORDER BY created_at DESC',
-      [req.params.id]
-    );
-
+    const o: any = order;
     res.json({
-      ...result.rows[0],
-      items: itemsResult.rows,
-      history: historyResult.rows,
+      ...o,
+      id: o._id,
+      customer_name: o.customer_id?.name,
+      customer_email: o.customer_id?.email,
+      phone: o.customer_id?.phone,
+      items: items.map((i: any) => ({
+        ...i,
+        id: i._id,
+        product_name: i.product_name || i.product_id?.name,
+        image_url: i.product_id?.image_url,
+      })),
+      history,
     });
   } catch (error) {
     console.error('Error fetching order:', error);
@@ -90,142 +93,89 @@ router.get('/:id', async (req, res) => {
 // Create order from cart (checkout)
 router.post('/checkout', async (req, res) => {
   try {
-    const {
-      cart_id,
-      customer_id,
-      session_id,
-      site_id,
-      shipping_address,
-      billing_address,
-      payment_method,
-      payment_reference,
-      shipping_method,
-    } = req.body;
+    const { cart_id, customer_id, session_id, site_id, shipping_address, billing_address, payment_method, payment_reference, shipping_method } = req.body;
 
-    // Get cart
-    const cartResult = await pool.query('SELECT * FROM website_carts WHERE id = $1', [cart_id]);
-    if (cartResult.rows.length === 0) {
+    const cart = await WebsiteCart.findById(cart_id);
+    if (!cart) {
       return res.status(404).json({ error: 'Cart not found' });
     }
 
-    const cart = cartResult.rows[0];
-
-    // Get cart items
-    const itemsResult = await pool.query(
-      'SELECT * FROM website_cart_items WHERE cart_id = $1',
-      [cart_id]
-    );
-
-    if (itemsResult.rows.length === 0) {
+    const cartItems = await WebsiteCartItem.find({ cart_id });
+    if (cartItems.length === 0) {
       return res.status(400).json({ error: 'Cart is empty' });
     }
 
-    // Generate order number
     const orderNumber = `WEB-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
-    // Create order
-    const orderResult = await pool.query(
-      `INSERT INTO website_orders (
-        order_number, site_id, customer_id, session_id, status, currency,
-        subtotal, tax_amount, shipping_amount, discount_amount, total,
-        payment_status, payment_method, payment_reference,
-        shipping_address, billing_address, shipping_method, promotion_code
-      )
-      VALUES ($1, $2, $3, $4, 'pending', $5, $6, $7, $8, $9, $10, 'pending', $11, $12, $13, $14, $15, $16)
-      RETURNING *`,
-      [
-        orderNumber,
-        site_id,
-        customer_id,
-        session_id,
-        cart.currency,
-        cart.subtotal,
-        cart.tax_amount,
-        cart.shipping_amount || 0,
-        cart.discount_amount || 0,
-        cart.total,
-        payment_method,
-        payment_reference,
-        JSON.stringify(shipping_address),
-        JSON.stringify(billing_address),
-        shipping_method,
-        cart.promotion_code,
-      ]
-    );
-
-    const order = orderResult.rows[0];
+    const order = await WebsiteOrder.create({
+      order_number: orderNumber,
+      site_id,
+      customer_id,
+      session_id,
+      status: 'pending',
+      currency: cart.currency,
+      subtotal: cart.subtotal,
+      tax_amount: cart.tax_amount,
+      shipping_amount: cart.shipping_amount || 0,
+      discount_amount: cart.discount_amount || 0,
+      total: cart.total,
+      payment_status: 'pending',
+      payment_method,
+      payment_reference,
+      shipping_address,
+      billing_address,
+      shipping_method,
+      promotion_code: cart.promotion_code,
+    });
 
     // Create order items
-    for (const item of itemsResult.rows) {
-      const productResult = await pool.query('SELECT name, default_code FROM products WHERE id = $1', [
-        item.product_id,
-      ]);
-      const product = productResult.rows[0];
+    for (const item of cartItems) {
+      const product = await Product.findById(item.product_id).select('name default_code');
 
-      await pool.query(
-        `INSERT INTO website_order_items (
-          order_id, product_id, website_product_id, variant_id,
-          product_name, product_sku, quantity, unit_price, subtotal
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-        [
-          order.id,
-          item.product_id,
-          item.website_product_id,
-          item.variant_id,
-          product.name,
-          product.default_code,
-          item.quantity,
-          item.unit_price,
-          item.subtotal,
-        ]
-      );
+      await WebsiteOrderItem.create({
+        order_id: order._id,
+        product_id: item.product_id,
+        website_product_id: item.website_product_id,
+        variant_id: item.variant_id,
+        product_name: product?.name,
+        product_sku: product?.default_code,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        subtotal: item.subtotal,
+      });
     }
 
     // Create ERP sales order
     let erpOrderId = null;
     if (customer_id) {
       try {
-        const erpOrderResult = await pool.query(
-          `INSERT INTO sale_orders (name, partner_id, date_order, amount_total, state, user_id)
-           VALUES ($1, $2, CURRENT_TIMESTAMP, $3, 'draft', NULL)
-           RETURNING id`,
-          [`SO-${orderNumber}`, customer_id, order.total]
-        );
-        erpOrderId = erpOrderResult.rows[0].id;
+        const erpOrder = await SaleOrder.create({
+          name: `SO-${orderNumber}`,
+          partner_id: customer_id,
+          date_order: new Date(),
+          amount_total: order.total,
+          state: 'draft',
+        });
+        erpOrderId = erpOrder._id;
 
-        // Create sale order lines
-        for (const item of itemsResult.rows) {
-          await pool.query(
-            `INSERT INTO sale_order_lines (order_id, product_id, product_uom_qty, price_unit, price_subtotal)
-             VALUES ($1, $2, $3, $4, $5)`,
-            [erpOrderId, item.product_id, item.quantity, item.unit_price, item.subtotal]
-          );
-        }
-
-        // Link website order to ERP order
-        await pool.query('UPDATE website_orders SET erp_order_id = $1 WHERE id = $2', [
-          erpOrderId,
-          order.id,
-        ]);
+        await WebsiteOrder.findByIdAndUpdate(order._id, { erp_order_id: erpOrderId });
       } catch (erpError) {
         console.error('Error creating ERP order:', erpError);
-        // Continue even if ERP order creation fails
       }
     }
 
     // Add status history
-    await pool.query(
-      `INSERT INTO website_order_status_history (order_id, status, notes)
-       VALUES ($1, 'pending', 'Order created from checkout')`,
-      [order.id]
-    );
+    await WebsiteOrderStatusHistory.create({
+      order_id: order._id,
+      status: 'pending',
+      notes: 'Order created from checkout',
+    });
 
     // Clear cart
-    await pool.query('DELETE FROM website_cart_items WHERE cart_id = $1', [cart_id]);
-    await pool.query('DELETE FROM website_carts WHERE id = $1', [cart_id]);
+    await WebsiteCartItem.deleteMany({ cart_id });
+    await WebsiteCart.findByIdAndDelete(cart_id);
 
-    res.status(201).json({ ...order, erp_order_id: erpOrderId });
+    res.status(201).json({ ...order.toObject(), erp_order_id: erpOrderId });
   } catch (error) {
     console.error('Error creating order:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -237,40 +187,26 @@ router.put('/:id/status', async (req, res) => {
   try {
     const { status, notes } = req.body;
 
-    const orderResult = await pool.query('SELECT * FROM website_orders WHERE id = $1', [
-      req.params.id,
-    ]);
-
-    if (orderResult.rows.length === 0) {
+    const order = await WebsiteOrder.findById(req.params.id);
+    if (!order) {
       return res.status(404).json({ error: 'Order not found' });
     }
 
-    // Update order
-    await pool.query('UPDATE website_orders SET status = $1 WHERE id = $2', [
-      status,
-      req.params.id,
-    ]);
+    await WebsiteOrder.findByIdAndUpdate(req.params.id, { status });
 
-    // Add status history
-    await pool.query(
-      `INSERT INTO website_order_status_history (order_id, status, notes)
-       VALUES ($1, $2, $3)`,
-      [req.params.id, status, notes || '']
-    );
+    await WebsiteOrderStatusHistory.create({
+      order_id: req.params.id,
+      status,
+      notes: notes || '',
+    });
 
     // Update ERP order if linked
-    if (orderResult.rows[0].erp_order_id) {
+    if (order.erp_order_id) {
       let erpState = 'draft';
-      if (status === 'confirmed' || status === 'paid') {
-        erpState = 'sale';
-      } else if (status === 'cancelled') {
-        erpState = 'cancel';
-      }
+      if (status === 'confirmed' || status === 'paid') erpState = 'sale';
+      else if (status === 'cancelled') erpState = 'cancel';
 
-      await pool.query('UPDATE sale_orders SET state = $1 WHERE id = $2', [
-        erpState,
-        orderResult.rows[0].erp_order_id,
-      ]);
+      await SaleOrder.findByIdAndUpdate(order.erp_order_id, { state: erpState });
     }
 
     res.json({ message: 'Order status updated', status });
@@ -285,19 +221,13 @@ router.put('/:id/payment', async (req, res) => {
   try {
     const { payment_status, payment_reference } = req.body;
 
-    await pool.query(
-      `UPDATE website_orders 
-       SET payment_status = $1, payment_reference = COALESCE($2, payment_reference)
-       WHERE id = $3`,
-      [payment_status, payment_reference, req.params.id]
-    );
+    const updateData: any = { payment_status };
+    if (payment_reference) updateData.payment_reference = payment_reference;
 
-    // If paid, update order status
+    await WebsiteOrder.findByIdAndUpdate(req.params.id, updateData);
+
     if (payment_status === 'paid') {
-      await pool.query('UPDATE website_orders SET status = $1 WHERE id = $2', [
-        'confirmed',
-        req.params.id,
-      ]);
+      await WebsiteOrder.findByIdAndUpdate(req.params.id, { status: 'confirmed' });
     }
 
     res.json({ message: 'Payment status updated' });
@@ -308,4 +238,3 @@ router.put('/:id/payment', async (req, res) => {
 });
 
 export default router;
-

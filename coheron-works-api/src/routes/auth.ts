@@ -1,126 +1,101 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import User from '../models/User.js';
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { getUserRoles, getUserPermissions } from '../utils/permissions.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
 
 const router = express.Router();
 
 // Login
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
+router.post('/login', asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
 
-    const result = await pool.query(
-      'SELECT * FROM users WHERE email = $1',
-      [email]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    const user = result.rows[0];
-    const isValid = await bcrypt.compare(password, user.password_hash);
-
-    if (!isValid) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    // Get user roles and permissions
-    const roles = await getUserRoles(user.id);
-    const permissions = await getUserPermissions(user.id);
-
-    const jwtSecret = process.env.JWT_SECRET || 'secret';
-    const expiresIn = process.env.JWT_EXPIRES_IN || '24h';
-    const token = jwt.sign(
-      { 
-        userId: user.id, 
-        uid: user.uid, 
-        email: user.email,
-        roles,
-        permissions
-      },
-      jwtSecret,
-      { expiresIn } as SignOptions
-    );
-
-    res.json({
-      token,
-      user: {
-        id: user.id,
-        uid: user.uid,
-        name: user.name,
-        email: user.email,
-        roles,
-        permissions
-      },
-    });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(401).json({ error: 'Invalid credentials' });
   }
-});
+
+  const isValid = await bcrypt.compare(password, user.password_hash);
+  if (!isValid) {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+
+  const roles = await getUserRoles(user._id.toString());
+  const permissions = await getUserPermissions(user._id.toString());
+
+  const jwtSecret = process.env.JWT_SECRET || 'secret';
+  const expiresIn = process.env.JWT_EXPIRES_IN || '24h';
+  const token = jwt.sign(
+    {
+      userId: user._id.toString(),
+      uid: user.uid,
+      email: user.email,
+      roles,
+      permissions
+    },
+    jwtSecret,
+    { expiresIn } as SignOptions
+  );
+
+  res.json({
+    token,
+    user: {
+      id: user._id,
+      uid: user.uid,
+      name: user.name,
+      email: user.email,
+      roles,
+      permissions
+    },
+  });
+}));
 
 // Register
-router.post('/register', async (req, res) => {
-  try {
-    const { name, email, password } = req.body;
+router.post('/register', asyncHandler(async (req, res) => {
+  const { name, email, password } = req.body;
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+  const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Get next UID
-    const uidResult = await pool.query(
-      'SELECT COALESCE(MAX(uid), 0) + 1 as next_uid FROM users'
-    );
-    const nextUid = uidResult.rows[0].next_uid;
+  // Get next UID
+  const lastUser = await User.findOne().sort({ uid: -1 });
+  const nextUid = (lastUser?.uid || 0) + 1;
 
-    const result = await pool.query(
-      `INSERT INTO users (uid, name, email, password_hash) 
-       VALUES ($1, $2, $3, $4) 
-       RETURNING id, uid, name, email`,
-      [nextUid, name, email, hashedPassword]
-    );
+  const user = await User.create({
+    uid: nextUid,
+    name,
+    email,
+    password_hash: hashedPassword,
+  });
 
-    const user = result.rows[0];
-    
-    // Get user roles and permissions (new user will have empty arrays)
-    const roles = await getUserRoles(user.id);
-    const permissions = await getUserPermissions(user.id);
+  const roles = await getUserRoles(user._id.toString());
+  const permissions = await getUserPermissions(user._id.toString());
 
-    const jwtSecret = process.env.JWT_SECRET || 'secret';
-    const expiresIn = process.env.JWT_EXPIRES_IN || '24h';
-    const token = jwt.sign(
-      { 
-        userId: user.id, 
-        uid: user.uid, 
-        email: user.email,
-        roles,
-        permissions
-      },
-      jwtSecret,
-      { expiresIn } as SignOptions
-    );
+  const jwtSecret = process.env.JWT_SECRET || 'secret';
+  const expiresIn = process.env.JWT_EXPIRES_IN || '24h';
+  const token = jwt.sign(
+    {
+      userId: user._id.toString(),
+      uid: user.uid,
+      email: user.email,
+      roles,
+      permissions
+    },
+    jwtSecret,
+    { expiresIn } as SignOptions
+  );
 
-    res.status(201).json({
-      token,
-      user: {
-        id: user.id,
-        uid: user.uid,
-        name: user.name,
-        email: user.email,
-        roles,
-        permissions
-      },
-    });
-  } catch (error: any) {
-    if (error.code === '23505') {
-      return res.status(400).json({ error: 'Email already exists' });
-    }
-    console.error('Register error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.status(201).json({
+    token,
+    user: {
+      id: user._id,
+      uid: user.uid,
+      name: user.name,
+      email: user.email,
+      roles,
+      permissions
+    },
+  });
+}));
 
 export default router;
-

@@ -1,5 +1,7 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import { CannedResponse } from '../models/CannedResponse.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
@@ -8,177 +10,117 @@ const router = express.Router();
 // ============================================
 
 // Get all canned responses
-router.get('/', async (req, res) => {
-  try {
-    const { category, is_public, search, created_by } = req.query;
-    let query = `
-      SELECT cr.*, u.name as created_by_name
-      FROM canned_responses cr
-      LEFT JOIN users u ON cr.created_by = u.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/', asyncHandler(async (req, res) => {
+  const { category, is_public, search, created_by } = req.query;
+  const filter: any = {};
 
-    if (category) {
-      query += ` AND cr.category = $${paramCount++}`;
-      params.push(category);
-    }
-
-    if (is_public !== undefined) {
-      query += ` AND cr.is_public = $${paramCount++}`;
-      params.push(is_public === 'true');
-    }
-
-    if (created_by) {
-      query += ` AND cr.created_by = $${paramCount++}`;
-      params.push(created_by);
-    }
-
-    if (search) {
-      query += ` AND (cr.name ILIKE $${paramCount} OR cr.content ILIKE $${paramCount})`;
-      params.push(`%${search}%`);
-    }
-
-    query += ' ORDER BY cr.usage_count DESC, cr.name';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching canned responses:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (category) filter.category = category;
+  if (is_public !== undefined) filter.is_public = is_public === 'true';
+  if (created_by) filter.created_by = created_by;
+  if (search) {
+    filter.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { content: { $regex: search, $options: 'i' } },
+    ];
   }
-});
+
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    CannedResponse.find(filter)
+      .populate('created_by', 'name')
+      .sort({ usage_count: -1, name: 1 })
+      .lean(),
+    pagination, filter, CannedResponse
+  );
+
+  const data = paginatedResult.data.map((r: any) => ({
+    ...r,
+    id: r._id,
+    created_by_name: r.created_by?.name,
+  }));
+
+  res.json({ data, pagination: paginatedResult.pagination });
+}));
 
 // Get canned response by ID
-router.get('/:id', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT cr.*, u.name as created_by_name
-       FROM canned_responses cr
-       LEFT JOIN users u ON cr.created_by = u.id
-       WHERE cr.id = $1`,
-      [req.params.id]
-    );
+router.get('/:id', asyncHandler(async (req, res) => {
+  const response = await CannedResponse.findById(req.params.id)
+    .populate('created_by', 'name')
+    .lean();
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Canned response not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error fetching canned response:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!response) {
+    return res.status(404).json({ error: 'Canned response not found' });
   }
-});
+
+  const r: any = response;
+  res.json({ ...r, id: r._id, created_by_name: r.created_by?.name });
+}));
 
 // Create canned response
-router.post('/', async (req, res) => {
-  try {
-    const { name, shortcut, content, category, is_public, created_by } = req.body;
+router.post('/', asyncHandler(async (req, res) => {
+  const { name, shortcut, content, category, is_public, created_by } = req.body;
 
-    if (!name || !content) {
-      return res.status(400).json({ error: 'Name and content are required' });
-    }
-
-    const result = await pool.query(
-      `INSERT INTO canned_responses (name, shortcut, content, category, is_public, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING *`,
-      [name, shortcut, content, category, is_public !== undefined ? is_public : false, created_by]
-    );
-
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating canned response:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!name || !content) {
+    return res.status(400).json({ error: 'Name and content are required' });
   }
-});
+
+  const response = await CannedResponse.create({
+    name,
+    shortcut,
+    content,
+    category,
+    is_public: is_public !== undefined ? is_public : false,
+    created_by,
+  });
+
+  res.status(201).json(response);
+}));
 
 // Update canned response
-router.put('/:id', async (req, res) => {
-  try {
-    const { name, shortcut, content, category, is_public } = req.body;
+router.put('/:id', asyncHandler(async (req, res) => {
+  const { name, shortcut, content, category, is_public } = req.body;
+  const updateData: any = {};
 
-    const updateFields: string[] = [];
-    const params: any[] = [];
-    let paramCount = 1;
+  if (name !== undefined) updateData.name = name;
+  if (shortcut !== undefined) updateData.shortcut = shortcut;
+  if (content !== undefined) updateData.content = content;
+  if (category !== undefined) updateData.category = category;
+  if (is_public !== undefined) updateData.is_public = is_public;
 
-    if (name !== undefined) {
-      updateFields.push(`name = $${paramCount++}`);
-      params.push(name);
-    }
-    if (shortcut !== undefined) {
-      updateFields.push(`shortcut = $${paramCount++}`);
-      params.push(shortcut);
-    }
-    if (content !== undefined) {
-      updateFields.push(`content = $${paramCount++}`);
-      params.push(content);
-    }
-    if (category !== undefined) {
-      updateFields.push(`category = $${paramCount++}`);
-      params.push(category);
-    }
-    if (is_public !== undefined) {
-      updateFields.push(`is_public = $${paramCount++}`);
-      params.push(is_public);
-    }
-
-    if (updateFields.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-
-    params.push(req.params.id);
-    const query = `UPDATE canned_responses SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
-
-    const result = await pool.query(query, params);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Canned response not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating canned response:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (Object.keys(updateData).length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
   }
-});
+
+  const result = await CannedResponse.findByIdAndUpdate(req.params.id, updateData, { new: true });
+  if (!result) {
+    return res.status(404).json({ error: 'Canned response not found' });
+  }
+
+  res.json(result);
+}));
 
 // Increment usage count
-router.post('/:id/use', async (req, res) => {
-  try {
-    const result = await pool.query(
-      'UPDATE canned_responses SET usage_count = usage_count + 1 WHERE id = $1 RETURNING *',
-      [req.params.id]
-    );
+router.post('/:id/use', asyncHandler(async (req, res) => {
+  const result = await CannedResponse.findByIdAndUpdate(
+    req.params.id,
+    { $inc: { usage_count: 1 } },
+    { new: true }
+  );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Canned response not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating usage count:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!result) {
+    return res.status(404).json({ error: 'Canned response not found' });
   }
-});
+
+  res.json(result);
+}));
 
 // Delete canned response
-router.delete('/:id', async (req, res) => {
-  try {
-    const result = await pool.query('DELETE FROM canned_responses WHERE id = $1 RETURNING id', [req.params.id]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Canned response not found' });
-    }
-
-    res.json({ message: 'Canned response deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting canned response:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.delete('/:id', asyncHandler(async (req, res) => {
+  const result = await CannedResponse.findByIdAndDelete(req.params.id);
+  if (!result) {
+    return res.status(404).json({ error: 'Canned response not found' });
   }
-});
+  res.json({ message: 'Canned response deleted successfully' });
+}));
 
 export default router;
-

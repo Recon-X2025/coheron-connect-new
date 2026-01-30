@@ -1,5 +1,9 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import WorkOrder from '../models/WorkOrder.js';
+import ManufacturingOrder from '../models/ManufacturingOrder.js';
+import MoOperatorActivity from '../models/MoOperatorActivity.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
@@ -8,445 +12,362 @@ const router = express.Router();
 // ============================================
 
 // Get all work orders
-router.get('/', async (req, res) => {
-  try {
-    const { mo_id, state, workcenter_id, search } = req.query;
-    let query = `
-      SELECT wo.*, 
-             mo.name as mo_name,
-             mo.mo_number,
-             wc.name as workcenter_name,
-             ro.name as operation_name
-      FROM work_orders wo
-      LEFT JOIN manufacturing_orders mo ON wo.mo_id = mo.id
-      LEFT JOIN workcenters wc ON wo.workcenter_id = wc.id
-      LEFT JOIN routing_operations ro ON wo.operation_id = ro.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/', asyncHandler(async (req, res) => {
+  const { mo_id, state, workcenter_id, search } = req.query;
+  const filter: any = {};
 
-    if (mo_id) {
-      query += ` AND wo.mo_id = $${paramCount++}`;
-      params.push(mo_id);
-    }
+  if (mo_id) filter.mo_id = mo_id;
+  if (state) filter.state = state;
+  if (workcenter_id) filter.workcenter_id = workcenter_id;
 
-    if (state) {
-      query += ` AND wo.state = $${paramCount++}`;
-      params.push(state);
-    }
-
-    if (workcenter_id) {
-      query += ` AND wo.workcenter_id = $${paramCount++}`;
-      params.push(workcenter_id);
-    }
-
-    if (search) {
-      query += ` AND (wo.name ILIKE $${paramCount} OR mo.name ILIKE $${paramCount})`;
-      params.push(`%${search}%`);
-      paramCount++;
-    }
-
-    query += ' ORDER BY wo.sequence, wo.date_planned_start';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching work orders:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (search) {
+    filter.$or = [
+      { name: { $regex: search, $options: 'i' } },
+    ];
   }
-});
+
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    WorkOrder.find(filter)
+      .populate('mo_id', 'name mo_number')
+      .populate('workcenter_id', 'name')
+      .populate('operation_id', 'name')
+      .sort({ sequence: 1, date_planned_start: 1 })
+      .lean(),
+    pagination, filter, WorkOrder
+  );
+
+  const data = paginatedResult.data.map((wo: any) => ({
+    ...wo,
+    mo_name: wo.mo_id?.name,
+    mo_number: wo.mo_id?.mo_number,
+    workcenter_name: wo.workcenter_id?.name,
+    operation_name: wo.operation_id?.name,
+  }));
+
+  res.json({ data, pagination: paginatedResult.pagination });
+}));
 
 // Get work order by ID
-router.get('/:id', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT wo.*, 
-              mo.name as mo_name,
-              mo.mo_number,
-              wc.name as workcenter_name,
-              ro.name as operation_name,
-              u.name as user_name
-       FROM work_orders wo
-       LEFT JOIN manufacturing_orders mo ON wo.mo_id = mo.id
-       LEFT JOIN workcenters wc ON wo.workcenter_id = wc.id
-       LEFT JOIN routing_operations ro ON wo.operation_id = ro.id
-       LEFT JOIN users u ON wo.user_id = u.id
-       WHERE wo.id = $1`,
-      [req.params.id]
-    );
+router.get('/:id', asyncHandler(async (req, res) => {
+  const wo = await WorkOrder.findById(req.params.id)
+    .populate('mo_id', 'name mo_number')
+    .populate('workcenter_id', 'name')
+    .populate('operation_id', 'name')
+    .populate('user_id', 'name')
+    .lean();
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Work order not found' });
-    }
-
-    // Get operator activities
-    const activities = await pool.query(
-      `SELECT oa.*, u.name as operator_name
-       FROM mo_operator_activities oa
-       LEFT JOIN users u ON oa.operator_id = u.id
-       WHERE oa.workorder_id = $1
-       ORDER BY oa.timestamp DESC`,
-      [req.params.id]
-    );
-
-    res.json({
-      ...result.rows[0],
-      activities: activities.rows,
-    });
-  } catch (error) {
-    console.error('Error fetching work order:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!wo) {
+    return res.status(404).json({ error: 'Work order not found' });
   }
-});
+
+  const activities = await MoOperatorActivity.find({ workorder_id: req.params.id })
+    .populate('operator_id', 'name')
+    .sort({ timestamp: -1 })
+    .lean();
+
+  const activityResult = activities.map((oa: any) => ({
+    ...oa,
+    operator_name: oa.operator_id?.name,
+  }));
+
+  res.json({
+    ...wo,
+    mo_name: (wo as any).mo_id?.name,
+    mo_number: (wo as any).mo_id?.mo_number,
+    workcenter_name: (wo as any).workcenter_id?.name,
+    operation_name: (wo as any).operation_id?.name,
+    user_name: (wo as any).user_id?.name,
+    activities: activityResult,
+  });
+}));
 
 // Update work order
-router.put('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const updates: string[] = [];
-    const params: any[] = [];
-    let paramCount = 1;
+router.put('/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const allowedFields = [
+    'state', 'date_planned_start', 'date_planned_finished', 'date_start', 'date_finished',
+    'duration', 'qty_produced', 'qty_producing', 'qty_scrapped', 'user_id', 'note',
+  ];
 
-    const allowedFields = [
-      'state', 'date_planned_start', 'date_planned_finished', 'date_start', 'date_finished',
-      'duration', 'qty_produced', 'qty_producing', 'qty_scrapped', 'user_id', 'note',
-    ];
-
-    for (const field of allowedFields) {
-      if (req.body[field] !== undefined) {
-        updates.push(`${field} = $${paramCount++}`);
-        params.push(req.body[field]);
-      }
+  const updateData: any = {};
+  for (const field of allowedFields) {
+    if (req.body[field] !== undefined) {
+      updateData[field] = req.body[field];
     }
-
-    if (updates.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-
-    params.push(id);
-    const result = await pool.query(
-      `UPDATE work_orders SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`,
-      params
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Work order not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating work order:', error);
-    res.status(500).json({ error: 'Internal server error' });
   }
-});
+
+  if (Object.keys(updateData).length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
+  }
+
+  const wo = await WorkOrder.findByIdAndUpdate(id, updateData, { new: true });
+
+  if (!wo) {
+    return res.status(404).json({ error: 'Work order not found' });
+  }
+
+  res.json(wo);
+}));
 
 // ============================================
 // SHOP FLOOR OPERATIONS
 // ============================================
 
 // Start work order
-router.post('/:id/start', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { operator_id } = req.body;
+router.post('/:id/start', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { operator_id } = req.body;
 
-    const wo = await pool.query('SELECT * FROM work_orders WHERE id = $1', [id]);
+  const wo = await WorkOrder.findById(id);
 
-    if (wo.rows.length === 0) {
-      return res.status(404).json({ error: 'Work order not found' });
-    }
-
-    if (wo.rows[0].state !== 'ready' && wo.rows[0].state !== 'pending') {
-      return res.status(400).json({ error: 'Work order must be ready or pending to start' });
-    }
-
-    // Update work order
-    const result = await pool.query(
-      `UPDATE work_orders 
-       SET state = $1, date_start = NOW(), is_user_working = $2, user_id = COALESCE($3, user_id)
-       WHERE id = $4
-       RETURNING *`,
-      ['progress', true, operator_id, id]
-    );
-
-    // Record activity
-    await pool.query(
-      `INSERT INTO mo_operator_activities (workorder_id, operator_id, activity_type)
-       VALUES ($1, $2, $3)`,
-      [id, operator_id || wo.rows[0].user_id, 'start']
-    );
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error starting work order:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!wo) {
+    return res.status(404).json({ error: 'Work order not found' });
   }
-});
+
+  if (wo.state !== 'ready' && wo.state !== 'pending') {
+    return res.status(400).json({ error: 'Work order must be ready or pending to start' });
+  }
+
+  const result = await WorkOrder.findByIdAndUpdate(
+    id,
+    {
+      state: 'progress',
+      date_start: new Date(),
+      is_user_working: true,
+      ...(operator_id ? { user_id: operator_id } : {}),
+    },
+    { new: true }
+  );
+
+  await MoOperatorActivity.create({
+    workorder_id: id,
+    operator_id: operator_id || wo.user_id,
+    activity_type: 'start',
+  });
+
+  res.json(result);
+}));
 
 // Pause work order
-router.post('/:id/pause', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { operator_id, downtime_reason, downtime_duration } = req.body;
+router.post('/:id/pause', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { operator_id, downtime_reason, downtime_duration } = req.body;
 
-    const wo = await pool.query('SELECT * FROM work_orders WHERE id = $1', [id]);
+  const wo = await WorkOrder.findById(id);
 
-    if (wo.rows.length === 0) {
-      return res.status(404).json({ error: 'Work order not found' });
-    }
-
-    if (wo.rows[0].state !== 'progress') {
-      return res.status(400).json({ error: 'Work order must be in progress to pause' });
-    }
-
-    // Update work order
-    const result = await pool.query(
-      `UPDATE work_orders 
-       SET is_user_working = $1
-       WHERE id = $2
-       RETURNING *`,
-      [false, id]
-    );
-
-    // Record activity
-    await pool.query(
-      `INSERT INTO mo_operator_activities 
-       (workorder_id, operator_id, activity_type, downtime_reason, downtime_duration)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [id, operator_id || wo.rows[0].user_id, 'pause', downtime_reason, downtime_duration]
-    );
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error pausing work order:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!wo) {
+    return res.status(404).json({ error: 'Work order not found' });
   }
-});
+
+  if (wo.state !== 'progress') {
+    return res.status(400).json({ error: 'Work order must be in progress to pause' });
+  }
+
+  const result = await WorkOrder.findByIdAndUpdate(
+    id,
+    { is_user_working: false },
+    { new: true }
+  );
+
+  await MoOperatorActivity.create({
+    workorder_id: id,
+    operator_id: operator_id || wo.user_id,
+    activity_type: 'pause',
+    downtime_reason,
+    downtime_duration,
+  });
+
+  res.json(result);
+}));
 
 // Resume work order
-router.post('/:id/resume', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { operator_id } = req.body;
+router.post('/:id/resume', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { operator_id } = req.body;
 
-    const wo = await pool.query('SELECT * FROM work_orders WHERE id = $1', [id]);
+  const wo = await WorkOrder.findById(id);
 
-    if (wo.rows.length === 0) {
-      return res.status(404).json({ error: 'Work order not found' });
-    }
-
-    if (wo.rows[0].state !== 'progress') {
-      return res.status(400).json({ error: 'Work order must be in progress to resume' });
-    }
-
-    // Update work order
-    const result = await pool.query(
-      `UPDATE work_orders 
-       SET is_user_working = $1
-       WHERE id = $2
-       RETURNING *`,
-      [true, id]
-    );
-
-    // Record activity
-    await pool.query(
-      `INSERT INTO mo_operator_activities (workorder_id, operator_id, activity_type)
-       VALUES ($1, $2, $3)`,
-      [id, operator_id || wo.rows[0].user_id, 'resume']
-    );
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error resuming work order:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!wo) {
+    return res.status(404).json({ error: 'Work order not found' });
   }
-});
+
+  if (wo.state !== 'progress') {
+    return res.status(400).json({ error: 'Work order must be in progress to resume' });
+  }
+
+  const result = await WorkOrder.findByIdAndUpdate(
+    id,
+    { is_user_working: true },
+    { new: true }
+  );
+
+  await MoOperatorActivity.create({
+    workorder_id: id,
+    operator_id: operator_id || wo.user_id,
+    activity_type: 'resume',
+  });
+
+  res.json(result);
+}));
 
 // Complete work order
-router.post('/:id/complete', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { operator_id, qty_produced, qty_scrapped } = req.body;
+router.post('/:id/complete', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { operator_id, qty_produced, qty_scrapped } = req.body;
 
-    const wo = await pool.query('SELECT * FROM work_orders WHERE id = $1', [id]);
+  const wo = await WorkOrder.findById(id);
 
-    if (wo.rows.length === 0) {
-      return res.status(404).json({ error: 'Work order not found' });
-    }
-
-    if (wo.rows[0].state !== 'progress') {
-      return res.status(400).json({ error: 'Work order must be in progress to complete' });
-    }
-
-    // Calculate duration
-    const startTime = wo.rows[0].date_start ? new Date(wo.rows[0].date_start) : new Date();
-    const endTime = new Date();
-    const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60); // hours
-
-    // Update work order
-    const result = await pool.query(
-      `UPDATE work_orders 
-       SET state = $1, date_finished = NOW(), is_user_working = $2,
-           duration = $3, qty_produced = COALESCE($4, qty_produced),
-           qty_scrapped = COALESCE($5, qty_scrapped)
-       WHERE id = $6
-       RETURNING *`,
-      ['done', false, duration, qty_produced, qty_scrapped, id]
-    );
-
-    // Record activity
-    await pool.query(
-      `INSERT INTO mo_operator_activities 
-       (workorder_id, operator_id, activity_type, qty_produced, qty_scrapped)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [id, operator_id || wo.rows[0].user_id, 'complete', qty_produced, qty_scrapped]
-    );
-
-    // Update MO quantities
-    await pool.query(
-      `UPDATE manufacturing_orders 
-       SET qty_produced = qty_produced + COALESCE($1, 0),
-           qty_scrapped = qty_scrapped + COALESCE($2, 0)
-       WHERE id = $3`,
-      [qty_produced || 0, qty_scrapped || 0, wo.rows[0].mo_id]
-    );
-
-    // Check if all work orders are done, then move to next or complete MO
-    const remainingWOs = await pool.query(
-      'SELECT COUNT(*) as count FROM work_orders WHERE mo_id = $1 AND state != $2',
-      [wo.rows[0].mo_id, 'done']
-    );
-
-    if (remainingWOs.rows[0].count === '0') {
-      // All work orders done, check if MO should be completed
-      const mo = await pool.query('SELECT * FROM manufacturing_orders WHERE id = $1', [wo.rows[0].mo_id]);
-      if (mo.rows[0].state === 'progress') {
-        await pool.query(
-          'UPDATE manufacturing_orders SET state = $1 WHERE id = $2',
-          ['to_close', wo.rows[0].mo_id]
-        );
-      }
-    } else {
-      // Start next work order
-      const nextWO = await pool.query(
-        'SELECT * FROM work_orders WHERE mo_id = $1 AND state = $2 ORDER BY sequence LIMIT 1',
-        [wo.rows[0].mo_id, 'pending']
-      );
-
-      if (nextWO.rows.length > 0) {
-        await pool.query(
-          'UPDATE work_orders SET state = $1 WHERE id = $2',
-          ['ready', nextWO.rows[0].id]
-        );
-      }
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error completing work order:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!wo) {
+    return res.status(404).json({ error: 'Work order not found' });
   }
-});
+
+  if (wo.state !== 'progress') {
+    return res.status(400).json({ error: 'Work order must be in progress to complete' });
+  }
+
+  const startTime = wo.date_start ? new Date(wo.date_start) : new Date();
+  const endTime = new Date();
+  const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+
+  const result = await WorkOrder.findByIdAndUpdate(
+    id,
+    {
+      state: 'done',
+      date_finished: new Date(),
+      is_user_working: false,
+      duration,
+      ...(qty_produced !== undefined ? { qty_produced } : {}),
+      ...(qty_scrapped !== undefined ? { qty_scrapped } : {}),
+    },
+    { new: true }
+  );
+
+  await MoOperatorActivity.create({
+    workorder_id: id,
+    operator_id: operator_id || wo.user_id,
+    activity_type: 'complete',
+    qty_produced,
+    qty_scrapped,
+  });
+
+  // Update MO quantities
+  await ManufacturingOrder.findByIdAndUpdate(wo.mo_id, {
+    $inc: {
+      qty_produced: qty_produced || 0,
+      qty_scrapped: qty_scrapped || 0,
+    },
+  });
+
+  // Check if all work orders are done
+  const remainingCount = await WorkOrder.countDocuments({
+    mo_id: wo.mo_id,
+    state: { $ne: 'done' },
+  });
+
+  if (remainingCount === 0) {
+    const mo = await ManufacturingOrder.findById(wo.mo_id);
+    if (mo && mo.state === 'progress') {
+      await ManufacturingOrder.findByIdAndUpdate(wo.mo_id, { state: 'to_close' });
+    }
+  } else {
+    // Start next work order
+    const nextWO = await WorkOrder.findOne({
+      mo_id: wo.mo_id,
+      state: 'pending',
+    }).sort({ sequence: 1 });
+
+    if (nextWO) {
+      await WorkOrder.findByIdAndUpdate(nextWO._id, { state: 'ready' });
+    }
+  }
+
+  res.json(result);
+}));
 
 // Record scrap
-router.post('/:id/scrap', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { operator_id, qty_scrapped, reason } = req.body;
+router.post('/:id/scrap', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { operator_id, qty_scrapped, reason } = req.body;
 
-    const wo = await pool.query('SELECT * FROM work_orders WHERE id = $1', [id]);
+  const wo = await WorkOrder.findById(id);
 
-    if (wo.rows.length === 0) {
-      return res.status(404).json({ error: 'Work order not found' });
-    }
-
-    // Update work order
-    await pool.query(
-      `UPDATE work_orders 
-       SET qty_scrapped = qty_scrapped + $1
-       WHERE id = $2`,
-      [qty_scrapped, id]
-    );
-
-    // Record activity
-    await pool.query(
-      `INSERT INTO mo_operator_activities 
-       (workorder_id, operator_id, activity_type, qty_scrapped, notes)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [id, operator_id || wo.rows[0].user_id, 'scrap', qty_scrapped, reason]
-    );
-
-    // Update MO scrap quantity
-    await pool.query(
-      `UPDATE manufacturing_orders 
-       SET qty_scrapped = qty_scrapped + $1
-       WHERE id = $2`,
-      [qty_scrapped, wo.rows[0].mo_id]
-    );
-
-    res.json({ message: 'Scrap recorded successfully' });
-  } catch (error) {
-    console.error('Error recording scrap:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!wo) {
+    return res.status(404).json({ error: 'Work order not found' });
   }
-});
+
+  await WorkOrder.findByIdAndUpdate(id, {
+    $inc: { qty_scrapped },
+  });
+
+  await MoOperatorActivity.create({
+    workorder_id: id,
+    operator_id: operator_id || wo.user_id,
+    activity_type: 'scrap',
+    qty_scrapped,
+    notes: reason,
+  });
+
+  await ManufacturingOrder.findByIdAndUpdate(wo.mo_id, {
+    $inc: { qty_scrapped },
+  });
+
+  res.json({ message: 'Scrap recorded successfully' });
+}));
 
 // Get shop floor dashboard data
-router.get('/shop-floor/dashboard', async (req, res) => {
-  try {
-    const { workcenter_id } = req.query;
+router.get('/shop-floor/dashboard', asyncHandler(async (req, res) => {
+  const { workcenter_id } = req.query;
+  const matchFilter: any = {};
 
-    let query = `
-      SELECT 
-        COUNT(*) FILTER (WHERE wo.state = 'progress') as active_count,
-        COUNT(*) FILTER (WHERE wo.state = 'ready') as ready_count,
-        COUNT(*) FILTER (WHERE wo.state = 'pending') as pending_count,
-        COUNT(*) FILTER (WHERE wo.state = 'done') as completed_count,
-        SUM(wo.qty_produced) FILTER (WHERE wo.state = 'progress') as qty_in_progress,
-        SUM(wo.qty_scrapped) as total_scrapped
-      FROM work_orders wo
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+  if (workcenter_id) matchFilter.workcenter_id = workcenter_id;
 
-    if (workcenter_id) {
-      query += ` AND wo.workcenter_id = $${paramCount++}`;
-      params.push(workcenter_id);
-    }
+  const pipeline: any[] = [
+    { $match: matchFilter },
+    {
+      $group: {
+        _id: null,
+        active_count: { $sum: { $cond: [{ $eq: ['$state', 'progress'] }, 1, 0] } },
+        ready_count: { $sum: { $cond: [{ $eq: ['$state', 'ready'] }, 1, 0] } },
+        pending_count: { $sum: { $cond: [{ $eq: ['$state', 'pending'] }, 1, 0] } },
+        completed_count: { $sum: { $cond: [{ $eq: ['$state', 'done'] }, 1, 0] } },
+        qty_in_progress: {
+          $sum: { $cond: [{ $eq: ['$state', 'progress'] }, '$qty_produced', 0] },
+        },
+        total_scrapped: { $sum: '$qty_scrapped' },
+      },
+    },
+  ];
 
-    const stats = await pool.query(query, params);
+  const statsResult = await WorkOrder.aggregate(pipeline);
+  const stats = statsResult[0] || {
+    active_count: 0,
+    ready_count: 0,
+    pending_count: 0,
+    completed_count: 0,
+    qty_in_progress: 0,
+    total_scrapped: 0,
+  };
 
-    // Get active work orders
-    let activeQuery = `
-      SELECT wo.*, mo.name as mo_name, wc.name as workcenter_name
-      FROM work_orders wo
-      LEFT JOIN manufacturing_orders mo ON wo.mo_id = mo.id
-      LEFT JOIN workcenters wc ON wo.workcenter_id = wc.id
-      WHERE wo.state = 'progress'
-    `;
-    const activeParams: any[] = [];
-    let activeParamCount = 1;
+  const activeFilter: any = { state: 'progress' };
+  if (workcenter_id) activeFilter.workcenter_id = workcenter_id;
 
-    if (workcenter_id) {
-      activeQuery += ` AND wo.workcenter_id = $${activeParamCount++}`;
-      activeParams.push(workcenter_id);
-    }
+  const activeOrders = await WorkOrder.find(activeFilter)
+    .populate('mo_id', 'name')
+    .populate('workcenter_id', 'name')
+    .sort({ date_planned_start: 1 })
+    .lean();
 
-    activeQuery += ' ORDER BY wo.date_planned_start';
+  const active = activeOrders.map((wo: any) => ({
+    ...wo,
+    mo_name: wo.mo_id?.name,
+    workcenter_name: wo.workcenter_id?.name,
+  }));
 
-    const active = await pool.query(activeQuery, activeParams);
-
-    res.json({
-      statistics: stats.rows[0],
-      active_work_orders: active.rows,
-    });
-  } catch (error) {
-    console.error('Error fetching shop floor dashboard:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json({
+    statistics: stats,
+    active_work_orders: active,
+  });
+}));
 
 export default router;
-

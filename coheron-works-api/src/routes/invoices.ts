@@ -1,139 +1,87 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import { Invoice } from '../models/Invoice.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
 // Get all invoices
-router.get('/', async (req, res) => {
-  try {
-    const { state, payment_state, search } = req.query;
-    let query = 'SELECT * FROM invoices WHERE 1=1';
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/', asyncHandler(async (req, res) => {
+  const { state, payment_state, search } = req.query;
+  const filter: any = {};
 
-    if (state) {
-      query += ` AND state = $${paramCount++}`;
-      params.push(state);
-    }
-
-    if (payment_state) {
-      query += ` AND payment_state = $${paramCount++}`;
-      params.push(payment_state);
-    }
-
-    if (search) {
-      query += ` AND (name ILIKE $${paramCount} OR name ILIKE $${paramCount})`;
-      params.push(`%${search}%`);
-    }
-
-    query += ' ORDER BY created_at DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching invoices:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (state) filter.state = state;
+  if (payment_state) filter.payment_state = payment_state;
+  if (search) {
+    filter.name = { $regex: search as string, $options: 'i' };
   }
-});
+
+  const pagination = getPaginationParams(req);
+  const result = await paginateQuery(
+    Invoice.find(filter).sort({ created_at: -1 }).lean(),
+    pagination,
+    filter,
+    Invoice
+  );
+  res.json(result);
+}));
 
 // Get invoice by ID
-router.get('/:id', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM invoices WHERE id = $1', [
-      req.params.id,
-    ]);
+router.get('/:id', asyncHandler(async (req, res) => {
+  const invoice = await Invoice.findById(req.params.id).lean();
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Invoice not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error fetching invoice:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!invoice) {
+    return res.status(404).json({ error: 'Invoice not found' });
   }
-});
+
+  res.json(invoice);
+}));
 
 // Create invoice
-router.post('/', async (req, res) => {
-  try {
-    const {
-      name,
-      partner_id,
-      invoice_date,
-      amount_total,
-      amount_residual,
-      state,
-      payment_state,
-      move_type,
-    } = req.body;
+router.post('/', asyncHandler(async (req, res) => {
+  const { name, partner_id, invoice_date, amount_total, amount_residual, state, payment_state, move_type } = req.body;
 
-    const result = await pool.query(
-      `INSERT INTO invoices (name, partner_id, invoice_date, amount_total, amount_residual, state, payment_state, move_type)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING *`,
-      [
-        name,
-        partner_id,
-        invoice_date || new Date(),
-        amount_total || 0,
-        amount_residual || amount_total || 0,
-        state || 'draft',
-        payment_state || 'not_paid',
-        move_type || 'out_invoice',
-      ]
-    );
+  const invoice = await Invoice.create({
+    name,
+    partner_id,
+    invoice_date: invoice_date || new Date(),
+    amount_total: amount_total || 0,
+    amount_residual: amount_residual || amount_total || 0,
+    state: state || 'draft',
+    payment_state: payment_state || 'not_paid',
+    move_type: move_type || 'out_invoice',
+  });
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating invoice:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.status(201).json(invoice);
+}));
 
 // Update invoice
-router.put('/:id', async (req, res) => {
-  try {
-    const { state, payment_state, amount_residual } = req.body;
+router.put('/:id', asyncHandler(async (req, res) => {
+  const { state, payment_state, amount_residual } = req.body;
 
-    const result = await pool.query(
-      `UPDATE invoices 
-       SET state = COALESCE($1, state), 
-           payment_state = COALESCE($2, payment_state),
-           amount_residual = COALESCE($3, amount_residual)
-       WHERE id = $4
-       RETURNING *`,
-      [state, payment_state, amount_residual, req.params.id]
-    );
+  const updateData: any = {};
+  if (state !== undefined) updateData.state = state;
+  if (payment_state !== undefined) updateData.payment_state = payment_state;
+  if (amount_residual !== undefined) updateData.amount_residual = amount_residual;
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Invoice not found' });
-    }
+  const invoice = await Invoice.findByIdAndUpdate(req.params.id, updateData, { new: true });
 
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating invoice:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!invoice) {
+    return res.status(404).json({ error: 'Invoice not found' });
   }
-});
+
+  res.json(invoice);
+}));
 
 // Delete invoice
-router.delete('/:id', async (req, res) => {
-  try {
-    const result = await pool.query('DELETE FROM invoices WHERE id = $1 RETURNING id', [
-      req.params.id,
-    ]);
+router.delete('/:id', asyncHandler(async (req, res) => {
+  const invoice = await Invoice.findByIdAndDelete(req.params.id);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Invoice not found' });
-    }
-
-    res.json({ message: 'Invoice deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting invoice:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!invoice) {
+    return res.status(404).json({ error: 'Invoice not found' });
   }
-});
+
+  res.json({ message: 'Invoice deleted successfully' });
+}));
 
 export default router;
-

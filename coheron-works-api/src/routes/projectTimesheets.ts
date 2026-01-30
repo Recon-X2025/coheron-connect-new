@@ -1,5 +1,9 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import ProjectResource from '../models/ProjectResource.js';
+import Timesheet from '../models/Timesheet.js';
+import ProjectTask from '../models/ProjectTask.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
@@ -8,487 +12,351 @@ const router = express.Router();
 // ============================================
 
 // Get project resources
-router.get('/:projectId/resources', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT pr.*, 
-              u.name as user_name,
-              u.email as user_email,
-              SUM(ts.hours_worked) as total_hours_logged
-       FROM project_resources pr
-       LEFT JOIN users u ON pr.user_id = u.id
-       LEFT JOIN timesheets ts ON pr.project_id = ts.project_id AND pr.user_id = ts.user_id
-       WHERE pr.project_id = $1
-       GROUP BY pr.id, u.name, u.email
-       ORDER BY pr.created_at`,
-      [req.params.projectId]
-    );
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching resources:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.get('/:projectId/resources', asyncHandler(async (req, res) => {
+  const resources = await ProjectResource.find({ project_id: req.params.projectId })
+    .populate('user_id', 'name email')
+    .sort({ created_at: 1 })
+    .lean();
+
+  // Enrich with total hours logged
+  const result = await Promise.all(resources.map(async (r: any) => {
+    const obj: any = { ...r };
+    if (obj.user_id) {
+      obj.user_name = obj.user_id.name;
+      obj.user_email = obj.user_id.email;
+    }
+    const hoursAgg = await Timesheet.aggregate([
+      { $match: { project_id: r.project_id, user_id: r.user_id?._id || r.user_id } },
+      { $group: { _id: null, total_hours_logged: { $sum: '$hours_worked' } } },
+    ]);
+    obj.total_hours_logged = hoursAgg[0]?.total_hours_logged || 0;
+    return obj;
+  }));
+
+  res.json(result);
+}));
 
 // Add resource to project
-router.post('/:projectId/resources', async (req, res) => {
-  try {
-    const {
-      user_id,
-      role,
-      skill_level,
-      allocation_percentage,
-      cost_rate,
-      planned_start_date,
-      planned_end_date,
-    } = req.body;
+router.post('/:projectId/resources', asyncHandler(async (req, res) => {
+  const {
+    user_id, role, skill_level, allocation_percentage,
+    cost_rate, planned_start_date, planned_end_date,
+  } = req.body;
 
-    // Check if resource already exists
-    const existing = await pool.query(
-      'SELECT id FROM project_resources WHERE project_id = $1 AND user_id = $2',
-      [req.params.projectId, user_id]
-    );
+  const existing = await ProjectResource.findOne({
+    project_id: req.params.projectId,
+    user_id,
+  });
 
-    if (existing.rows.length > 0) {
-      return res.status(400).json({ error: 'Resource already assigned to project' });
-    }
-
-    const result = await pool.query(
-      `INSERT INTO project_resources (
-        project_id, user_id, role, skill_level, allocation_percentage,
-        cost_rate, planned_start_date, planned_end_date
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING *`,
-      [
-        req.params.projectId,
-        user_id,
-        role,
-        skill_level || 'mid',
-        allocation_percentage || 100,
-        cost_rate,
-        planned_start_date,
-        planned_end_date,
-      ]
-    );
-
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error adding resource:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (existing) {
+    return res.status(400).json({ error: 'Resource already assigned to project' });
   }
-});
+
+  const resource = await ProjectResource.create({
+    project_id: req.params.projectId,
+    user_id,
+    role,
+    skill_level: skill_level || 'mid',
+    allocation_percentage: allocation_percentage || 100,
+    cost_rate_per_hour: cost_rate || 0,
+    start_date: planned_start_date,
+    end_date: planned_end_date,
+  });
+
+  res.status(201).json(resource);
+}));
 
 // Update resource
-router.put('/resources/:id', async (req, res) => {
-  try {
-    const {
-      role,
-      skill_level,
-      allocation_percentage,
-      cost_rate,
-      planned_start_date,
-      planned_end_date,
-      actual_start_date,
-      actual_end_date,
-    } = req.body;
+router.put('/resources/:id', asyncHandler(async (req, res) => {
+  const {
+    role, skill_level, allocation_percentage, cost_rate,
+    planned_start_date, planned_end_date, actual_start_date, actual_end_date,
+  } = req.body;
 
-    const updateFields: string[] = [];
-    const params: any[] = [];
-    let paramCount = 1;
+  const fields: Record<string, any> = {
+    role, skill_level, allocation_percentage,
+    cost_rate_per_hour: cost_rate,
+    start_date: planned_start_date,
+    end_date: planned_end_date,
+  };
 
-    const fields = {
-      role,
-      skill_level,
-      allocation_percentage,
-      cost_rate,
-      planned_start_date,
-      planned_end_date,
-      actual_start_date,
-      actual_end_date,
-    };
+  const updateData: any = {};
+  Object.entries(fields).forEach(([key, value]) => {
+    if (value !== undefined) updateData[key] = value;
+  });
 
-    Object.entries(fields).forEach(([key, value]) => {
-      if (value !== undefined) {
-        updateFields.push(`${key} = $${paramCount++}`);
-        params.push(value);
-      }
-    });
-
-    if (updateFields.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-
-    params.push(req.params.id);
-    const query = `UPDATE project_resources SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
-
-    const result = await pool.query(query, params);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Resource not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating resource:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (Object.keys(updateData).length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
   }
-});
+
+  const resource = await ProjectResource.findByIdAndUpdate(req.params.id, updateData, { new: true });
+
+  if (!resource) {
+    return res.status(404).json({ error: 'Resource not found' });
+  }
+
+  res.json(resource);
+}));
 
 // Remove resource
-router.delete('/resources/:id', async (req, res) => {
-  try {
-    const result = await pool.query('DELETE FROM project_resources WHERE id = $1 RETURNING id', [
-      req.params.id,
-    ]);
+router.delete('/resources/:id', asyncHandler(async (req, res) => {
+  const resource = await ProjectResource.findByIdAndDelete(req.params.id);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Resource not found' });
-    }
-
-    res.json({ message: 'Resource removed successfully' });
-  } catch (error) {
-    console.error('Error removing resource:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!resource) {
+    return res.status(404).json({ error: 'Resource not found' });
   }
-});
+
+  res.json({ message: 'Resource removed successfully' });
+}));
 
 // ============================================
 // TIMESHEETS
 // ============================================
 
 // Get timesheets
-router.get('/timesheets', async (req, res) => {
-  try {
-    const { project_id, user_id, date_from, date_to, approval_status } = req.query;
-    let query = `
-      SELECT ts.*, 
-             u.name as user_name,
-             u.email as user_email,
-             p.name as project_name,
-             p.code as project_code,
-             t.name as task_name
-      FROM timesheets ts
-      LEFT JOIN users u ON ts.user_id = u.id
-      LEFT JOIN projects p ON ts.project_id = p.id
-      LEFT JOIN project_tasks t ON ts.task_id = t.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/timesheets', asyncHandler(async (req, res) => {
+  const { project_id, user_id, date_from, date_to, approval_status } = req.query;
+  const filter: any = {};
 
-    if (project_id) {
-      query += ` AND ts.project_id = $${paramCount++}`;
-      params.push(project_id);
-    }
-
-    if (user_id) {
-      query += ` AND ts.user_id = $${paramCount++}`;
-      params.push(user_id);
-    }
-
-    if (date_from) {
-      query += ` AND ts.date_worked >= $${paramCount++}`;
-      params.push(date_from);
-    }
-
-    if (date_to) {
-      query += ` AND ts.date_worked <= $${paramCount++}`;
-      params.push(date_to);
-    }
-
-    if (approval_status) {
-      query += ` AND ts.approval_status = $${paramCount++}`;
-      params.push(approval_status);
-    }
-
-    query += ' ORDER BY ts.date_worked DESC, ts.created_at DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching timesheets:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (project_id) filter.project_id = project_id;
+  if (user_id) filter.user_id = user_id;
+  if (approval_status) filter.approval_status = approval_status;
+  if (date_from || date_to) {
+    filter.date_worked = {};
+    if (date_from) filter.date_worked.$gte = new Date(date_from as string);
+    if (date_to) filter.date_worked.$lte = new Date(date_to as string);
   }
-});
+
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    Timesheet.find(filter)
+      .populate('user_id', 'name email')
+      .populate('project_id', 'name code')
+      .populate('task_id', 'name')
+      .sort({ date_worked: -1, created_at: -1 })
+      .lean(),
+    pagination, filter, Timesheet
+  );
+
+  const data = paginatedResult.data.map((ts: any) => {
+    const obj: any = { ...ts };
+    if (obj.user_id) {
+      obj.user_name = obj.user_id.name;
+      obj.user_email = obj.user_id.email;
+    }
+    if (obj.project_id) {
+      obj.project_name = obj.project_id.name;
+      obj.project_code = obj.project_id.code;
+    }
+    if (obj.task_id) {
+      obj.task_name = obj.task_id.name;
+    }
+    return obj;
+  });
+
+  res.json({ data, pagination: paginatedResult.pagination });
+}));
 
 // Get timesheet by ID
-router.get('/timesheets/:id', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT ts.*, 
-              u.name as user_name,
-              u.email as user_email,
-              p.name as project_name,
-              p.code as project_code,
-              t.name as task_name
-       FROM timesheets ts
-       LEFT JOIN users u ON ts.user_id = u.id
-       LEFT JOIN projects p ON ts.project_id = p.id
-       LEFT JOIN project_tasks t ON ts.task_id = t.id
-       WHERE ts.id = $1`,
-      [req.params.id]
-    );
+router.get('/timesheets/:id', asyncHandler(async (req, res) => {
+  const ts = await Timesheet.findById(req.params.id)
+    .populate('user_id', 'name email')
+    .populate('project_id', 'name code')
+    .populate('task_id', 'name')
+    .lean();
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Timesheet not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error fetching timesheet:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!ts) {
+    return res.status(404).json({ error: 'Timesheet not found' });
   }
-});
+
+  const obj: any = { ...ts };
+  if (obj.user_id) { obj.user_name = obj.user_id.name; obj.user_email = obj.user_id.email; }
+  if (obj.project_id) { obj.project_name = obj.project_id.name; obj.project_code = obj.project_id.code; }
+  if (obj.task_id) { obj.task_name = obj.task_id.name; }
+
+  res.json(obj);
+}));
 
 // Create timesheet entry
-router.post('/timesheets', async (req, res) => {
-  try {
-    const {
-      project_id,
-      task_id,
-      user_id,
-      date_worked,
-      hours_worked,
-      description,
-      is_billable,
-    } = req.body;
+router.post('/timesheets', asyncHandler(async (req, res) => {
+  const {
+    project_id, task_id, user_id, date_worked,
+    hours_worked, description, is_billable,
+  } = req.body;
 
-    const result = await pool.query(
-      `INSERT INTO timesheets (
-        project_id, task_id, user_id, date_worked, hours_worked,
-        description, is_billable, approval_status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'draft')
-      RETURNING *`,
-      [
-        project_id,
-        task_id,
-        user_id,
-        date_worked,
-        hours_worked,
-        description,
-        is_billable !== undefined ? is_billable : true,
-      ]
-    );
+  const ts = await Timesheet.create({
+    project_id, task_id, user_id, date_worked, hours_worked,
+    description,
+    is_billable: is_billable !== undefined ? is_billable : true,
+    approval_status: 'draft',
+  });
 
-    // Update task actual hours
-    if (task_id) {
-      await pool.query(
-        `UPDATE project_tasks 
-         SET actual_hours = COALESCE(actual_hours, 0) + $1
-         WHERE id = $2`,
-        [hours_worked, task_id]
-      );
-    }
-
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating timesheet:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  // Update task actual hours
+  if (task_id) {
+    await ProjectTask.findByIdAndUpdate(task_id, {
+      $inc: { actual_hours: hours_worked },
+    });
   }
-});
+
+  res.status(201).json(ts);
+}));
 
 // Update timesheet
-router.put('/timesheets/:id', async (req, res) => {
-  try {
-    const {
-      task_id,
-      date_worked,
-      hours_worked,
-      description,
-      is_billable,
-      approval_status,
-    } = req.body;
+router.put('/timesheets/:id', asyncHandler(async (req, res) => {
+  const {
+    task_id, date_worked, hours_worked,
+    description, is_billable, approval_status,
+  } = req.body;
 
-    // Get old timesheet to calculate difference
-    const oldTimesheet = await pool.query(
-      'SELECT task_id, hours_worked FROM timesheets WHERE id = $1',
-      [req.params.id]
-    );
+  // Get old timesheet to calculate difference
+  const oldTimesheet = await Timesheet.findById(req.params.id);
 
-    const updateFields: string[] = [];
-    const params: any[] = [];
-    let paramCount = 1;
+  const fields: Record<string, any> = {
+    task_id, date_worked, hours_worked, description, is_billable, approval_status,
+  };
 
-    const fields = {
-      task_id,
-      date_worked,
-      hours_worked,
-      description,
-      is_billable,
-      approval_status,
-    };
+  const updateData: any = {};
+  Object.entries(fields).forEach(([key, value]) => {
+    if (value !== undefined) updateData[key] = value;
+  });
 
-    Object.entries(fields).forEach(([key, value]) => {
-      if (value !== undefined) {
-        updateFields.push(`${key} = $${paramCount++}`);
-        params.push(value);
-      }
-    });
-
-    // Handle approval
-    if (approval_status === 'approved' && !req.body.approved_at) {
-      updateFields.push(`approved_at = CURRENT_TIMESTAMP`);
-    }
-
-    if (updateFields.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-
-    params.push(req.params.id);
-    const query = `UPDATE timesheets SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
-
-    const result = await pool.query(query, params);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Timesheet not found' });
-    }
-
-    // Update task actual hours if hours changed
-    if (hours_worked !== undefined && oldTimesheet.rows.length > 0) {
-      const oldHours = parseFloat(oldTimesheet.rows[0].hours_worked) || 0;
-      const newHours = parseFloat(hours_worked);
-      const diff = newHours - oldHours;
-
-      if (diff !== 0 && oldTimesheet.rows[0].task_id) {
-        await pool.query(
-          `UPDATE project_tasks 
-           SET actual_hours = COALESCE(actual_hours, 0) + $1
-           WHERE id = $2`,
-          [diff, oldTimesheet.rows[0].task_id]
-        );
-      }
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating timesheet:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (approval_status === 'approved' && !req.body.approved_at) {
+    updateData.approved_at = new Date();
   }
-});
+
+  if (Object.keys(updateData).length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
+  }
+
+  const ts = await Timesheet.findByIdAndUpdate(req.params.id, updateData, { new: true });
+
+  if (!ts) {
+    return res.status(404).json({ error: 'Timesheet not found' });
+  }
+
+  // Update task actual hours if hours changed
+  if (hours_worked !== undefined && oldTimesheet) {
+    const oldHours = parseFloat(String(oldTimesheet.hours_worked)) || 0;
+    const newHours = parseFloat(hours_worked);
+    const diff = newHours - oldHours;
+
+    if (diff !== 0 && oldTimesheet.task_id) {
+      await ProjectTask.findByIdAndUpdate(oldTimesheet.task_id, {
+        $inc: { actual_hours: diff },
+      });
+    }
+  }
+
+  res.json(ts);
+}));
 
 // Delete timesheet
-router.delete('/timesheets/:id', async (req, res) => {
-  try {
-    // Get timesheet before deletion
-    const timesheet = await pool.query(
-      'SELECT task_id, hours_worked FROM timesheets WHERE id = $1',
-      [req.params.id]
-    );
+router.delete('/timesheets/:id', asyncHandler(async (req, res) => {
+  const timesheet = await Timesheet.findById(req.params.id);
 
-    const result = await pool.query('DELETE FROM timesheets WHERE id = $1 RETURNING id', [
-      req.params.id,
-    ]);
+  const result = await Timesheet.findByIdAndDelete(req.params.id);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Timesheet not found' });
-    }
-
-    // Update task actual hours
-    if (timesheet.rows.length > 0 && timesheet.rows[0].task_id) {
-      const hours = parseFloat(timesheet.rows[0].hours_worked) || 0;
-      await pool.query(
-        `UPDATE project_tasks 
-         SET actual_hours = GREATEST(COALESCE(actual_hours, 0) - $1, 0)
-         WHERE id = $2`,
-        [hours, timesheet.rows[0].task_id]
-      );
-    }
-
-    res.json({ message: 'Timesheet deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting timesheet:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!result) {
+    return res.status(404).json({ error: 'Timesheet not found' });
   }
-});
+
+  // Update task actual hours
+  if (timesheet && timesheet.task_id) {
+    const hours = parseFloat(String(timesheet.hours_worked)) || 0;
+    await ProjectTask.findByIdAndUpdate(timesheet.task_id, {
+      $inc: { actual_hours: -hours },
+    });
+    // Ensure non-negative
+    await ProjectTask.updateOne(
+      { _id: timesheet.task_id, actual_hours: { $lt: 0 } },
+      { actual_hours: 0 }
+    );
+  }
+
+  res.json({ message: 'Timesheet deleted successfully' });
+}));
 
 // Submit timesheet for approval
-router.post('/timesheets/:id/submit', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `UPDATE timesheets 
-       SET approval_status = 'submitted'
-       WHERE id = $1
-       RETURNING *`,
-      [req.params.id]
-    );
+router.post('/timesheets/:id/submit', asyncHandler(async (req, res) => {
+  const ts = await Timesheet.findByIdAndUpdate(
+    req.params.id,
+    { approval_status: 'submitted' },
+    { new: true }
+  );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Timesheet not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error submitting timesheet:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!ts) {
+    return res.status(404).json({ error: 'Timesheet not found' });
   }
-});
+
+  res.json(ts);
+}));
 
 // Approve/reject timesheet
-router.post('/timesheets/:id/approve', async (req, res) => {
-  try {
-    const { status, approved_by } = req.body;
+router.post('/timesheets/:id/approve', asyncHandler(async (req, res) => {
+  const { status, approved_by } = req.body;
 
-    if (!['approved', 'rejected'].includes(status)) {
-      return res.status(400).json({ error: 'Invalid status' });
-    }
-
-    const result = await pool.query(
-      `UPDATE timesheets 
-       SET approval_status = $1, approved_by = $2, approved_at = CURRENT_TIMESTAMP
-       WHERE id = $3
-       RETURNING *`,
-      [status, approved_by, req.params.id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Timesheet not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error approving timesheet:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!['approved', 'rejected'].includes(status)) {
+    return res.status(400).json({ error: 'Invalid status' });
   }
-});
+
+  const ts = await Timesheet.findByIdAndUpdate(
+    req.params.id,
+    { approval_status: status, approved_by, approved_at: new Date() },
+    { new: true }
+  );
+
+  if (!ts) {
+    return res.status(404).json({ error: 'Timesheet not found' });
+  }
+
+  res.json(ts);
+}));
 
 // Get timesheet summary for a project
-router.get('/:projectId/timesheets/summary', async (req, res) => {
-  try {
-    const { date_from, date_to } = req.query;
-    let query = `
-      SELECT 
-        ts.user_id,
-        u.name as user_name,
-        SUM(ts.hours_worked) as total_hours,
-        SUM(CASE WHEN ts.is_billable THEN ts.hours_worked ELSE 0 END) as billable_hours,
-        SUM(CASE WHEN ts.approval_status = 'approved' THEN ts.hours_worked ELSE 0 END) as approved_hours,
-        COUNT(*) as entry_count
-      FROM timesheets ts
-      LEFT JOIN users u ON ts.user_id = u.id
-      WHERE ts.project_id = $1
-    `;
-    const params: any[] = [req.params.projectId];
-    let paramCount = 2;
+router.get('/:projectId/timesheets/summary', asyncHandler(async (req, res) => {
+  const { date_from, date_to } = req.query;
+  const match: any = { project_id: req.params.projectId };
 
-    if (date_from) {
-      query += ` AND ts.date_worked >= $${paramCount++}`;
-      params.push(date_from);
-    }
-
-    if (date_to) {
-      query += ` AND ts.date_worked <= $${paramCount++}`;
-      params.push(date_to);
-    }
-
-    query += ' GROUP BY ts.user_id, u.name ORDER BY total_hours DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching timesheet summary:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (date_from || date_to) {
+    match.date_worked = {};
+    if (date_from) match.date_worked.$gte = new Date(date_from as string);
+    if (date_to) match.date_worked.$lte = new Date(date_to as string);
   }
-});
+
+  const result = await Timesheet.aggregate([
+    { $match: match },
+    {
+      $group: {
+        _id: '$user_id',
+        total_hours: { $sum: '$hours_worked' },
+        billable_hours: { $sum: { $cond: ['$is_billable', '$hours_worked', 0] } },
+        approved_hours: { $sum: { $cond: [{ $eq: ['$approval_status', 'approved'] }, '$hours_worked', 0] } },
+        entry_count: { $sum: 1 },
+      },
+    },
+    {
+      $lookup: {
+        from: 'users',
+        localField: '_id',
+        foreignField: '_id',
+        as: 'user',
+      },
+    },
+    { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+    {
+      $project: {
+        user_id: '$_id',
+        user_name: '$user.name',
+        total_hours: 1,
+        billable_hours: 1,
+        approved_hours: 1,
+        entry_count: 1,
+      },
+    },
+    { $sort: { total_hours: -1 } },
+  ]);
+
+  res.json(result);
+}));
 
 export default router;
-

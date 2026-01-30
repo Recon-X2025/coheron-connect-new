@@ -1,5 +1,10 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import QualityChecklist from '../models/QualityChecklist.js';
+import ProjectInspection from '../models/ProjectInspection.js';
+import ProjectCompliance from '../models/ProjectCompliance.js';
+import ComplianceTemplate from '../models/ComplianceTemplate.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
@@ -7,350 +12,187 @@ const router = express.Router();
 // QUALITY CHECKLISTS
 // ============================================
 
-// Get project quality checklists
-router.get('/:projectId/quality-checklists', async (req, res) => {
-  try {
-    const { status, checklist_type } = req.query;
-    let query = `
-      SELECT qc.*, 
-             u.name as completed_by_name,
-             t.name as task_name
-      FROM project_quality_checklists qc
-      LEFT JOIN users u ON qc.completed_by = u.id
-      LEFT JOIN project_tasks t ON qc.task_id = t.id
-      WHERE qc.project_id = $1
-    `;
-    const params: any[] = [req.params.projectId];
-    let paramCount = 2;
+router.get('/:projectId/quality-checklists', asyncHandler(async (req, res) => {
+  const { status, checklist_type } = req.query;
+  const filter: any = { project_id: req.params.projectId };
+  if (status) filter.status = status;
+  if (checklist_type) filter.checklist_type = checklist_type;
 
-    if (status) {
-      query += ` AND qc.status = $${paramCount++}`;
-      params.push(status);
-    }
+  const checklists = await QualityChecklist.find(filter)
+    .populate('completed_by', 'name')
+    .populate('task_id', 'name')
+    .sort({ created_at: -1 })
+    .lean();
 
-    if (checklist_type) {
-      query += ` AND qc.checklist_type = $${paramCount++}`;
-      params.push(checklist_type);
-    }
+  const rows = checklists.map((qc: any) => {
+    const obj: any = { ...qc };
+    if (obj.completed_by) obj.completed_by_name = obj.completed_by.name;
+    if (obj.task_id) obj.task_name = obj.task_id.name;
+    return obj;
+  });
 
-    query += ' ORDER BY qc.created_at DESC';
+  res.json(rows);
+}));
 
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching quality checklists:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.post('/:projectId/quality-checklists', asyncHandler(async (req, res) => {
+  const { task_id, checklist_name, checklist_type, items } = req.body;
+
+  if (!checklist_name || !items || !Array.isArray(items)) {
+    return res.status(400).json({ error: 'Checklist name and items are required' });
   }
-});
 
-// Create quality checklist
-router.post('/:projectId/quality-checklists', async (req, res) => {
-  try {
-    const {
-      task_id,
-      checklist_name,
-      checklist_type,
-      items,
-    } = req.body;
+  const checklist = await QualityChecklist.create({
+    project_id: req.params.projectId,
+    task_id,
+    checklist_name,
+    checklist_type: checklist_type || 'qa',
+    items,
+    status: 'draft',
+  });
 
-    if (!checklist_name || !items || !Array.isArray(items)) {
-      return res.status(400).json({ error: 'Checklist name and items are required' });
-    }
+  res.status(201).json(checklist);
+}));
 
-    const result = await pool.query(
-      `INSERT INTO project_quality_checklists (
-        project_id, task_id, checklist_name, checklist_type, items, status
-      ) VALUES ($1, $2, $3, $4, $5, 'draft')
-      RETURNING *`,
-      [
-        req.params.projectId,
-        task_id,
-        checklist_name,
-        checklist_type || 'qa',
-        JSON.stringify(items),
-      ]
-    );
+router.put('/quality-checklists/:id', asyncHandler(async (req, res) => {
+  const { items, status, completed_by } = req.body;
+  const updateData: any = {};
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating quality checklist:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (items) updateData.items = items;
+  if (status) updateData.status = status;
+  if (completed_by) updateData.completed_by = completed_by;
+  if (status === 'completed' && completed_by) {
+    updateData.completed_at = new Date();
   }
-});
 
-// Update checklist items
-router.put('/quality-checklists/:id', async (req, res) => {
-  try {
-    const { items, status, completed_by } = req.body;
-
-    const updateFields: string[] = [];
-    const params: any[] = [];
-    let paramCount = 1;
-
-    if (items) {
-      updateFields.push(`items = $${paramCount++}`);
-      params.push(JSON.stringify(items));
-    }
-
-    if (status) {
-      updateFields.push(`status = $${paramCount++}`);
-      params.push(status);
-    }
-
-    if (completed_by) {
-      updateFields.push(`completed_by = $${paramCount++}`);
-      params.push(completed_by);
-    }
-
-    if (status === 'completed' && completed_by) {
-      updateFields.push(`completed_at = CURRENT_TIMESTAMP`);
-    }
-
-    if (updateFields.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-
-    params.push(req.params.id);
-    const query = `UPDATE project_quality_checklists SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
-
-    const result = await pool.query(query, params);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Checklist not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating checklist:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (Object.keys(updateData).length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
   }
-});
+
+  const checklist = await QualityChecklist.findByIdAndUpdate(req.params.id, updateData, { new: true });
+  if (!checklist) return res.status(404).json({ error: 'Checklist not found' });
+  res.json(checklist);
+}));
 
 // ============================================
 // INSPECTION REPORTS
 // ============================================
 
-// Get project inspections
-router.get('/:projectId/inspections', async (req, res) => {
-  try {
-    const { status, inspection_type } = req.query;
-    let query = `
-      SELECT i.*, 
-             u1.name as inspector_name,
-             u2.name as signed_off_by_name,
-             t.name as task_name
-      FROM project_inspections i
-      LEFT JOIN users u1 ON i.inspector_id = u1.id
-      LEFT JOIN users u2 ON i.signed_off_by = u2.id
-      LEFT JOIN project_tasks t ON i.task_id = t.id
-      WHERE i.project_id = $1
-    `;
-    const params: any[] = [req.params.projectId];
-    let paramCount = 2;
+router.get('/:projectId/inspections', asyncHandler(async (req, res) => {
+  const { status, inspection_type } = req.query;
+  const filter: any = { project_id: req.params.projectId };
+  if (status) filter.status = status;
+  if (inspection_type) filter.inspection_type = inspection_type;
 
-    if (status) {
-      query += ` AND i.status = $${paramCount++}`;
-      params.push(status);
-    }
+  const inspections = await ProjectInspection.find(filter)
+    .populate('inspector_id', 'name')
+    .populate('signed_off_by', 'name')
+    .populate('task_id', 'name')
+    .sort({ inspection_date: -1 })
+    .lean();
 
-    if (inspection_type) {
-      query += ` AND i.inspection_type = $${paramCount++}`;
-      params.push(inspection_type);
-    }
+  const rows = inspections.map((i: any) => {
+    const obj: any = { ...i };
+    if (obj.inspector_id) obj.inspector_name = obj.inspector_id.name;
+    if (obj.signed_off_by) obj.signed_off_by_name = obj.signed_off_by.name;
+    if (obj.task_id) obj.task_name = obj.task_id.name;
+    return obj;
+  });
 
-    query += ' ORDER BY i.inspection_date DESC';
+  res.json(rows);
+}));
 
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching inspections:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.post('/:projectId/inspections', asyncHandler(async (req, res) => {
+  const { task_id, inspection_type, inspection_date, inspector_id, findings, acceptance_criteria, sign_off_required } = req.body;
+
+  if (!inspection_type || !inspection_date || !inspector_id) {
+    return res.status(400).json({ error: 'Inspection type, date, and inspector are required' });
   }
-});
 
-// Create inspection
-router.post('/:projectId/inspections', async (req, res) => {
-  try {
-    const {
-      task_id,
-      inspection_type,
-      inspection_date,
-      inspector_id,
-      findings,
-      acceptance_criteria,
-      sign_off_required,
-    } = req.body;
+  const inspection = await ProjectInspection.create({
+    project_id: req.params.projectId,
+    task_id, inspection_type, inspection_date, inspector_id,
+    findings, acceptance_criteria,
+    sign_off_required: sign_off_required || false,
+    status: 'scheduled',
+  });
 
-    if (!inspection_type || !inspection_date || !inspector_id) {
-      return res.status(400).json({ error: 'Inspection type, date, and inspector are required' });
-    }
+  res.status(201).json(inspection);
+}));
 
-    const result = await pool.query(
-      `INSERT INTO project_inspections (
-        project_id, task_id, inspection_type, inspection_date, inspector_id,
-        findings, acceptance_criteria, sign_off_required, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'scheduled')
-      RETURNING *`,
-      [
-        req.params.projectId,
-        task_id,
-        inspection_type,
-        inspection_date,
-        inspector_id,
-        findings,
-        acceptance_criteria,
-        sign_off_required || false,
-      ]
-    );
+router.put('/inspections/:id', asyncHandler(async (req, res) => {
+  const { findings, non_conformities, corrective_actions, status, signed_off_by } = req.body;
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating inspection:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  const fields: Record<string, any> = { findings, non_conformities, corrective_actions, status, signed_off_by };
+  const updateData: any = {};
+  Object.entries(fields).forEach(([key, value]) => {
+    if (value !== undefined) updateData[key] = value;
+  });
+
+  if (signed_off_by && status === 'completed') {
+    updateData.signed_off_at = new Date();
   }
-});
 
-// Update inspection
-router.put('/inspections/:id', async (req, res) => {
-  try {
-    const {
-      findings,
-      non_conformities,
-      corrective_actions,
-      status,
-      signed_off_by,
-    } = req.body;
-
-    const updateFields: string[] = [];
-    const params: any[] = [];
-    let paramCount = 1;
-
-    const fields = {
-      findings,
-      non_conformities,
-      corrective_actions,
-      status,
-      signed_off_by,
-    };
-
-    Object.entries(fields).forEach(([key, value]) => {
-      if (value !== undefined) {
-        updateFields.push(`${key} = $${paramCount++}`);
-        params.push(value);
-      }
-    });
-
-    if (signed_off_by && status === 'completed') {
-      updateFields.push(`signed_off_at = CURRENT_TIMESTAMP`);
-    }
-
-    if (updateFields.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-
-    params.push(req.params.id);
-    const query = `UPDATE project_inspections SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
-
-    const result = await pool.query(query, params);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Inspection not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating inspection:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (Object.keys(updateData).length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
   }
-});
+
+  const inspection = await ProjectInspection.findByIdAndUpdate(req.params.id, updateData, { new: true });
+  if (!inspection) return res.status(404).json({ error: 'Inspection not found' });
+  res.json(inspection);
+}));
 
 // ============================================
 // COMPLIANCE TRACKING
 // ============================================
 
-// Get project compliance
-router.get('/:projectId/compliance', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT c.*, 
-              ct.template_name,
-              ct.compliance_standard
-       FROM project_compliance c
-       LEFT JOIN project_compliance_templates ct ON c.template_id = ct.id
-       WHERE c.project_id = $1
-       ORDER BY c.created_at DESC`,
-      [req.params.projectId]
-    );
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching compliance:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.get('/:projectId/compliance', asyncHandler(async (req, res) => {
+  const compliance = await ProjectCompliance.find({ project_id: req.params.projectId })
+    .populate('template_id', 'template_name compliance_standard')
+    .sort({ created_at: -1 })
+    .lean();
 
-// Create compliance tracking
-router.post('/:projectId/compliance', async (req, res) => {
-  try {
-    const {
-      template_id,
-      compliance_status,
-      last_audit_date,
-      next_audit_date,
-      audit_notes,
-    } = req.body;
-
-    if (!template_id) {
-      return res.status(400).json({ error: 'Template ID is required' });
+  const rows = compliance.map((c: any) => {
+    const obj: any = { ...c };
+    if (obj.template_id) {
+      obj.template_name = obj.template_id.template_name;
+      obj.compliance_standard = obj.template_id.compliance_standard;
     }
+    return obj;
+  });
 
-    const result = await pool.query(
-      `INSERT INTO project_compliance (
-        project_id, template_id, compliance_status, last_audit_date, next_audit_date, audit_notes
-      ) VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING *`,
-      [
-        req.params.projectId,
-        template_id,
-        compliance_status || 'not_started',
-        last_audit_date,
-        next_audit_date,
-        audit_notes,
-      ]
-    );
+  res.json(rows);
+}));
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating compliance tracking:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.post('/:projectId/compliance', asyncHandler(async (req, res) => {
+  const { template_id, compliance_status, last_audit_date, next_audit_date, audit_notes } = req.body;
+
+  if (!template_id) {
+    return res.status(400).json({ error: 'Template ID is required' });
   }
-});
 
-// Get compliance templates
-router.get('/compliance-templates', async (req, res) => {
-  try {
-    const { compliance_standard, is_active } = req.query;
-    let query = 'SELECT * FROM project_compliance_templates WHERE 1=1';
-    const params: any[] = [];
-    let paramCount = 1;
+  const entry = await ProjectCompliance.create({
+    project_id: req.params.projectId,
+    template_id,
+    compliance_status: compliance_status || 'not_started',
+    last_audit_date, next_audit_date, audit_notes,
+  });
 
-    if (compliance_standard) {
-      query += ` AND compliance_standard = $${paramCount++}`;
-      params.push(compliance_standard);
-    }
+  res.status(201).json(entry);
+}));
 
-    if (is_active !== undefined) {
-      query += ` AND is_active = $${paramCount++}`;
-      params.push(is_active === 'true');
-    }
+router.get('/compliance-templates', asyncHandler(async (req, res) => {
+  const { compliance_standard, is_active } = req.query;
+  const filter: any = {};
+  if (compliance_standard) filter.compliance_standard = compliance_standard;
+  if (is_active !== undefined) filter.is_active = is_active === 'true';
 
-    query += ' ORDER BY template_name';
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    ComplianceTemplate.find(filter).sort({ template_name: 1 }).lean(),
+    pagination, filter, ComplianceTemplate
+  );
 
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching compliance templates:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json(paginatedResult);
+}));
 
 export default router;

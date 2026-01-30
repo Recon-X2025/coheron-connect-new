@@ -1,5 +1,8 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import Project from '../models/Project.js';
+import ChangeRequest from '../models/ChangeRequest.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
@@ -8,224 +11,129 @@ const router = express.Router();
 // ============================================
 
 // Get project change requests
-router.get('/:projectId/change-requests', async (req, res) => {
-  try {
-    const { status, change_type } = req.query;
-    let query = `
-      SELECT cr.*, 
-             u1.name as requested_by_name,
-             u2.name as approved_by_name
-      FROM project_change_requests cr
-      LEFT JOIN users u1 ON cr.requested_by = u1.id
-      LEFT JOIN users u2 ON cr.approved_by = u2.id
-      WHERE cr.project_id = $1
-    `;
-    const params: any[] = [req.params.projectId];
-    let paramCount = 2;
+router.get('/:projectId/change-requests', asyncHandler(async (req, res) => {
+  const { status, change_type } = req.query;
+  const filter: any = { project_id: req.params.projectId };
+  if (status) filter.status = status;
+  if (change_type) filter.change_type = change_type;
 
-    if (status) {
-      query += ` AND cr.status = $${paramCount++}`;
-      params.push(status);
-    }
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    ChangeRequest.find(filter)
+      .populate('requested_by', 'name')
+      .populate('approved_by', 'name')
+      .sort({ created_at: -1 })
+      .lean(),
+    pagination, filter, ChangeRequest
+  );
 
-    if (change_type) {
-      query += ` AND cr.change_type = $${paramCount++}`;
-      params.push(change_type);
-    }
+  const data = paginatedResult.data.map((cr: any) => {
+    const obj: any = { ...cr };
+    if (obj.requested_by) obj.requested_by_name = obj.requested_by.name;
+    if (obj.approved_by) obj.approved_by_name = obj.approved_by.name;
+    return obj;
+  });
 
-    query += ' ORDER BY cr.created_at DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching change requests:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json({ data, pagination: paginatedResult.pagination });
+}));
 
 // Get change request by ID
-router.get('/change-requests/:id', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT cr.*, 
-              u1.name as requested_by_name,
-              u1.email as requested_by_email,
-              u2.name as approved_by_name,
-              u2.email as approved_by_email
-       FROM project_change_requests cr
-       LEFT JOIN users u1 ON cr.requested_by = u1.id
-       LEFT JOIN users u2 ON cr.approved_by = u2.id
-       WHERE cr.id = $1`,
-      [req.params.id]
-    );
+router.get('/change-requests/:id', asyncHandler(async (req, res) => {
+  const cr = await ChangeRequest.findById(req.params.id)
+    .populate('requested_by', 'name email')
+    .populate('approved_by', 'name email')
+    .lean();
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Change request not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error fetching change request:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!cr) {
+    return res.status(404).json({ error: 'Change request not found' });
   }
-});
+
+  const obj: any = { ...cr };
+  if (obj.requested_by) {
+    obj.requested_by_name = obj.requested_by.name;
+    obj.requested_by_email = obj.requested_by.email;
+  }
+  if (obj.approved_by) {
+    obj.approved_by_name = obj.approved_by.name;
+    obj.approved_by_email = obj.approved_by.email;
+  }
+
+  res.json(obj);
+}));
 
 // Create change request
-router.post('/:projectId/change-requests', async (req, res) => {
-  try {
-    const {
-      change_type,
-      title,
-      description,
-      scope_impact,
-      cost_impact,
-      timeline_impact_days,
-      original_contract_value,
-      revised_contract_value,
-      requested_by,
-      approval_workflow,
-    } = req.body;
+router.post('/:projectId/change-requests', asyncHandler(async (req, res) => {
+  const {
+    change_type, title, description, scope_impact, cost_impact,
+    timeline_impact_days, original_contract_value, revised_contract_value,
+    requested_by, approval_workflow,
+  } = req.body;
 
-    if (!change_type || !title) {
-      return res.status(400).json({ error: 'Change type and title are required' });
-    }
-
-    // Generate change code if not provided
-    let changeCode = req.body.change_code;
-    if (!changeCode) {
-      const project = await pool.query('SELECT code FROM projects WHERE id = $1', [
-        req.params.projectId,
-      ]);
-      const projectCode = project.rows[0]?.code || 'PROJ';
-      const count = await pool.query(
-        'SELECT COUNT(*) as count FROM project_change_requests WHERE project_id = $1',
-        [req.params.projectId]
-      );
-      const num = parseInt(count.rows[0]?.count || '0') + 1;
-      changeCode = `${projectCode}-CR-${num.toString().padStart(4, '0')}`;
-    }
-
-    const result = await pool.query(
-      `INSERT INTO project_change_requests (
-        project_id, change_code, change_type, title, description,
-        scope_impact, cost_impact, timeline_impact_days,
-        original_contract_value, revised_contract_value, requested_by, 
-        approval_workflow, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'draft')
-      RETURNING *`,
-      [
-        req.params.projectId,
-        changeCode,
-        change_type,
-        title,
-        description,
-        scope_impact,
-        cost_impact || 0,
-        timeline_impact_days || 0,
-        original_contract_value,
-        revised_contract_value,
-        requested_by,
-        approval_workflow ? JSON.stringify(approval_workflow) : null,
-      ]
-    );
-
-    res.status(201).json(result.rows[0]);
-  } catch (error: any) {
-    if (error.code === '23505') {
-      return res.status(400).json({ error: 'Change code already exists' });
-    }
-    console.error('Error creating change request:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!change_type || !title) {
+    return res.status(400).json({ error: 'Change type and title are required' });
   }
-});
+
+  let changeCode = req.body.change_code;
+  if (!changeCode) {
+    const project = await Project.findById(req.params.projectId).lean();
+    const projectCode = project?.code || 'PROJ';
+    const count = await ChangeRequest.countDocuments({ project_id: req.params.projectId });
+    const num = count + 1;
+    changeCode = `${projectCode}-CR-${num.toString().padStart(4, '0')}`;
+  }
+
+  const cr = await ChangeRequest.create({
+    project_id: req.params.projectId,
+    change_code: changeCode,
+    change_type, title, description, scope_impact,
+    cost_impact: cost_impact || 0,
+    timeline_impact_days: timeline_impact_days || 0,
+    original_contract_value, revised_contract_value,
+    requested_by,
+    approval_workflow: approval_workflow || null,
+    status: 'draft',
+  });
+
+  res.status(201).json(cr);
+}));
 
 // Update change request
-router.put('/change-requests/:id', async (req, res) => {
-  try {
-    const {
-      change_type,
-      title,
-      description,
-      scope_impact,
-      cost_impact,
-      timeline_impact_days,
-      original_contract_value,
-      revised_contract_value,
-      status,
-      approved_by,
-      approval_workflow,
-      implementation_date,
-    } = req.body;
+router.put('/change-requests/:id', asyncHandler(async (req, res) => {
+  const {
+    change_type, title, description, scope_impact, cost_impact,
+    timeline_impact_days, original_contract_value, revised_contract_value,
+    status, approved_by, approval_workflow, implementation_date,
+  } = req.body;
 
-    const updateFields: string[] = [];
-    const params: any[] = [];
-    let paramCount = 1;
+  const fields: Record<string, any> = {
+    change_type, title, description, scope_impact, cost_impact,
+    timeline_impact_days, original_contract_value, revised_contract_value,
+    status, approved_by, approval_workflow, implementation_date,
+  };
 
-    const fields = {
-      change_type,
-      title,
-      description,
-      scope_impact,
-      cost_impact,
-      timeline_impact_days,
-      original_contract_value,
-      revised_contract_value,
-      status,
-      approved_by,
-      approval_workflow: approval_workflow ? JSON.stringify(approval_workflow) : undefined,
-      implementation_date,
-    };
+  const updateData: any = {};
+  Object.entries(fields).forEach(([key, value]) => {
+    if (value !== undefined) updateData[key] = value;
+  });
 
-    Object.entries(fields).forEach(([key, value]) => {
-      if (value !== undefined) {
-        updateFields.push(`${key} = $${paramCount++}`);
-        params.push(value);
-      }
-    });
-
-    // Handle approval
-    if (status === 'approved' && approved_by) {
-      updateFields.push(`approved_at = CURRENT_TIMESTAMP`);
-    }
-
-    if (updateFields.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-
-    params.push(req.params.id);
-    const query = `UPDATE project_change_requests SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
-
-    const result = await pool.query(query, params);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Change request not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating change request:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (status === 'approved' && approved_by) {
+    updateData.approved_at = new Date();
   }
-});
+
+  if (Object.keys(updateData).length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
+  }
+
+  const cr = await ChangeRequest.findByIdAndUpdate(req.params.id, updateData, { new: true });
+  if (!cr) return res.status(404).json({ error: 'Change request not found' });
+  res.json(cr);
+}));
 
 // Delete change request
-router.delete('/change-requests/:id', async (req, res) => {
-  try {
-    const result = await pool.query(
-      'DELETE FROM project_change_requests WHERE id = $1 RETURNING id',
-      [req.params.id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Change request not found' });
-    }
-
-    res.json({ message: 'Change request deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting change request:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.delete('/change-requests/:id', asyncHandler(async (req, res) => {
+  const cr = await ChangeRequest.findByIdAndDelete(req.params.id);
+  if (!cr) return res.status(404).json({ error: 'Change request not found' });
+  res.json({ message: 'Change request deleted successfully' });
+}));
 
 export default router;
-

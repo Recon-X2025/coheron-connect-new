@@ -1,5 +1,7 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import { Contract, Sla, SlaPerformance, Subscription, UsageBillingRule } from '../models/Contract.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
@@ -8,486 +10,307 @@ const router = express.Router();
 // ============================================
 
 // Get all contracts
-router.get('/', async (req, res) => {
-  try {
-    const { partner_id, status, contract_type } = req.query;
-    let query = `
-      SELECT c.*, 
-             json_agg(
-               json_build_object(
-                 'id', cl.id,
-                 'product_id', cl.product_id,
-                 'product_name', cl.product_name,
-                 'quantity', cl.quantity,
-                 'unit_price', cl.unit_price,
-                 'total_price', cl.total_price
-               )
-             ) FILTER (WHERE cl.id IS NOT NULL) as contract_lines
-      FROM contracts c
-      LEFT JOIN contract_lines cl ON c.id = cl.contract_id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/', asyncHandler(async (req, res) => {
+  const { partner_id, status, contract_type } = req.query;
+  const filter: any = {};
 
-    if (partner_id) {
-      query += ` AND c.partner_id = $${paramCount++}`;
-      params.push(partner_id);
-    }
+  if (partner_id) filter.partner_id = partner_id;
+  if (status) filter.status = status;
+  if (contract_type) filter.contract_type = contract_type;
 
-    if (status) {
-      query += ` AND c.status = $${paramCount++}`;
-      params.push(status);
-    }
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    Contract.find(filter).sort({ created_at: -1 }).lean(),
+    pagination, filter, Contract
+  );
 
-    if (contract_type) {
-      query += ` AND c.contract_type = $${paramCount++}`;
-      params.push(contract_type);
-    }
-
-    query += ' GROUP BY c.id ORDER BY c.created_at DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching contracts:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json(paginatedResult);
+}));
 
 // Get contract by ID
-router.get('/:id', async (req, res) => {
-  try {
-    const contractResult = await pool.query('SELECT * FROM contracts WHERE id = $1', [req.params.id]);
+router.get('/:id', asyncHandler(async (req, res) => {
+  const contract = await Contract.findById(req.params.id).lean();
 
-    if (contractResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Contract not found' });
-    }
-
-    const linesResult = await pool.query('SELECT * FROM contract_lines WHERE contract_id = $1', [req.params.id]);
-    const slasResult = await pool.query('SELECT * FROM slas WHERE contract_id = $1', [req.params.id]);
-
-    res.json({
-      ...contractResult.rows[0],
-      contract_lines: linesResult.rows,
-      slas: slasResult.rows,
-    });
-  } catch (error) {
-    console.error('Error fetching contract:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!contract) {
+    return res.status(404).json({ error: 'Contract not found' });
   }
-});
+
+  const slas = await Sla.find({ contract_id: req.params.id }).lean();
+
+  res.json({
+    ...contract,
+    slas,
+  });
+}));
 
 // Create contract
-router.post('/', async (req, res) => {
-  try {
-    const {
-      contract_number,
-      partner_id,
-      contract_type,
-      start_date,
-      end_date,
-      renewal_date,
-      auto_renew,
-      billing_cycle,
-      contract_value,
-      currency,
-      terms_and_conditions,
-      contract_lines,
-    } = req.body;
+router.post('/', asyncHandler(async (req, res) => {
+  const {
+    contract_number, partner_id, contract_type, start_date, end_date,
+    renewal_date, auto_renew, billing_cycle, contract_value, currency,
+    terms_and_conditions, contract_lines,
+  } = req.body;
 
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-
-      // Generate contract number if not provided
-      let finalContractNumber = contract_number;
-      if (!finalContractNumber) {
-        const countResult = await client.query('SELECT COUNT(*) as count FROM contracts');
-        finalContractNumber = `CNT-${String(parseInt(countResult.rows[0].count) + 1).padStart(6, '0')}`;
-      }
-
-      const contractResult = await client.query(
-        `INSERT INTO contracts (contract_number, partner_id, contract_type, start_date, end_date, renewal_date, auto_renew, billing_cycle, contract_value, currency, terms_and_conditions)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-         RETURNING *`,
-        [
-          finalContractNumber,
-          partner_id,
-          contract_type,
-          start_date,
-          end_date,
-          renewal_date,
-          auto_renew || false,
-          billing_cycle || 'monthly',
-          contract_value,
-          currency || 'INR',
-          terms_and_conditions,
-        ]
-      );
-
-      const contract = contractResult.rows[0];
-
-      // Add contract lines
-      if (contract_lines && contract_lines.length > 0) {
-        for (const line of contract_lines) {
-          await client.query(
-            `INSERT INTO contract_lines (contract_id, product_id, product_name, quantity, unit_price, total_price, billing_frequency)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-            [
-              contract.id,
-              line.product_id,
-              line.product_name,
-              line.quantity || 1,
-              line.unit_price,
-              line.total_price || line.unit_price * (line.quantity || 1),
-              line.billing_frequency || billing_cycle,
-            ]
-          );
-        }
-      }
-
-      await client.query('COMMIT');
-      res.status(201).json(contract);
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
-  } catch (error) {
-    console.error('Error creating contract:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  let finalContractNumber = contract_number;
+  if (!finalContractNumber) {
+    const count = await Contract.countDocuments();
+    finalContractNumber = `CNT-${String(count + 1).padStart(6, '0')}`;
   }
-});
+
+  const lines = (contract_lines || []).map((line: any) => ({
+    product_id: line.product_id,
+    product_name: line.product_name,
+    quantity: line.quantity || 1,
+    unit_price: line.unit_price,
+    total_price: line.total_price || line.unit_price * (line.quantity || 1),
+    billing_frequency: line.billing_frequency || billing_cycle,
+  }));
+
+  const contract = await Contract.create({
+    contract_number: finalContractNumber,
+    partner_id,
+    contract_type,
+    start_date,
+    end_date,
+    renewal_date,
+    auto_renew: auto_renew || false,
+    billing_cycle: billing_cycle || 'monthly',
+    contract_value,
+    currency: currency || 'INR',
+    terms_and_conditions,
+    contract_lines: lines,
+  });
+
+  res.status(201).json(contract);
+}));
 
 // Update contract
-router.put('/:id', async (req, res) => {
-  try {
-    const {
-      status,
-      end_date,
-      renewal_date,
-      auto_renew,
-      signed_at,
-      signed_by,
-      esign_document_id,
-    } = req.body;
+router.put('/:id', asyncHandler(async (req, res) => {
+  const { status, end_date, renewal_date, auto_renew, signed_at, signed_by, esign_document_id } = req.body;
 
-    const result = await pool.query(
-      `UPDATE contracts 
-       SET status = COALESCE($1, status),
-           end_date = COALESCE($2, end_date),
-           renewal_date = COALESCE($3, renewal_date),
-           auto_renew = COALESCE($4, auto_renew),
-           signed_at = COALESCE($5, signed_at),
-           signed_by = COALESCE($6, signed_by),
-           esign_document_id = COALESCE($7, esign_document_id),
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $8
-       RETURNING *`,
-      [status, end_date, renewal_date, auto_renew, signed_at, signed_by, esign_document_id, req.params.id]
-    );
+  const updateData: any = {};
+  if (status !== undefined) updateData.status = status;
+  if (end_date !== undefined) updateData.end_date = end_date;
+  if (renewal_date !== undefined) updateData.renewal_date = renewal_date;
+  if (auto_renew !== undefined) updateData.auto_renew = auto_renew;
+  if (signed_at !== undefined) updateData.signed_at = signed_at;
+  if (signed_by !== undefined) updateData.signed_by = signed_by;
+  if (esign_document_id !== undefined) updateData.esign_document_id = esign_document_id;
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Contract not found' });
-    }
+  const contract = await Contract.findByIdAndUpdate(req.params.id, updateData, { new: true });
 
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating contract:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!contract) {
+    return res.status(404).json({ error: 'Contract not found' });
   }
-});
+
+  res.json(contract);
+}));
 
 // Renew contract
-router.post('/:id/renew', async (req, res) => {
-  try {
-    const { new_end_date, new_renewal_date } = req.body;
+router.post('/:id/renew', asyncHandler(async (req, res) => {
+  const { new_end_date, new_renewal_date } = req.body;
 
-    const oldContract = await pool.query('SELECT * FROM contracts WHERE id = $1', [req.params.id]);
-    if (oldContract.rows.length === 0) {
-      return res.status(404).json({ error: 'Contract not found' });
-    }
-
-    const old = oldContract.rows[0];
-
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-
-      // Update old contract status
-      await client.query('UPDATE contracts SET status = $1 WHERE id = $2', ['renewed', req.params.id]);
-
-      // Create new contract
-      const newContractNumber = `${old.contract_number}-RENEW-${Date.now()}`;
-      const newContract = await client.query(
-        `INSERT INTO contracts (contract_number, partner_id, contract_type, start_date, end_date, renewal_date, auto_renew, billing_cycle, contract_value, currency, terms_and_conditions, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'active')
-         RETURNING *`,
-        [
-          newContractNumber,
-          old.partner_id,
-          old.contract_type,
-          old.end_date || new Date(),
-          new_end_date,
-          new_renewal_date,
-          old.auto_renew,
-          old.billing_cycle,
-          old.contract_value,
-          old.currency,
-          old.terms_and_conditions,
-        ]
-      );
-
-      // Copy contract lines
-      const oldLines = await client.query('SELECT * FROM contract_lines WHERE contract_id = $1', [req.params.id]);
-      for (const line of oldLines.rows) {
-        await client.query(
-          `INSERT INTO contract_lines (contract_id, product_id, product_name, quantity, unit_price, total_price, billing_frequency)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [
-            newContract.rows[0].id,
-            line.product_id,
-            line.product_name,
-            line.quantity,
-            line.unit_price,
-            line.total_price,
-            line.billing_frequency,
-          ]
-        );
-      }
-
-      await client.query('COMMIT');
-      res.json(newContract.rows[0]);
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
-  } catch (error) {
-    console.error('Error renewing contract:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  const oldContract = await Contract.findById(req.params.id);
+  if (!oldContract) {
+    return res.status(404).json({ error: 'Contract not found' });
   }
-});
+
+  // Update old contract status
+  await Contract.findByIdAndUpdate(req.params.id, { status: 'renewed' });
+
+  const old = oldContract.toJSON() as any;
+
+  // Create new contract
+  const newContractNumber = `${old.contract_number}-RENEW-${Date.now()}`;
+
+  const newLines = (old.contract_lines || []).map((line: any) => ({
+    product_id: line.product_id,
+    product_name: line.product_name,
+    quantity: line.quantity,
+    unit_price: line.unit_price,
+    total_price: line.total_price,
+    billing_frequency: line.billing_frequency,
+  }));
+
+  const newContract = await Contract.create({
+    contract_number: newContractNumber,
+    partner_id: old.partner_id,
+    contract_type: old.contract_type,
+    start_date: old.end_date || new Date(),
+    end_date: new_end_date,
+    renewal_date: new_renewal_date,
+    auto_renew: old.auto_renew,
+    billing_cycle: old.billing_cycle,
+    contract_value: old.contract_value,
+    currency: old.currency,
+    terms_and_conditions: old.terms_and_conditions,
+    status: 'active',
+    contract_lines: newLines,
+  });
+
+  res.json(newContract);
+}));
 
 // ============================================
 // SLAs (Service Level Agreements)
 // ============================================
 
 // Get SLAs for contract
-router.get('/:id/slas', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT s.*, 
-              (SELECT json_agg(sp) FROM sla_performance sp WHERE sp.sla_id = s.id ORDER BY sp.measurement_date DESC LIMIT 10) as recent_performance
-       FROM slas s 
-       WHERE s.contract_id = $1 
-       ORDER BY s.created_at DESC`,
-      [req.params.id]
-    );
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching SLAs:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.get('/:id/slas', asyncHandler(async (req, res) => {
+  const slas = await Sla.find({ contract_id: req.params.id }).sort({ created_at: -1 }).lean();
+
+  const result = await Promise.all(slas.map(async (s: any) => {
+    const recentPerformance = await SlaPerformance.find({ sla_id: s._id })
+      .sort({ measurement_date: -1 })
+      .limit(10)
+      .lean();
+    return { ...s, recent_performance: recentPerformance };
+  }));
+
+  res.json(result);
+}));
 
 // Create SLA
-router.post('/:id/slas', async (req, res) => {
-  try {
-    const { name, sla_type, target_value, unit, penalty_per_violation, credit_per_violation, measurement_period } = req.body;
+router.post('/:id/slas', asyncHandler(async (req, res) => {
+  const { name, sla_type, target_value, unit, penalty_per_violation, credit_per_violation, measurement_period } = req.body;
 
-    const result = await pool.query(
-      `INSERT INTO slas (name, contract_id, sla_type, target_value, unit, penalty_per_violation, credit_per_violation, measurement_period)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING *`,
-      [name, req.params.id, sla_type, target_value, unit, penalty_per_violation || 0, credit_per_violation || 0, measurement_period || 'monthly']
-    );
+  const sla = await Sla.create({
+    name,
+    contract_id: req.params.id,
+    sla_type,
+    target_value,
+    unit,
+    penalty_per_violation: penalty_per_violation || 0,
+    credit_per_violation: credit_per_violation || 0,
+    measurement_period: measurement_period || 'monthly',
+  });
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating SLA:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.status(201).json(sla);
+}));
 
 // Record SLA performance
-router.post('/slas/:slaId/performance', async (req, res) => {
-  try {
-    const { measurement_date, actual_value, target_value, is_violated, violation_count, penalty_applied, credit_applied } = req.body;
+router.post('/slas/:slaId/performance', asyncHandler(async (req, res) => {
+  const { measurement_date, actual_value, target_value, is_violated, violation_count, penalty_applied, credit_applied } = req.body;
 
-    const sla = await pool.query('SELECT contract_id, target_value as default_target FROM slas WHERE id = $1', [req.params.slaId]);
-    if (sla.rows.length === 0) {
-      return res.status(404).json({ error: 'SLA not found' });
-    }
-
-    const result = await pool.query(
-      `INSERT INTO sla_performance (sla_id, contract_id, measurement_date, actual_value, target_value, is_violated, violation_count, penalty_applied, credit_applied)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       ON CONFLICT (sla_id, measurement_date) 
-       DO UPDATE SET actual_value = EXCLUDED.actual_value, is_violated = EXCLUDED.is_violated, violation_count = EXCLUDED.violation_count, penalty_applied = EXCLUDED.penalty_applied, credit_applied = EXCLUDED.credit_applied
-       RETURNING *`,
-      [
-        req.params.slaId,
-        sla.rows[0].contract_id,
-        measurement_date,
-        actual_value,
-        target_value || sla.rows[0].default_target,
-        is_violated || false,
-        violation_count || 0,
-        penalty_applied || 0,
-        credit_applied || 0,
-      ]
-    );
-
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error recording SLA performance:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  const sla = await Sla.findById(req.params.slaId).lean();
+  if (!sla) {
+    return res.status(404).json({ error: 'SLA not found' });
   }
-});
+
+  const performance = await SlaPerformance.findOneAndUpdate(
+    { sla_id: req.params.slaId, measurement_date },
+    {
+      sla_id: req.params.slaId,
+      contract_id: sla.contract_id,
+      measurement_date,
+      actual_value,
+      target_value: target_value || sla.target_value,
+      is_violated: is_violated || false,
+      violation_count: violation_count || 0,
+      penalty_applied: penalty_applied || 0,
+      credit_applied: credit_applied || 0,
+    },
+    { upsert: true, new: true }
+  );
+
+  res.status(201).json(performance);
+}));
 
 // ============================================
 // SUBSCRIPTIONS
 // ============================================
 
 // Get all subscriptions
-router.get('/subscriptions', async (req, res) => {
-  try {
-    const { partner_id, status } = req.query;
-    let query = 'SELECT * FROM subscriptions WHERE 1=1';
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/subscriptions', asyncHandler(async (req, res) => {
+  const { partner_id, status } = req.query;
+  const filter: any = {};
 
-    if (partner_id) {
-      query += ` AND partner_id = $${paramCount++}`;
-      params.push(partner_id);
-    }
+  if (partner_id) filter.partner_id = partner_id;
+  if (status) filter.status = status;
 
-    if (status) {
-      query += ` AND status = $${paramCount++}`;
-      params.push(status);
-    }
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    Subscription.find(filter).sort({ created_at: -1 }).lean(),
+    pagination, filter, Subscription
+  );
 
-    query += ' ORDER BY created_at DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching subscriptions:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json(paginatedResult);
+}));
 
 // Create subscription
-router.post('/subscriptions', async (req, res) => {
-  try {
-    const {
-      subscription_number,
-      contract_id,
-      partner_id,
-      product_id,
-      subscription_plan,
-      billing_cycle,
-      unit_price,
-      quantity,
-      start_date,
-      end_date,
-      auto_renew,
-    } = req.body;
+router.post('/subscriptions', asyncHandler(async (req, res) => {
+  const {
+    subscription_number, contract_id, partner_id, product_id,
+    subscription_plan, billing_cycle, unit_price, quantity,
+    start_date, end_date, auto_renew,
+  } = req.body;
 
-    let finalSubscriptionNumber = subscription_number;
-    if (!finalSubscriptionNumber) {
-      const countResult = await pool.query('SELECT COUNT(*) as count FROM subscriptions');
-      finalSubscriptionNumber = `SUB-${String(parseInt(countResult.rows[0].count) + 1).padStart(6, '0')}`;
-    }
-
-    // Calculate next billing date
-    const start = new Date(start_date);
-    let nextBillingDate = new Date(start);
-    if (billing_cycle === 'monthly') {
-      nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
-    } else if (billing_cycle === 'quarterly') {
-      nextBillingDate.setMonth(nextBillingDate.getMonth() + 3);
-    } else if (billing_cycle === 'yearly') {
-      nextBillingDate.setFullYear(nextBillingDate.getFullYear() + 1);
-    }
-
-    const result = await pool.query(
-      `INSERT INTO subscriptions (subscription_number, contract_id, partner_id, product_id, subscription_plan, billing_cycle, unit_price, quantity, total_price, start_date, end_date, next_billing_date, auto_renew)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-       RETURNING *`,
-      [
-        finalSubscriptionNumber,
-        contract_id,
-        partner_id,
-        product_id,
-        subscription_plan,
-        billing_cycle,
-        unit_price,
-        quantity || 1,
-        unit_price * (quantity || 1),
-        start_date,
-        end_date,
-        nextBillingDate,
-        auto_renew !== false,
-      ]
-    );
-
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating subscription:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  let finalSubscriptionNumber = subscription_number;
+  if (!finalSubscriptionNumber) {
+    const count = await Subscription.countDocuments();
+    finalSubscriptionNumber = `SUB-${String(count + 1).padStart(6, '0')}`;
   }
-});
+
+  const start = new Date(start_date);
+  let nextBillingDate = new Date(start);
+  if (billing_cycle === 'monthly') {
+    nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
+  } else if (billing_cycle === 'quarterly') {
+    nextBillingDate.setMonth(nextBillingDate.getMonth() + 3);
+  } else if (billing_cycle === 'yearly') {
+    nextBillingDate.setFullYear(nextBillingDate.getFullYear() + 1);
+  }
+
+  const subscription = await Subscription.create({
+    subscription_number: finalSubscriptionNumber,
+    contract_id,
+    partner_id,
+    product_id,
+    subscription_plan,
+    billing_cycle,
+    unit_price,
+    quantity: quantity || 1,
+    total_price: unit_price * (quantity || 1),
+    start_date,
+    end_date,
+    next_billing_date: nextBillingDate,
+    auto_renew: auto_renew !== false,
+  });
+
+  res.status(201).json(subscription);
+}));
 
 // Cancel subscription
-router.post('/subscriptions/:id/cancel', async (req, res) => {
-  try {
-    const { cancellation_reason } = req.body;
+router.post('/subscriptions/:id/cancel', asyncHandler(async (req, res) => {
+  const { cancellation_reason } = req.body;
 
-    const result = await pool.query(
-      `UPDATE subscriptions 
-       SET status = 'cancelled', 
-           cancellation_reason = $1, 
-           cancelled_at = CURRENT_TIMESTAMP,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $2
-       RETURNING *`,
-      [cancellation_reason, req.params.id]
-    );
+  const subscription = await Subscription.findByIdAndUpdate(
+    req.params.id,
+    { status: 'cancelled', cancellation_reason, cancelled_at: new Date() },
+    { new: true }
+  );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Subscription not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error cancelling subscription:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!subscription) {
+    return res.status(404).json({ error: 'Subscription not found' });
   }
-});
+
+  res.json(subscription);
+}));
 
 // Usage-based billing rules
-router.post('/subscriptions/:id/usage-rules', async (req, res) => {
-  try {
-    const { metric_name, unit_price, included_units, overage_price, billing_frequency } = req.body;
+router.post('/subscriptions/:id/usage-rules', asyncHandler(async (req, res) => {
+  const { metric_name, unit_price, included_units, overage_price, billing_frequency } = req.body;
 
-    const result = await pool.query(
-      `INSERT INTO usage_billing_rules (subscription_id, metric_name, unit_price, included_units, overage_price, billing_frequency)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING *`,
-      [req.params.id, metric_name, unit_price, included_units || 0, overage_price, billing_frequency || 'monthly']
-    );
+  const rule = await UsageBillingRule.create({
+    subscription_id: req.params.id,
+    metric_name,
+    unit_price,
+    included_units: included_units || 0,
+    overage_price,
+    billing_frequency: billing_frequency || 'monthly',
+  });
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating usage billing rule:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.status(201).json(rule);
+}));
 
 export default router;
-

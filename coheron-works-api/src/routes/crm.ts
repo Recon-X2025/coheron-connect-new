@@ -1,5 +1,7 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import { CrmTask, CalendarEvent, CrmAutomationWorkflow } from '../models/CrmTask.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
@@ -8,561 +10,341 @@ const router = express.Router();
 // ============================================
 
 // Get all tasks
-router.get('/tasks', async (req, res) => {
-  try {
-    const { user_id, assigned_to_id, state, task_type, related_model, related_id, start_date, end_date, search } = req.query;
-    let query = `
-      SELECT t.*,
-             u1.name as assigned_to_name,
-             u2.name as created_by_name
-      FROM crm_tasks t
-      LEFT JOIN users u1 ON t.assigned_to_id = u1.id
-      LEFT JOIN users u2 ON t.created_by_id = u2.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/tasks', asyncHandler(async (req, res) => {
+  const { user_id, assigned_to_id, state, task_type, related_model, related_id, start_date, end_date, search } = req.query;
+  const filter: any = {};
 
-    if (user_id) {
-      query += ` AND (t.assigned_to_id = $${paramCount++} OR t.created_by_id = $${paramCount})`;
-      params.push(user_id, user_id);
-    }
-
-    if (assigned_to_id) {
-      query += ` AND t.assigned_to_id = $${paramCount++}`;
-      params.push(assigned_to_id);
-    }
-
-    if (state) {
-      query += ` AND t.state = $${paramCount++}`;
-      params.push(state);
-    }
-
-    if (task_type) {
-      query += ` AND t.task_type = $${paramCount++}`;
-      params.push(task_type);
-    }
-
-    if (related_model) {
-      query += ` AND t.related_model = $${paramCount++}`;
-      params.push(related_model);
-    }
-
-    if (related_id) {
-      query += ` AND t.related_id = $${paramCount++}`;
-      params.push(related_id);
-    }
-
-    if (start_date) {
-      query += ` AND t.due_date >= $${paramCount++}`;
-      params.push(start_date);
-    }
-
-    if (end_date) {
-      query += ` AND t.due_date <= $${paramCount++}`;
-      params.push(end_date);
-    }
-
-    if (search) {
-      query += ` AND (t.name ILIKE $${paramCount} OR t.description ILIKE $${paramCount})`;
-      params.push(`%${search}%`);
-    }
-
-    query += ' ORDER BY t.due_date ASC, t.priority DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching tasks:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (user_id) {
+    filter.$or = [{ assigned_to_id: user_id }, { created_by_id: user_id }];
   }
-});
+  if (assigned_to_id) filter.assigned_to_id = assigned_to_id;
+  if (state) filter.state = state;
+  if (task_type) filter.task_type = task_type;
+  if (related_model) filter.related_model = related_model;
+  if (related_id) filter.related_id = related_id;
+  if (start_date) filter.due_date = { ...filter.due_date, $gte: start_date };
+  if (end_date) filter.due_date = { ...filter.due_date, $lte: end_date };
+  if (search) {
+    filter.$or = [
+      { name: { $regex: search as string, $options: 'i' } },
+      { description: { $regex: search as string, $options: 'i' } },
+    ];
+  }
+
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    CrmTask.find(filter)
+      .populate('assigned_to_id', 'name')
+      .populate('created_by_id', 'name')
+      .sort({ due_date: 1, priority: -1 })
+      .lean(),
+    pagination,
+    filter,
+    CrmTask
+  );
+
+  const data = paginatedResult.data.map((t: any) => ({
+    ...t,
+    assigned_to_name: t.assigned_to_id?.name,
+    created_by_name: t.created_by_id?.name,
+  }));
+
+  res.json({ data, pagination: paginatedResult.pagination });
+}));
 
 // Get task by ID
-router.get('/tasks/:id', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT t.*, u1.name as assigned_to_name, u2.name as created_by_name
-       FROM crm_tasks t
-       LEFT JOIN users u1 ON t.assigned_to_id = u1.id
-       LEFT JOIN users u2 ON t.created_by_id = u2.id
-       WHERE t.id = $1`,
-      [req.params.id]
-    );
+router.get('/tasks/:id', asyncHandler(async (req, res) => {
+  const task = await CrmTask.findById(req.params.id)
+    .populate('assigned_to_id', 'name')
+    .populate('created_by_id', 'name')
+    .lean();
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Task not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error fetching task:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!task) {
+    return res.status(404).json({ error: 'Task not found' });
   }
-});
+
+  const result = {
+    ...task,
+    assigned_to_name: (task.assigned_to_id as any)?.name,
+    created_by_name: (task.created_by_id as any)?.name,
+  };
+
+  res.json(result);
+}));
 
 // Create task
-router.post('/tasks', async (req, res) => {
-  try {
-    const {
-      name,
-      description,
-      task_type,
-      priority,
-      state,
-      assigned_to_id,
-      created_by_id,
-      due_date,
-      related_model,
-      related_id,
-      reminder_date,
-    } = req.body;
+router.post('/tasks', asyncHandler(async (req, res) => {
+  const {
+    name, description, task_type, priority, state,
+    assigned_to_id, created_by_id, due_date, related_model, related_id, reminder_date,
+  } = req.body;
 
-    const result = await pool.query(
-      `INSERT INTO crm_tasks (
-        name, description, task_type, priority, state, assigned_to_id,
-        created_by_id, due_date, related_model, related_id, reminder_date
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-      RETURNING *`,
-      [
-        name,
-        description,
-        task_type || 'task',
-        priority || 'medium',
-        state || 'pending',
-        assigned_to_id,
-        created_by_id,
-        due_date,
-        related_model,
-        related_id,
-        reminder_date,
-      ]
-    );
+  const task = await CrmTask.create({
+    name,
+    description,
+    task_type: task_type || 'task',
+    priority: priority || 'medium',
+    state: state || 'pending',
+    assigned_to_id,
+    created_by_id,
+    due_date,
+    related_model,
+    related_id,
+    reminder_date,
+  });
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating task:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.status(201).json(task);
+}));
 
 // Update task
-router.put('/tasks/:id', async (req, res) => {
-  try {
-    const {
-      name,
-      description,
-      task_type,
-      priority,
-      state,
-      assigned_to_id,
-      due_date,
-      reminder_date,
-    } = req.body;
+router.put('/tasks/:id', asyncHandler(async (req, res) => {
+  const { name, description, task_type, priority, state, assigned_to_id, due_date, reminder_date } = req.body;
 
-    const result = await pool.query(
-      `UPDATE crm_tasks 
-       SET name = COALESCE($1, name),
-           description = COALESCE($2, description),
-           task_type = COALESCE($3, task_type),
-           priority = COALESCE($4, priority),
-           state = COALESCE($5, state),
-           assigned_to_id = COALESCE($6, assigned_to_id),
-           due_date = COALESCE($7, due_date),
-           reminder_date = COALESCE($8, reminder_date),
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $9
-       RETURNING *`,
-      [name, description, task_type, priority, state, assigned_to_id, due_date, reminder_date, req.params.id]
-    );
+  const updateData: any = {};
+  if (name !== undefined) updateData.name = name;
+  if (description !== undefined) updateData.description = description;
+  if (task_type !== undefined) updateData.task_type = task_type;
+  if (priority !== undefined) updateData.priority = priority;
+  if (state !== undefined) updateData.state = state;
+  if (assigned_to_id !== undefined) updateData.assigned_to_id = assigned_to_id;
+  if (due_date !== undefined) updateData.due_date = due_date;
+  if (reminder_date !== undefined) updateData.reminder_date = reminder_date;
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Task not found' });
-    }
+  const task = await CrmTask.findByIdAndUpdate(req.params.id, updateData, { new: true });
 
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating task:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!task) {
+    return res.status(404).json({ error: 'Task not found' });
   }
-});
+
+  res.json(task);
+}));
 
 // Delete task
-router.delete('/tasks/:id', async (req, res) => {
-  try {
-    const result = await pool.query('DELETE FROM crm_tasks WHERE id = $1 RETURNING id', [req.params.id]);
+router.delete('/tasks/:id', asyncHandler(async (req, res) => {
+  const task = await CrmTask.findByIdAndDelete(req.params.id);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Task not found' });
-    }
-
-    res.json({ message: 'Task deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting task:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!task) {
+    return res.status(404).json({ error: 'Task not found' });
   }
-});
+
+  res.json({ message: 'Task deleted successfully' });
+}));
 
 // ============================================
 // CALENDAR EVENTS
 // ============================================
 
 // Get all events
-router.get('/events', async (req, res) => {
-  try {
-    const { user_id, start_date, end_date, event_type, related_model, related_id } = req.query;
-    let query = `
-      SELECT e.*,
-             u.name as created_by_name
-      FROM calendar_events e
-      LEFT JOIN users u ON e.created_by_id = u.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/events', asyncHandler(async (req, res) => {
+  const { user_id, start_date, end_date, event_type, related_model, related_id } = req.query;
+  const filter: any = {};
 
-    if (user_id) {
-      query += ` AND (e.organizer_id = $${paramCount++} OR $${paramCount} = ANY(e.attendee_ids))`;
-      params.push(user_id, user_id);
-    }
-
-    if (start_date) {
-      query += ` AND e.start_date >= $${paramCount++}`;
-      params.push(start_date);
-    }
-
-    if (end_date) {
-      query += ` AND e.end_date <= $${paramCount++}`;
-      params.push(end_date);
-    }
-
-    if (event_type) {
-      query += ` AND e.event_type = $${paramCount++}`;
-      params.push(event_type);
-    }
-
-    if (related_model) {
-      query += ` AND e.related_model = $${paramCount++}`;
-      params.push(related_model);
-    }
-
-    if (related_id) {
-      query += ` AND e.related_id = $${paramCount++}`;
-      params.push(related_id);
-    }
-
-    query += ' ORDER BY e.start_date ASC, e.start_time ASC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching events:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (user_id) {
+    filter.$or = [{ organizer_id: user_id }, { attendee_ids: user_id }];
   }
-});
+  if (start_date) filter.start_date = { ...filter.start_date, $gte: start_date };
+  if (end_date) filter.end_date = { ...filter.end_date, $lte: end_date };
+  if (event_type) filter.event_type = event_type;
+  if (related_model) filter.related_model = related_model;
+  if (related_id) filter.related_id = related_id;
+
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    CalendarEvent.find(filter)
+      .populate('created_by_id', 'name')
+      .sort({ start_date: 1, start_time: 1 })
+      .lean(),
+    pagination,
+    filter,
+    CalendarEvent
+  );
+
+  const data = paginatedResult.data.map((e: any) => ({
+    ...e,
+    created_by_name: e.created_by_id?.name,
+  }));
+
+  res.json({ data, pagination: paginatedResult.pagination });
+}));
 
 // Get event by ID
-router.get('/events/:id', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT e.*, u.name as created_by_name
-       FROM calendar_events e
-       LEFT JOIN users u ON e.created_by_id = u.id
-       WHERE e.id = $1`,
-      [req.params.id]
-    );
+router.get('/events/:id', asyncHandler(async (req, res) => {
+  const event = await CalendarEvent.findById(req.params.id)
+    .populate('created_by_id', 'name')
+    .lean();
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Event not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error fetching event:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!event) {
+    return res.status(404).json({ error: 'Event not found' });
   }
-});
+
+  const result = {
+    ...event,
+    created_by_name: (event.created_by_id as any)?.name,
+  };
+
+  res.json(result);
+}));
 
 // Create event
-router.post('/events', async (req, res) => {
-  try {
-    const {
-      title,
-      description,
-      event_type,
-      start_date,
-      start_time,
-      end_date,
-      end_time,
-      all_day,
-      location,
-      organizer_id,
-      attendee_ids,
-      related_model,
-      related_id,
-      reminder_minutes,
-      created_by_id,
-    } = req.body;
+router.post('/events', asyncHandler(async (req, res) => {
+  const {
+    title, description, event_type, start_date, start_time, end_date, end_time,
+    all_day, location, organizer_id, attendee_ids, related_model, related_id,
+    reminder_minutes, created_by_id,
+  } = req.body;
 
-    const result = await pool.query(
-      `INSERT INTO calendar_events (
-        title, description, event_type, start_date, start_time, end_date, end_time,
-        all_day, location, organizer_id, attendee_ids, related_model, related_id,
-        reminder_minutes, created_by_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-      RETURNING *`,
-      [
-        title,
-        description,
-        event_type || 'meeting',
-        start_date,
-        start_time,
-        end_date,
-        end_time,
-        all_day !== undefined ? all_day : false,
-        location,
-        organizer_id,
-        attendee_ids ? attendee_ids : [],
-        related_model,
-        related_id,
-        reminder_minutes,
-        created_by_id,
-      ]
-    );
+  const event = await CalendarEvent.create({
+    title,
+    description,
+    event_type: event_type || 'meeting',
+    start_date,
+    start_time,
+    end_date,
+    end_time,
+    all_day: all_day !== undefined ? all_day : false,
+    location,
+    organizer_id,
+    attendee_ids: attendee_ids || [],
+    related_model,
+    related_id,
+    reminder_minutes,
+    created_by_id,
+  });
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating event:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.status(201).json(event);
+}));
 
 // Update event
-router.put('/events/:id', async (req, res) => {
-  try {
-    const {
-      title,
-      description,
-      event_type,
-      start_date,
-      start_time,
-      end_date,
-      end_time,
-      all_day,
-      location,
-      organizer_id,
-      attendee_ids,
-      reminder_minutes,
-    } = req.body;
+router.put('/events/:id', asyncHandler(async (req, res) => {
+  const {
+    title, description, event_type, start_date, start_time, end_date, end_time,
+    all_day, location, organizer_id, attendee_ids, reminder_minutes,
+  } = req.body;
 
-    const result = await pool.query(
-      `UPDATE calendar_events 
-       SET title = COALESCE($1, title),
-           description = COALESCE($2, description),
-           event_type = COALESCE($3, event_type),
-           start_date = COALESCE($4, start_date),
-           start_time = COALESCE($5, start_time),
-           end_date = COALESCE($6, end_date),
-           end_time = COALESCE($7, end_time),
-           all_day = COALESCE($8, all_day),
-           location = COALESCE($9, location),
-           organizer_id = COALESCE($10, organizer_id),
-           attendee_ids = COALESCE($11, attendee_ids),
-           reminder_minutes = COALESCE($12, reminder_minutes),
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $13
-       RETURNING *`,
-      [
-        title,
-        description,
-        event_type,
-        start_date,
-        start_time,
-        end_date,
-        end_time,
-        all_day,
-        location,
-        organizer_id,
-        attendee_ids,
-        reminder_minutes,
-        req.params.id,
-      ]
-    );
+  const updateData: any = {};
+  if (title !== undefined) updateData.title = title;
+  if (description !== undefined) updateData.description = description;
+  if (event_type !== undefined) updateData.event_type = event_type;
+  if (start_date !== undefined) updateData.start_date = start_date;
+  if (start_time !== undefined) updateData.start_time = start_time;
+  if (end_date !== undefined) updateData.end_date = end_date;
+  if (end_time !== undefined) updateData.end_time = end_time;
+  if (all_day !== undefined) updateData.all_day = all_day;
+  if (location !== undefined) updateData.location = location;
+  if (organizer_id !== undefined) updateData.organizer_id = organizer_id;
+  if (attendee_ids !== undefined) updateData.attendee_ids = attendee_ids;
+  if (reminder_minutes !== undefined) updateData.reminder_minutes = reminder_minutes;
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Event not found' });
-    }
+  const event = await CalendarEvent.findByIdAndUpdate(req.params.id, updateData, { new: true });
 
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating event:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!event) {
+    return res.status(404).json({ error: 'Event not found' });
   }
-});
+
+  res.json(event);
+}));
 
 // Delete event
-router.delete('/events/:id', async (req, res) => {
-  try {
-    const result = await pool.query('DELETE FROM calendar_events WHERE id = $1 RETURNING id', [req.params.id]);
+router.delete('/events/:id', asyncHandler(async (req, res) => {
+  const event = await CalendarEvent.findByIdAndDelete(req.params.id);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Event not found' });
-    }
-
-    res.json({ message: 'Event deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting event:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!event) {
+    return res.status(404).json({ error: 'Event not found' });
   }
-});
+
+  res.json({ message: 'Event deleted successfully' });
+}));
 
 // ============================================
 // AUTOMATION WORKFLOWS
 // ============================================
 
 // Get all workflows
-router.get('/automation/workflows', async (req, res) => {
-  try {
-    const { is_active, trigger_type } = req.query;
-    let query = 'SELECT * FROM crm_automation_workflows WHERE 1=1';
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/automation/workflows', asyncHandler(async (req, res) => {
+  const { is_active, trigger_type } = req.query;
+  const filter: any = {};
 
-    if (is_active !== undefined) {
-      query += ` AND is_active = $${paramCount++}`;
-      params.push(is_active === 'true');
-    }
+  if (is_active !== undefined) filter.is_active = is_active === 'true';
+  if (trigger_type) filter.trigger_type = trigger_type;
 
-    if (trigger_type) {
-      query += ` AND trigger_type = $${paramCount++}`;
-      params.push(trigger_type);
-    }
-
-    query += ' ORDER BY name';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching workflows:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  const pagination = getPaginationParams(req);
+  const result = await paginateQuery(
+    CrmAutomationWorkflow.find(filter).sort({ name: 1 }).lean(),
+    pagination,
+    filter,
+    CrmAutomationWorkflow
+  );
+  res.json(result);
+}));
 
 // Get workflow by ID
-router.get('/automation/workflows/:id', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM crm_automation_workflows WHERE id = $1', [req.params.id]);
+router.get('/automation/workflows/:id', asyncHandler(async (req, res) => {
+  const workflow = await CrmAutomationWorkflow.findById(req.params.id).lean();
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Workflow not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error fetching workflow:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!workflow) {
+    return res.status(404).json({ error: 'Workflow not found' });
   }
-});
+
+  res.json(workflow);
+}));
 
 // Create workflow
-router.post('/automation/workflows', async (req, res) => {
-  try {
-    const { name, description, trigger_type, trigger_config, actions, conditions, is_active } = req.body;
+router.post('/automation/workflows', asyncHandler(async (req, res) => {
+  const { name, description, trigger_type, trigger_config, actions, conditions, is_active } = req.body;
 
-    const result = await pool.query(
-      `INSERT INTO crm_automation_workflows (
-        name, description, trigger_type, trigger_config, actions, conditions, is_active
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *`,
-      [
-        name,
-        description,
-        trigger_type,
-        trigger_config ? JSON.stringify(trigger_config) : null,
-        actions ? JSON.stringify(actions) : null,
-        conditions ? JSON.stringify(conditions) : null,
-        is_active !== undefined ? is_active : true,
-      ]
-    );
+  const workflow = await CrmAutomationWorkflow.create({
+    name,
+    description,
+    trigger_type,
+    trigger_config: trigger_config || null,
+    actions: actions || null,
+    conditions: conditions || null,
+    is_active: is_active !== undefined ? is_active : true,
+  });
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating workflow:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.status(201).json(workflow);
+}));
 
 // Update workflow
-router.put('/automation/workflows/:id', async (req, res) => {
-  try {
-    const { name, description, trigger_type, trigger_config, actions, conditions, is_active } = req.body;
+router.put('/automation/workflows/:id', asyncHandler(async (req, res) => {
+  const { name, description, trigger_type, trigger_config, actions, conditions, is_active } = req.body;
 
-    const result = await pool.query(
-      `UPDATE crm_automation_workflows 
-       SET name = COALESCE($1, name),
-           description = COALESCE($2, description),
-           trigger_type = COALESCE($3, trigger_type),
-           trigger_config = COALESCE($4, trigger_config),
-           actions = COALESCE($5, actions),
-           conditions = COALESCE($6, conditions),
-           is_active = COALESCE($7, is_active),
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $8
-       RETURNING *`,
-      [
-        name,
-        description,
-        trigger_type,
-        trigger_config ? JSON.stringify(trigger_config) : null,
-        actions ? JSON.stringify(actions) : null,
-        conditions ? JSON.stringify(conditions) : null,
-        is_active,
-        req.params.id,
-      ]
-    );
+  const updateData: any = {};
+  if (name !== undefined) updateData.name = name;
+  if (description !== undefined) updateData.description = description;
+  if (trigger_type !== undefined) updateData.trigger_type = trigger_type;
+  if (trigger_config !== undefined) updateData.trigger_config = trigger_config;
+  if (actions !== undefined) updateData.actions = actions;
+  if (conditions !== undefined) updateData.conditions = conditions;
+  if (is_active !== undefined) updateData.is_active = is_active;
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Workflow not found' });
-    }
+  const workflow = await CrmAutomationWorkflow.findByIdAndUpdate(req.params.id, updateData, { new: true });
 
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating workflow:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!workflow) {
+    return res.status(404).json({ error: 'Workflow not found' });
   }
-});
+
+  res.json(workflow);
+}));
 
 // Delete workflow
-router.delete('/automation/workflows/:id', async (req, res) => {
-  try {
-    const result = await pool.query('DELETE FROM crm_automation_workflows WHERE id = $1 RETURNING id', [
-      req.params.id,
-    ]);
+router.delete('/automation/workflows/:id', asyncHandler(async (req, res) => {
+  const workflow = await CrmAutomationWorkflow.findByIdAndDelete(req.params.id);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Workflow not found' });
-    }
-
-    res.json({ message: 'Workflow deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting workflow:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!workflow) {
+    return res.status(404).json({ error: 'Workflow not found' });
   }
-});
+
+  res.json({ message: 'Workflow deleted successfully' });
+}));
 
 // Execute workflow
-router.post('/automation/workflows/:id/execute', async (req, res) => {
-  try {
-    const { record_id, record_model } = req.body;
+router.post('/automation/workflows/:id/execute', asyncHandler(async (req, res) => {
+  const { record_id, record_model } = req.body;
 
-    // TODO: Implement actual workflow execution logic
-    // This is a placeholder
-    res.json({ message: 'Workflow executed successfully', workflow_id: req.params.id });
-  } catch (error) {
-    console.error('Error executing workflow:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  // TODO: Implement actual workflow execution logic
+  // This is a placeholder
+  res.json({ message: 'Workflow executed successfully', workflow_id: req.params.id });
+}));
 
 export default router;
-

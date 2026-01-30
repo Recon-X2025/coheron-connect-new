@@ -1,117 +1,87 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import { Activity } from '../models/Activity.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
 // Get activities for a resource
-router.get('/', async (req, res) => {
-  try {
-    const { res_id, res_model } = req.query;
+router.get('/', asyncHandler(async (req, res) => {
+  const { res_id, res_model } = req.query;
 
-    if (!res_id || !res_model) {
-      return res.status(400).json({ error: 'res_id and res_model are required' });
-    }
-
-    const result = await pool.query(
-      `SELECT a.*, u.name as user_name
-       FROM activities a
-       LEFT JOIN users u ON a.user_id = u.id
-       WHERE a.res_id = $1 AND a.res_model = $2
-       ORDER BY a.date_deadline DESC, a.created_at DESC`,
-      [res_id, res_model]
-    );
-
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching activities:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!res_id || !res_model) {
+    return res.status(400).json({ error: 'res_id and res_model are required' });
   }
-});
+
+  const filter: any = { res_id, res_model };
+
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    Activity.find(filter)
+      .populate('user_id', 'name')
+      .sort({ date_deadline: -1, created_at: -1 })
+      .lean(),
+    pagination,
+    filter,
+    Activity
+  );
+
+  const data = paginatedResult.data.map((a: any) => ({
+    ...a,
+    user_name: a.user_id?.name,
+  }));
+
+  res.json({ data, pagination: paginatedResult.pagination });
+}));
 
 // Create activity
-router.post('/', async (req, res) => {
-  try {
-    const {
-      res_id,
-      res_model,
-      activity_type,
-      summary,
-      description,
-      date_deadline,
-      user_id,
-      state,
-      duration,
-    } = req.body;
+router.post('/', asyncHandler(async (req, res) => {
+  const { res_id, res_model, activity_type, summary, description, date_deadline, user_id, state, duration } = req.body;
 
-    const result = await pool.query(
-      `INSERT INTO activities (res_id, res_model, activity_type, summary, description, date_deadline, user_id, state, duration)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       RETURNING *`,
-      [
-        res_id,
-        res_model,
-        activity_type || 'note',
-        summary,
-        description,
-        date_deadline,
-        user_id || 1,
-        state || 'planned',
-        duration,
-      ]
-    );
+  const activity = await Activity.create({
+    res_id,
+    res_model,
+    activity_type: activity_type || 'note',
+    summary,
+    description,
+    date_deadline,
+    user_id: user_id || undefined,
+    state: state || 'planned',
+    duration,
+  });
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating activity:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.status(201).json(activity);
+}));
 
 // Update activity
-router.put('/:id', async (req, res) => {
-  try {
-    const { summary, description, state, date_deadline, duration } = req.body;
+router.put('/:id', asyncHandler(async (req, res) => {
+  const { summary, description, state, date_deadline, duration } = req.body;
 
-    const result = await pool.query(
-      `UPDATE activities 
-       SET summary = COALESCE($1, summary),
-           description = COALESCE($2, description),
-           state = COALESCE($3, state),
-           date_deadline = COALESCE($4, date_deadline),
-           duration = COALESCE($5, duration)
-       WHERE id = $6
-       RETURNING *`,
-      [summary, description, state, date_deadline, duration, req.params.id]
-    );
+  const updateData: any = {};
+  if (summary !== undefined) updateData.summary = summary;
+  if (description !== undefined) updateData.description = description;
+  if (state !== undefined) updateData.state = state;
+  if (date_deadline !== undefined) updateData.date_deadline = date_deadline;
+  if (duration !== undefined) updateData.duration = duration;
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Activity not found' });
-    }
+  const activity = await Activity.findByIdAndUpdate(req.params.id, updateData, { new: true });
 
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating activity:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!activity) {
+    return res.status(404).json({ error: 'Activity not found' });
   }
-});
+
+  res.json(activity);
+}));
 
 // Delete activity
-router.delete('/:id', async (req, res) => {
-  try {
-    const result = await pool.query('DELETE FROM activities WHERE id = $1 RETURNING id', [
-      req.params.id,
-    ]);
+router.delete('/:id', asyncHandler(async (req, res) => {
+  const activity = await Activity.findByIdAndDelete(req.params.id);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Activity not found' });
-    }
-
-    res.json({ message: 'Activity deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting activity:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!activity) {
+    return res.status(404).json({ error: 'Activity not found' });
   }
-});
+
+  res.json({ message: 'Activity deleted successfully' });
+}));
 
 export default router;
-

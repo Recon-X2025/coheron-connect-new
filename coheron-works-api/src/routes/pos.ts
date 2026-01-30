@@ -1,5 +1,10 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import PosOrder from '../models/PosOrder.js';
+import PosSession from '../models/PosSession.js';
+import PosTerminal from '../models/PosTerminal.js';
+import PosPayment from '../models/PosPayment.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
@@ -8,792 +13,449 @@ const router = express.Router();
 // ============================================
 
 // Get all POS orders
-router.get('/orders', async (req, res) => {
-  try {
-    const { state, store_id, terminal_id, session_id, start_date, end_date } = req.query;
-    let query = `
-      SELECT po.*,
-             s.name as store_name,
-             pt.name as terminal_name,
-             ps.session_number,
-             p.name as partner_name
-      FROM pos_orders po
-      LEFT JOIN stores s ON po.store_id = s.id
-      LEFT JOIN pos_terminals pt ON po.terminal_id = pt.id
-      LEFT JOIN pos_sessions ps ON po.session_id = ps.id
-      LEFT JOIN partners p ON po.partner_id = p.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/orders', asyncHandler(async (req, res) => {
+  const { state, store_id, terminal_id, session_id, start_date, end_date } = req.query;
+  const filter: any = {};
 
-    if (state) {
-      query += ` AND po.state = $${paramCount++}`;
-      params.push(state);
-    }
+  if (state) filter.state = state;
+  if (store_id) filter.store_id = store_id;
+  if (terminal_id) filter.terminal_id = terminal_id;
+  if (session_id) filter.session_id = session_id;
+  if (start_date) filter.created_at = { ...(filter.created_at || {}), $gte: new Date(start_date as string) };
+  if (end_date) filter.created_at = { ...(filter.created_at || {}), $lte: new Date(end_date as string) };
 
-    if (store_id) {
-      query += ` AND po.store_id = $${paramCount++}`;
-      params.push(store_id);
-    }
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    PosOrder.find(filter)
+      .populate('store_id', 'name')
+      .populate('terminal_id', 'name')
+      .populate('session_id', 'session_number')
+      .populate('partner_id', 'name')
+      .sort({ created_at: -1 })
+      .lean(),
+    pagination, filter, PosOrder
+  );
 
-    if (terminal_id) {
-      query += ` AND po.terminal_id = $${paramCount++}`;
-      params.push(terminal_id);
-    }
+  const data = paginatedResult.data.map((o: any) => ({
+    ...o,
+    store_name: o.store_id?.name,
+    terminal_name: o.terminal_id?.name,
+    session_number: o.session_id?.session_number,
+    partner_name: o.partner_id?.name,
+  }));
 
-    if (session_id) {
-      query += ` AND po.session_id = $${paramCount++}`;
-      params.push(session_id);
-    }
-
-    if (start_date) {
-      query += ` AND po.created_at >= $${paramCount++}`;
-      params.push(start_date);
-    }
-
-    if (end_date) {
-      query += ` AND po.created_at <= $${paramCount++}`;
-      params.push(end_date);
-    }
-
-    query += ' ORDER BY po.created_at DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching POS orders:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json({ data, pagination: paginatedResult.pagination });
+}));
 
 // Get POS order by ID
-router.get('/orders/:id', async (req, res) => {
-  try {
-    const orderResult = await pool.query(
-      `SELECT po.*, s.name as store_name, pt.name as terminal_name
-       FROM pos_orders po
-       LEFT JOIN stores s ON po.store_id = s.id
-       LEFT JOIN pos_terminals pt ON po.terminal_id = pt.id
-       WHERE po.id = $1`,
-      [req.params.id]
-    );
+router.get('/orders/:id', asyncHandler(async (req, res) => {
+  const order = await PosOrder.findById(req.params.id)
+    .populate('store_id', 'name')
+    .populate('terminal_id', 'name')
+    .populate('lines.product_id', 'name default_code')
+    .lean();
 
-    if (orderResult.rows.length === 0) {
-      return res.status(404).json({ error: 'POS order not found' });
-    }
-
-    const linesResult = await pool.query(
-      `SELECT pol.*, p.name as product_name, p.default_code as product_code
-       FROM pos_order_lines pol
-       JOIN products p ON pol.product_id = p.id
-       WHERE pol.order_id = $1
-       ORDER BY pol.id`,
-      [req.params.id]
-    );
-
-    res.json({
-      ...orderResult.rows[0],
-      lines: linesResult.rows,
-    });
-  } catch (error) {
-    console.error('Error fetching POS order:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!order) {
+    return res.status(404).json({ error: 'POS order not found' });
   }
-});
+
+  const orderObj: any = order;
+  const lines = (orderObj.lines || []).map((line: any) => ({
+    ...line,
+    product_name: line.product_id?.name,
+    product_code: line.product_id?.default_code,
+  }));
+
+  res.json({
+    ...orderObj,
+    store_name: (order as any).store_id?.name,
+    terminal_name: (order as any).terminal_id?.name,
+    lines,
+  });
+}));
 
 // Create POS order
-router.post('/orders', async (req, res) => {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
+router.post('/orders', asyncHandler(async (req, res) => {
+  const {
+    store_id, terminal_id, session_id, partner_id, customer_name,
+    customer_phone, customer_email, order_type, amount_untaxed,
+    amount_tax, amount_total, amount_discount, payment_method,
+    user_id, cashier_id, lines,
+  } = req.body;
 
-    const {
-      store_id,
-      terminal_id,
-      session_id,
-      partner_id,
-      customer_name,
-      customer_phone,
-      customer_email,
-      order_type,
-      amount_untaxed,
-      amount_tax,
-      amount_total,
-      amount_discount,
-      payment_method,
-      user_id,
-      cashier_id,
-      lines,
-    } = req.body;
+  // Generate order number
+  const orderCount = await PosOrder.countDocuments({ order_number: { $regex: /^POS-/ } });
+  const orderNumber = `POS-${String(orderCount + 1).padStart(6, '0')}`;
 
-    // Generate order number
-    const orderCountResult = await client.query(
-      "SELECT COUNT(*) as count FROM pos_orders WHERE order_number LIKE 'POS-%'"
-    );
-    const orderNumber = `POS-${String(parseInt(orderCountResult.rows[0].count) + 1).padStart(6, '0')}`;
+  const order = await PosOrder.create({
+    name: orderNumber,
+    order_number: orderNumber,
+    store_id, terminal_id, session_id, partner_id,
+    customer_name, customer_phone, customer_email,
+    order_type: order_type || 'sale',
+    state: 'draft',
+    amount_untaxed: amount_untaxed || 0,
+    amount_tax: amount_tax || 0,
+    amount_total: amount_total || 0,
+    amount_discount: amount_discount || 0,
+    amount_paid: amount_total || 0,
+    payment_method,
+    payment_status: 'pending',
+    user_id, cashier_id,
+    lines: (lines || []).map((line: any) => ({
+      product_id: line.product_id,
+      qty: line.qty,
+      price_unit: line.price_unit,
+      discount: line.discount || 0,
+      tax_id: line.tax_id,
+    })),
+  });
 
-    const orderResult = await client.query(
-      `INSERT INTO pos_orders (
-        name, order_number, store_id, terminal_id, session_id, partner_id,
-        customer_name, customer_phone, customer_email, order_type, state,
-        amount_untaxed, amount_tax, amount_total, amount_discount, amount_paid,
-        payment_method, payment_status, user_id, cashier_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'draft', $11, $12, $13, $14, $15, $16, 'pending', $17, $18)
-      RETURNING *`,
-      [
-        orderNumber,
-        orderNumber,
-        store_id,
-        terminal_id,
-        session_id,
-        partner_id,
-        customer_name,
-        customer_phone,
-        customer_email,
-        order_type || 'sale',
-        amount_untaxed || 0,
-        amount_tax || 0,
-        amount_total || 0,
-        amount_discount || 0,
-        amount_total || 0,
-        payment_method,
-        user_id,
-        cashier_id,
-      ]
-    );
-
-    const order = orderResult.rows[0];
-
-    // Insert order lines
-    if (lines && lines.length > 0) {
-      for (const line of lines) {
-        await client.query(
-          `INSERT INTO pos_order_lines (order_id, product_id, qty, price_unit, discount, tax_id)
-           VALUES ($1, $2, $3, $4, $5, $6)`,
-          [
-            order.id,
-            line.product_id,
-            line.qty,
-            line.price_unit,
-            line.discount || 0,
-            line.tax_id,
-          ]
-        );
-      }
-    }
-
-    await client.query('COMMIT');
-    res.status(201).json({ ...order, lines: lines || [] });
-  } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Error creating POS order:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  } finally {
-    client.release();
-  }
-});
+  res.status(201).json(order);
+}));
 
 // Update POS order
-router.put('/orders/:id', async (req, res) => {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
+router.put('/orders/:id', asyncHandler(async (req, res) => {
+  const {
+    customer_name, customer_phone, customer_email,
+    amount_untaxed, amount_tax, amount_total, amount_discount,
+    payment_method, state, lines,
+  } = req.body;
 
-    const {
-      customer_name,
-      customer_phone,
-      customer_email,
-      amount_untaxed,
-      amount_tax,
-      amount_total,
-      amount_discount,
-      payment_method,
-      state,
-      lines,
-    } = req.body;
+  const updateData: any = {
+    customer_name, customer_phone, customer_email,
+    amount_untaxed, amount_tax, amount_total, amount_discount,
+    payment_method, state,
+  };
 
-    await client.query(
-      `UPDATE pos_orders 
-       SET customer_name = $1, customer_phone = $2, customer_email = $3,
-           amount_untaxed = $4, amount_tax = $5, amount_total = $6,
-           amount_discount = $7, payment_method = $8, state = $9,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $10`,
-      [
-        customer_name,
-        customer_phone,
-        customer_email,
-        amount_untaxed,
-        amount_tax,
-        amount_total,
-        amount_discount,
-        payment_method,
-        state,
-        req.params.id,
-      ]
-    );
-
-    if (lines && Array.isArray(lines)) {
-      await client.query('DELETE FROM pos_order_lines WHERE order_id = $1', [req.params.id]);
-      for (const line of lines) {
-        await client.query(
-          `INSERT INTO pos_order_lines (order_id, product_id, qty, price_unit, discount, tax_id)
-           VALUES ($1, $2, $3, $4, $5, $6)`,
-          [
-            req.params.id,
-            line.product_id,
-            line.qty,
-            line.price_unit,
-            line.discount || 0,
-            line.tax_id,
-          ]
-        );
-      }
-    }
-
-    await client.query('COMMIT');
-
-    const result = await pool.query(
-      `SELECT po.*, s.name as store_name, pt.name as terminal_name
-       FROM pos_orders po
-       LEFT JOIN stores s ON po.store_id = s.id
-       LEFT JOIN pos_terminals pt ON po.terminal_id = pt.id
-       WHERE po.id = $1`,
-      [req.params.id]
-    );
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Error updating POS order:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  } finally {
-    client.release();
+  if (lines && Array.isArray(lines)) {
+    updateData.lines = lines.map((line: any) => ({
+      product_id: line.product_id,
+      qty: line.qty,
+      price_unit: line.price_unit,
+      discount: line.discount || 0,
+      tax_id: line.tax_id,
+    }));
   }
-});
+
+  const order = await PosOrder.findByIdAndUpdate(req.params.id, updateData, { new: true })
+    .populate('store_id', 'name')
+    .populate('terminal_id', 'name');
+
+  if (!order) {
+    return res.status(404).json({ error: 'POS order not found' });
+  }
+
+  res.json({
+    ...order.toObject(),
+    store_name: (order.store_id as any)?.name,
+    terminal_name: (order.terminal_id as any)?.name,
+  });
+}));
 
 // Park order
-router.post('/orders/:id/park', async (req, res) => {
-  try {
-    await pool.query(
-      `UPDATE pos_orders 
-       SET is_parked = true, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $1`,
-      [req.params.id]
-    );
-    res.json({ message: 'Order parked successfully' });
-  } catch (error) {
-    console.error('Error parking order:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.post('/orders/:id/park', asyncHandler(async (req, res) => {
+  await PosOrder.findByIdAndUpdate(req.params.id, { is_parked: true });
+  res.json({ message: 'Order parked successfully' });
+}));
 
 // Void order
-router.post('/orders/:id/void', async (req, res) => {
-  try {
-    const { void_reason, void_user_id } = req.body;
-    await pool.query(
-      `UPDATE pos_orders 
-       SET is_void = true, void_reason = $1, void_user_id = $2, void_date = CURRENT_TIMESTAMP,
-           state = 'cancelled', updated_at = CURRENT_TIMESTAMP
-       WHERE id = $3`,
-      [void_reason, void_user_id, req.params.id]
-    );
-    res.json({ message: 'Order voided successfully' });
-  } catch (error) {
-    console.error('Error voiding order:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.post('/orders/:id/void', asyncHandler(async (req, res) => {
+  const { void_reason, void_user_id } = req.body;
+  await PosOrder.findByIdAndUpdate(req.params.id, {
+    is_void: true,
+    void_reason,
+    void_user_id,
+    void_date: new Date(),
+    state: 'cancelled',
+  });
+  res.json({ message: 'Order voided successfully' });
+}));
 
 // Process return
-router.post('/orders/:id/return', async (req, res) => {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
+router.post('/orders/:id/return', asyncHandler(async (req, res) => {
+  const { return_lines, refund_method } = req.body;
 
-    const { return_lines, refund_method } = req.body;
-
-    // Create return order
-    const returnCountResult = await client.query(
-      "SELECT COUNT(*) as count FROM pos_orders WHERE order_number LIKE 'RET-%'"
-    );
-    const returnNumber = `RET-${String(parseInt(returnCountResult.rows[0].count) + 1).padStart(6, '0')}`;
-
-    const returnResult = await client.query(
-      `INSERT INTO pos_orders (
-        name, order_number, store_id, terminal_id, session_id, order_type, state,
-        amount_total, payment_method, payment_status
-      ) VALUES ($1, $2, (SELECT store_id FROM pos_orders WHERE id = $3), 
-                 (SELECT terminal_id FROM pos_orders WHERE id = $3),
-                 (SELECT session_id FROM pos_orders WHERE id = $3),
-                 'return', 'confirmed', $4, $5, 'refunded')
-      RETURNING *`,
-      [returnNumber, returnNumber, req.params.id, 0, refund_method]
-    );
-
-    // TODO: Process refund and update inventory
-
-    await client.query('COMMIT');
-    res.json({ message: 'Return processed successfully', return_order: returnResult.rows[0] });
-  } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Error processing return:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  } finally {
-    client.release();
+  const originalOrder = await PosOrder.findById(req.params.id);
+  if (!originalOrder) {
+    return res.status(404).json({ error: 'Original order not found' });
   }
-});
+
+  const returnCount = await PosOrder.countDocuments({ order_number: { $regex: /^RET-/ } });
+  const returnNumber = `RET-${String(returnCount + 1).padStart(6, '0')}`;
+
+  const returnOrder = await PosOrder.create({
+    name: returnNumber,
+    order_number: returnNumber,
+    store_id: originalOrder.store_id,
+    terminal_id: originalOrder.terminal_id,
+    session_id: originalOrder.session_id,
+    order_type: 'return',
+    state: 'confirmed',
+    amount_total: 0,
+    payment_method: refund_method,
+    payment_status: 'refunded',
+  });
+
+  res.json({ message: 'Return processed successfully', return_order: returnOrder });
+}));
 
 // ============================================
 // POS SESSIONS
 // ============================================
 
 // Get all sessions
-router.get('/sessions', async (req, res) => {
-  try {
-    const { state, store_id, terminal_id, start_date, end_date } = req.query;
-    let query = `
-      SELECT ps.*,
-             s.name as store_name,
-             pt.name as terminal_name,
-             u.name as user_name
-      FROM pos_sessions ps
-      LEFT JOIN stores s ON ps.store_id = s.id
-      LEFT JOIN pos_terminals pt ON ps.terminal_id = pt.id
-      LEFT JOIN users u ON ps.user_id = u.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/sessions', asyncHandler(async (req, res) => {
+  const { state, store_id, terminal_id, start_date, end_date } = req.query;
+  const filter: any = {};
 
-    if (state) {
-      query += ` AND ps.state = $${paramCount++}`;
-      params.push(state);
-    }
+  if (state) filter.state = state;
+  if (store_id) filter.store_id = store_id;
+  if (terminal_id) filter.terminal_id = terminal_id;
+  if (start_date) filter.start_at = { ...(filter.start_at || {}), $gte: new Date(start_date as string) };
+  if (end_date) filter.start_at = { ...(filter.start_at || {}), $lte: new Date(end_date as string) };
 
-    if (store_id) {
-      query += ` AND ps.store_id = $${paramCount++}`;
-      params.push(store_id);
-    }
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    PosSession.find(filter)
+      .populate('store_id', 'name')
+      .populate('terminal_id', 'name')
+      .populate('user_id', 'name')
+      .sort({ start_at: -1 })
+      .lean(),
+    pagination, filter, PosSession
+  );
 
-    if (terminal_id) {
-      query += ` AND ps.terminal_id = $${paramCount++}`;
-      params.push(terminal_id);
-    }
+  const data = paginatedResult.data.map((s: any) => ({
+    ...s,
+    store_name: s.store_id?.name,
+    terminal_name: s.terminal_id?.name,
+    user_name: s.user_id?.name,
+  }));
 
-    if (start_date) {
-      query += ` AND ps.start_at >= $${paramCount++}`;
-      params.push(start_date);
-    }
-
-    if (end_date) {
-      query += ` AND ps.start_at <= $${paramCount++}`;
-      params.push(end_date);
-    }
-
-    query += ' ORDER BY ps.start_at DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching POS sessions:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json({ data, pagination: paginatedResult.pagination });
+}));
 
 // Get session by ID
-router.get('/sessions/:id', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT ps.*, s.name as store_name, pt.name as terminal_name, u.name as user_name
-       FROM pos_sessions ps
-       LEFT JOIN stores s ON ps.store_id = s.id
-       LEFT JOIN pos_terminals pt ON ps.terminal_id = pt.id
-       LEFT JOIN users u ON ps.user_id = u.id
-       WHERE ps.id = $1`,
-      [req.params.id]
-    );
+router.get('/sessions/:id', asyncHandler(async (req, res) => {
+  const session = await PosSession.findById(req.params.id)
+    .populate('store_id', 'name')
+    .populate('terminal_id', 'name')
+    .populate('user_id', 'name')
+    .lean();
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Session not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error fetching session:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!session) {
+    return res.status(404).json({ error: 'Session not found' });
   }
-});
+
+  res.json({
+    ...session,
+    store_name: (session as any).store_id?.name,
+    terminal_name: (session as any).terminal_id?.name,
+    user_name: (session as any).user_id?.name,
+  });
+}));
 
 // Create session
-router.post('/sessions', async (req, res) => {
-  try {
-    const { store_id, terminal_id, user_id, opening_balance } = req.body;
+router.post('/sessions', asyncHandler(async (req, res) => {
+  const { store_id, terminal_id, user_id, opening_balance } = req.body;
 
-    const sessionCountResult = await pool.query(
-      "SELECT COUNT(*) as count FROM pos_sessions WHERE session_number LIKE 'SESS-%'"
-    );
-    const sessionNumber = `SESS-${String(parseInt(sessionCountResult.rows[0].count) + 1).padStart(6, '0')}`;
+  const sessionCount = await PosSession.countDocuments({ session_number: { $regex: /^SESS-/ } });
+  const sessionNumber = `SESS-${String(sessionCount + 1).padStart(6, '0')}`;
 
-    const result = await pool.query(
-      `INSERT INTO pos_sessions (
-        name, session_number, store_id, terminal_id, user_id, opening_balance, state
-      ) VALUES ($1, $2, $3, $4, $5, $6, 'opening')
-      RETURNING *`,
-      [sessionNumber, sessionNumber, store_id, terminal_id, user_id, opening_balance || 0]
-    );
+  const session = await PosSession.create({
+    name: sessionNumber,
+    session_number: sessionNumber,
+    store_id, terminal_id, user_id,
+    opening_balance: opening_balance || 0,
+    state: 'opening',
+  });
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating session:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.status(201).json(session);
+}));
 
 // Open session
-router.post('/sessions/:id/open', async (req, res) => {
-  try {
-    await pool.query(
-      `UPDATE pos_sessions 
-       SET state = 'opened', start_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $1`,
-      [req.params.id]
-    );
-    res.json({ message: 'Session opened successfully' });
-  } catch (error) {
-    console.error('Error opening session:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.post('/sessions/:id/open', asyncHandler(async (req, res) => {
+  await PosSession.findByIdAndUpdate(req.params.id, { state: 'opened', start_at: new Date() });
+  res.json({ message: 'Session opened successfully' });
+}));
 
 // Close session
-router.post('/sessions/:id/close', async (req, res) => {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
+router.post('/sessions/:id/close', asyncHandler(async (req, res) => {
+  const { closing_balance } = req.body;
 
-    const { closing_balance } = req.body;
+  // Calculate totals from orders
+  const orders = await PosOrder.find({ session_id: req.params.id, state: 'paid' }).lean();
 
-    // Calculate totals from orders
-    const ordersResult = await client.query(
-      `SELECT 
-         COUNT(*) as total_orders,
-         COALESCE(SUM(amount_total), 0) as total_sales,
-         COALESCE(SUM(CASE WHEN payment_method = 'cash' THEN amount_paid ELSE 0 END), 0) as total_cash,
-         COALESCE(SUM(CASE WHEN payment_method = 'card' THEN amount_paid ELSE 0 END), 0) as total_card,
-         COALESCE(SUM(CASE WHEN payment_method = 'upi' THEN amount_paid ELSE 0 END), 0) as total_upi,
-         COALESCE(SUM(CASE WHEN payment_method NOT IN ('cash', 'card', 'upi') THEN amount_paid ELSE 0 END), 0) as total_other
-       FROM pos_orders
-       WHERE session_id = $1 AND state = 'paid'`,
-      [req.params.id]
-    );
+  const totals = {
+    total_orders: orders.length,
+    total_sales: orders.reduce((sum, o) => sum + (o.amount_total || 0), 0),
+    total_cash: orders.filter(o => o.payment_method === 'cash').reduce((sum, o) => sum + (o.amount_paid || 0), 0),
+    total_card: orders.filter(o => o.payment_method === 'card').reduce((sum, o) => sum + (o.amount_paid || 0), 0),
+    total_upi: orders.filter(o => o.payment_method === 'upi').reduce((sum, o) => sum + (o.amount_paid || 0), 0),
+    total_other: orders.filter(o => !['cash', 'card', 'upi'].includes(o.payment_method || '')).reduce((sum, o) => sum + (o.amount_paid || 0), 0),
+  };
 
-    const totals = ordersResult.rows[0];
-    const expectedBalance = parseFloat(totals.total_cash) || 0;
-    const difference = (closing_balance || 0) - expectedBalance;
+  const expectedBalance = totals.total_cash;
+  const difference = (closing_balance || 0) - expectedBalance;
 
-    await client.query(
-      `UPDATE pos_sessions 
-       SET state = 'closed', closing_balance = $1, expected_balance = $2, difference = $3,
-           total_orders = $4, total_sales = $5, total_cash = $6, total_card = $7,
-           total_upi = $8, total_other = $9, stop_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $10`,
-      [
-        closing_balance,
-        expectedBalance,
-        difference,
-        totals.total_orders,
-        totals.total_sales,
-        totals.total_cash,
-        totals.total_card,
-        totals.total_upi,
-        totals.total_other,
-        req.params.id,
-      ]
-    );
+  await PosSession.findByIdAndUpdate(req.params.id, {
+    state: 'closed',
+    closing_balance,
+    expected_balance: expectedBalance,
+    difference,
+    ...totals,
+    stop_at: new Date(),
+  });
 
-    await client.query('COMMIT');
-    res.json({ message: 'Session closed successfully' });
-  } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Error closing session:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  } finally {
-    client.release();
-  }
-});
+  res.json({ message: 'Session closed successfully' });
+}));
 
 // Reconcile cash
-router.post('/sessions/:id/reconcile', async (req, res) => {
-  try {
-    const { closing_balance, notes } = req.body;
-    // Same logic as close session but with notes
-    await pool.query(
-      `UPDATE pos_sessions 
-       SET closing_balance = $1, notes = $2, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $3`,
-      [closing_balance, notes, req.params.id]
-    );
-    res.json({ message: 'Cash reconciled successfully' });
-  } catch (error) {
-    console.error('Error reconciling cash:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.post('/sessions/:id/reconcile', asyncHandler(async (req, res) => {
+  const { closing_balance, notes } = req.body;
+  await PosSession.findByIdAndUpdate(req.params.id, { closing_balance, notes });
+  res.json({ message: 'Cash reconciled successfully' });
+}));
 
 // ============================================
 // POS TERMINALS
 // ============================================
 
 // Get all terminals
-router.get('/terminals', async (req, res) => {
-  try {
-    const { store_id, is_active } = req.query;
-    let query = `
-      SELECT pt.*, s.name as store_name
-      FROM pos_terminals pt
-      LEFT JOIN stores s ON pt.store_id = s.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/terminals', asyncHandler(async (req, res) => {
+  const { store_id, is_active } = req.query;
+  const filter: any = {};
 
-    if (store_id) {
-      query += ` AND pt.store_id = $${paramCount++}`;
-      params.push(store_id);
-    }
+  if (store_id) filter.store_id = store_id;
+  if (is_active !== undefined) filter.is_active = is_active === 'true';
 
-    if (is_active !== undefined) {
-      query += ` AND pt.is_active = $${paramCount++}`;
-      params.push(is_active === 'true');
-    }
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    PosTerminal.find(filter)
+      .populate('store_id', 'name')
+      .sort({ name: 1 })
+      .lean(),
+    pagination, filter, PosTerminal
+  );
 
-    query += ' ORDER BY pt.name';
+  const data = paginatedResult.data.map((t: any) => ({
+    ...t,
+    store_name: t.store_id?.name,
+  }));
 
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching terminals:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json({ data, pagination: paginatedResult.pagination });
+}));
 
 // Get terminal by ID
-router.get('/terminals/:id', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT pt.*, s.name as store_name
-       FROM pos_terminals pt
-       LEFT JOIN stores s ON pt.store_id = s.id
-       WHERE pt.id = $1`,
-      [req.params.id]
-    );
+router.get('/terminals/:id', asyncHandler(async (req, res) => {
+  const terminal = await PosTerminal.findById(req.params.id).populate('store_id', 'name').lean();
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Terminal not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error fetching terminal:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!terminal) {
+    return res.status(404).json({ error: 'Terminal not found' });
   }
-});
+
+  res.json({
+    ...terminal,
+    store_name: (terminal as any).store_id?.name,
+  });
+}));
 
 // Create terminal
-router.post('/terminals', async (req, res) => {
-  try {
-    const { name, code, store_id, is_active, printer_id, cash_drawer_enabled, barcode_scanner_enabled, hardware_config } = req.body;
+router.post('/terminals', asyncHandler(async (req, res) => {
+  const { name, code, store_id, is_active, printer_id, cash_drawer_enabled, barcode_scanner_enabled, hardware_config } = req.body;
 
-    const result = await pool.query(
-      `INSERT INTO pos_terminals (
-        name, code, store_id, is_active, printer_id, cash_drawer_enabled,
-        barcode_scanner_enabled, hardware_config
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING *`,
-      [
-        name,
-        code,
-        store_id,
-        is_active !== undefined ? is_active : true,
-        printer_id,
-        cash_drawer_enabled !== undefined ? cash_drawer_enabled : true,
-        barcode_scanner_enabled !== undefined ? barcode_scanner_enabled : true,
-        hardware_config ? JSON.stringify(hardware_config) : null,
-      ]
-    );
+  const terminal = await PosTerminal.create({
+    name, code, store_id,
+    is_active: is_active !== undefined ? is_active : true,
+    printer_id,
+    cash_drawer_enabled: cash_drawer_enabled !== undefined ? cash_drawer_enabled : true,
+    barcode_scanner_enabled: barcode_scanner_enabled !== undefined ? barcode_scanner_enabled : true,
+    hardware_config: hardware_config || null,
+  });
 
-    res.status(201).json(result.rows[0]);
-  } catch (error: any) {
-    console.error('Error creating terminal:', error);
-    if (error.code === '23505') {
-      res.status(400).json({ error: 'Terminal code already exists' });
-    } else {
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  }
-});
+  res.status(201).json(terminal);
+}));
 
 // Update terminal
-router.put('/terminals/:id', async (req, res) => {
-  try {
-    const { name, code, store_id, is_active, printer_id, cash_drawer_enabled, barcode_scanner_enabled, hardware_config } = req.body;
+router.put('/terminals/:id', asyncHandler(async (req, res) => {
+  const { name, code, store_id, is_active, printer_id, cash_drawer_enabled, barcode_scanner_enabled, hardware_config } = req.body;
 
-    const result = await pool.query(
-      `UPDATE pos_terminals 
-       SET name = $1, code = $2, store_id = $3, is_active = $4, printer_id = $5,
-           cash_drawer_enabled = $6, barcode_scanner_enabled = $7,
-           hardware_config = $8, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $9
-       RETURNING *`,
-      [
-        name,
-        code,
-        store_id,
-        is_active,
-        printer_id,
-        cash_drawer_enabled,
-        barcode_scanner_enabled,
-        hardware_config ? JSON.stringify(hardware_config) : null,
-        req.params.id,
-      ]
-    );
+  const terminal = await PosTerminal.findByIdAndUpdate(req.params.id, {
+    name, code, store_id, is_active, printer_id,
+    cash_drawer_enabled, barcode_scanner_enabled,
+    hardware_config: hardware_config || null,
+  }, { new: true });
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Terminal not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error: any) {
-    console.error('Error updating terminal:', error);
-    if (error.code === '23505') {
-      res.status(400).json({ error: 'Terminal code already exists' });
-    } else {
-      res.status(500).json({ error: 'Internal server error' });
-    }
+  if (!terminal) {
+    return res.status(404).json({ error: 'Terminal not found' });
   }
-});
+
+  res.json(terminal);
+}));
 
 // Delete terminal
-router.delete('/terminals/:id', async (req, res) => {
-  try {
-    const result = await pool.query('DELETE FROM pos_terminals WHERE id = $1 RETURNING id', [req.params.id]);
+router.delete('/terminals/:id', asyncHandler(async (req, res) => {
+  const terminal = await PosTerminal.findByIdAndDelete(req.params.id);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Terminal not found' });
-    }
-
-    res.json({ message: 'Terminal deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting terminal:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!terminal) {
+    return res.status(404).json({ error: 'Terminal not found' });
   }
-});
+
+  res.json({ message: 'Terminal deleted successfully' });
+}));
 
 // ============================================
 // POS PAYMENTS
 // ============================================
 
 // Process payment
-router.post('/payments', async (req, res) => {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
+router.post('/payments', asyncHandler(async (req, res) => {
+  const { order_id, payment_method, amount, currency, gateway_transaction_id, gateway_response } = req.body;
 
-    const { order_id, payment_method, amount, currency, gateway_transaction_id, gateway_response } = req.body;
+  const payment = await PosPayment.create({
+    order_id, payment_method, amount,
+    currency: currency || 'INR',
+    gateway_transaction_id,
+    gateway_response: gateway_response || null,
+    payment_status: 'success',
+  });
 
-    const paymentResult = await client.query(
-      `INSERT INTO pos_payments (
-        order_id, payment_method, amount, currency, gateway_transaction_id,
-        gateway_response, payment_status
-      ) VALUES ($1, $2, $3, $4, $5, $6, 'success')
-      RETURNING *`,
-      [
-        order_id,
-        payment_method,
-        amount,
-        currency || 'INR',
-        gateway_transaction_id,
-        gateway_response ? JSON.stringify(gateway_response) : null,
-      ]
-    );
+  // Update order payment status
+  await PosOrder.findByIdAndUpdate(order_id, {
+    payment_status: 'paid',
+    $inc: { amount_paid: amount },
+    paid_at: new Date(),
+  });
 
-    // Update order payment status
-    await client.query(
-      `UPDATE pos_orders 
-       SET payment_status = 'paid', amount_paid = amount_paid + $1, paid_at = CURRENT_TIMESTAMP
-       WHERE id = $2`,
-      [amount, order_id]
-    );
-
-    await client.query('COMMIT');
-    res.status(201).json(paymentResult.rows[0]);
-  } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Error processing payment:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  } finally {
-    client.release();
-  }
-});
+  res.status(201).json(payment);
+}));
 
 // Process refund
-router.post('/payments/refund', async (req, res) => {
-  try {
-    const { payment_id, amount, reason } = req.body;
+router.post('/payments/refund', asyncHandler(async (req, res) => {
+  const { payment_id, amount, reason } = req.body;
 
-    await pool.query(
-      `UPDATE pos_payments 
-       SET payment_status = 'refunded', updated_at = CURRENT_TIMESTAMP
-       WHERE id = $1`,
-      [payment_id]
-    );
-
-    res.json({ message: 'Refund processed successfully' });
-  } catch (error) {
-    console.error('Error processing refund:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  await PosPayment.findByIdAndUpdate(payment_id, { payment_status: 'refunded' });
+  res.json({ message: 'Refund processed successfully' });
+}));
 
 // Legacy route for backward compatibility
-router.get('/', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT po.*, 
-              json_agg(
-                json_build_object(
-                  'id', pol.id,
-                  'product_id', pol.product_id,
-                  'qty', pol.qty,
-                  'price_unit', pol.price_unit
-                )
-              ) FILTER (WHERE pol.id IS NOT NULL) as lines
-       FROM pos_orders po
-       LEFT JOIN pos_order_lines pol ON po.id = pol.order_id
-       GROUP BY po.id
-       ORDER BY po.created_at DESC`
-    );
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching POS orders:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.get('/', asyncHandler(async (req, res) => {
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    PosOrder.find().sort({ created_at: -1 }).lean(),
+    pagination, {}, PosOrder
+  );
+
+  res.json(paginatedResult);
+}));
 
 router.post('/', async (req, res) => {
-  // Forward to /orders endpoint by calling the handler directly
-  // Create a new request object with modified URL
   const originalUrl = req.url;
   req.url = '/orders';
-  // Use the router as middleware to handle the request
   router(req, res, () => {
-    // Restore original URL if next is called
     req.url = originalUrl;
   });
 });
 
 export default router;
-

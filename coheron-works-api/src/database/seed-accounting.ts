@@ -1,214 +1,177 @@
-import pool from './connection.js';
+import { connectDB } from './connection.js';
+import mongoose from './connection.js';
+import AccountAccount from '../models/AccountAccount.js';
+import AccountJournal from '../models/AccountJournal.js';
+import AccountMove from '../models/AccountMove.js';
+import { Partner } from '../models/Partner.js';
+import AccountVendor from '../models/AccountVendor.js';
+import AccountBill from '../models/AccountBill.js';
 
 async function seedAccounting() {
   try {
-    console.log('🌱 Seeding Accounting Module with sample data...');
+    await connectDB();
+    console.log('Seeding Accounting Module with sample data...');
 
     // 1. Create Chart of Accounts
     console.log('Creating Chart of Accounts...');
-    
-    // Assets
-    const cashAccount = await pool.query(
-      `INSERT INTO account_account (code, name, account_type, level, reconcile)
-       VALUES ('1000', 'Cash', 'asset_cash', 0, true)
-       RETURNING id`,
-    );
-    const cashId = cashAccount.rows[0].id;
 
-    const arAccount = await pool.query(
-      `INSERT INTO account_account (code, name, account_type, level, internal_type)
-       VALUES ('1200', 'Accounts Receivable', 'asset_receivable', 0, 'receivable')
-       RETURNING id`,
+    const cashAccount = await AccountAccount.findOneAndUpdate(
+      { code: '1000' },
+      { code: '1000', name: 'Cash', account_type: 'asset_cash', level: 0, reconcile: true },
+      { upsert: true, new: true }
     );
-    const arId = arAccount.rows[0].id;
 
-    // Liabilities
-    const apAccount = await pool.query(
-      `INSERT INTO account_account (code, name, account_type, level, internal_type)
-       VALUES ('2000', 'Accounts Payable', 'liability_payable', 0, 'payable')
-       RETURNING id`,
+    const arAccount = await AccountAccount.findOneAndUpdate(
+      { code: '1200' },
+      { code: '1200', name: 'Accounts Receivable', account_type: 'asset_receivable', level: 0, internal_type: 'receivable' },
+      { upsert: true, new: true }
     );
-    const apId = apAccount.rows[0].id;
 
-    // Equity
-    const equityAccount = await pool.query(
-      `INSERT INTO account_account (code, name, account_type, level)
-       VALUES ('3000', 'Equity', 'equity', 0)
-       RETURNING id`,
+    const apAccount = await AccountAccount.findOneAndUpdate(
+      { code: '2000' },
+      { code: '2000', name: 'Accounts Payable', account_type: 'liability_payable', level: 0, internal_type: 'payable' },
+      { upsert: true, new: true }
     );
-    const equityId = equityAccount.rows[0].id;
 
-    // Income
-    const revenueAccount = await pool.query(
-      `INSERT INTO account_account (code, name, account_type, level)
-       VALUES ('4000', 'Sales Revenue', 'income', 0)
-       RETURNING id`,
+    const equityAccount = await AccountAccount.findOneAndUpdate(
+      { code: '3000' },
+      { code: '3000', name: 'Equity', account_type: 'equity', level: 0 },
+      { upsert: true, new: true }
     );
-    const revenueId = revenueAccount.rows[0].id;
 
-    // Expenses
-    const expenseAccount = await pool.query(
-      `INSERT INTO account_account (code, name, account_type, level)
-       VALUES ('5000', 'Operating Expenses', 'expense', 0)
-       RETURNING id`,
+    const revenueAccount = await AccountAccount.findOneAndUpdate(
+      { code: '4000' },
+      { code: '4000', name: 'Sales Revenue', account_type: 'income', level: 0 },
+      { upsert: true, new: true }
     );
-    const expenseId = expenseAccount.rows[0].id;
 
-    console.log('✅ Chart of Accounts created');
+    const expenseAccount = await AccountAccount.findOneAndUpdate(
+      { code: '5000' },
+      { code: '5000', name: 'Operating Expenses', account_type: 'expense', level: 0 },
+      { upsert: true, new: true }
+    );
+
+    console.log('Chart of Accounts created');
 
     // 2. Get or create a journal
-    const journalResult = await pool.query(
-      "SELECT id FROM account_journal WHERE code = 'MISC' LIMIT 1"
+    const journal = await AccountJournal.findOneAndUpdate(
+      { code: 'MISC' },
+      { name: 'Miscellaneous Operations', code: 'MISC', type: 'general', active: true },
+      { upsert: true, new: true }
     );
-    let journalId = journalResult.rows[0]?.id;
-    
-    if (!journalId) {
-      const newJournal = await pool.query(
-        `INSERT INTO account_journal (name, code, type, active)
-         VALUES ('Miscellaneous Operations', 'MISC', 'general', true)
-         RETURNING id`
-      );
-      journalId = newJournal.rows[0].id;
-    }
 
     // 3. Create opening balance journal entry
     console.log('Creating opening balance journal entry...');
-    const today = new Date().toISOString().split('T')[0];
-    const moveName = `MISC/${today.replace(/-/g, '')}/000001`;
+    const today = new Date();
+    const dateStr = today.toISOString().split('T')[0];
+    const moveName = `MISC/${dateStr.replace(/-/g, '')}/000001`;
 
-    const moveResult = await pool.query(
-      `INSERT INTO account_move (name, journal_id, date, move_type, amount_total, state)
-       VALUES ($1, $2, $3, 'entry', 100000, 'draft')
-       RETURNING id`,
-      [moveName, journalId, today]
+    const openingMove = await AccountMove.findOneAndUpdate(
+      { name: moveName },
+      {
+        name: moveName,
+        journal_id: journal._id,
+        date: today,
+        move_type: 'entry',
+        amount_total: 100000,
+        state: 'posted',
+        posted_at: today,
+        lines: [
+          { account_id: cashAccount._id, name: 'Opening Balance - Cash', debit: 100000, credit: 0, balance: 100000, date: today },
+          { account_id: equityAccount._id, name: 'Opening Balance - Equity', debit: 0, credit: 100000, balance: -100000, date: today },
+        ],
+      },
+      { upsert: true, new: true }
     );
-    const moveId = moveResult.rows[0].id;
-
-    // Create move lines (opening balance: Cash = 100000, Equity = 100000)
-    await pool.query(
-      `INSERT INTO account_move_line (move_id, account_id, name, debit, credit, balance, date)
-       VALUES ($1, $2, 'Opening Balance - Cash', 100000, 0, 100000, $3)`,
-      [moveId, cashId, today]
-    );
-
-    await pool.query(
-      `INSERT INTO account_move_line (move_id, account_id, name, debit, credit, balance, date)
-       VALUES ($1, $2, 'Opening Balance - Equity', 0, 100000, -100000, $3)`,
-      [moveId, equityId, today]
-    );
-
-    // Post the entry
-    await pool.query(
-      `UPDATE account_move SET state = 'posted', posted_at = CURRENT_TIMESTAMP WHERE id = $1`,
-      [moveId]
-    );
-
-    console.log('✅ Opening balance journal entry created and posted');
+    console.log('Opening balance journal entry created and posted');
 
     // 4. Create a sample revenue transaction
     console.log('Creating sample revenue transaction...');
-    const revenueMoveName = `MISC/${today.replace(/-/g, '')}/000002`;
-    
-    const revenueMoveResult = await pool.query(
-      `INSERT INTO account_move (name, journal_id, date, move_type, amount_total, state)
-       VALUES ($1, $2, $3, 'entry', 50000, 'draft')
-       RETURNING id`,
-      [revenueMoveName, journalId, today]
-    );
-    const revenueMoveId = revenueMoveResult.rows[0].id;
+    const revenueMoveName = `MISC/${dateStr.replace(/-/g, '')}/000002`;
 
-    // Revenue: AR debit, Revenue credit
-    await pool.query(
-      `INSERT INTO account_move_line (move_id, account_id, name, debit, credit, balance, date)
-       VALUES ($1, $2, 'Sales Invoice #001', 50000, 0, 50000, $3)`,
-      [revenueMoveId, arId, today]
+    await AccountMove.findOneAndUpdate(
+      { name: revenueMoveName },
+      {
+        name: revenueMoveName,
+        journal_id: journal._id,
+        date: today,
+        move_type: 'entry',
+        amount_total: 50000,
+        state: 'posted',
+        posted_at: today,
+        lines: [
+          { account_id: arAccount._id, name: 'Sales Invoice #001', debit: 50000, credit: 0, balance: 50000, date: today },
+          { account_id: revenueAccount._id, name: 'Sales Revenue', debit: 0, credit: 50000, balance: -50000, date: today },
+        ],
+      },
+      { upsert: true, new: true }
     );
-
-    await pool.query(
-      `INSERT INTO account_move_line (move_id, account_id, name, debit, credit, balance, date)
-       VALUES ($1, $2, 'Sales Revenue', 0, 50000, -50000, $3)`,
-      [revenueMoveId, revenueId, today]
-    );
-
-    await pool.query(
-      `UPDATE account_move SET state = 'posted', posted_at = CURRENT_TIMESTAMP WHERE id = $1`,
-      [revenueMoveId]
-    );
-
-    console.log('✅ Revenue transaction created and posted');
+    console.log('Revenue transaction created and posted');
 
     // 5. Create a sample expense transaction
     console.log('Creating sample expense transaction...');
-    const expenseMoveName = `MISC/${today.replace(/-/g, '')}/000003`;
-    
-    const expenseMoveResult = await pool.query(
-      `INSERT INTO account_move (name, journal_id, date, move_type, amount_total, state)
-       VALUES ($1, $2, $3, 'entry', 20000, 'draft')
-       RETURNING id`,
-      [expenseMoveName, journalId, today]
-    );
-    const expenseMoveId = expenseMoveResult.rows[0].id;
+    const expenseMoveName = `MISC/${dateStr.replace(/-/g, '')}/000003`;
 
-    // Expense: Expense debit, Cash credit
-    await pool.query(
-      `INSERT INTO account_move_line (move_id, account_id, name, debit, credit, balance, date)
-       VALUES ($1, $2, 'Office Supplies', 20000, 0, 20000, $3)`,
-      [expenseMoveId, expenseId, today]
+    await AccountMove.findOneAndUpdate(
+      { name: expenseMoveName },
+      {
+        name: expenseMoveName,
+        journal_id: journal._id,
+        date: today,
+        move_type: 'entry',
+        amount_total: 20000,
+        state: 'posted',
+        posted_at: today,
+        lines: [
+          { account_id: expenseAccount._id, name: 'Office Supplies', debit: 20000, credit: 0, balance: 20000, date: today },
+          { account_id: cashAccount._id, name: 'Cash Payment', debit: 0, credit: 20000, balance: -20000, date: today },
+        ],
+      },
+      { upsert: true, new: true }
     );
-
-    await pool.query(
-      `INSERT INTO account_move_line (move_id, account_id, name, debit, credit, balance, date)
-       VALUES ($1, $2, 'Cash Payment', 0, 20000, -20000, $3)`,
-      [expenseMoveId, cashId, today]
-    );
-
-    await pool.query(
-      `UPDATE account_move SET state = 'posted', posted_at = CURRENT_TIMESTAMP WHERE id = $1`,
-      [expenseMoveId]
-    );
-
-    console.log('✅ Expense transaction created and posted');
+    console.log('Expense transaction created and posted');
 
     // 6. Create a sample partner for AP/AR testing
     console.log('Creating sample partner...');
-    const partnerResult = await pool.query(
-      `INSERT INTO partners (name, email, type)
-       VALUES ('Sample Customer', 'customer@example.com', 'company')
-       RETURNING id`
+    const partnerDoc = await Partner.findOneAndUpdate(
+      { email: 'customer@example.com' },
+      { name: 'Sample Customer', email: 'customer@example.com' },
+      { upsert: true, new: true }
     );
-    const partnerId = partnerResult.rows[0].id;
 
     // 7. Create a sample vendor
     console.log('Creating sample vendor...');
-    const vendorResult = await pool.query(
-      `INSERT INTO account_vendor (partner_id, vendor_code, is_active)
-       VALUES ($1, 'VEND001', true)
-       RETURNING id`,
-      [partnerId]
+    const vendor = await AccountVendor.findOneAndUpdate(
+      { vendor_code: 'VEND001' },
+      { partner_id: partnerDoc._id, vendor_code: 'VEND001', is_active: true },
+      { upsert: true, new: true }
     );
-    const vendorId = vendorResult.rows[0].id;
 
     // 8. Create a sample bill (draft)
     console.log('Creating sample bill...');
-    const billName = `BILL/${today.replace(/-/g, '')}/000001`;
-    const billResult = await pool.query(
-      `INSERT INTO account_bill (name, vendor_id, invoice_date, due_date, amount_total, amount_residual, state, payment_state)
-       VALUES ($1, $2, $3, $4, 15000, 15000, 'draft', 'not_paid')
-       RETURNING id`,
-      [billName, vendorId, today, new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]]
+    const billName = `BILL/${dateStr.replace(/-/g, '')}/000001`;
+    const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+    await AccountBill.findOneAndUpdate(
+      { name: billName },
+      {
+        name: billName,
+        vendor_id: vendor._id,
+        invoice_date: today,
+        due_date: dueDate,
+        amount_total: 15000,
+        amount_residual: 15000,
+        state: 'draft',
+        payment_state: 'not_paid',
+        lines: [
+          { name: 'Office Supplies', quantity: 1, price_unit: 15000, price_subtotal: 15000, account_id: expenseAccount._id },
+        ],
+      },
+      { upsert: true, new: true }
     );
-    const billId = billResult.rows[0].id;
+    console.log('Sample bill created (draft)');
 
-    // Create bill line
-    await pool.query(
-      `INSERT INTO account_bill_line (bill_id, name, quantity, price_unit, price_subtotal, account_id)
-       VALUES ($1, 'Office Supplies', 1, 15000, 15000, $2)`,
-      [billId, expenseId]
-    );
-
-    console.log('✅ Sample bill created (draft)');
-
-    console.log('\n✅ Accounting Module seeded successfully!');
+    console.log('\nAccounting Module seeded successfully!');
     console.log('\nSample Data Created:');
     console.log('- 6 Chart of Accounts (Cash, AR, AP, Equity, Revenue, Expenses)');
     console.log('- 3 Journal Entries (all posted)');
@@ -217,7 +180,7 @@ async function seedAccounting() {
     console.log('\nYou can now test the Accounting Module!');
 
   } catch (error) {
-    console.error('❌ Error seeding accounting data:', error);
+    console.error('Error seeding accounting data:', error);
     throw error;
   }
 }
@@ -227,8 +190,9 @@ if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.includes
   seedAccounting()
     .then(() => {
       console.log('Seeding complete');
-      process.exit(0);
+      return mongoose.disconnect();
     })
+    .then(() => process.exit(0))
     .catch((error) => {
       console.error('Seeding failed:', error);
       process.exit(1);
@@ -236,4 +200,3 @@ if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.includes
 }
 
 export default seedAccounting;
-

@@ -1,5 +1,8 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import Bom from '../models/Bom.js';
+import BomLine from '../models/BomLine.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
@@ -8,345 +11,219 @@ const router = express.Router();
 // ============================================
 
 // Get all BOMs
-router.get('/', async (req, res) => {
-  try {
-    const { product_id, active, search } = req.query;
-    let query = `
-      SELECT b.*, p.name as product_name
-      FROM bom b
-      LEFT JOIN products p ON b.product_id = p.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/', asyncHandler(async (req, res) => {
+  const { product_id, active, search } = req.query;
+  const filter: any = {};
 
-    if (product_id) {
-      query += ` AND b.product_id = $${paramCount++}`;
-      params.push(product_id);
-    }
+  if (product_id) filter.product_id = product_id;
+  if (active !== undefined) filter.active = active === 'true';
 
-    if (active !== undefined) {
-      query += ` AND b.active = $${paramCount++}`;
-      params.push(active === 'true');
-    }
-
-    if (search) {
-      query += ` AND (b.name ILIKE $${paramCount} OR b.code ILIKE $${paramCount} OR p.name ILIKE $${paramCount})`;
-      params.push(`%${search}%`);
-      paramCount++;
-    }
-
-    query += ' ORDER BY b.created_at DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching BOMs:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (search) {
+    filter.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { code: { $regex: search, $options: 'i' } },
+    ];
   }
-});
+
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    Bom.find(filter)
+      .populate('product_id', 'name')
+      .sort({ created_at: -1 })
+      .lean(),
+    pagination, filter, Bom
+  );
+
+  const data = paginatedResult.data.map((b: any) => ({
+    ...b,
+    product_name: b.product_id?.name,
+  }));
+
+  res.json({ data, pagination: paginatedResult.pagination });
+}));
 
 // Get BOM by ID with lines
-router.get('/:id', async (req, res) => {
-  try {
-    const bom = await pool.query(
-      `SELECT b.*, p.name as product_name
-       FROM bom b
-       LEFT JOIN products p ON b.product_id = p.id
-       WHERE b.id = $1`,
-      [req.params.id]
-    );
+router.get('/:id', asyncHandler(async (req, res) => {
+  const bom = await Bom.findById(req.params.id)
+    .populate('product_id', 'name')
+    .lean();
 
-    if (bom.rows.length === 0) {
-      return res.status(404).json({ error: 'BOM not found' });
-    }
-
-    const bomLines = await pool.query(
-      `SELECT bl.*, p.name as product_name, p.default_code
-       FROM bom_lines bl
-       LEFT JOIN products p ON bl.product_id = p.id
-       WHERE bl.bom_id = $1
-       ORDER BY bl.sequence`,
-      [req.params.id]
-    );
-
-    res.json({
-      ...bom.rows[0],
-      lines: bomLines.rows,
-    });
-  } catch (error) {
-    console.error('Error fetching BOM:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!bom) {
+    return res.status(404).json({ error: 'BOM not found' });
   }
-});
+
+  const bomLines = await BomLine.find({ bom_id: req.params.id })
+    .populate('product_id', 'name default_code')
+    .sort({ sequence: 1 })
+    .lean();
+
+  const lines = bomLines.map((bl: any) => ({
+    ...bl,
+    product_name: bl.product_id?.name,
+    default_code: bl.product_id?.default_code,
+  }));
+
+  res.json({
+    ...bom,
+    product_name: (bom as any).product_id?.name,
+    lines,
+  });
+}));
 
 // Create BOM
-router.post('/', async (req, res) => {
-  try {
-    const {
-      name,
-      code,
-      product_id,
-      product_qty,
-      product_uom_id,
-      type,
-      active,
-      version,
-      date_start,
-      date_stop,
-      sequence,
-      ready_to_produce,
-      user_id,
-      notes,
-      lines, // Array of BOM lines
-    } = req.body;
+router.post('/', asyncHandler(async (req, res) => {
+  const {
+    name, code, product_id, product_qty, product_uom_id, type, active,
+    version, date_start, date_stop, sequence, ready_to_produce, user_id, notes, lines,
+  } = req.body;
 
-    const result = await pool.query(
-      `INSERT INTO bom (
-        name, code, product_id, product_qty, product_uom_id, type, active,
-        version, date_start, date_stop, sequence, ready_to_produce, user_id, notes
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-      RETURNING *`,
-      [
-        name,
-        code,
-        product_id,
-        product_qty || 1,
-        product_uom_id,
-        type || 'normal',
-        active !== false,
-        version || 1,
-        date_start,
-        date_stop,
-        sequence || 10,
-        ready_to_produce || 'asap',
-        user_id,
-        notes,
-      ]
-    );
+  const bom = await Bom.create({
+    name, code, product_id,
+    product_qty: product_qty || 1,
+    product_uom_id,
+    type: type || 'normal',
+    active: active !== false,
+    version: version || 1,
+    date_start, date_stop,
+    sequence: sequence || 10,
+    ready_to_produce: ready_to_produce || 'asap',
+    user_id, notes,
+  });
 
-    const bom = result.rows[0];
-
-    // Create BOM lines if provided
-    if (lines && Array.isArray(lines)) {
-      for (const line of lines) {
-        await pool.query(
-          `INSERT INTO bom_lines (
-            bom_id, product_id, product_qty, product_uom_id, sequence,
-            operation_id, type, date_start, date_stop, notes
-          )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-          [
-            bom.id,
-            line.product_id,
-            line.product_qty,
-            line.product_uom_id,
-            line.sequence || 10,
-            line.operation_id,
-            line.type || 'normal',
-            line.date_start,
-            line.date_stop,
-            line.notes,
-          ]
-        );
-      }
+  if (lines && Array.isArray(lines)) {
+    for (const line of lines) {
+      await BomLine.create({
+        bom_id: bom._id,
+        product_id: line.product_id,
+        product_qty: line.product_qty,
+        product_uom_id: line.product_uom_id,
+        sequence: line.sequence || 10,
+        operation_id: line.operation_id,
+        type: line.type || 'normal',
+        date_start: line.date_start,
+        date_stop: line.date_stop,
+        notes: line.notes,
+      });
     }
-
-    res.status(201).json(bom);
-  } catch (error) {
-    console.error('Error creating BOM:', error);
-    res.status(500).json({ error: 'Internal server error' });
   }
-});
+
+  res.status(201).json(bom);
+}));
 
 // Update BOM
-router.put('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const updates: string[] = [];
-    const params: any[] = [];
-    let paramCount = 1;
+router.put('/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const allowedFields = [
+    'name', 'code', 'product_id', 'product_qty', 'product_uom_id', 'type',
+    'active', 'version', 'date_start', 'date_stop', 'sequence', 'ready_to_produce', 'notes',
+  ];
 
-    const allowedFields = [
-      'name', 'code', 'product_id', 'product_qty', 'product_uom_id', 'type',
-      'active', 'version', 'date_start', 'date_stop', 'sequence',
-      'ready_to_produce', 'notes',
-    ];
-
-    for (const field of allowedFields) {
-      if (req.body[field] !== undefined) {
-        updates.push(`${field} = $${paramCount++}`);
-        params.push(req.body[field]);
-      }
+  const updateData: any = {};
+  for (const field of allowedFields) {
+    if (req.body[field] !== undefined) {
+      updateData[field] = req.body[field];
     }
-
-    if (updates.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-
-    params.push(id);
-    const result = await pool.query(
-      `UPDATE bom SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`,
-      params
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'BOM not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating BOM:', error);
-    res.status(500).json({ error: 'Internal server error' });
   }
-});
+
+  if (Object.keys(updateData).length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
+  }
+
+  const bom = await Bom.findByIdAndUpdate(id, updateData, { new: true });
+
+  if (!bom) {
+    return res.status(404).json({ error: 'BOM not found' });
+  }
+
+  res.json(bom);
+}));
 
 // Delete BOM
-router.delete('/:id', async (req, res) => {
-  try {
-    const result = await pool.query(
-      'DELETE FROM bom WHERE id = $1 RETURNING id',
-      [req.params.id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'BOM not found' });
-    }
-
-    res.json({ message: 'BOM deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting BOM:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.delete('/:id', asyncHandler(async (req, res) => {
+  const bom = await Bom.findByIdAndDelete(req.params.id);
+  if (!bom) {
+    return res.status(404).json({ error: 'BOM not found' });
   }
-});
+  // Also delete lines
+  await BomLine.deleteMany({ bom_id: req.params.id });
+  res.json({ message: 'BOM deleted successfully' });
+}));
 
 // ============================================
 // BOM LINES - CRUD
 // ============================================
 
 // Get BOM lines
-router.get('/:bom_id/lines', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT bl.*, p.name as product_name, p.default_code
-       FROM bom_lines bl
-       LEFT JOIN products p ON bl.product_id = p.id
-       WHERE bl.bom_id = $1
-       ORDER BY bl.sequence`,
-      [req.params.bom_id]
-    );
+router.get('/:bom_id/lines', asyncHandler(async (req, res) => {
+  const lines = await BomLine.find({ bom_id: req.params.bom_id })
+    .populate('product_id', 'name default_code')
+    .sort({ sequence: 1 })
+    .lean();
 
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching BOM lines:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  const result = lines.map((bl: any) => ({
+    ...bl,
+    product_name: bl.product_id?.name,
+    default_code: bl.product_id?.default_code,
+  }));
+
+  res.json(result);
+}));
 
 // Add BOM line
-router.post('/:bom_id/lines', async (req, res) => {
-  try {
-    const { bom_id } = req.params;
-    const {
-      product_id,
-      product_qty,
-      product_uom_id,
-      sequence,
-      operation_id,
-      type,
-      date_start,
-      date_stop,
-      notes,
-    } = req.body;
+router.post('/:bom_id/lines', asyncHandler(async (req, res) => {
+  const { bom_id } = req.params;
+  const {
+    product_id, product_qty, product_uom_id, sequence,
+    operation_id, type, date_start, date_stop, notes,
+  } = req.body;
 
-    const result = await pool.query(
-      `INSERT INTO bom_lines (
-        bom_id, product_id, product_qty, product_uom_id, sequence,
-        operation_id, type, date_start, date_stop, notes
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-      RETURNING *`,
-      [
-        bom_id,
-        product_id,
-        product_qty,
-        product_uom_id,
-        sequence || 10,
-        operation_id,
-        type || 'normal',
-        date_start,
-        date_stop,
-        notes,
-      ]
-    );
+  const line = await BomLine.create({
+    bom_id,
+    product_id, product_qty, product_uom_id,
+    sequence: sequence || 10,
+    operation_id,
+    type: type || 'normal',
+    date_start, date_stop, notes,
+  });
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating BOM line:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.status(201).json(line);
+}));
 
 // Update BOM line
-router.put('/lines/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const updates: string[] = [];
-    const params: any[] = [];
-    let paramCount = 1;
+router.put('/lines/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const allowedFields = [
+    'product_id', 'product_qty', 'product_uom_id', 'sequence',
+    'operation_id', 'type', 'date_start', 'date_stop', 'notes',
+  ];
 
-    const allowedFields = [
-      'product_id', 'product_qty', 'product_uom_id', 'sequence',
-      'operation_id', 'type', 'date_start', 'date_stop', 'notes',
-    ];
-
-    for (const field of allowedFields) {
-      if (req.body[field] !== undefined) {
-        updates.push(`${field} = $${paramCount++}`);
-        params.push(req.body[field]);
-      }
+  const updateData: any = {};
+  for (const field of allowedFields) {
+    if (req.body[field] !== undefined) {
+      updateData[field] = req.body[field];
     }
-
-    if (updates.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-
-    params.push(id);
-    const result = await pool.query(
-      `UPDATE bom_lines SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`,
-      params
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'BOM line not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating BOM line:', error);
-    res.status(500).json({ error: 'Internal server error' });
   }
-});
+
+  if (Object.keys(updateData).length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
+  }
+
+  const line = await BomLine.findByIdAndUpdate(id, updateData, { new: true });
+
+  if (!line) {
+    return res.status(404).json({ error: 'BOM line not found' });
+  }
+
+  res.json(line);
+}));
 
 // Delete BOM line
-router.delete('/lines/:id', async (req, res) => {
-  try {
-    const result = await pool.query(
-      'DELETE FROM bom_lines WHERE id = $1 RETURNING id',
-      [req.params.id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'BOM line not found' });
-    }
-
-    res.json({ message: 'BOM line deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting BOM line:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.delete('/lines/:id', asyncHandler(async (req, res) => {
+  const line = await BomLine.findByIdAndDelete(req.params.id);
+  if (!line) {
+    return res.status(404).json({ error: 'BOM line not found' });
   }
-});
+  res.json({ message: 'BOM line deleted successfully' });
+}));
 
 export default router;
-

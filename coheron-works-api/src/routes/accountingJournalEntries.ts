@@ -1,114 +1,99 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import mongoose from 'mongoose';
+import AccountMove from '../models/AccountMove.js';
+import AccountJournal from '../models/AccountJournal.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
 // Get all journal entries
-router.get('/', async (req, res) => {
-  try {
-    const { journal_id, state, date_from, date_to, partner_id, search } = req.query;
-    let query = `
-      SELECT m.*, 
-             j.name as journal_name,
-             j.code as journal_code,
-             p.name as partner_name
-      FROM account_move m
-      LEFT JOIN account_journal j ON m.journal_id = j.id
-      LEFT JOIN partners p ON m.partner_id = p.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/', asyncHandler(async (req, res) => {
+  const { journal_id, state, date_from, date_to, partner_id, search } = req.query;
+  const filter: any = {};
 
-    if (journal_id) {
-      query += ` AND m.journal_id = $${paramCount++}`;
-      params.push(journal_id);
-    }
+  if (journal_id) filter.journal_id = journal_id;
+  if (state) filter.state = state;
+  if (partner_id) filter.partner_id = partner_id;
 
-    if (state) {
-      query += ` AND m.state = $${paramCount++}`;
-      params.push(state);
-    }
-
-    if (date_from) {
-      query += ` AND m.date >= $${paramCount++}`;
-      params.push(date_from);
-    }
-
-    if (date_to) {
-      query += ` AND m.date <= $${paramCount++}`;
-      params.push(date_to);
-    }
-
-    if (partner_id) {
-      query += ` AND m.partner_id = $${paramCount++}`;
-      params.push(partner_id);
-    }
-
-    if (search) {
-      query += ` AND (m.name ILIKE $${paramCount} OR m.ref ILIKE $${paramCount})`;
-      params.push(`%${search}%`);
-      paramCount++;
-    }
-
-    query += ' ORDER BY m.date DESC, m.created_at DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching journal entries:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (date_from || date_to) {
+    filter.date = {};
+    if (date_from) filter.date.$gte = new Date(date_from as string);
+    if (date_to) filter.date.$lte = new Date(date_to as string);
   }
-});
+
+  if (search) {
+    filter.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { ref: { $regex: search, $options: 'i' } },
+    ];
+  }
+
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    AccountMove.find(filter)
+      .populate('journal_id', 'name code')
+      .populate('partner_id', 'name')
+      .sort({ date: -1, created_at: -1 })
+      .lean(),
+    pagination,
+    filter,
+    AccountMove
+  );
+
+  const data = paginatedResult.data.map((m: any) => ({
+    ...m,
+    id: m._id,
+    journal_name: m.journal_id?.name || null,
+    journal_code: m.journal_id?.code || null,
+    partner_name: m.partner_id?.name || null,
+    journal_id: m.journal_id?._id || m.journal_id,
+    partner_id: m.partner_id?._id || m.partner_id,
+  }));
+
+  res.json({ data, pagination: paginatedResult.pagination });
+}));
 
 // Get journal entry by ID with lines
-router.get('/:id', async (req, res) => {
-  try {
-    const moveResult = await pool.query(
-      `SELECT m.*, 
-              j.name as journal_name,
-              j.code as journal_code,
-              p.name as partner_name
-       FROM account_move m
-       LEFT JOIN account_journal j ON m.journal_id = j.id
-       LEFT JOIN partners p ON m.partner_id = p.id
-       WHERE m.id = $1`,
-      [req.params.id]
-    );
+router.get('/:id', asyncHandler(async (req, res) => {
+  const move = await AccountMove.findById(req.params.id)
+    .populate('journal_id', 'name code')
+    .populate('partner_id', 'name')
+    .populate('lines.account_id', 'code name')
+    .populate('lines.partner_id', 'name')
+    .lean();
 
-    if (moveResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Journal entry not found' });
-    }
-
-    const linesResult = await pool.query(
-      `SELECT l.*, 
-              a.code as account_code,
-              a.name as account_name,
-              p.name as partner_name
-       FROM account_move_line l
-       LEFT JOIN account_account a ON l.account_id = a.id
-       LEFT JOIN partners p ON l.partner_id = p.id
-       WHERE l.move_id = $1
-       ORDER BY l.id`,
-      [req.params.id]
-    );
-
-    res.json({
-      ...moveResult.rows[0],
-      lines: linesResult.rows,
-    });
-  } catch (error) {
-    console.error('Error fetching journal entry:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!move) {
+    return res.status(404).json({ error: 'Journal entry not found' });
   }
-});
+
+  const result: any = {
+    ...move,
+    id: move._id,
+    journal_name: (move.journal_id as any)?.name || null,
+    journal_code: (move.journal_id as any)?.code || null,
+    partner_name: (move.partner_id as any)?.name || null,
+    journal_id: (move.journal_id as any)?._id || move.journal_id,
+    partner_id: (move.partner_id as any)?._id || move.partner_id,
+    lines: (move.lines || []).map((l: any) => ({
+      ...l,
+      id: l._id,
+      account_code: l.account_id?.code || null,
+      account_name: l.account_id?.name || null,
+      partner_name: l.partner_id?.name || null,
+      account_id: l.account_id?._id || l.account_id,
+      partner_id: l.partner_id?._id || l.partner_id,
+    })),
+  };
+
+  res.json(result);
+}));
 
 // Create journal entry
-router.post('/', async (req, res) => {
-  const client = await pool.connect();
+router.post('/', asyncHandler(async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
   try {
-    await client.query('BEGIN');
-
     const {
       journal_id,
       date,
@@ -120,331 +105,237 @@ router.post('/', async (req, res) => {
     } = req.body;
 
     // Generate journal entry number
-    const journalResult = await client.query(
-      'SELECT code FROM account_journal WHERE id = $1',
-      [journal_id]
-    );
-    if (journalResult.rows.length === 0) {
+    const journal = await AccountJournal.findById(journal_id).session(session);
+    if (!journal) {
       throw new Error('Journal not found');
     }
 
-    const journalCode = journalResult.rows[0].code;
+    const journalCode = journal.code;
     const dateStr = new Date(date).toISOString().slice(0, 10).replace(/-/g, '');
     const name = `${journalCode}/${dateStr}/${Date.now().toString().slice(-6)}`;
 
     // Calculate total
     let amountTotal = 0;
-    if (lines && lines.length > 0) {
-      lines.forEach((line: any) => {
-        amountTotal += parseFloat(line.debit || 0) - parseFloat(line.credit || 0);
-      });
-    }
-
-    // Create move
-    const moveResult = await client.query(
-      `INSERT INTO account_move 
-       (name, journal_id, date, ref, move_type, partner_id, amount_total, currency_id, state)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'draft')
-       RETURNING *`,
-      [name, journal_id, date, ref || null, move_type || 'entry', partner_id || null, amountTotal, currency_id || null]
-    );
-
-    const moveId = moveResult.rows[0].id;
-
-    // Create move lines
+    const moveLines: any[] = [];
     if (lines && lines.length > 0) {
       for (const line of lines) {
-        const balance = parseFloat(line.debit || 0) - parseFloat(line.credit || 0);
-        await client.query(
-          `INSERT INTO account_move_line 
-           (move_id, account_id, partner_id, name, debit, credit, balance, date, date_maturity, 
-            cost_center_id, project_id, product_id, tax_ids)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
-          [
-            moveId,
-            line.account_id,
-            line.partner_id || null,
-            line.name || '',
-            line.debit || 0,
-            line.credit || 0,
-            balance,
-            line.date || date,
-            line.date_maturity || null,
-            line.cost_center_id || null,
-            line.project_id || null,
-            line.product_id || null,
-            line.tax_ids || null,
-          ]
-        );
+        const debit = parseFloat(line.debit || 0);
+        const credit = parseFloat(line.credit || 0);
+        amountTotal += debit - credit;
+        moveLines.push({
+          account_id: line.account_id,
+          partner_id: line.partner_id || null,
+          name: line.name || '',
+          debit,
+          credit,
+          balance: debit - credit,
+          date: line.date || date,
+          date_maturity: line.date_maturity || null,
+          cost_center_id: line.cost_center_id || null,
+          project_id: line.project_id || null,
+          product_id: line.product_id || null,
+          tax_ids: line.tax_ids || null,
+        });
       }
     }
 
-    await client.query('COMMIT');
+    const [move] = await AccountMove.create([{
+      name,
+      journal_id,
+      date,
+      ref: ref || null,
+      move_type: move_type || 'entry',
+      partner_id: partner_id || null,
+      amount_total: amountTotal,
+      currency_id: currency_id || null,
+      state: 'draft',
+      lines: moveLines,
+    }], { session });
 
-    // Fetch complete entry with lines
-    const completeResult = await pool.query(
-      `SELECT m.*, 
-              j.name as journal_name,
-              j.code as journal_code
-       FROM account_move m
-       LEFT JOIN account_journal j ON m.journal_id = j.id
-       WHERE m.id = $1`,
-      [moveId]
-    );
+    await session.commitTransaction();
 
-    const linesResult = await pool.query(
-      `SELECT l.*, a.code as account_code, a.name as account_name
-       FROM account_move_line l
-       LEFT JOIN account_account a ON l.account_id = a.id
-       WHERE l.move_id = $1
-       ORDER BY l.id`,
-      [moveId]
-    );
+    // Fetch complete entry with populated refs
+    const complete = await AccountMove.findById(move._id)
+      .populate('journal_id', 'name code')
+      .populate('lines.account_id', 'code name')
+      .lean();
 
-    res.status(201).json({
-      ...completeResult.rows[0],
-      lines: linesResult.rows,
-    });
+    const result: any = {
+      ...complete,
+      id: complete!._id,
+      journal_name: (complete!.journal_id as any)?.name || null,
+      journal_code: (complete!.journal_id as any)?.code || null,
+      journal_id: (complete!.journal_id as any)?._id || complete!.journal_id,
+      lines: (complete!.lines || []).map((l: any) => ({
+        ...l,
+        id: l._id,
+        account_code: l.account_id?.code || null,
+        account_name: l.account_id?.name || null,
+        account_id: l.account_id?._id || l.account_id,
+      })),
+    };
+
+    res.status(201).json(result);
   } catch (error: any) {
-    await client.query('ROLLBACK');
-    console.error('Error creating journal entry:', error);
-    res.status(500).json({ error: error.message || 'Internal server error' });
+    await session.abortTransaction();
+    throw error;
   } finally {
-    client.release();
+    session.endSession();
   }
-});
+}));
 
 // Update journal entry
-router.put('/:id', async (req, res) => {
-  const client = await pool.connect();
+router.put('/:id', asyncHandler(async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
   try {
-    await client.query('BEGIN');
-
     const { date, ref, partner_id, lines } = req.body;
     const moveId = req.params.id;
 
-    // Check if entry is posted
-    const moveCheck = await client.query(
-      'SELECT state FROM account_move WHERE id = $1',
-      [moveId]
-    );
+    const move = await AccountMove.findById(moveId).session(session);
 
-    if (moveCheck.rows.length === 0) {
+    if (!move) {
       return res.status(404).json({ error: 'Journal entry not found' });
     }
 
-    if (moveCheck.rows[0].state === 'posted') {
+    if (move.state === 'posted') {
       return res.status(400).json({ error: 'Cannot modify posted entry' });
     }
 
-    // Update move
-    const updates: string[] = [];
-    const params: any[] = [];
-    let paramCount = 1;
-
-    if (date !== undefined) {
-      updates.push(`date = $${paramCount++}`);
-      params.push(date);
-    }
-    if (ref !== undefined) {
-      updates.push(`ref = $${paramCount++}`);
-      params.push(ref);
-    }
-    if (partner_id !== undefined) {
-      updates.push(`partner_id = $${paramCount++}`);
-      params.push(partner_id);
-    }
-
-    if (updates.length > 0) {
-      updates.push(`updated_at = CURRENT_TIMESTAMP`);
-      params.push(moveId);
-      await client.query(
-        `UPDATE account_move SET ${updates.join(', ')} WHERE id = $${paramCount}`,
-        params
-      );
-    }
+    // Update fields
+    if (date !== undefined) move.date = date;
+    if (ref !== undefined) move.ref = ref;
+    if (partner_id !== undefined) move.partner_id = partner_id;
 
     // Update lines if provided
     if (lines !== undefined) {
-      // Delete existing lines
-      await client.query('DELETE FROM account_move_line WHERE move_id = $1', [moveId]);
-
-      // Insert new lines
-      for (const line of lines) {
-        const balance = parseFloat(line.debit || 0) - parseFloat(line.credit || 0);
-        await client.query(
-          `INSERT INTO account_move_line 
-           (move_id, account_id, partner_id, name, debit, credit, balance, date, date_maturity,
-            cost_center_id, project_id, product_id, tax_ids)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
-          [
-            moveId,
-            line.account_id,
-            line.partner_id || null,
-            line.name || '',
-            line.debit || 0,
-            line.credit || 0,
-            balance,
-            line.date || date,
-            line.date_maturity || null,
-            line.cost_center_id || null,
-            line.project_id || null,
-            line.product_id || null,
-            line.tax_ids || null,
-          ]
-        );
-      }
+      move.lines = lines.map((line: any) => ({
+        account_id: line.account_id,
+        partner_id: line.partner_id || null,
+        name: line.name || '',
+        debit: line.debit || 0,
+        credit: line.credit || 0,
+        balance: parseFloat(line.debit || 0) - parseFloat(line.credit || 0),
+        date: line.date || date || move.date,
+        date_maturity: line.date_maturity || null,
+        cost_center_id: line.cost_center_id || null,
+        project_id: line.project_id || null,
+        product_id: line.product_id || null,
+        tax_ids: line.tax_ids || null,
+      }));
     }
 
-    await client.query('COMMIT');
+    await move.save({ session });
+    await session.commitTransaction();
 
-    // Fetch updated entry
-    const result = await pool.query(
-      `SELECT m.*, j.name as journal_name, j.code as journal_code
-       FROM account_move m
-       LEFT JOIN account_journal j ON m.journal_id = j.id
-       WHERE m.id = $1`,
-      [moveId]
-    );
+    // Fetch updated entry with populated refs
+    const updated = await AccountMove.findById(moveId)
+      .populate('journal_id', 'name code')
+      .populate('lines.account_id', 'code name')
+      .lean();
 
-    const linesResult = await pool.query(
-      `SELECT l.*, a.code as account_code, a.name as account_name
-       FROM account_move_line l
-       LEFT JOIN account_account a ON l.account_id = a.id
-       WHERE l.move_id = $1
-       ORDER BY l.id`,
-      [moveId]
-    );
+    const result: any = {
+      ...updated,
+      id: updated!._id,
+      journal_name: (updated!.journal_id as any)?.name || null,
+      journal_code: (updated!.journal_id as any)?.code || null,
+      journal_id: (updated!.journal_id as any)?._id || updated!.journal_id,
+      lines: (updated!.lines || []).map((l: any) => ({
+        ...l,
+        id: l._id,
+        account_code: l.account_id?.code || null,
+        account_name: l.account_id?.name || null,
+        account_id: l.account_id?._id || l.account_id,
+      })),
+    };
 
-    res.json({
-      ...result.rows[0],
-      lines: linesResult.rows,
-    });
+    res.json(result);
   } catch (error: any) {
-    await client.query('ROLLBACK');
-    console.error('Error updating journal entry:', error);
-    res.status(500).json({ error: error.message || 'Internal server error' });
+    await session.abortTransaction();
+    throw error;
   } finally {
-    client.release();
+    session.endSession();
   }
-});
+}));
 
 // Post journal entry
-router.post('/:id/post', async (req, res) => {
-  const client = await pool.connect();
+router.post('/:id/post', asyncHandler(async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
   try {
-    await client.query('BEGIN');
-
     const moveId = req.params.id;
 
-    // Verify entry exists and is in draft
-    const moveResult = await client.query(
-      'SELECT * FROM account_move WHERE id = $1',
-      [moveId]
-    );
+    const move = await AccountMove.findById(moveId).session(session);
 
-    if (moveResult.rows.length === 0) {
+    if (!move) {
       return res.status(404).json({ error: 'Journal entry not found' });
     }
 
-    if (moveResult.rows[0].state !== 'draft') {
+    if (move.state !== 'draft') {
       return res.status(400).json({ error: 'Entry is not in draft state' });
     }
 
     // Verify lines balance (debits = credits)
-    const linesResult = await client.query(
-      `SELECT SUM(debit) as total_debit, SUM(credit) as total_credit
-       FROM account_move_line
-       WHERE move_id = $1`,
-      [moveId]
-    );
-
-    const totalDebit = parseFloat(linesResult.rows[0].total_debit || 0);
-    const totalCredit = parseFloat(linesResult.rows[0].total_credit || 0);
+    let totalDebit = 0;
+    let totalCredit = 0;
+    for (const line of move.lines) {
+      totalDebit += line.debit || 0;
+      totalCredit += line.credit || 0;
+    }
 
     if (Math.abs(totalDebit - totalCredit) > 0.01) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Entry is not balanced',
-        details: { total_debit: totalDebit, total_credit: totalCredit }
+        details: { total_debit: totalDebit, total_credit: totalCredit },
       });
     }
 
-    // Update state to posted
-    await client.query(
-      `UPDATE account_move 
-       SET state = 'posted', 
-           posted_at = CURRENT_TIMESTAMP,
-           posted_by = $1
-       WHERE id = $2`,
-      [req.body.user_id || 1, moveId] // TODO: Get from auth
-    );
+    move.state = 'posted';
+    move.posted_at = new Date();
+    move.posted_by = req.body.user_id || null;
 
-    await client.query('COMMIT');
+    await move.save({ session });
+    await session.commitTransaction();
 
-    const updatedResult = await pool.query(
-      'SELECT * FROM account_move WHERE id = $1',
-      [moveId]
-    );
-
-    res.json(updatedResult.rows[0]);
+    res.json(move);
   } catch (error: any) {
-    await client.query('ROLLBACK');
-    console.error('Error posting journal entry:', error);
-    res.status(500).json({ error: error.message || 'Internal server error' });
+    await session.abortTransaction();
+    throw error;
   } finally {
-    client.release();
+    session.endSession();
   }
-});
+}));
 
 // Cancel journal entry
-router.post('/:id/cancel', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `UPDATE account_move 
-       SET state = 'cancel', updated_at = CURRENT_TIMESTAMP
-       WHERE id = $1 AND state = 'posted'
-       RETURNING *`,
-      [req.params.id]
-    );
+router.post('/:id/cancel', asyncHandler(async (req, res) => {
+  const move = await AccountMove.findOneAndUpdate(
+    { _id: req.params.id, state: 'posted' },
+    { state: 'cancel' },
+    { new: true }
+  );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Journal entry not found or cannot be cancelled' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error cancelling journal entry:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!move) {
+    return res.status(404).json({ error: 'Journal entry not found or cannot be cancelled' });
   }
-});
+
+  res.json(move);
+}));
 
 // Delete journal entry
-router.delete('/:id', async (req, res) => {
-  try {
-    const moveCheck = await pool.query(
-      'SELECT state FROM account_move WHERE id = $1',
-      [req.params.id]
-    );
+router.delete('/:id', asyncHandler(async (req, res) => {
+  const move = await AccountMove.findById(req.params.id);
 
-    if (moveCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Journal entry not found' });
-    }
-
-    if (moveCheck.rows[0].state === 'posted') {
-      return res.status(400).json({ error: 'Cannot delete posted entry' });
-    }
-
-    const result = await pool.query(
-      'DELETE FROM account_move WHERE id = $1 RETURNING id',
-      [req.params.id]
-    );
-
-    res.json({ message: 'Journal entry deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting journal entry:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!move) {
+    return res.status(404).json({ error: 'Journal entry not found' });
   }
-});
+
+  if (move.state === 'posted') {
+    return res.status(400).json({ error: 'Cannot delete posted entry' });
+  }
+
+  await AccountMove.findByIdAndDelete(req.params.id);
+
+  res.json({ message: 'Journal entry deleted successfully' });
+}));
 
 export default router;
-

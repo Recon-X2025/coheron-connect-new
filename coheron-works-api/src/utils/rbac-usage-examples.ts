@@ -23,7 +23,7 @@ import { getUserPermissions, hasPermission } from './permissions.js';
 // Example 1: Check User Permissions
 // ============================================
 
-export async function exampleCheckPermissions(userId: number) {
+export async function exampleCheckPermissions(userId: string) {
   // Get all user permissions
   const permissions = await getUserPermissions(userId);
   console.log('User permissions:', permissions);

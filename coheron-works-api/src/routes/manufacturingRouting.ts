@@ -1,5 +1,9 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import Routing from '../models/Routing.js';
+import RoutingOperation from '../models/RoutingOperation.js';
+import Workcenter from '../models/Workcenter.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
@@ -8,483 +12,295 @@ const router = express.Router();
 // ============================================
 
 // Get all routings
-router.get('/', async (req, res) => {
-  try {
-    const { active, search } = req.query;
-    let query = 'SELECT * FROM routing WHERE 1=1';
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/', asyncHandler(async (req, res) => {
+  const { active, search } = req.query;
+  const filter: any = {};
 
-    if (active !== undefined) {
-      query += ` AND active = $${paramCount++}`;
-      params.push(active === 'true');
-    }
+  if (active !== undefined) filter.active = active === 'true';
 
-    if (search) {
-      query += ` AND (name ILIKE $${paramCount} OR code ILIKE $${paramCount})`;
-      params.push(`%${search}%`);
-      paramCount++;
-    }
-
-    query += ' ORDER BY created_at DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching routings:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (search) {
+    filter.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { code: { $regex: search, $options: 'i' } },
+    ];
   }
-});
+
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    Routing.find(filter).sort({ created_at: -1 }).lean(),
+    pagination, filter, Routing
+  );
+
+  res.json(paginatedResult);
+}));
 
 // Get routing by ID with operations
-router.get('/:id', async (req, res) => {
-  try {
-    const routing = await pool.query('SELECT * FROM routing WHERE id = $1', [req.params.id]);
+router.get('/:id', asyncHandler(async (req, res) => {
+  const routing = await Routing.findById(req.params.id).lean();
 
-    if (routing.rows.length === 0) {
-      return res.status(404).json({ error: 'Routing not found' });
-    }
-
-    const operations = await pool.query(
-      `SELECT ro.*, wc.name as workcenter_name, wc.code as workcenter_code
-       FROM routing_operations ro
-       LEFT JOIN workcenters wc ON ro.workcenter_id = wc.id
-       WHERE ro.routing_id = $1
-       ORDER BY ro.sequence`,
-      [req.params.id]
-    );
-
-    res.json({
-      ...routing.rows[0],
-      operations: operations.rows,
-    });
-  } catch (error) {
-    console.error('Error fetching routing:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!routing) {
+    return res.status(404).json({ error: 'Routing not found' });
   }
-});
+
+  const operations = await RoutingOperation.find({ routing_id: req.params.id })
+    .populate('workcenter_id', 'name code')
+    .sort({ sequence: 1 })
+    .lean();
+
+  const ops = operations.map((ro: any) => ({
+    ...ro,
+    workcenter_name: ro.workcenter_id?.name,
+    workcenter_code: ro.workcenter_id?.code,
+  }));
+
+  res.json({ ...routing, operations: ops });
+}));
 
 // Create routing
-router.post('/', async (req, res) => {
-  try {
-    const {
-      name,
-      code,
-      active,
-      company_id,
-      location_id,
-      note,
-      operations, // Array of operations
-    } = req.body;
+router.post('/', asyncHandler(async (req, res) => {
+  const { name, code, active, company_id, location_id, note, operations } = req.body;
 
-    const result = await pool.query(
-      `INSERT INTO routing (name, code, active, company_id, location_id, note)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING *`,
-      [
-        name,
-        code,
-        active !== false,
-        company_id,
-        location_id,
-        note,
-      ]
-    );
+  const routing = await Routing.create({
+    name, code,
+    active: active !== false,
+    company_id, location_id, note,
+  });
 
-    const routing = result.rows[0];
-
-    // Create operations if provided
-    if (operations && Array.isArray(operations)) {
-      for (const op of operations) {
-        await pool.query(
-          `INSERT INTO routing_operations (
-            routing_id, name, sequence, workcenter_id, time_mode,
-            time_cycle_manual, time_cycle, time_mode_batch, batch_size,
-            time_start, time_stop, worksheet_type, note
-          )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
-          [
-            routing.id,
-            op.name,
-            op.sequence,
-            op.workcenter_id,
-            op.time_mode || 'auto',
-            op.time_cycle_manual,
-            op.time_cycle,
-            op.time_mode_batch || 1,
-            op.batch_size || 1,
-            op.time_start || 0,
-            op.time_stop || 0,
-            op.worksheet_type,
-            op.note,
-          ]
-        );
-      }
+  if (operations && Array.isArray(operations)) {
+    for (const op of operations) {
+      await RoutingOperation.create({
+        routing_id: routing._id,
+        name: op.name,
+        sequence: op.sequence,
+        workcenter_id: op.workcenter_id,
+        time_mode: op.time_mode || 'auto',
+        time_cycle_manual: op.time_cycle_manual,
+        time_cycle: op.time_cycle,
+        time_mode_batch: op.time_mode_batch || 1,
+        batch_size: op.batch_size || 1,
+        time_start: op.time_start || 0,
+        time_stop: op.time_stop || 0,
+        worksheet_type: op.worksheet_type,
+        note: op.note,
+      });
     }
-
-    res.status(201).json(routing);
-  } catch (error) {
-    console.error('Error creating routing:', error);
-    res.status(500).json({ error: 'Internal server error' });
   }
-});
+
+  res.status(201).json(routing);
+}));
 
 // Update routing
-router.put('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const updates: string[] = [];
-    const params: any[] = [];
-    let paramCount = 1;
+router.put('/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const allowedFields = ['name', 'code', 'active', 'company_id', 'location_id', 'note'];
 
-    const allowedFields = ['name', 'code', 'active', 'company_id', 'location_id', 'note'];
-
-    for (const field of allowedFields) {
-      if (req.body[field] !== undefined) {
-        updates.push(`${field} = $${paramCount++}`);
-        params.push(req.body[field]);
-      }
+  const updateData: any = {};
+  for (const field of allowedFields) {
+    if (req.body[field] !== undefined) {
+      updateData[field] = req.body[field];
     }
-
-    if (updates.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-
-    params.push(id);
-    const result = await pool.query(
-      `UPDATE routing SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`,
-      params
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Routing not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating routing:', error);
-    res.status(500).json({ error: 'Internal server error' });
   }
-});
+
+  if (Object.keys(updateData).length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
+  }
+
+  const routing = await Routing.findByIdAndUpdate(id, updateData, { new: true });
+
+  if (!routing) {
+    return res.status(404).json({ error: 'Routing not found' });
+  }
+
+  res.json(routing);
+}));
 
 // Delete routing
-router.delete('/:id', async (req, res) => {
-  try {
-    const result = await pool.query(
-      'DELETE FROM routing WHERE id = $1 RETURNING id',
-      [req.params.id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Routing not found' });
-    }
-
-    res.json({ message: 'Routing deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting routing:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.delete('/:id', asyncHandler(async (req, res) => {
+  const routing = await Routing.findByIdAndDelete(req.params.id);
+  if (!routing) {
+    return res.status(404).json({ error: 'Routing not found' });
   }
-});
+  await RoutingOperation.deleteMany({ routing_id: req.params.id });
+  res.json({ message: 'Routing deleted successfully' });
+}));
 
 // ============================================
 // ROUTING OPERATIONS - CRUD
 // ============================================
 
 // Get routing operations
-router.get('/:routing_id/operations', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT ro.*, wc.name as workcenter_name, wc.code as workcenter_code
-       FROM routing_operations ro
-       LEFT JOIN workcenters wc ON ro.workcenter_id = wc.id
-       WHERE ro.routing_id = $1
-       ORDER BY ro.sequence`,
-      [req.params.routing_id]
-    );
+router.get('/:routing_id/operations', asyncHandler(async (req, res) => {
+  const operations = await RoutingOperation.find({ routing_id: req.params.routing_id })
+    .populate('workcenter_id', 'name code')
+    .sort({ sequence: 1 })
+    .lean();
 
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching routing operations:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  const result = operations.map((ro: any) => ({
+    ...ro,
+    workcenter_name: ro.workcenter_id?.name,
+    workcenter_code: ro.workcenter_id?.code,
+  }));
+
+  res.json(result);
+}));
 
 // Add routing operation
-router.post('/:routing_id/operations', async (req, res) => {
-  try {
-    const { routing_id } = req.params;
-    const {
-      name,
-      sequence,
-      workcenter_id,
-      time_mode,
-      time_cycle_manual,
-      time_cycle,
-      time_mode_batch,
-      batch_size,
-      time_start,
-      time_stop,
-      worksheet_type,
-      note,
-    } = req.body;
+router.post('/:routing_id/operations', asyncHandler(async (req, res) => {
+  const { routing_id } = req.params;
+  const {
+    name, sequence, workcenter_id, time_mode, time_cycle_manual, time_cycle,
+    time_mode_batch, batch_size, time_start, time_stop, worksheet_type, note,
+  } = req.body;
 
-    const result = await pool.query(
-      `INSERT INTO routing_operations (
-        routing_id, name, sequence, workcenter_id, time_mode,
-        time_cycle_manual, time_cycle, time_mode_batch, batch_size,
-        time_start, time_stop, worksheet_type, note
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-      RETURNING *`,
-      [
-        routing_id,
-        name,
-        sequence,
-        workcenter_id,
-        time_mode || 'auto',
-        time_cycle_manual,
-        time_cycle,
-        time_mode_batch || 1,
-        batch_size || 1,
-        time_start || 0,
-        time_stop || 0,
-        worksheet_type,
-        note,
-      ]
-    );
+  const operation = await RoutingOperation.create({
+    routing_id, name, sequence, workcenter_id,
+    time_mode: time_mode || 'auto',
+    time_cycle_manual, time_cycle,
+    time_mode_batch: time_mode_batch || 1,
+    batch_size: batch_size || 1,
+    time_start: time_start || 0,
+    time_stop: time_stop || 0,
+    worksheet_type, note,
+  });
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating routing operation:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.status(201).json(operation);
+}));
 
 // Update routing operation
-router.put('/operations/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const updates: string[] = [];
-    const params: any[] = [];
-    let paramCount = 1;
+router.put('/operations/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const allowedFields = [
+    'name', 'sequence', 'workcenter_id', 'time_mode', 'time_cycle_manual',
+    'time_cycle', 'time_mode_batch', 'batch_size', 'time_start', 'time_stop',
+    'worksheet_type', 'note',
+  ];
 
-    const allowedFields = [
-      'name', 'sequence', 'workcenter_id', 'time_mode', 'time_cycle_manual',
-      'time_cycle', 'time_mode_batch', 'batch_size', 'time_start', 'time_stop',
-      'worksheet_type', 'note',
-    ];
-
-    for (const field of allowedFields) {
-      if (req.body[field] !== undefined) {
-        updates.push(`${field} = $${paramCount++}`);
-        params.push(req.body[field]);
-      }
+  const updateData: any = {};
+  for (const field of allowedFields) {
+    if (req.body[field] !== undefined) {
+      updateData[field] = req.body[field];
     }
-
-    if (updates.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-
-    params.push(id);
-    const result = await pool.query(
-      `UPDATE routing_operations SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`,
-      params
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Routing operation not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating routing operation:', error);
-    res.status(500).json({ error: 'Internal server error' });
   }
-});
+
+  if (Object.keys(updateData).length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
+  }
+
+  const operation = await RoutingOperation.findByIdAndUpdate(id, updateData, { new: true });
+
+  if (!operation) {
+    return res.status(404).json({ error: 'Routing operation not found' });
+  }
+
+  res.json(operation);
+}));
 
 // Delete routing operation
-router.delete('/operations/:id', async (req, res) => {
-  try {
-    const result = await pool.query(
-      'DELETE FROM routing_operations WHERE id = $1 RETURNING id',
-      [req.params.id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Routing operation not found' });
-    }
-
-    res.json({ message: 'Routing operation deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting routing operation:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.delete('/operations/:id', asyncHandler(async (req, res) => {
+  const operation = await RoutingOperation.findByIdAndDelete(req.params.id);
+  if (!operation) {
+    return res.status(404).json({ error: 'Routing operation not found' });
   }
-});
+  res.json({ message: 'Routing operation deleted successfully' });
+}));
 
 // ============================================
 // WORK CENTERS - CRUD
 // ============================================
 
 // Get all work centers
-router.get('/workcenters', async (req, res) => {
-  try {
-    const { active, search } = req.query;
-    let query = 'SELECT * FROM workcenters WHERE 1=1';
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/workcenters', asyncHandler(async (req, res) => {
+  const { active, search } = req.query;
+  const filter: any = {};
 
-    if (active !== undefined) {
-      query += ` AND active = $${paramCount++}`;
-      params.push(active === 'true');
-    }
+  if (active !== undefined) filter.active = active === 'true';
 
-    if (search) {
-      query += ` AND (name ILIKE $${paramCount} OR code ILIKE $${paramCount})`;
-      params.push(`%${search}%`);
-      paramCount++;
-    }
-
-    query += ' ORDER BY name';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching work centers:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (search) {
+    filter.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { code: { $regex: search, $options: 'i' } },
+    ];
   }
-});
+
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    Workcenter.find(filter).sort({ name: 1 }).lean(),
+    pagination, filter, Workcenter
+  );
+
+  res.json(paginatedResult);
+}));
 
 // Get work center by ID
-router.get('/workcenters/:id', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM workcenters WHERE id = $1', [req.params.id]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Work center not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error fetching work center:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.get('/workcenters/:id', asyncHandler(async (req, res) => {
+  const wc = await Workcenter.findById(req.params.id).lean();
+  if (!wc) {
+    return res.status(404).json({ error: 'Work center not found' });
   }
-});
+  res.json(wc);
+}));
 
 // Create work center
-router.post('/workcenters', async (req, res) => {
-  try {
-    const {
-      name,
-      code,
-      active,
-      workcenter_type,
-      capacity,
-      time_efficiency,
-      time_start,
-      time_stop,
-      costs_hour,
-      costs_cycle,
-      oee_target,
-      location_id,
-      resource_calendar_id,
-      company_id,
-      notes,
-    } = req.body;
+router.post('/workcenters', asyncHandler(async (req, res) => {
+  const {
+    name, code, active, workcenter_type, capacity, time_efficiency,
+    time_start, time_stop, costs_hour, costs_cycle, oee_target,
+    location_id, resource_calendar_id, company_id, notes,
+  } = req.body;
 
-    const result = await pool.query(
-      `INSERT INTO workcenters (
-        name, code, active, workcenter_type, capacity, time_efficiency,
-        time_start, time_stop, costs_hour, costs_cycle, oee_target,
-        location_id, resource_calendar_id, company_id, notes
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-      RETURNING *`,
-      [
-        name,
-        code,
-        active !== false,
-        workcenter_type,
-        capacity || 1,
-        time_efficiency || 100,
-        time_start || 0,
-        time_stop || 0,
-        costs_hour || 0,
-        costs_cycle || 0,
-        oee_target || 90,
-        location_id,
-        resource_calendar_id,
-        company_id,
-        notes,
-      ]
-    );
+  const wc = await Workcenter.create({
+    name, code,
+    active: active !== false,
+    workcenter_type,
+    capacity: capacity || 1,
+    time_efficiency: time_efficiency || 100,
+    time_start: time_start || 0,
+    time_stop: time_stop || 0,
+    costs_hour: costs_hour || 0,
+    costs_cycle: costs_cycle || 0,
+    oee_target: oee_target || 90,
+    location_id, resource_calendar_id, company_id, notes,
+  });
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating work center:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.status(201).json(wc);
+}));
 
 // Update work center
-router.put('/workcenters/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const updates: string[] = [];
-    const params: any[] = [];
-    let paramCount = 1;
+router.put('/workcenters/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const allowedFields = [
+    'name', 'code', 'active', 'workcenter_type', 'capacity', 'time_efficiency',
+    'time_start', 'time_stop', 'costs_hour', 'costs_cycle', 'oee_target',
+    'location_id', 'resource_calendar_id', 'company_id', 'notes',
+  ];
 
-    const allowedFields = [
-      'name', 'code', 'active', 'workcenter_type', 'capacity', 'time_efficiency',
-      'time_start', 'time_stop', 'costs_hour', 'costs_cycle', 'oee_target',
-      'location_id', 'resource_calendar_id', 'company_id', 'notes',
-    ];
-
-    for (const field of allowedFields) {
-      if (req.body[field] !== undefined) {
-        updates.push(`${field} = $${paramCount++}`);
-        params.push(req.body[field]);
-      }
+  const updateData: any = {};
+  for (const field of allowedFields) {
+    if (req.body[field] !== undefined) {
+      updateData[field] = req.body[field];
     }
-
-    if (updates.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-
-    params.push(id);
-    const result = await pool.query(
-      `UPDATE workcenters SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`,
-      params
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Work center not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating work center:', error);
-    res.status(500).json({ error: 'Internal server error' });
   }
-});
+
+  if (Object.keys(updateData).length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
+  }
+
+  const wc = await Workcenter.findByIdAndUpdate(id, updateData, { new: true });
+
+  if (!wc) {
+    return res.status(404).json({ error: 'Work center not found' });
+  }
+
+  res.json(wc);
+}));
 
 // Delete work center
-router.delete('/workcenters/:id', async (req, res) => {
-  try {
-    const result = await pool.query(
-      'DELETE FROM workcenters WHERE id = $1 RETURNING id',
-      [req.params.id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Work center not found' });
-    }
-
-    res.json({ message: 'Work center deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting work center:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.delete('/workcenters/:id', asyncHandler(async (req, res) => {
+  const wc = await Workcenter.findByIdAndDelete(req.params.id);
+  if (!wc) {
+    return res.status(404).json({ error: 'Work center not found' });
   }
-});
+  res.json({ message: 'Work center deleted successfully' });
+}));
 
 export default router;
-

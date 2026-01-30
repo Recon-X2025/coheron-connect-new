@@ -1,84 +1,70 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import { Appraisal } from '../models/Appraisal.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
 // Get appraisals
-router.get('/', async (req, res) => {
-  try {
-    const { employee_id, state } = req.query;
-    let query = `
-      SELECT a.*, 
-             e1.name as employee_name, e1.employee_id as emp_id,
-             e2.name as manager_name
-      FROM appraisals a
-      JOIN employees e1 ON a.employee_id = e1.id
-      LEFT JOIN employees e2 ON a.manager_id = e2.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/', asyncHandler(async (req, res) => {
+  const { employee_id, state } = req.query;
+  const filter: any = {};
 
-    if (employee_id) {
-      query += ` AND a.employee_id = $${paramCount}`;
-      params.push(employee_id);
-      paramCount++;
-    }
-    if (state) {
-      query += ` AND a.state = $${paramCount}`;
-      params.push(state);
-      paramCount++;
-    }
-
-    query += ' ORDER BY a.created_at DESC';
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching appraisals:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (employee_id) {
+    filter.employee_id = employee_id;
   }
-});
+  if (state) {
+    filter.state = state;
+  }
+
+  const appraisals = await Appraisal.find(filter)
+    .populate('employee_id', 'name employee_id')
+    .populate('manager_id', 'name')
+    .sort({ created_at: -1 });
+
+  const result = appraisals.map((a: any) => {
+    const obj = a.toJSON();
+    if (obj.employee_id && typeof obj.employee_id === 'object') {
+      obj.employee_name = obj.employee_id.name;
+      obj.emp_id = obj.employee_id.employee_id;
+      obj.employee_id = obj.employee_id._id;
+    }
+    if (obj.manager_id && typeof obj.manager_id === 'object') {
+      obj.manager_name = obj.manager_id.name;
+      obj.manager_id = obj.manager_id._id;
+    }
+    return obj;
+  });
+
+  res.json(result);
+}));
 
 // Create appraisal
-router.post('/', async (req, res) => {
-  try {
-    const { employee_id, manager_id, appraisal_period, date_close } = req.body;
+router.post('/', asyncHandler(async (req, res) => {
+  const { employee_id, manager_id, appraisal_period, date_close } = req.body;
 
-    const result = await pool.query(`
-      INSERT INTO appraisals (employee_id, manager_id, appraisal_period, date_close)
-      VALUES ($1, $2, $3, $4)
-      RETURNING *
-    `, [employee_id, manager_id, appraisal_period, date_close]);
+  const appraisal = await Appraisal.create({
+    employee_id, manager_id, appraisal_period, date_close
+  });
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating appraisal:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.status(201).json(appraisal);
+}));
 
 // Update appraisal
-router.put('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { final_assessment, state } = req.body;
+router.put('/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { final_assessment, state } = req.body;
 
-    const result = await pool.query(`
-      UPDATE appraisals
-      SET final_assessment = $1, state = $2
-      WHERE id = $3
-      RETURNING *
-    `, [final_assessment, state, id]);
+  const appraisal = await Appraisal.findByIdAndUpdate(
+    id,
+    { final_assessment, state },
+    { new: true }
+  );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Appraisal not found' });
-    }
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating appraisal:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!appraisal) {
+    return res.status(404).json({ error: 'Appraisal not found' });
   }
-});
+  res.json(appraisal);
+}));
 
 export default router;
-

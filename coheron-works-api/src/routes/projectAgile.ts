@@ -1,5 +1,12 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import Sprint from '../models/Sprint.js';
+import BacklogItem from '../models/BacklogItem.js';
+import SprintBurndown from '../models/SprintBurndown.js';
+import Release from '../models/Release.js';
+import ReleaseItem from '../models/ReleaseItem.js';
+import AutomationRule from '../models/AutomationRule.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
@@ -8,769 +15,505 @@ const router = express.Router();
 // ============================================
 
 // Get all sprints for a project
-router.get('/projects/:projectId/sprints', async (req, res) => {
-  try {
-    const { state } = req.query;
-    let query = `
-      SELECT s.*, 
-             COUNT(DISTINCT bi.id) as backlog_item_count,
-             SUM(bi.story_points) as total_story_points,
-             COUNT(DISTINCT CASE WHEN bi.status = 'done' THEN bi.id END) as completed_items,
-             SUM(CASE WHEN bi.status = 'done' THEN bi.story_points ELSE 0 END) as completed_story_points
-      FROM sprints s
-      LEFT JOIN backlog_items bi ON s.id = bi.sprint_id
-      WHERE s.project_id = $1
-    `;
-    const params: any[] = [req.params.projectId];
-    let paramCount = 2;
+router.get('/projects/:projectId/sprints', asyncHandler(async (req, res) => {
+  const { state } = req.query;
+  const filter: any = { project_id: req.params.projectId };
+  if (state) filter.state = state;
 
-    if (state) {
-      query += ` AND s.state = $${paramCount++}`;
-      params.push(state);
-    }
+  const sprints = await Sprint.find(filter).sort({ start_date: -1 });
 
-    query += ' GROUP BY s.id ORDER BY s.start_date DESC';
+  const result = await Promise.all(sprints.map(async (s) => {
+    const agg = await BacklogItem.aggregate([
+      { $match: { sprint_id: s._id } },
+      {
+        $group: {
+          _id: null,
+          backlog_item_count: { $sum: 1 },
+          total_story_points: { $sum: '$story_points' },
+          completed_items: { $sum: { $cond: [{ $eq: ['$status', 'done'] }, 1, 0] } },
+          completed_story_points: { $sum: { $cond: [{ $eq: ['$status', 'done'] }, '$story_points', 0] } },
+        },
+      },
+    ]);
+    const obj: any = s.toObject();
+    Object.assign(obj, agg[0] || { backlog_item_count: 0, total_story_points: 0, completed_items: 0, completed_story_points: 0 });
+    return obj;
+  }));
 
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching sprints:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json(result);
+}));
 
 // Get sprint by ID
-router.get('/sprints/:id', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT s.*, 
-              p.name as project_name,
-              p.code as project_code
-       FROM sprints s
-       LEFT JOIN projects p ON s.project_id = p.id
-       WHERE s.id = $1`,
-      [req.params.id]
-    );
+router.get('/sprints/:id', asyncHandler(async (req, res) => {
+  const sprint = await Sprint.findById(req.params.id)
+    .populate('project_id', 'name code');
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Sprint not found' });
-    }
-
-    const sprint = result.rows[0];
-
-    // Get backlog items
-    const itemsResult = await pool.query(
-      `SELECT bi.*, 
-              u.name as assignee_name
-       FROM backlog_items bi
-       LEFT JOIN users u ON bi.assignee_id = u.id
-       WHERE bi.sprint_id = $1
-       ORDER BY bi.priority DESC, bi.created_at`,
-      [req.params.id]
-    );
-
-    // Get burndown data
-    const burndownResult = await pool.query(
-      `SELECT * FROM sprint_burndown
-       WHERE sprint_id = $1
-       ORDER BY date`,
-      [req.params.id]
-    );
-
-    res.json({
-      ...sprint,
-      backlog_items: itemsResult.rows,
-      burndown: burndownResult.rows,
-    });
-  } catch (error) {
-    console.error('Error fetching sprint:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!sprint) {
+    return res.status(404).json({ error: 'Sprint not found' });
   }
-});
+
+  const obj: any = sprint.toObject();
+  if (obj.project_id) {
+    obj.project_name = obj.project_id.name;
+    obj.project_code = obj.project_id.code;
+  }
+
+  // Get backlog items
+  const items = await BacklogItem.find({ sprint_id: sprint._id })
+    .populate('assignee_id', 'name')
+    .sort({ priority: -1, created_at: 1 });
+
+  const itemRows = items.map(i => {
+    const iObj: any = i.toObject();
+    if (iObj.assignee_id) iObj.assignee_name = iObj.assignee_id.name;
+    return iObj;
+  });
+
+  // Get burndown data
+  const burndown = await SprintBurndown.find({ sprint_id: sprint._id }).sort({ date: 1 }).lean();
+
+  res.json({
+    ...obj,
+    backlog_items: itemRows,
+    burndown,
+  });
+}));
 
 // Create sprint
-router.post('/projects/:projectId/sprints', async (req, res) => {
-  try {
-    const { name, goal, start_date, end_date, state } = req.body;
+router.post('/projects/:projectId/sprints', asyncHandler(async (req, res) => {
+  const { name, goal, start_date, end_date, state } = req.body;
 
-    if (!name || !start_date || !end_date) {
-      return res.status(400).json({ error: 'Name, start date, and end date are required' });
-    }
-
-    if (new Date(start_date) >= new Date(end_date)) {
-      return res.status(400).json({ error: 'End date must be after start date' });
-    }
-
-    const result = await pool.query(
-      `INSERT INTO sprints (project_id, name, goal, start_date, end_date, state)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING *`,
-      [req.params.projectId, name, goal, start_date, end_date, state || 'future']
-    );
-
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating sprint:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!name || !start_date || !end_date) {
+    return res.status(400).json({ error: 'Name, start date, and end date are required' });
   }
-});
+
+  if (new Date(start_date) >= new Date(end_date)) {
+    return res.status(400).json({ error: 'End date must be after start date' });
+  }
+
+  const sprint = await Sprint.create({
+    project_id: req.params.projectId,
+    name, goal, start_date, end_date,
+    state: state || 'future',
+  });
+
+  res.status(201).json(sprint);
+}));
 
 // Update sprint
-router.put('/sprints/:id', async (req, res) => {
-  try {
-    const { name, goal, start_date, end_date, state, velocity } = req.body;
+router.put('/sprints/:id', asyncHandler(async (req, res) => {
+  const { name, goal, start_date, end_date, state, velocity } = req.body;
 
-    if (start_date && end_date && new Date(start_date) >= new Date(end_date)) {
-      return res.status(400).json({ error: 'End date must be after start date' });
-    }
-
-    const updateFields: string[] = [];
-    const params: any[] = [];
-    let paramCount = 1;
-
-    const fields = { name, goal, start_date, end_date, state, velocity };
-
-    Object.entries(fields).forEach(([key, value]) => {
-      if (value !== undefined) {
-        updateFields.push(`${key} = $${paramCount++}`);
-        params.push(value);
-      }
-    });
-
-    if (updateFields.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-
-    params.push(req.params.id);
-    const query = `UPDATE sprints SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
-
-    const result = await pool.query(query, params);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Sprint not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating sprint:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (start_date && end_date && new Date(start_date) >= new Date(end_date)) {
+    return res.status(400).json({ error: 'End date must be after start date' });
   }
-});
+
+  const fields: Record<string, any> = { name, goal, start_date, end_date, state, velocity };
+  const updateData: any = {};
+  Object.entries(fields).forEach(([key, value]) => {
+    if (value !== undefined) updateData[key] = value;
+  });
+
+  if (Object.keys(updateData).length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
+  }
+
+  const sprint = await Sprint.findByIdAndUpdate(req.params.id, updateData, { new: true });
+
+  if (!sprint) {
+    return res.status(404).json({ error: 'Sprint not found' });
+  }
+
+  res.json(sprint);
+}));
 
 // Delete sprint
-router.delete('/sprints/:id', async (req, res) => {
-  try {
-    const result = await pool.query('DELETE FROM sprints WHERE id = $1 RETURNING id', [
-      req.params.id,
-    ]);
+router.delete('/sprints/:id', asyncHandler(async (req, res) => {
+  const sprint = await Sprint.findByIdAndDelete(req.params.id);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Sprint not found' });
-    }
-
-    res.json({ message: 'Sprint deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting sprint:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!sprint) {
+    return res.status(404).json({ error: 'Sprint not found' });
   }
-});
+
+  res.json({ message: 'Sprint deleted successfully' });
+}));
 
 // Start sprint
-router.post('/sprints/:id/start', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `UPDATE sprints 
-       SET state = 'active'
-       WHERE id = $1
-       RETURNING *`,
-      [req.params.id]
-    );
+router.post('/sprints/:id/start', asyncHandler(async (req, res) => {
+  const sprint = await Sprint.findByIdAndUpdate(
+    req.params.id,
+    { state: 'active' },
+    { new: true }
+  );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Sprint not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error starting sprint:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!sprint) {
+    return res.status(404).json({ error: 'Sprint not found' });
   }
-});
+
+  res.json(sprint);
+}));
 
 // Close sprint
-router.post('/sprints/:id/close', async (req, res) => {
-  try {
-    // Calculate velocity
-    const velocityResult = await pool.query(
-      `SELECT SUM(story_points) as velocity
-       FROM backlog_items
-       WHERE sprint_id = $1 AND status = 'done'`,
-      [req.params.id]
-    );
+router.post('/sprints/:id/close', asyncHandler(async (req, res) => {
+  const velocityAgg = await BacklogItem.aggregate([
+    { $match: { sprint_id: req.params.id, status: 'done' } },
+    { $group: { _id: null, velocity: { $sum: '$story_points' } } },
+  ]);
 
-    const velocity = parseInt(velocityResult.rows[0]?.velocity || '0');
+  const velocity = velocityAgg[0]?.velocity || 0;
 
-    const result = await pool.query(
-      `UPDATE sprints 
-       SET state = 'closed', velocity = $1
-       WHERE id = $2
-       RETURNING *`,
-      [velocity, req.params.id]
-    );
+  const sprint = await Sprint.findByIdAndUpdate(
+    req.params.id,
+    { state: 'closed', velocity },
+    { new: true }
+  );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Sprint not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error closing sprint:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!sprint) {
+    return res.status(404).json({ error: 'Sprint not found' });
   }
-});
+
+  res.json(sprint);
+}));
 
 // ============================================
 // BACKLOG ITEMS (Epics, Stories, Bugs)
 // ============================================
 
 // Get backlog items
-router.get('/projects/:projectId/backlog', async (req, res) => {
-  try {
-    const { item_type, status, sprint_id, epic_id } = req.query;
-    let query = `
-      SELECT bi.*, 
-             u.name as assignee_name,
-             e.title as epic_title
-      FROM backlog_items bi
-      LEFT JOIN users u ON bi.assignee_id = u.id
-      LEFT JOIN backlog_items e ON bi.epic_id = e.id
-      WHERE bi.project_id = $1
-    `;
-    const params: any[] = [req.params.projectId];
-    let paramCount = 2;
-
-    if (item_type) {
-      query += ` AND bi.item_type = $${paramCount++}`;
-      params.push(item_type);
+router.get('/projects/:projectId/backlog', asyncHandler(async (req, res) => {
+  const { item_type, status, sprint_id, epic_id } = req.query;
+  const filter: any = { project_id: req.params.projectId };
+  if (item_type) filter.item_type = item_type;
+  if (status) filter.status = status;
+  if (sprint_id) {
+    if (sprint_id === 'null') {
+      filter.sprint_id = null;
+    } else {
+      filter.sprint_id = sprint_id;
     }
-
-    if (status) {
-      query += ` AND bi.status = $${paramCount++}`;
-      params.push(status);
-    }
-
-    if (sprint_id) {
-      query += ` AND bi.sprint_id = $${paramCount++}`;
-      params.push(sprint_id);
-    } else if (sprint_id === null || sprint_id === 'null') {
-      query += ` AND bi.sprint_id IS NULL`;
-    }
-
-    if (epic_id) {
-      query += ` AND bi.epic_id = $${paramCount++}`;
-      params.push(epic_id);
-    }
-
-    query += ' ORDER BY bi.priority DESC, bi.created_at';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching backlog:', error);
-    res.status(500).json({ error: 'Internal server error' });
   }
-});
+  if (epic_id) filter.epic_id = epic_id;
+
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    BacklogItem.find(filter)
+      .populate('assignee_id', 'name')
+      .populate('epic_id', 'title')
+      .sort({ priority: -1, created_at: 1 })
+      .lean(),
+    pagination, filter, BacklogItem
+  );
+
+  const data = paginatedResult.data.map((i: any) => {
+    const obj: any = { ...i };
+    if (obj.assignee_id) obj.assignee_name = obj.assignee_id.name;
+    if (obj.epic_id) obj.epic_title = obj.epic_id.title;
+    return obj;
+  });
+
+  res.json({ data, pagination: paginatedResult.pagination });
+}));
 
 // Get backlog item by ID
-router.get('/backlog/:id', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT bi.*, 
-              u.name as assignee_name,
-              e.title as epic_title,
-              s.name as sprint_name
-       FROM backlog_items bi
-       LEFT JOIN users u ON bi.assignee_id = u.id
-       LEFT JOIN backlog_items e ON bi.epic_id = e.id
-       LEFT JOIN sprints s ON bi.sprint_id = s.id
-       WHERE bi.id = $1`,
-      [req.params.id]
-    );
+router.get('/backlog/:id', asyncHandler(async (req, res) => {
+  const item = await BacklogItem.findById(req.params.id)
+    .populate('assignee_id', 'name')
+    .populate('epic_id', 'title')
+    .populate('sprint_id', 'name');
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Backlog item not found' });
-    }
-
-    // Get stories if this is an epic
-    if (result.rows[0].item_type === 'epic') {
-      const storiesResult = await pool.query(
-        `SELECT * FROM backlog_items
-         WHERE epic_id = $1
-         ORDER BY priority DESC, created_at`,
-        [req.params.id]
-      );
-      result.rows[0].stories = storiesResult.rows;
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error fetching backlog item:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!item) {
+    return res.status(404).json({ error: 'Backlog item not found' });
   }
-});
+
+  const obj: any = item.toObject();
+  if (obj.assignee_id) obj.assignee_name = obj.assignee_id.name;
+  if (obj.epic_id) obj.epic_title = obj.epic_id.title;
+  if (obj.sprint_id) obj.sprint_name = obj.sprint_id.name;
+
+  // Get stories if this is an epic
+  if (item.item_type === 'epic') {
+    const stories = await BacklogItem.find({ epic_id: item._id }).sort({ priority: -1, created_at: 1 }).lean();
+    obj.stories = stories;
+  }
+
+  res.json(obj);
+}));
 
 // Create backlog item
-router.post('/projects/:projectId/backlog', async (req, res) => {
-  try {
-    const {
-      sprint_id,
-      epic_id,
-      item_type,
-      title,
-      description,
-      acceptance_criteria,
-      story_points,
-      priority,
-      status,
-      assignee_id,
-    } = req.body;
+router.post('/projects/:projectId/backlog', asyncHandler(async (req, res) => {
+  const {
+    sprint_id, epic_id, item_type, title, description,
+    acceptance_criteria, story_points, priority, status, assignee_id,
+  } = req.body;
 
-    if (!item_type || !title) {
-      return res.status(400).json({ error: 'Item type and title are required' });
-    }
-
-    const result = await pool.query(
-      `INSERT INTO backlog_items (
-        project_id, sprint_id, epic_id, item_type, title, description,
-        acceptance_criteria, story_points, priority, status, assignee_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-      RETURNING *`,
-      [
-        req.params.projectId,
-        sprint_id,
-        epic_id,
-        item_type,
-        title,
-        description,
-        acceptance_criteria,
-        story_points,
-        priority || 0,
-        status || 'backlog',
-        assignee_id,
-      ]
-    );
-
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating backlog item:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!item_type || !title) {
+    return res.status(400).json({ error: 'Item type and title are required' });
   }
-});
+
+  const item = await BacklogItem.create({
+    project_id: req.params.projectId,
+    sprint_id, epic_id, item_type, title, description,
+    acceptance_criteria, story_points,
+    priority: priority || 0,
+    status: status || 'backlog',
+    assignee_id,
+  });
+
+  res.status(201).json(item);
+}));
 
 // Update backlog item
-router.put('/backlog/:id', async (req, res) => {
-  try {
-    const {
-      sprint_id,
-      epic_id,
-      item_type,
-      title,
-      description,
-      acceptance_criteria,
-      story_points,
-      priority,
-      status,
-      assignee_id,
-    } = req.body;
+router.put('/backlog/:id', asyncHandler(async (req, res) => {
+  const {
+    sprint_id, epic_id, item_type, title, description,
+    acceptance_criteria, story_points, priority, status, assignee_id,
+  } = req.body;
 
-    const updateFields: string[] = [];
-    const params: any[] = [];
-    let paramCount = 1;
+  const fields: Record<string, any> = {
+    sprint_id, epic_id, item_type, title, description,
+    acceptance_criteria, story_points, priority, status, assignee_id,
+  };
 
-    const fields = {
-      sprint_id,
-      epic_id,
-      item_type,
-      title,
-      description,
-      acceptance_criteria,
-      story_points,
-      priority,
-      status,
-      assignee_id,
-    };
+  const updateData: any = {};
+  Object.entries(fields).forEach(([key, value]) => {
+    if (value !== undefined) updateData[key] = value;
+  });
 
-    Object.entries(fields).forEach(([key, value]) => {
-      if (value !== undefined) {
-        updateFields.push(`${key} = $${paramCount++}`);
-        params.push(value);
-      }
-    });
-
-    if (updateFields.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-
-    params.push(req.params.id);
-    const query = `UPDATE backlog_items SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
-
-    const result = await pool.query(query, params);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Backlog item not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating backlog item:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (Object.keys(updateData).length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
   }
-});
+
+  const item = await BacklogItem.findByIdAndUpdate(req.params.id, updateData, { new: true });
+
+  if (!item) {
+    return res.status(404).json({ error: 'Backlog item not found' });
+  }
+
+  res.json(item);
+}));
 
 // Delete backlog item
-router.delete('/backlog/:id', async (req, res) => {
-  try {
-    const result = await pool.query('DELETE FROM backlog_items WHERE id = $1 RETURNING id', [
-      req.params.id,
-    ]);
+router.delete('/backlog/:id', asyncHandler(async (req, res) => {
+  const item = await BacklogItem.findByIdAndDelete(req.params.id);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Backlog item not found' });
-    }
-
-    res.json({ message: 'Backlog item deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting backlog item:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!item) {
+    return res.status(404).json({ error: 'Backlog item not found' });
   }
-});
+
+  res.json({ message: 'Backlog item deleted successfully' });
+}));
 
 // ============================================
 // SPRINT BURNDOWN
 // ============================================
 
 // Get burndown data
-router.get('/sprints/:id/burndown', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT * FROM sprint_burndown
-       WHERE sprint_id = $1
-       ORDER BY date`,
-      [req.params.id]
-    );
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching burndown:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.get('/sprints/:id/burndown', asyncHandler(async (req, res) => {
+  const data = await SprintBurndown.find({ sprint_id: req.params.id }).sort({ date: 1 }).lean();
+  res.json(data);
+}));
 
 // Update burndown data (usually automated)
-router.post('/sprints/:id/burndown', async (req, res) => {
-  try {
-    const { date, remaining_story_points, completed_story_points } = req.body;
+router.post('/sprints/:id/burndown', asyncHandler(async (req, res) => {
+  const { date, remaining_story_points, completed_story_points } = req.body;
+  const burndownDate = date || new Date().toISOString().split('T')[0];
 
-    const result = await pool.query(
-      `INSERT INTO sprint_burndown (sprint_id, date, remaining_story_points, completed_story_points)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (sprint_id, date) 
-       DO UPDATE SET 
-         remaining_story_points = EXCLUDED.remaining_story_points,
-         completed_story_points = EXCLUDED.completed_story_points
-       RETURNING *`,
-      [req.params.id, date || new Date().toISOString().split('T')[0], remaining_story_points, completed_story_points || 0]
-    );
+  const entry = await SprintBurndown.findOneAndUpdate(
+    { sprint_id: req.params.id, date: burndownDate },
+    {
+      sprint_id: req.params.id,
+      date: burndownDate,
+      remaining_story_points,
+      completed_story_points: completed_story_points || 0,
+    },
+    { upsert: true, new: true }
+  );
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating burndown:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.status(201).json(entry);
+}));
 
 // ============================================
 // RELEASES
 // ============================================
 
 // Get project releases
-router.get('/projects/:projectId/releases', async (req, res) => {
-  try {
-    const { status } = req.query;
-    let query = `
-      SELECT r.*, 
-             COUNT(DISTINCT ri.backlog_item_id) as item_count
-      FROM releases r
-      LEFT JOIN release_items ri ON r.id = ri.release_id
-      WHERE r.project_id = $1
-    `;
-    const params: any[] = [req.params.projectId];
-    let paramCount = 2;
+router.get('/projects/:projectId/releases', asyncHandler(async (req, res) => {
+  const { status } = req.query;
+  const filter: any = { project_id: req.params.projectId };
+  if (status) filter.status = status;
 
-    if (status) {
-      query += ` AND r.status = $${paramCount++}`;
-      params.push(status);
-    }
+  const releases = await Release.find(filter).sort({ release_date: -1 });
 
-    query += ' GROUP BY r.id ORDER BY r.release_date DESC';
+  const result = await Promise.all(releases.map(async (r) => {
+    const itemCount = await ReleaseItem.countDocuments({ release_id: r._id });
+    const obj: any = r.toObject();
+    obj.item_count = itemCount;
+    return obj;
+  }));
 
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching releases:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json(result);
+}));
 
 // Get release by ID
-router.get('/releases/:id', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT r.*, 
-              p.name as project_name,
-              p.code as project_code
-       FROM releases r
-       LEFT JOIN projects p ON r.project_id = p.id
-       WHERE r.id = $1`,
-      [req.params.id]
-    );
+router.get('/releases/:id', asyncHandler(async (req, res) => {
+  const release = await Release.findById(req.params.id)
+    .populate('project_id', 'name code');
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Release not found' });
-    }
-
-    const release = result.rows[0];
-
-    // Get release items
-    const itemsResult = await pool.query(
-      `SELECT bi.*
-       FROM release_items ri
-       LEFT JOIN backlog_items bi ON ri.backlog_item_id = bi.id
-       WHERE ri.release_id = $1
-       ORDER BY bi.priority DESC`,
-      [req.params.id]
-    );
-
-    res.json({
-      ...release,
-      items: itemsResult.rows,
-    });
-  } catch (error) {
-    console.error('Error fetching release:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!release) {
+    return res.status(404).json({ error: 'Release not found' });
   }
-});
+
+  const obj: any = release.toObject();
+  if (obj.project_id) {
+    obj.project_name = obj.project_id.name;
+    obj.project_code = obj.project_id.code;
+  }
+
+  // Get release items
+  const releaseItems = await ReleaseItem.find({ release_id: release._id })
+    .populate('backlog_item_id');
+
+  const items = releaseItems.map(ri => ri.backlog_item_id).filter(Boolean);
+
+  res.json({
+    ...obj,
+    items,
+  });
+}));
 
 // Create release
-router.post('/projects/:projectId/releases', async (req, res) => {
-  try {
-    const { name, version, release_date, status, release_notes } = req.body;
+router.post('/projects/:projectId/releases', asyncHandler(async (req, res) => {
+  const { name, version, release_date, status, release_notes } = req.body;
 
-    if (!name || !version) {
-      return res.status(400).json({ error: 'Name and version are required' });
-    }
-
-    const result = await pool.query(
-      `INSERT INTO releases (project_id, name, version, release_date, status, release_notes)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING *`,
-      [req.params.projectId, name, version, release_date, status || 'planned', release_notes]
-    );
-
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating release:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!name || !version) {
+    return res.status(400).json({ error: 'Name and version are required' });
   }
-});
+
+  const release = await Release.create({
+    project_id: req.params.projectId,
+    name, version, release_date,
+    status: status || 'planned',
+    release_notes,
+  });
+
+  res.status(201).json(release);
+}));
 
 // Update release
-router.put('/releases/:id', async (req, res) => {
-  try {
-    const { name, version, release_date, status, release_notes } = req.body;
+router.put('/releases/:id', asyncHandler(async (req, res) => {
+  const { name, version, release_date, status, release_notes } = req.body;
 
-    const updateFields: string[] = [];
-    const params: any[] = [];
-    let paramCount = 1;
+  const fields: Record<string, any> = { name, version, release_date, status, release_notes };
+  const updateData: any = {};
+  Object.entries(fields).forEach(([key, value]) => {
+    if (value !== undefined) updateData[key] = value;
+  });
 
-    const fields = { name, version, release_date, status, release_notes };
-
-    Object.entries(fields).forEach(([key, value]) => {
-      if (value !== undefined) {
-        updateFields.push(`${key} = $${paramCount++}`);
-        params.push(value);
-      }
-    });
-
-    if (updateFields.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-
-    params.push(req.params.id);
-    const query = `UPDATE releases SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
-
-    const result = await pool.query(query, params);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Release not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating release:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (Object.keys(updateData).length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
   }
-});
+
+  const release = await Release.findByIdAndUpdate(req.params.id, updateData, { new: true });
+
+  if (!release) {
+    return res.status(404).json({ error: 'Release not found' });
+  }
+
+  res.json(release);
+}));
 
 // Add item to release
-router.post('/releases/:id/items', async (req, res) => {
-  try {
-    const { backlog_item_id } = req.body;
+router.post('/releases/:id/items', asyncHandler(async (req, res) => {
+  const { backlog_item_id } = req.body;
 
-    const result = await pool.query(
-      `INSERT INTO release_items (release_id, backlog_item_id)
-       VALUES ($1, $2)
-       ON CONFLICT (release_id, backlog_item_id) DO NOTHING
-       RETURNING *`,
-      [req.params.id, backlog_item_id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(400).json({ error: 'Item already in release or not found' });
-    }
-
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error adding item to release:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  const existing = await ReleaseItem.findOne({ release_id: req.params.id, backlog_item_id });
+  if (existing) {
+    return res.status(400).json({ error: 'Item already in release or not found' });
   }
-});
+
+  const item = await ReleaseItem.create({
+    release_id: req.params.id,
+    backlog_item_id,
+  });
+
+  res.status(201).json(item);
+}));
 
 // Remove item from release
-router.delete('/releases/:id/items/:itemId', async (req, res) => {
-  try {
-    const result = await pool.query(
-      'DELETE FROM release_items WHERE release_id = $1 AND backlog_item_id = $2 RETURNING id',
-      [req.params.id, req.params.itemId]
-    );
+router.delete('/releases/:id/items/:itemId', asyncHandler(async (req, res) => {
+  const result = await ReleaseItem.findOneAndDelete({
+    release_id: req.params.id,
+    backlog_item_id: req.params.itemId,
+  });
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Item not found in release' });
-    }
-
-    res.json({ message: 'Item removed from release successfully' });
-  } catch (error) {
-    console.error('Error removing item from release:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!result) {
+    return res.status(404).json({ error: 'Item not found in release' });
   }
-});
+
+  res.json({ message: 'Item removed from release successfully' });
+}));
 
 // ============================================
 // AUTOMATION RULES
 // ============================================
 
 // Get automation rules
-router.get('/projects/:projectId/automation-rules', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT * FROM automation_rules
-       WHERE project_id = $1
-       ORDER BY created_at DESC`,
-      [req.params.projectId]
-    );
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching automation rules:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.get('/projects/:projectId/automation-rules', asyncHandler(async (req, res) => {
+  const rules = await AutomationRule.find({ project_id: req.params.projectId })
+    .sort({ created_at: -1 })
+    .lean();
+  res.json(rules);
+}));
 
 // Create automation rule
-router.post('/projects/:projectId/automation-rules', async (req, res) => {
-  try {
-    const { rule_name, trigger_condition, action_type, action_params, is_active } = req.body;
+router.post('/projects/:projectId/automation-rules', asyncHandler(async (req, res) => {
+  const { rule_name, trigger_condition, action_type, action_params, is_active } = req.body;
 
-    if (!rule_name || !trigger_condition || !action_type) {
-      return res.status(400).json({ error: 'Rule name, trigger condition, and action type are required' });
-    }
-
-    const result = await pool.query(
-      `INSERT INTO automation_rules (
-        project_id, rule_name, trigger_condition, action_type, action_params, is_active
-      ) VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING *`,
-      [
-        req.params.projectId,
-        rule_name,
-        trigger_condition,
-        action_type,
-        action_params,
-        is_active !== undefined ? is_active : true,
-      ]
-    );
-
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating automation rule:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!rule_name || !trigger_condition || !action_type) {
+    return res.status(400).json({ error: 'Rule name, trigger condition, and action type are required' });
   }
-});
+
+  const rule = await AutomationRule.create({
+    project_id: req.params.projectId,
+    rule_name, trigger_condition, action_type, action_params,
+    is_active: is_active !== undefined ? is_active : true,
+  });
+
+  res.status(201).json(rule);
+}));
 
 // Update automation rule
-router.put('/automation-rules/:id', async (req, res) => {
-  try {
-    const { rule_name, trigger_condition, action_type, action_params, is_active } = req.body;
+router.put('/automation-rules/:id', asyncHandler(async (req, res) => {
+  const { rule_name, trigger_condition, action_type, action_params, is_active } = req.body;
 
-    const updateFields: string[] = [];
-    const params: any[] = [];
-    let paramCount = 1;
+  const fields: Record<string, any> = { rule_name, trigger_condition, action_type, action_params, is_active };
+  const updateData: any = {};
+  Object.entries(fields).forEach(([key, value]) => {
+    if (value !== undefined) updateData[key] = value;
+  });
 
-    const fields = { rule_name, trigger_condition, action_type, action_params, is_active };
-
-    Object.entries(fields).forEach(([key, value]) => {
-      if (value !== undefined) {
-        updateFields.push(`${key} = $${paramCount++}`);
-        params.push(value);
-      }
-    });
-
-    if (updateFields.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-
-    params.push(req.params.id);
-    const query = `UPDATE automation_rules SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
-
-    const result = await pool.query(query, params);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Automation rule not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating automation rule:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (Object.keys(updateData).length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
   }
-});
+
+  const rule = await AutomationRule.findByIdAndUpdate(req.params.id, updateData, { new: true });
+
+  if (!rule) {
+    return res.status(404).json({ error: 'Automation rule not found' });
+  }
+
+  res.json(rule);
+}));
 
 // Delete automation rule
-router.delete('/automation-rules/:id', async (req, res) => {
-  try {
-    const result = await pool.query(
-      'DELETE FROM automation_rules WHERE id = $1 RETURNING id',
-      [req.params.id]
-    );
+router.delete('/automation-rules/:id', asyncHandler(async (req, res) => {
+  const rule = await AutomationRule.findByIdAndDelete(req.params.id);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Automation rule not found' });
-    }
-
-    res.json({ message: 'Automation rule deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting automation rule:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!rule) {
+    return res.status(404).json({ error: 'Automation rule not found' });
   }
-});
+
+  res.json({ message: 'Automation rule deleted successfully' });
+}));
 
 export default router;
-

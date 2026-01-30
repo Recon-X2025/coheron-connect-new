@@ -1,5 +1,8 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import IssueComment from '../models/IssueComment.js';
+import Issue from '../models/Issue.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
@@ -8,127 +11,99 @@ const router = express.Router();
 // ============================================
 
 // Get comments for an issue
-router.get('/issues/:issueId/comments', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT ic.*, 
-              u.name as user_name,
-              u.email as user_email,
-              u.image_url as user_avatar
-       FROM issue_comments ic
-       LEFT JOIN users u ON ic.user_id = u.id
-       WHERE ic.issue_id = $1
-       ORDER BY ic.created_at ASC`,
-      [req.params.issueId]
-    );
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching comments:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.get('/issues/:issueId/comments', asyncHandler(async (req, res) => {
+  const filter = { issue_id: req.params.issueId };
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    IssueComment.find(filter)
+      .populate('user_id', 'name email image_url')
+      .sort({ created_at: 1 })
+      .lean(),
+    pagination, filter, IssueComment
+  );
+
+  const data = paginatedResult.data.map((c: any) => ({
+    ...c,
+    user_name: c.user_id?.name,
+    user_email: c.user_id?.email,
+    user_avatar: c.user_id?.image_url,
+  }));
+
+  res.json({ data, pagination: paginatedResult.pagination });
+}));
 
 // Get comment by ID
-router.get('/comments/:id', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT ic.*, 
-              u.name as user_name,
-              u.email as user_email
-       FROM issue_comments ic
-       LEFT JOIN users u ON ic.user_id = u.id
-       WHERE ic.id = $1`,
-      [req.params.id]
-    );
+router.get('/comments/:id', asyncHandler(async (req, res) => {
+  const comment = await IssueComment.findById(req.params.id)
+    .populate('user_id', 'name email')
+    .lean();
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Comment not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error fetching comment:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!comment) {
+    return res.status(404).json({ error: 'Comment not found' });
   }
-});
+
+  const result = {
+    ...comment,
+    user_name: (comment.user_id as any)?.name,
+    user_email: (comment.user_id as any)?.email,
+  };
+
+  res.json(result);
+}));
 
 // Create comment
-router.post('/issues/:issueId/comments', async (req, res) => {
-  try {
-    const { user_id, body } = req.body;
+router.post('/issues/:issueId/comments', asyncHandler(async (req, res) => {
+  const { user_id, body } = req.body;
 
-    if (!body || !user_id) {
-      return res.status(400).json({ error: 'Body and user_id are required' });
-    }
-
-    // Verify issue exists
-    const issueCheck = await pool.query('SELECT id FROM issues WHERE id = $1', [
-      req.params.issueId,
-    ]);
-
-    if (issueCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Issue not found' });
-    }
-
-    const result = await pool.query(
-      `INSERT INTO issue_comments (issue_id, user_id, body)
-       VALUES ($1, $2, $3)
-       RETURNING *`,
-      [req.params.issueId, user_id, body]
-    );
-
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating comment:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!body || !user_id) {
+    return res.status(400).json({ error: 'Body and user_id are required' });
   }
-});
+
+  // Verify issue exists
+  const issue = await Issue.findById(req.params.issueId);
+  if (!issue) {
+    return res.status(404).json({ error: 'Issue not found' });
+  }
+
+  const comment = await IssueComment.create({
+    issue_id: req.params.issueId,
+    user_id,
+    body,
+  });
+
+  res.status(201).json(comment);
+}));
 
 // Update comment
-router.put('/comments/:id', async (req, res) => {
-  try {
-    const { body } = req.body;
+router.put('/comments/:id', asyncHandler(async (req, res) => {
+  const { body } = req.body;
 
-    if (!body) {
-      return res.status(400).json({ error: 'Body is required' });
-    }
-
-    const result = await pool.query(
-      `UPDATE issue_comments 
-       SET body = $1, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $2
-       RETURNING *`,
-      [body, req.params.id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Comment not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating comment:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!body) {
+    return res.status(400).json({ error: 'Body is required' });
   }
-});
+
+  const comment = await IssueComment.findByIdAndUpdate(
+    req.params.id,
+    { body },
+    { new: true }
+  );
+
+  if (!comment) {
+    return res.status(404).json({ error: 'Comment not found' });
+  }
+
+  res.json(comment);
+}));
 
 // Delete comment
-router.delete('/comments/:id', async (req, res) => {
-  try {
-    const result = await pool.query('DELETE FROM issue_comments WHERE id = $1 RETURNING id', [
-      req.params.id,
-    ]);
+router.delete('/comments/:id', asyncHandler(async (req, res) => {
+  const comment = await IssueComment.findByIdAndDelete(req.params.id);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Comment not found' });
-    }
-
-    res.json({ message: 'Comment deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting comment:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!comment) {
+    return res.status(404).json({ error: 'Comment not found' });
   }
-});
+
+  res.json({ message: 'Comment deleted successfully' });
+}));
 
 export default router;
-

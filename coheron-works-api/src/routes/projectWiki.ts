@@ -1,5 +1,13 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import KnowledgeSpace from '../models/KnowledgeSpace.js';
+import WikiPage from '../models/WikiPage.js';
+import WikiPageVersion from '../models/WikiPageVersion.js';
+import WikiPageLabel from '../models/WikiPageLabel.js';
+import WikiPageComment from '../models/WikiPageComment.js';
+import WikiPageAttachment from '../models/WikiPageAttachment.js';
+import WikiPagePermission from '../models/WikiPagePermission.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
@@ -7,643 +15,345 @@ const router = express.Router();
 // KNOWLEDGE SPACES
 // ============================================
 
-// Get all spaces
-router.get('/spaces', async (req, res) => {
-  try {
-    const { project_id, is_public } = req.query;
-    let query = `
-      SELECT ks.*, 
-             p.name as project_name,
-             u.name as created_by_name,
-             COUNT(DISTINCT wp.id) as page_count
-      FROM knowledge_spaces ks
-      LEFT JOIN projects p ON ks.project_id = p.id
-      LEFT JOIN users u ON ks.created_by = u.id
-      LEFT JOIN wiki_pages wp ON ks.id = wp.space_id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/spaces', asyncHandler(async (req, res) => {
+  const { project_id, is_public } = req.query;
+  const filter: any = {};
+  if (project_id) filter.$or = [{ project_id }, { project_id: null }];
+  if (is_public !== undefined) filter.is_public = is_public === 'true';
 
-    if (project_id) {
-      query += ` AND (ks.project_id = $${paramCount++} OR ks.project_id IS NULL)`;
-      params.push(project_id);
-    }
+  const spaces = await KnowledgeSpace.find(filter)
+    .populate('project_id', 'name')
+    .populate('created_by', 'name')
+    .sort({ created_at: -1 })
+    .lean();
 
-    if (is_public !== undefined) {
-      query += ` AND ks.is_public = $${paramCount++}`;
-      params.push(is_public === 'true');
-    }
+  const result = await Promise.all(spaces.map(async (ks: any) => {
+    const obj: any = { ...ks };
+    if (obj.project_id) obj.project_name = obj.project_id.name;
+    if (obj.created_by) obj.created_by_name = obj.created_by.name;
+    obj.page_count = await WikiPage.countDocuments({ space_id: ks._id });
+    return obj;
+  }));
 
-    query += ' GROUP BY ks.id, p.name, u.name ORDER BY ks.created_at DESC';
+  res.json(result);
+}));
 
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching spaces:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.get('/spaces/:id', asyncHandler(async (req, res) => {
+  const space = await KnowledgeSpace.findById(req.params.id)
+    .populate('project_id', 'name')
+    .populate('created_by', 'name')
+    .lean();
+
+  if (!space) {
+    return res.status(404).json({ error: 'Space not found' });
   }
-});
 
-// Get space by ID
-router.get('/spaces/:id', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT ks.*, 
-              p.name as project_name,
-              u.name as created_by_name
-       FROM knowledge_spaces ks
-       LEFT JOIN projects p ON ks.project_id = p.id
-       LEFT JOIN users u ON ks.created_by = u.id
-       WHERE ks.id = $1`,
-      [req.params.id]
-    );
+  const obj: any = { ...space };
+  if (obj.project_id) obj.project_name = obj.project_id.name;
+  if (obj.created_by) obj.created_by_name = obj.created_by.name;
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Space not found' });
-    }
+  res.json(obj);
+}));
 
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error fetching space:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.post('/spaces', asyncHandler(async (req, res) => {
+  const { project_id, space_key, name, description, is_public, created_by } = req.body;
+
+  if (!space_key || !name) {
+    return res.status(400).json({ error: 'Space key and name are required' });
   }
-});
 
-// Create space
-router.post('/spaces', async (req, res) => {
-  try {
-    const { project_id, space_key, name, description, is_public, created_by } = req.body;
+  const space = await KnowledgeSpace.create({
+    project_id, space_key, name, description,
+    is_public: is_public !== undefined ? is_public : false,
+    created_by,
+  });
 
-    if (!space_key || !name) {
-      return res.status(400).json({ error: 'Space key and name are required' });
-    }
+  res.status(201).json(space);
+}));
 
-    const result = await pool.query(
-      `INSERT INTO knowledge_spaces (project_id, space_key, name, description, is_public, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING *`,
-      [project_id, space_key, name, description, is_public !== undefined ? is_public : false, created_by]
-    );
+router.put('/spaces/:id', asyncHandler(async (req, res) => {
+  const { name, description, is_public } = req.body;
+  const fields: Record<string, any> = { name, description, is_public };
+  const updateData: any = {};
+  Object.entries(fields).forEach(([key, value]) => {
+    if (value !== undefined) updateData[key] = value;
+  });
 
-    res.status(201).json(result.rows[0]);
-  } catch (error: any) {
-    if (error.code === '23505') {
-      return res.status(400).json({ error: 'Space key already exists' });
-    }
-    console.error('Error creating space:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (Object.keys(updateData).length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
   }
-});
 
-// Update space
-router.put('/spaces/:id', async (req, res) => {
-  try {
-    const { name, description, is_public } = req.body;
+  const space = await KnowledgeSpace.findByIdAndUpdate(req.params.id, updateData, { new: true });
+  if (!space) return res.status(404).json({ error: 'Space not found' });
+  res.json(space);
+}));
 
-    const updateFields: string[] = [];
-    const params: any[] = [];
-    let paramCount = 1;
-
-    const fields = { name, description, is_public };
-
-    Object.entries(fields).forEach(([key, value]) => {
-      if (value !== undefined) {
-        updateFields.push(`${key} = $${paramCount++}`);
-        params.push(value);
-      }
-    });
-
-    if (updateFields.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-
-    params.push(req.params.id);
-    const query = `UPDATE knowledge_spaces SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
-
-    const result = await pool.query(query, params);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Space not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating space:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Delete space
-router.delete('/spaces/:id', async (req, res) => {
-  try {
-    const result = await pool.query('DELETE FROM knowledge_spaces WHERE id = $1 RETURNING id', [
-      req.params.id,
-    ]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Space not found' });
-    }
-
-    res.json({ message: 'Space deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting space:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.delete('/spaces/:id', asyncHandler(async (req, res) => {
+  const space = await KnowledgeSpace.findByIdAndDelete(req.params.id);
+  if (!space) return res.status(404).json({ error: 'Space not found' });
+  res.json({ message: 'Space deleted successfully' });
+}));
 
 // ============================================
 // WIKI PAGES
 // ============================================
 
-// Get pages in a space
-router.get('/spaces/:spaceId/pages', async (req, res) => {
-  try {
-    const { parent_page_id, page_type, is_published } = req.query;
-    let query = `
-      SELECT wp.*, 
-             u1.name as created_by_name,
-             u2.name as updated_by_name,
-             COUNT(DISTINCT wpc.id) as comment_count
-      FROM wiki_pages wp
-      LEFT JOIN users u1 ON wp.created_by = u1.id
-      LEFT JOIN users u2 ON wp.updated_by = u2.id
-      LEFT JOIN wiki_page_comments wpc ON wp.id = wpc.page_id
-      WHERE wp.space_id = $1
-    `;
-    const params: any[] = [req.params.spaceId];
-    let paramCount = 2;
+router.get('/spaces/:spaceId/pages', asyncHandler(async (req, res) => {
+  const { parent_page_id, page_type, is_published } = req.query;
+  const filter: any = { space_id: req.params.spaceId };
 
-    if (parent_page_id !== undefined) {
-      if (parent_page_id === null || parent_page_id === 'null') {
-        query += ` AND wp.parent_page_id IS NULL`;
-      } else {
-        query += ` AND wp.parent_page_id = $${paramCount++}`;
-        params.push(parent_page_id);
-      }
-    }
-
-    if (page_type) {
-      query += ` AND wp.page_type = $${paramCount++}`;
-      params.push(page_type);
-    }
-
-    if (is_published !== undefined) {
-      query += ` AND wp.is_published = $${paramCount++}`;
-      params.push(is_published === 'true');
-    }
-
-    query += ' GROUP BY wp.id, u1.name, u2.name ORDER BY wp.created_at DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching pages:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (parent_page_id !== undefined) {
+    filter.parent_page_id = (parent_page_id === null || parent_page_id === 'null') ? null : parent_page_id;
   }
-});
+  if (page_type) filter.page_type = page_type;
+  if (is_published !== undefined) filter.is_published = is_published === 'true';
 
-// Get page by ID with full details
-router.get('/pages/:id', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT wp.*, 
-              u1.name as created_by_name,
-              u2.name as updated_by_name,
-              ks.name as space_name,
-              ks.space_key
-       FROM wiki_pages wp
-       LEFT JOIN users u1 ON wp.created_by = u1.id
-       LEFT JOIN users u2 ON wp.updated_by = u2.id
-       LEFT JOIN knowledge_spaces ks ON wp.space_id = ks.id
-       WHERE wp.id = $1`,
-      [req.params.id]
-    );
+  const pages = await WikiPage.find(filter)
+    .populate('created_by', 'name')
+    .populate('updated_by', 'name')
+    .sort({ created_at: -1 })
+    .lean();
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Page not found' });
-    }
+  const result = await Promise.all(pages.map(async (wp: any) => {
+    const obj: any = { ...wp };
+    if (obj.created_by) obj.created_by_name = obj.created_by.name;
+    if (obj.updated_by) obj.updated_by_name = obj.updated_by.name;
+    obj.comment_count = await WikiPageComment.countDocuments({ page_id: wp._id });
+    return obj;
+  }));
 
-    const page = result.rows[0];
+  res.json(result);
+}));
 
-    // Get child pages
-    const childrenResult = await pool.query(
-      'SELECT * FROM wiki_pages WHERE parent_page_id = $1 ORDER BY title',
-      [req.params.id]
-    );
+router.get('/pages/:id', asyncHandler(async (req, res) => {
+  const page = await WikiPage.findById(req.params.id)
+    .populate('created_by', 'name')
+    .populate('updated_by', 'name')
+    .populate('space_id', 'name space_key')
+    .lean();
 
-    // Get labels
-    const labelsResult = await pool.query(
-      'SELECT label FROM wiki_page_labels WHERE page_id = $1',
-      [req.params.id]
-    );
+  if (!page) return res.status(404).json({ error: 'Page not found' });
 
-    // Get attachments
-    const attachmentsResult = await pool.query(
-      `SELECT wpa.*, u.name as uploaded_by_name
-       FROM wiki_page_attachments wpa
-       LEFT JOIN users u ON wpa.uploaded_by = u.id
-       WHERE wpa.page_id = $1
-       ORDER BY wpa.created_at`,
-      [req.params.id]
-    );
+  const obj: any = { ...page };
+  if (obj.created_by) obj.created_by_name = obj.created_by.name;
+  if (obj.updated_by) obj.updated_by_name = obj.updated_by.name;
+  if (obj.space_id) { obj.space_name = obj.space_id.name; obj.space_key = obj.space_id.space_key; }
 
-    // Get comments
-    const commentsResult = await pool.query(
-      `SELECT wpc.*, u.name as user_name, u.email as user_email
-       FROM wiki_page_comments wpc
-       LEFT JOIN users u ON wpc.user_id = u.id
-       WHERE wpc.page_id = $1
-       ORDER BY wpc.created_at`,
-      [req.params.id]
-    );
+  const children = await WikiPage.find({ parent_page_id: page._id }).sort({ title: 1 }).lean();
+  const labels = await WikiPageLabel.find({ page_id: page._id }).lean();
+  const attachments = await WikiPageAttachment.find({ page_id: page._id })
+    .populate('uploaded_by', 'name').sort({ created_at: 1 }).lean();
+  const comments = await WikiPageComment.find({ page_id: page._id })
+    .populate('user_id', 'name email').sort({ created_at: 1 }).lean();
+  const versions = await WikiPageVersion.find({ page_id: page._id })
+    .populate('created_by', 'name').sort({ version: -1 }).lean();
 
-    // Get version history
-    const versionsResult = await pool.query(
-      `SELECT wpv.*, u.name as created_by_name
-       FROM wiki_page_versions wpv
-       LEFT JOIN users u ON wpv.created_by = u.id
-       WHERE wpv.page_id = $1
-       ORDER BY wpv.version DESC`,
-      [req.params.id]
-    );
+  res.json({
+    ...obj,
+    children,
+    labels: labels.map((l: any) => l.label),
+    attachments: attachments.map((a: any) => {
+      const aObj: any = { ...a };
+      if (aObj.uploaded_by) aObj.uploaded_by_name = aObj.uploaded_by.name;
+      return aObj;
+    }),
+    comments: comments.map((c: any) => {
+      const cObj: any = { ...c };
+      if (cObj.user_id) { cObj.user_name = cObj.user_id.name; cObj.user_email = cObj.user_id.email; }
+      return cObj;
+    }),
+    versions: versions.map((v: any) => {
+      const vObj: any = { ...v };
+      if (vObj.created_by) vObj.created_by_name = vObj.created_by.name;
+      return vObj;
+    }),
+  });
+}));
 
-    res.json({
-      ...page,
-      children: childrenResult.rows,
-      labels: labelsResult.rows.map((r) => r.label),
-      attachments: attachmentsResult.rows,
-      comments: commentsResult.rows,
-      versions: versionsResult.rows,
+router.post('/spaces/:spaceId/pages', asyncHandler(async (req, res) => {
+  const { parent_page_id, title, content, page_type, template_id, is_published, created_by, updated_by } = req.body;
+
+  if (!title || !content) {
+    return res.status(400).json({ error: 'Title and content are required' });
+  }
+
+  const page = await WikiPage.create({
+    space_id: req.params.spaceId,
+    parent_page_id, title, content,
+    page_type: page_type || 'page',
+    template_id,
+    is_published: is_published !== undefined ? is_published : true,
+    created_by,
+    updated_by: updated_by || created_by,
+  });
+
+  await WikiPageVersion.create({
+    page_id: page._id, version: 1, title, content, created_by,
+  });
+
+  res.status(201).json(page);
+}));
+
+router.put('/pages/:id', asyncHandler(async (req, res) => {
+  const { parent_page_id, title, content, page_type, is_published, updated_by } = req.body;
+
+  const currentPage = await WikiPage.findById(req.params.id);
+  if (!currentPage) return res.status(404).json({ error: 'Page not found' });
+
+  const fields: Record<string, any> = { parent_page_id, title, content, page_type, is_published, updated_by };
+  const updateData: any = {};
+  Object.entries(fields).forEach(([key, value]) => {
+    if (value !== undefined) updateData[key] = value;
+  });
+
+  if (content !== undefined || title !== undefined) {
+    updateData.version = (currentPage.version || 1) + 1;
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
+  }
+
+  const page = await WikiPage.findByIdAndUpdate(req.params.id, updateData, { new: true });
+
+  if ((content !== undefined || title !== undefined) && updated_by) {
+    const newVersion = (currentPage.version || 1) + 1;
+    await WikiPageVersion.create({
+      page_id: req.params.id,
+      version: newVersion,
+      title: title !== undefined ? title : currentPage.title,
+      content: content !== undefined ? content : currentPage.content,
+      created_by: updated_by,
     });
-  } catch (error) {
-    console.error('Error fetching page:', error);
-    res.status(500).json({ error: 'Internal server error' });
   }
-});
 
-// Create page
-router.post('/spaces/:spaceId/pages', async (req, res) => {
-  try {
-    const {
-      parent_page_id,
-      title,
-      content,
-      page_type,
-      template_id,
-      is_published,
-      created_by,
-      updated_by,
-    } = req.body;
+  res.json(page);
+}));
 
-    if (!title || !content) {
-      return res.status(400).json({ error: 'Title and content are required' });
-    }
-
-    const result = await pool.query(
-      `INSERT INTO wiki_pages (
-        space_id, parent_page_id, title, content, page_type,
-        template_id, is_published, created_by, updated_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      RETURNING *`,
-      [
-        req.params.spaceId,
-        parent_page_id,
-        title,
-        content,
-        page_type || 'page',
-        template_id,
-        is_published !== undefined ? is_published : true,
-        created_by,
-        updated_by || created_by,
-      ]
-    );
-
-    // Create initial version
-    await pool.query(
-      `INSERT INTO wiki_page_versions (page_id, version, title, content, created_by)
-       VALUES ($1, 1, $2, $3, $4)`,
-      [result.rows[0].id, title, content, created_by]
-    );
-
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating page:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Update page
-router.put('/pages/:id', async (req, res) => {
-  try {
-    const {
-      parent_page_id,
-      title,
-      content,
-      page_type,
-      is_published,
-      updated_by,
-    } = req.body;
-
-    // Get current page to create new version
-    const currentPage = await pool.query(
-      'SELECT title, content, version FROM wiki_pages WHERE id = $1',
-      [req.params.id]
-    );
-
-    if (currentPage.rows.length === 0) {
-      return res.status(404).json({ error: 'Page not found' });
-    }
-
-    const updateFields: string[] = [];
-    const params: any[] = [];
-    let paramCount = 1;
-
-    const fields = { parent_page_id, title, content, page_type, is_published, updated_by };
-
-    Object.entries(fields).forEach(([key, value]) => {
-      if (value !== undefined) {
-        updateFields.push(`${key} = $${paramCount++}`);
-        params.push(value);
-      }
-    });
-
-    // Increment version if content or title changed
-    if (content !== undefined || title !== undefined) {
-      updateFields.push(`version = version + 1`);
-    }
-
-    if (updateFields.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-
-    params.push(req.params.id);
-    const query = `UPDATE wiki_pages SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
-
-    const result = await pool.query(query, params);
-
-    // Create new version if content or title changed
-    if ((content !== undefined || title !== undefined) && updated_by) {
-      const newVersion = currentPage.rows[0].version + 1;
-      await pool.query(
-        `INSERT INTO wiki_page_versions (page_id, version, title, content, created_by)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [
-          req.params.id,
-          newVersion,
-          title !== undefined ? title : currentPage.rows[0].title,
-          content !== undefined ? content : currentPage.rows[0].content,
-          updated_by,
-        ]
-      );
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating page:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Delete page
-router.delete('/pages/:id', async (req, res) => {
-  try {
-    const result = await pool.query('DELETE FROM wiki_pages WHERE id = $1 RETURNING id', [
-      req.params.id,
-    ]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Page not found' });
-    }
-
-    res.json({ message: 'Page deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting page:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.delete('/pages/:id', asyncHandler(async (req, res) => {
+  const page = await WikiPage.findByIdAndDelete(req.params.id);
+  if (!page) return res.status(404).json({ error: 'Page not found' });
+  res.json({ message: 'Page deleted successfully' });
+}));
 
 // ============================================
 // PAGE LABELS
 // ============================================
 
-// Add label to page
-router.post('/pages/:id/labels', async (req, res) => {
-  try {
-    const { label } = req.body;
+router.post('/pages/:id/labels', asyncHandler(async (req, res) => {
+  const { label } = req.body;
+  const existing = await WikiPageLabel.findOne({ page_id: req.params.id, label });
+  if (existing) return res.status(400).json({ error: 'Label already exists' });
 
-    const result = await pool.query(
-      `INSERT INTO wiki_page_labels (page_id, label)
-       VALUES ($1, $2)
-       ON CONFLICT (page_id, label) DO NOTHING
-       RETURNING *`,
-      [req.params.id, label]
-    );
+  const result = await WikiPageLabel.create({ page_id: req.params.id, label });
+  res.status(201).json(result);
+}));
 
-    if (result.rows.length === 0) {
-      return res.status(400).json({ error: 'Label already exists' });
-    }
-
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error adding label:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Remove label from page
-router.delete('/pages/:id/labels/:label', async (req, res) => {
-  try {
-    const result = await pool.query(
-      'DELETE FROM wiki_page_labels WHERE page_id = $1 AND label = $2 RETURNING id',
-      [req.params.id, req.params.label]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Label not found' });
-    }
-
-    res.json({ message: 'Label removed successfully' });
-  } catch (error) {
-    console.error('Error removing label:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.delete('/pages/:id/labels/:label', asyncHandler(async (req, res) => {
+  const result = await WikiPageLabel.findOneAndDelete({ page_id: req.params.id, label: req.params.label });
+  if (!result) return res.status(404).json({ error: 'Label not found' });
+  res.json({ message: 'Label removed successfully' });
+}));
 
 // ============================================
 // PAGE COMMENTS
 // ============================================
 
-// Add comment to page
-router.post('/pages/:id/comments', async (req, res) => {
-  try {
-    const { user_id, comment_text, parent_comment_id } = req.body;
+router.post('/pages/:id/comments', asyncHandler(async (req, res) => {
+  const { user_id, comment_text, parent_comment_id } = req.body;
+  const comment = await WikiPageComment.create({
+    page_id: req.params.id, user_id, comment_text, parent_comment_id,
+  });
+  res.status(201).json(comment);
+}));
 
-    const result = await pool.query(
-      `INSERT INTO wiki_page_comments (page_id, user_id, comment_text, parent_comment_id)
-       VALUES ($1, $2, $3, $4)
-       RETURNING *`,
-      [req.params.id, user_id, comment_text, parent_comment_id]
-    );
+router.put('/page-comments/:id', asyncHandler(async (req, res) => {
+  const { comment_text } = req.body;
+  const comment = await WikiPageComment.findByIdAndUpdate(req.params.id, { comment_text }, { new: true });
+  if (!comment) return res.status(404).json({ error: 'Comment not found' });
+  res.json(comment);
+}));
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error adding comment:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Update comment
-router.put('/page-comments/:id', async (req, res) => {
-  try {
-    const { comment_text } = req.body;
-
-    const result = await pool.query(
-      `UPDATE wiki_page_comments 
-       SET comment_text = $1 
-       WHERE id = $2
-       RETURNING *`,
-      [comment_text, req.params.id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Comment not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating comment:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Delete comment
-router.delete('/page-comments/:id', async (req, res) => {
-  try {
-    const result = await pool.query(
-      'DELETE FROM wiki_page_comments WHERE id = $1 RETURNING id',
-      [req.params.id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Comment not found' });
-    }
-
-    res.json({ message: 'Comment deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting comment:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.delete('/page-comments/:id', asyncHandler(async (req, res) => {
+  const comment = await WikiPageComment.findByIdAndDelete(req.params.id);
+  if (!comment) return res.status(404).json({ error: 'Comment not found' });
+  res.json({ message: 'Comment deleted successfully' });
+}));
 
 // ============================================
 // PAGE PERMISSIONS
 // ============================================
 
-// Get page permissions
-router.get('/pages/:id/permissions', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT wpp.*, u.name as user_name, u.email as user_email
-       FROM wiki_page_permissions wpp
-       LEFT JOIN users u ON wpp.user_id = u.id
-       WHERE wpp.page_id = $1
-       ORDER BY wpp.created_at`,
-      [req.params.id]
-    );
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching permissions:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.get('/pages/:id/permissions', asyncHandler(async (req, res) => {
+  const perms = await WikiPagePermission.find({ page_id: req.params.id })
+    .populate('user_id', 'name email').sort({ created_at: 1 }).lean();
+  const rows = perms.map((p: any) => {
+    const obj: any = { ...p };
+    if (obj.user_id) { obj.user_name = obj.user_id.name; obj.user_email = obj.user_id.email; }
+    return obj;
+  });
+  res.json(rows);
+}));
 
-// Add permission
-router.post('/pages/:id/permissions', async (req, res) => {
-  try {
-    const { user_id, permission_type } = req.body;
+router.post('/pages/:id/permissions', asyncHandler(async (req, res) => {
+  const { user_id, permission_type } = req.body;
+  const perm = await WikiPagePermission.findOneAndUpdate(
+    { page_id: req.params.id, user_id },
+    { page_id: req.params.id, user_id, permission_type: permission_type || 'read' },
+    { upsert: true, new: true }
+  );
+  res.status(201).json(perm);
+}));
 
-    const result = await pool.query(
-      `INSERT INTO wiki_page_permissions (page_id, user_id, permission_type)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (page_id, user_id) 
-       DO UPDATE SET permission_type = EXCLUDED.permission_type
-       RETURNING *`,
-      [req.params.id, user_id, permission_type || 'read']
-    );
-
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error adding permission:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Remove permission
-router.delete('/pages/:id/permissions/:userId', async (req, res) => {
-  try {
-    const result = await pool.query(
-      'DELETE FROM wiki_page_permissions WHERE page_id = $1 AND user_id = $2 RETURNING id',
-      [req.params.id, req.params.userId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Permission not found' });
-    }
-
-    res.json({ message: 'Permission removed successfully' });
-  } catch (error) {
-    console.error('Error removing permission:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.delete('/pages/:id/permissions/:userId', asyncHandler(async (req, res) => {
+  const result = await WikiPagePermission.findOneAndDelete({
+    page_id: req.params.id, user_id: req.params.userId,
+  });
+  if (!result) return res.status(404).json({ error: 'Permission not found' });
+  res.json({ message: 'Permission removed successfully' });
+}));
 
 // ============================================
 // SEARCH
 // ============================================
 
-// Search pages
-router.get('/pages/search', async (req, res) => {
-  try {
-    const { q, space_id, label } = req.query;
-    let query = `
-      SELECT DISTINCT wp.*, 
-             ks.name as space_name,
-             u1.name as created_by_name
-      FROM wiki_pages wp
-      LEFT JOIN knowledge_spaces ks ON wp.space_id = ks.id
-      LEFT JOIN users u1 ON wp.created_by = u1.id
-      LEFT JOIN wiki_page_labels wpl ON wp.id = wpl.page_id
-      WHERE wp.is_published = true
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/pages/search', asyncHandler(async (req, res) => {
+  const { q, space_id, label } = req.query;
+  const filter: any = { is_published: true };
 
-    if (q) {
-      query += ` AND (wp.title ILIKE $${paramCount} OR wp.content ILIKE $${paramCount})`;
-      params.push(`%${q}%`);
-      paramCount++;
-    }
-
-    if (space_id) {
-      query += ` AND wp.space_id = $${paramCount++}`;
-      params.push(space_id);
-    }
-
-    if (label) {
-      query += ` AND wpl.label = $${paramCount++}`;
-      params.push(label);
-    }
-
-    query += ' ORDER BY wp.updated_at DESC LIMIT 50';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error searching pages:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (q) {
+    filter.$or = [
+      { title: { $regex: q, $options: 'i' } },
+      { content: { $regex: q, $options: 'i' } },
+    ];
   }
-});
+  if (space_id) filter.space_id = space_id;
+
+  let pageIds: any = null;
+  if (label) {
+    const labelDocs = await WikiPageLabel.find({ label }).select('page_id').lean();
+    pageIds = labelDocs.map((l: any) => l.page_id);
+    filter._id = { $in: pageIds };
+  }
+
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    WikiPage.find(filter)
+      .populate('space_id', 'name')
+      .populate('created_by', 'name')
+      .sort({ updated_at: -1 })
+      .lean(),
+    pagination, filter, WikiPage
+  );
+
+  const data = paginatedResult.data.map((wp: any) => {
+    const obj: any = { ...wp };
+    if (obj.space_id) obj.space_name = obj.space_id.name;
+    if (obj.created_by) obj.created_by_name = obj.created_by.name;
+    return obj;
+  });
+
+  res.json({ data, pagination: paginatedResult.pagination });
+}));
 
 export default router;
-

@@ -1,82 +1,71 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import { Course, CourseEnrollment } from '../models/Course.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
 // Get courses
-router.get('/', async (req, res) => {
-  try {
-    const { is_active } = req.query;
-    let query = 'SELECT * FROM courses WHERE 1=1';
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/', asyncHandler(async (req, res) => {
+  const { is_active } = req.query;
+  const filter: any = {};
 
-    if (is_active !== undefined) {
-      query += ` AND is_active = $${paramCount}`;
-      params.push(is_active === 'true');
-      paramCount++;
-    }
-
-    query += ' ORDER BY created_at DESC';
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching courses:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (is_active !== undefined) {
+    filter.is_active = is_active === 'true';
   }
-});
+
+  const pagination = getPaginationParams(req);
+  const result = await paginateQuery(
+    Course.find(filter).sort({ created_at: -1 }).lean(),
+    pagination,
+    filter,
+    Course
+  );
+  res.json(result);
+}));
 
 // Create course
-router.post('/', async (req, res) => {
-  try {
-    const { name, description, total_time, category, instructor } = req.body;
+router.post('/', asyncHandler(async (req, res) => {
+  const { name, description, total_time, category, instructor } = req.body;
 
-    const result = await pool.query(`
-      INSERT INTO courses (name, description, total_time, category, instructor)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING *
-    `, [name, description, total_time, category, instructor]);
+  const course = await Course.create({
+    name, description, total_time, category, instructor
+  });
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating course:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.status(201).json(course);
+}));
 
 // Get enrollments
-router.get('/enrollments', async (req, res) => {
-  try {
-    const { employee_id, course_id } = req.query;
-    let query = `
-      SELECT ce.*, e.name as employee_name, c.name as course_name
-      FROM course_enrollments ce
-      JOIN employees e ON ce.employee_id = e.id
-      JOIN courses c ON ce.course_id = c.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/enrollments', asyncHandler(async (req, res) => {
+  const { employee_id, course_id } = req.query;
+  const filter: any = {};
 
-    if (employee_id) {
-      query += ` AND ce.employee_id = $${paramCount}`;
-      params.push(employee_id);
-      paramCount++;
-    }
-    if (course_id) {
-      query += ` AND ce.course_id = $${paramCount}`;
-      params.push(course_id);
-      paramCount++;
-    }
-
-    query += ' ORDER BY ce.created_at DESC';
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching enrollments:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (employee_id) {
+    filter.employee_id = employee_id;
   }
-});
+  if (course_id) {
+    filter.course_id = course_id;
+  }
+
+  const enrollments = await CourseEnrollment.find(filter)
+    .populate('employee_id', 'name')
+    .populate('course_id', 'name')
+    .sort({ created_at: -1 });
+
+  const result = enrollments.map((e: any) => {
+    const obj = e.toJSON();
+    if (obj.employee_id && typeof obj.employee_id === 'object') {
+      obj.employee_name = obj.employee_id.name;
+      obj.employee_id = obj.employee_id._id;
+    }
+    if (obj.course_id && typeof obj.course_id === 'object') {
+      obj.course_name = obj.course_id.name;
+      obj.course_id = obj.course_id._id;
+    }
+    return obj;
+  });
+
+  res.json(result);
+}));
 
 export default router;
-

@@ -1,60 +1,54 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import { Attendance } from '../models/Attendance.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
 // Get attendance records
-router.get('/', async (req, res) => {
-  try {
-    const { employee_id, date, from_date, to_date } = req.query;
-    let query = 'SELECT a.*, e.name as employee_name, e.employee_id as emp_id FROM attendance a JOIN employees e ON a.employee_id = e.id WHERE 1=1';
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/', asyncHandler(async (req, res) => {
+  const { employee_id, date, from_date, to_date } = req.query;
+  const filter: any = {};
 
-    if (employee_id) {
-      query += ` AND a.employee_id = $${paramCount}`;
-      params.push(employee_id);
-      paramCount++;
-    }
-    if (date) {
-      query += ` AND a.date = $${paramCount}`;
-      params.push(date);
-      paramCount++;
-    }
-    if (from_date && to_date) {
-      query += ` AND a.date BETWEEN $${paramCount} AND $${paramCount + 1}`;
-      params.push(from_date, to_date);
-      paramCount += 2;
-    }
-
-    query += ' ORDER BY a.date DESC, e.name';
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching attendance:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (employee_id) {
+    filter.employee_id = employee_id;
   }
-});
+  if (date) {
+    filter.date = date;
+  }
+  if (from_date && to_date) {
+    filter.date = { $gte: from_date, $lte: to_date };
+  }
+
+  const records = await Attendance.find(filter)
+    .populate('employee_id', 'name employee_id')
+    .sort({ date: -1 });
+
+  // Map to match original response shape with employee_name and emp_id
+  const result = records.map((r: any) => {
+    const obj = r.toJSON();
+    if (obj.employee_id && typeof obj.employee_id === 'object') {
+      obj.employee_name = obj.employee_id.name;
+      obj.emp_id = obj.employee_id.employee_id;
+      obj.employee_id = obj.employee_id._id;
+    }
+    return obj;
+  });
+
+  res.json(result);
+}));
 
 // Create/Update attendance record
-router.post('/', async (req, res) => {
-  try {
-    const { employee_id, date, check_in, check_out, hours_worked, status } = req.body;
+router.post('/', asyncHandler(async (req, res) => {
+  const { employee_id, date, check_in, check_out, hours_worked, status } = req.body;
 
-    const result = await pool.query(`
-      INSERT INTO attendance (employee_id, date, check_in, check_out, hours_worked, status)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      ON CONFLICT (employee_id, date)
-      DO UPDATE SET check_in = $3, check_out = $4, hours_worked = $5, status = $6
-      RETURNING *
-    `, [employee_id, date, check_in, check_out, hours_worked, status]);
+  const record = await Attendance.findOneAndUpdate(
+    { employee_id, date },
+    { employee_id, date, check_in, check_out, hours_worked, status },
+    { upsert: true, new: true }
+  );
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating attendance:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.status(201).json(record);
+}));
 
 export default router;
-

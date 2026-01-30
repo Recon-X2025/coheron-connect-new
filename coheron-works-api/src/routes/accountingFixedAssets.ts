@@ -1,182 +1,149 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import mongoose from 'mongoose';
+import FixedAsset from '../models/FixedAsset.js';
+import AssetCategory from '../models/AssetCategory.js';
+import AssetDepreciation from '../models/AssetDepreciation.js';
+import AssetDisposal from '../models/AssetDisposal.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
 // ========== ASSET CATEGORIES ==========
 
-router.get('/categories', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM account_asset_category ORDER BY name');
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching asset categories:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.get('/categories', asyncHandler(async (req, res) => {
+  const categories = await AssetCategory.find().sort({ name: 1 }).lean();
+  res.json(categories);
+}));
 
 // ========== ASSETS ==========
 
 // Get all assets
-router.get('/', async (req, res) => {
-  try {
-    const { category_id, state, search } = req.query;
-    let query = `
-      SELECT a.*, 
-             c.name as category_name,
-             p.name as partner_name,
-             u.name as custodian_name
-      FROM account_asset a
-      LEFT JOIN account_asset_category c ON a.category_id = c.id
-      LEFT JOIN partners p ON a.partner_id = p.id
-      LEFT JOIN users u ON a.custodian_id = u.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/', asyncHandler(async (req, res) => {
+  const { category_id, state, search } = req.query;
+  const filter: any = {};
 
-    if (category_id) {
-      query += ` AND a.category_id = $${paramCount++}`;
-      params.push(category_id);
-    }
+  if (category_id) filter.category_id = category_id;
+  if (state) filter.state = state;
 
-    if (state) {
-      query += ` AND a.state = $${paramCount++}`;
-      params.push(state);
-    }
-
-    if (search) {
-      query += ` AND (a.name ILIKE $${paramCount} OR a.code ILIKE $${paramCount})`;
-      params.push(`%${search}%`);
-      paramCount++;
-    }
-
-    query += ' ORDER BY a.created_at DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching assets:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (search) {
+    filter.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { code: { $regex: search, $options: 'i' } },
+    ];
   }
-});
+
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    FixedAsset.find(filter)
+      .populate('category_id', 'name')
+      .populate('partner_id', 'name')
+      .populate('custodian_id', 'name')
+      .sort({ created_at: -1 })
+      .lean(),
+    pagination, filter, FixedAsset
+  );
+
+  const data = paginatedResult.data.map((a: any) => ({
+    ...a,
+    id: a._id,
+    category_name: a.category_id?.name || null,
+    partner_name: a.partner_id?.name || null,
+    custodian_name: a.custodian_id?.name || null,
+    category_id: a.category_id?._id || a.category_id,
+    partner_id: a.partner_id?._id || a.partner_id,
+    custodian_id: a.custodian_id?._id || a.custodian_id,
+  }));
+
+  res.json({ data, pagination: paginatedResult.pagination });
+}));
 
 // Get asset by ID with depreciation history
-router.get('/:id', async (req, res) => {
-  try {
-    const assetResult = await pool.query(
-      `SELECT a.*, 
-              c.name as category_name,
-              p.name as partner_name,
-              u.name as custodian_name
-       FROM account_asset a
-       LEFT JOIN account_asset_category c ON a.category_id = c.id
-       LEFT JOIN partners p ON a.partner_id = p.id
-       LEFT JOIN users u ON a.custodian_id = u.id
-       WHERE a.id = $1`,
-      [req.params.id]
-    );
+router.get('/:id', asyncHandler(async (req, res) => {
+  const asset = await FixedAsset.findById(req.params.id)
+    .populate('category_id', 'name')
+    .populate('partner_id', 'name')
+    .populate('custodian_id', 'name')
+    .lean();
 
-    if (assetResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Asset not found' });
-    }
-
-    // Get depreciation history
-    const depreciationResult = await pool.query(
-      `SELECT * FROM account_asset_depreciation 
-       WHERE asset_id = $1 
-       ORDER BY period_start DESC`,
-      [req.params.id]
-    );
-
-    // Get disposal info if exists
-    const disposalResult = await pool.query(
-      'SELECT * FROM account_asset_disposal WHERE asset_id = $1',
-      [req.params.id]
-    );
-
-    res.json({
-      ...assetResult.rows[0],
-      depreciation_history: depreciationResult.rows,
-      disposal: disposalResult.rows[0] || null,
-    });
-  } catch (error) {
-    console.error('Error fetching asset:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!asset) {
+    return res.status(404).json({ error: 'Asset not found' });
   }
-});
+
+  // Get depreciation history
+  const depreciation_history = await AssetDepreciation.find({ asset_id: req.params.id })
+    .sort({ period_start: -1 })
+    .lean();
+
+  // Get disposal info if exists
+  const disposal = await AssetDisposal.findOne({ asset_id: req.params.id }).lean();
+
+  const result = {
+    ...asset,
+    id: (asset as any)._id,
+    category_name: (asset.category_id as any)?.name || null,
+    partner_name: (asset.partner_id as any)?.name || null,
+    custodian_name: (asset.custodian_id as any)?.name || null,
+    category_id: (asset.category_id as any)?._id || asset.category_id,
+    partner_id: (asset.partner_id as any)?._id || asset.partner_id,
+    custodian_id: (asset.custodian_id as any)?._id || asset.custodian_id,
+    depreciation_history,
+    disposal: disposal || null,
+  };
+
+  res.json(result);
+}));
 
 // Create asset
-router.post('/', async (req, res) => {
-  try {
-    const {
-      name,
-      code,
-      category_id,
-      partner_id,
-      purchase_date,
-      purchase_value,
-      salvage_value,
-      useful_life_years,
-      location,
-      custodian_id,
-      currency_id,
-      notes,
-    } = req.body;
+router.post('/', asyncHandler(async (req, res) => {
+  const {
+    name,
+    code,
+    category_id,
+    partner_id,
+    purchase_date,
+    purchase_value,
+    salvage_value,
+    useful_life_years,
+    location,
+    custodian_id,
+    currency_id,
+    notes,
+  } = req.body;
 
-    const result = await pool.query(
-      `INSERT INTO account_asset 
-       (name, code, category_id, partner_id, purchase_date, purchase_value, current_value, 
-        salvage_value, useful_life_years, location, custodian_id, currency_id, notes, state)
-       VALUES ($1, $2, $3, $4, $5, $6, $6, $7, $8, $9, $10, $11, $12, 'draft')
-       RETURNING *`,
-      [
-        name,
-        code || null,
-        category_id,
-        partner_id || null,
-        purchase_date,
-        purchase_value,
-        salvage_value || 0,
-        useful_life_years,
-        location || null,
-        custodian_id || null,
-        currency_id || null,
-        notes || null,
-      ]
-    );
+  const asset = await FixedAsset.create({
+    name,
+    code: code || null,
+    category_id,
+    partner_id: partner_id || null,
+    purchase_date,
+    purchase_value,
+    current_value: purchase_value,
+    salvage_value: salvage_value || 0,
+    useful_life_years,
+    location: location || null,
+    custodian_id: custodian_id || null,
+    currency_id: currency_id || null,
+    notes: notes || null,
+    state: 'draft',
+  });
 
-    res.status(201).json(result.rows[0]);
-  } catch (error: any) {
-    console.error('Error creating asset:', error);
-    if (error.code === '23505') {
-      res.status(400).json({ error: 'Asset code already exists' });
-    } else {
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  }
-});
+  res.status(201).json(asset);
+}));
 
 // Run depreciation for asset
 router.post('/:id/depreciate', async (req, res) => {
-  const client = await pool.connect();
+  const session = await mongoose.startSession();
+  session.startTransaction();
   try {
-    await client.query('BEGIN');
-
     const assetId = req.params.id;
     const { period_start, period_end } = req.body;
 
-    // Get asset
-    const assetResult = await client.query(
-      'SELECT * FROM account_asset WHERE id = $1',
-      [assetId]
-    );
+    const asset = await FixedAsset.findById(assetId).session(session);
 
-    if (assetResult.rows.length === 0) {
+    if (!asset) {
       return res.status(404).json({ error: 'Asset not found' });
     }
-
-    const asset = assetResult.rows[0];
 
     if (asset.state !== 'open') {
       return res.status(400).json({ error: 'Asset is not in open state' });
@@ -187,73 +154,61 @@ router.post('/:id/depreciate', async (req, res) => {
     const monthlyDepreciation = depreciableValue / (asset.useful_life_years * 12);
 
     // Get last depreciation to calculate accumulated
-    const lastDepResult = await client.query(
-      `SELECT accumulated_depreciation, book_value 
-       FROM account_asset_depreciation 
-       WHERE asset_id = $1 
-       ORDER BY period_end DESC 
-       LIMIT 1`,
-      [assetId]
-    );
+    const lastDep = await AssetDepreciation.findOne({ asset_id: assetId })
+      .sort({ period_end: -1 })
+      .session(session);
 
     let accumulatedDepreciation = 0;
     let bookValue = asset.purchase_value;
 
-    if (lastDepResult.rows.length > 0) {
-      accumulatedDepreciation = parseFloat(lastDepResult.rows[0].accumulated_depreciation || 0);
-      bookValue = parseFloat(lastDepResult.rows[0].book_value || asset.current_value);
+    if (lastDep) {
+      accumulatedDepreciation = lastDep.accumulated_depreciation || 0;
+      bookValue = lastDep.book_value || asset.current_value;
     }
 
     const newAccumulated = accumulatedDepreciation + monthlyDepreciation;
     const newBookValue = Math.max(bookValue - monthlyDepreciation, asset.salvage_value);
 
     // Create depreciation record
-    const depResult = await client.query(
-      `INSERT INTO account_asset_depreciation 
-       (asset_id, period_start, period_end, depreciation_amount, accumulated_depreciation, book_value, state)
-       VALUES ($1, $2, $3, $4, $5, $6, 'draft')
-       RETURNING *`,
-      [assetId, period_start, period_end, monthlyDepreciation, newAccumulated, newBookValue]
-    );
+    const [depreciation] = await AssetDepreciation.create([{
+      asset_id: assetId,
+      period_start,
+      period_end,
+      depreciation_amount: monthlyDepreciation,
+      accumulated_depreciation: newAccumulated,
+      book_value: newBookValue,
+      state: 'draft',
+    }], { session });
 
     // Update asset current value
-    await client.query(
-      'UPDATE account_asset SET current_value = $1 WHERE id = $2',
-      [newBookValue, assetId]
-    );
+    asset.current_value = newBookValue;
+    await asset.save({ session });
 
-    await client.query('COMMIT');
+    await session.commitTransaction();
 
-    res.status(201).json(depResult.rows[0]);
+    res.status(201).json(depreciation);
   } catch (error: any) {
-    await client.query('ROLLBACK');
+    await session.abortTransaction();
     console.error('Error running depreciation:', error);
     res.status(500).json({ error: error.message || 'Internal server error' });
   } finally {
-    client.release();
+    session.endSession();
   }
 });
 
 // Dispose asset
 router.post('/:id/dispose', async (req, res) => {
-  const client = await pool.connect();
+  const session = await mongoose.startSession();
+  session.startTransaction();
   try {
-    await client.query('BEGIN');
-
     const assetId = req.params.id;
     const { disposal_date, disposal_type, disposal_value, notes } = req.body;
 
-    // Get asset
-    const assetResult = await client.query(
-      'SELECT * FROM account_asset WHERE id = $1',
-      [assetId]
-    );
+    const asset = await FixedAsset.findById(assetId).session(session);
 
-    if (assetResult.rows.length === 0) {
+    if (!asset) {
       return res.status(404).json({ error: 'Asset not found' });
     }
-
-    const asset = assetResult.rows[0];
 
     if (asset.state !== 'open') {
       return res.status(400).json({ error: 'Asset is not in open state' });
@@ -263,31 +218,29 @@ router.post('/:id/dispose', async (req, res) => {
     const gainLoss = parseFloat(disposal_value || 0) - asset.current_value;
 
     // Create disposal record
-    const disposalResult = await client.query(
-      `INSERT INTO account_asset_disposal 
-       (asset_id, disposal_date, disposal_type, disposal_value, gain_loss, notes)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING *`,
-      [assetId, disposal_date, disposal_type, disposal_value || 0, gainLoss, notes || null]
-    );
+    const [disposal] = await AssetDisposal.create([{
+      asset_id: assetId,
+      disposal_date,
+      disposal_type,
+      disposal_value: disposal_value || 0,
+      gain_loss: gainLoss,
+      notes: notes || null,
+    }], { session });
 
     // Update asset state
-    await client.query(
-      "UPDATE account_asset SET state = 'removed' WHERE id = $1",
-      [assetId]
-    );
+    asset.state = 'removed';
+    await asset.save({ session });
 
-    await client.query('COMMIT');
+    await session.commitTransaction();
 
-    res.status(201).json(disposalResult.rows[0]);
+    res.status(201).json(disposal);
   } catch (error: any) {
-    await client.query('ROLLBACK');
+    await session.abortTransaction();
     console.error('Error disposing asset:', error);
     res.status(500).json({ error: error.message || 'Internal server error' });
   } finally {
-    client.release();
+    session.endSession();
   }
 });
 
 export default router;
-

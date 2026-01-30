@@ -1,173 +1,153 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import mongoose from 'mongoose';
+import AccountVendor from '../models/AccountVendor.js';
+import AccountBill from '../models/AccountBill.js';
+import AccountPayment from '../models/AccountPayment.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
 // ========== VENDORS ==========
 
 // Get all vendors
-router.get('/vendors', async (req, res) => {
-  try {
-    const { search, is_active } = req.query;
-    let query = `
-      SELECT v.*, p.name as partner_name, p.email, p.phone, p.company
-      FROM account_vendor v
-      JOIN partners p ON v.partner_id = p.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/vendors', asyncHandler(async (req, res) => {
+  const { search, is_active } = req.query;
+  const filter: any = {};
 
-    if (search) {
-      query += ` AND (p.name ILIKE $${paramCount} OR v.vendor_code ILIKE $${paramCount})`;
-      params.push(`%${search}%`);
-      paramCount++;
-    }
-
-    if (is_active !== undefined) {
-      query += ` AND v.is_active = $${paramCount++}`;
-      params.push(is_active === 'true');
-    }
-
-    query += ' ORDER BY p.name';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching vendors:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (is_active !== undefined) {
+    filter.is_active = is_active === 'true';
   }
-});
+
+  let vendors = await AccountVendor.find(filter)
+    .populate('partner_id', 'name email phone company')
+    .sort({ 'partner_id.name': 1 })
+    .lean();
+
+  if (search) {
+    const regex = new RegExp(search as string, 'i');
+    vendors = vendors.filter((v: any) =>
+      regex.test(v.partner_id?.name || '') || regex.test(v.vendor_code || '')
+    );
+  }
+
+  const result = vendors.map((v: any) => ({
+    ...v,
+    id: v._id,
+    partner_name: v.partner_id?.name || null,
+    email: v.partner_id?.email || null,
+    phone: v.partner_id?.phone || null,
+    company: v.partner_id?.company || null,
+    partner_id: v.partner_id?._id || v.partner_id,
+  }));
+
+  res.json(result);
+}));
 
 // Create vendor
-router.post('/vendors', async (req, res) => {
-  try {
-    const { partner_id, vendor_code, payment_term_id, credit_limit, tax_id, vendor_type, currency_id } = req.body;
+router.post('/vendors', asyncHandler(async (req, res) => {
+  const { partner_id, vendor_code, payment_term_id, credit_limit, tax_id, vendor_type, currency_id } = req.body;
 
-    const result = await pool.query(
-      `INSERT INTO account_vendor 
-       (partner_id, vendor_code, payment_term_id, credit_limit, tax_id, vendor_type, currency_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING *`,
-      [partner_id, vendor_code, payment_term_id || null, credit_limit || null, tax_id || null, vendor_type || null, currency_id || null]
-    );
+  const vendor = await AccountVendor.create({
+    partner_id,
+    vendor_code,
+    payment_term_id: payment_term_id || null,
+    credit_limit: credit_limit || null,
+    tax_id: tax_id || null,
+    vendor_type: vendor_type || null,
+    currency_id: currency_id || null,
+  });
 
-    res.status(201).json(result.rows[0]);
-  } catch (error: any) {
-    console.error('Error creating vendor:', error);
-    if (error.code === '23505') {
-      res.status(400).json({ error: 'Vendor code or partner already exists' });
-    } else {
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  }
-});
+  res.status(201).json(vendor);
+}));
 
 // ========== BILLS (PURCHASE INVOICES) ==========
 
 // Get all bills
-router.get('/bills', async (req, res) => {
-  try {
-    const { vendor_id, state, payment_state, date_from, date_to, search } = req.query;
-    let query = `
-      SELECT b.*, 
-             v.vendor_code,
-             p.name as vendor_name,
-             j.name as journal_name
-      FROM account_bill b
-      LEFT JOIN account_vendor v ON b.vendor_id = v.id
-      LEFT JOIN partners p ON v.partner_id = p.id
-      LEFT JOIN account_journal j ON b.move_id IS NOT NULL
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/bills', asyncHandler(async (req, res) => {
+  const { vendor_id, state, payment_state, date_from, date_to, search } = req.query;
+  const filter: any = {};
 
-    if (vendor_id) {
-      query += ` AND b.vendor_id = $${paramCount++}`;
-      params.push(vendor_id);
-    }
+  if (vendor_id) filter.vendor_id = vendor_id;
+  if (state) filter.state = state;
+  if (payment_state) filter.payment_state = payment_state;
 
-    if (state) {
-      query += ` AND b.state = $${paramCount++}`;
-      params.push(state);
-    }
-
-    if (payment_state) {
-      query += ` AND b.payment_state = $${paramCount++}`;
-      params.push(payment_state);
-    }
-
-    if (date_from) {
-      query += ` AND b.invoice_date >= $${paramCount++}`;
-      params.push(date_from);
-    }
-
-    if (date_to) {
-      query += ` AND b.invoice_date <= $${paramCount++}`;
-      params.push(date_to);
-    }
-
-    if (search) {
-      query += ` AND (b.name ILIKE $${paramCount} OR b.reference ILIKE $${paramCount})`;
-      params.push(`%${search}%`);
-      paramCount++;
-    }
-
-    query += ' ORDER BY b.invoice_date DESC, b.created_at DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching bills:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (date_from || date_to) {
+    filter.invoice_date = {};
+    if (date_from) filter.invoice_date.$gte = new Date(date_from as string);
+    if (date_to) filter.invoice_date.$lte = new Date(date_to as string);
   }
-});
+
+  if (search) {
+    filter.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { reference: { $regex: search, $options: 'i' } },
+    ];
+  }
+
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    AccountBill.find(filter)
+      .populate({
+        path: 'vendor_id',
+        select: 'vendor_code partner_id',
+        populate: { path: 'partner_id', select: 'name' },
+      })
+      .sort({ invoice_date: -1, created_at: -1 })
+      .lean(),
+    pagination, filter, AccountBill
+  );
+
+  const data = paginatedResult.data.map((b: any) => ({
+    ...b,
+    id: b._id,
+    vendor_code: b.vendor_id?.vendor_code || null,
+    vendor_name: b.vendor_id?.partner_id?.name || null,
+    vendor_id: b.vendor_id?._id || b.vendor_id,
+  }));
+
+  res.json({ data, pagination: paginatedResult.pagination });
+}));
 
 // Get bill by ID with lines
-router.get('/bills/:id', async (req, res) => {
-  try {
-    const billResult = await pool.query(
-      `SELECT b.*, 
-              v.vendor_code,
-              p.name as vendor_name,
-              p.email as vendor_email
-       FROM account_bill b
-       LEFT JOIN account_vendor v ON b.vendor_id = v.id
-       LEFT JOIN partners p ON v.partner_id = p.id
-       WHERE b.id = $1`,
-      [req.params.id]
-    );
+router.get('/bills/:id', asyncHandler(async (req, res) => {
+  const bill = await AccountBill.findById(req.params.id)
+    .populate({
+      path: 'vendor_id',
+      select: 'vendor_code partner_id',
+      populate: { path: 'partner_id', select: 'name email' },
+    })
+    .populate('lines.product_id', 'name default_code')
+    .lean();
 
-    if (billResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Bill not found' });
-    }
-
-    const linesResult = await pool.query(
-      `SELECT l.*, pr.name as product_name, pr.default_code as product_code
-       FROM account_bill_line l
-       LEFT JOIN products pr ON l.product_id = pr.id
-       WHERE l.bill_id = $1
-       ORDER BY l.id`,
-      [req.params.id]
-    );
-
-    res.json({
-      ...billResult.rows[0],
-      lines: linesResult.rows,
-    });
-  } catch (error) {
-    console.error('Error fetching bill:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!bill) {
+    return res.status(404).json({ error: 'Bill not found' });
   }
-});
+
+  const result: any = {
+    ...bill,
+    id: bill._id,
+    vendor_code: (bill.vendor_id as any)?.vendor_code || null,
+    vendor_name: (bill.vendor_id as any)?.partner_id?.name || null,
+    vendor_email: (bill.vendor_id as any)?.partner_id?.email || null,
+    vendor_id: (bill.vendor_id as any)?._id || bill.vendor_id,
+    lines: (bill.lines || []).map((l: any) => ({
+      ...l,
+      id: l._id,
+      product_name: l.product_id?.name || null,
+      product_code: l.product_id?.default_code || null,
+      product_id: l.product_id?._id || l.product_id,
+    })),
+  };
+
+  res.json(result);
+}));
 
 // Create bill
-router.post('/bills', async (req, res) => {
-  const client = await pool.connect();
+router.post('/bills', asyncHandler(async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
   try {
-    await client.query('BEGIN');
-
     const {
       vendor_id,
       invoice_date,
@@ -186,200 +166,148 @@ router.post('/bills', async (req, res) => {
     let amountUntaxed = 0;
     let amountTax = 0;
 
+    const billLines: any[] = [];
     if (lines && lines.length > 0) {
       for (const line of lines) {
         const lineSubtotal = parseFloat(line.price_subtotal || 0);
         amountUntaxed += lineSubtotal;
-        // TODO: Calculate tax based on tax_ids
         amountTax += parseFloat(line.tax_amount || 0);
+        billLines.push({
+          product_id: line.product_id || null,
+          name: line.name || '',
+          quantity: line.quantity || 1,
+          price_unit: line.price_unit || 0,
+          price_subtotal: line.price_subtotal || 0,
+          tax_ids: line.tax_ids || null,
+          account_id: line.account_id || null,
+          cost_center_id: line.cost_center_id || null,
+          project_id: line.project_id || null,
+        });
       }
     }
 
     const amountTotal = amountUntaxed + amountTax;
 
-    // Create bill
-    const billResult = await client.query(
-      `INSERT INTO account_bill 
-       (name, vendor_id, invoice_date, due_date, reference, purchase_order_id, 
-        amount_untaxed, amount_tax, amount_total, amount_residual, currency_id, state)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'draft')
-       RETURNING *`,
-      [
-        name,
-        vendor_id,
-        invoice_date,
-        due_date || null,
-        reference || null,
-        purchase_order_id || null,
-        amountUntaxed,
-        amountTax,
-        amountTotal,
-        amountTotal,
-        currency_id || null,
-      ]
-    );
+    const [bill] = await AccountBill.create([{
+      name,
+      vendor_id,
+      invoice_date,
+      due_date: due_date || null,
+      reference: reference || null,
+      purchase_order_id: purchase_order_id || null,
+      amount_untaxed: amountUntaxed,
+      amount_tax: amountTax,
+      amount_total: amountTotal,
+      amount_residual: amountTotal,
+      currency_id: currency_id || null,
+      state: 'draft',
+      lines: billLines,
+    }], { session });
 
-    const billId = billResult.rows[0].id;
-
-    // Create bill lines
-    if (lines && lines.length > 0) {
-      for (const line of lines) {
-        await client.query(
-          `INSERT INTO account_bill_line 
-           (bill_id, product_id, name, quantity, price_unit, price_subtotal, tax_ids, account_id, cost_center_id, project_id)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-          [
-            billId,
-            line.product_id || null,
-            line.name || '',
-            line.quantity || 1,
-            line.price_unit || 0,
-            line.price_subtotal || 0,
-            line.tax_ids || null,
-            line.account_id || null,
-            line.cost_center_id || null,
-            line.project_id || null,
-          ]
-        );
-      }
-    }
-
-    await client.query('COMMIT');
+    await session.commitTransaction();
 
     // Fetch complete bill
-    const completeResult = await pool.query(
-      `SELECT b.*, v.vendor_code, p.name as vendor_name
-       FROM account_bill b
-       LEFT JOIN account_vendor v ON b.vendor_id = v.id
-       LEFT JOIN partners p ON v.partner_id = p.id
-       WHERE b.id = $1`,
-      [billId]
-    );
+    const complete = await AccountBill.findById(bill._id)
+      .populate({
+        path: 'vendor_id',
+        select: 'vendor_code partner_id',
+        populate: { path: 'partner_id', select: 'name' },
+      })
+      .lean();
 
-    const linesResult = await pool.query(
-      'SELECT * FROM account_bill_line WHERE bill_id = $1 ORDER BY id',
-      [billId]
-    );
+    const result: any = {
+      ...complete,
+      id: complete!._id,
+      vendor_code: (complete!.vendor_id as any)?.vendor_code || null,
+      vendor_name: (complete!.vendor_id as any)?.partner_id?.name || null,
+      vendor_id: (complete!.vendor_id as any)?._id || complete!.vendor_id,
+      lines: (complete!.lines || []).map((l: any) => ({ ...l, id: l._id })),
+    };
 
-    res.status(201).json({
-      ...completeResult.rows[0],
-      lines: linesResult.rows,
-    });
+    res.status(201).json(result);
   } catch (error: any) {
-    await client.query('ROLLBACK');
-    console.error('Error creating bill:', error);
-    res.status(500).json({ error: error.message || 'Internal server error' });
+    await session.abortTransaction();
+    throw error;
   } finally {
-    client.release();
+    session.endSession();
   }
-});
+}));
 
 // Post bill (create GL entry)
-router.post('/bills/:id/post', async (req, res) => {
-  const client = await pool.connect();
+router.post('/bills/:id/post', asyncHandler(async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
   try {
-    await client.query('BEGIN');
-
     const billId = req.params.id;
 
-    // Get bill
-    const billResult = await client.query(
-      'SELECT * FROM account_bill WHERE id = $1',
-      [billId]
-    );
+    const bill = await AccountBill.findById(billId).session(session);
 
-    if (billResult.rows.length === 0) {
+    if (!bill) {
       return res.status(404).json({ error: 'Bill not found' });
     }
-
-    const bill = billResult.rows[0];
 
     if (bill.state !== 'draft') {
       return res.status(400).json({ error: 'Bill is not in draft state' });
     }
 
     // TODO: Create journal entry and move lines
-    // This is a simplified version - full implementation would create proper GL entries
+    bill.state = 'posted';
+    await bill.save({ session });
 
-    await client.query(
-      `UPDATE account_bill 
-       SET state = 'posted', updated_at = CURRENT_TIMESTAMP
-       WHERE id = $1`,
-      [billId]
-    );
+    await session.commitTransaction();
 
-    await client.query('COMMIT');
-
-    const updatedResult = await pool.query(
-      'SELECT * FROM account_bill WHERE id = $1',
-      [billId]
-    );
-
-    res.json(updatedResult.rows[0]);
+    res.json(bill);
   } catch (error: any) {
-    await client.query('ROLLBACK');
-    console.error('Error posting bill:', error);
-    res.status(500).json({ error: error.message || 'Internal server error' });
+    await session.abortTransaction();
+    throw error;
   } finally {
-    client.release();
+    session.endSession();
   }
-});
+}));
 
 // ========== PAYMENTS ==========
 
 // Get all payments
-router.get('/payments', async (req, res) => {
-  try {
-    const { payment_type, partner_id, state, date_from, date_to } = req.query;
-    let query = `
-      SELECT p.*, 
-             pt.name as partner_name,
-             j.name as journal_name
-      FROM account_payment p
-      LEFT JOIN partners pt ON p.partner_id = pt.id
-      LEFT JOIN account_journal j ON p.journal_id = j.id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/payments', asyncHandler(async (req, res) => {
+  const { payment_type, partner_id, state, date_from, date_to } = req.query;
+  const filter: any = {};
 
-    if (payment_type) {
-      query += ` AND p.payment_type = $${paramCount++}`;
-      params.push(payment_type);
-    }
+  if (payment_type) filter.payment_type = payment_type;
+  if (partner_id) filter.partner_id = partner_id;
+  if (state) filter.state = state;
 
-    if (partner_id) {
-      query += ` AND p.partner_id = $${paramCount++}`;
-      params.push(partner_id);
-    }
-
-    if (state) {
-      query += ` AND p.state = $${paramCount++}`;
-      params.push(state);
-    }
-
-    if (date_from) {
-      query += ` AND p.payment_date >= $${paramCount++}`;
-      params.push(date_from);
-    }
-
-    if (date_to) {
-      query += ` AND p.payment_date <= $${paramCount++}`;
-      params.push(date_to);
-    }
-
-    query += ' ORDER BY p.payment_date DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching payments:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (date_from || date_to) {
+    filter.payment_date = {};
+    if (date_from) filter.payment_date.$gte = new Date(date_from as string);
+    if (date_to) filter.payment_date.$lte = new Date(date_to as string);
   }
-});
+
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    AccountPayment.find(filter)
+      .populate('partner_id', 'name')
+      .populate('journal_id', 'name')
+      .sort({ payment_date: -1 })
+      .lean(),
+    pagination, filter, AccountPayment
+  );
+
+  const data = paginatedResult.data.map((p: any) => ({
+    ...p,
+    id: p._id,
+    partner_name: p.partner_id?.name || null,
+    journal_name: p.journal_id?.name || null,
+    partner_id: p.partner_id?._id || p.partner_id,
+    journal_id: p.journal_id?._id || p.journal_id,
+  }));
+
+  res.json({ data, pagination: paginatedResult.pagination });
+}));
 
 // Create payment
-router.post('/payments', async (req, res) => {
+router.post('/payments', asyncHandler(async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
   try {
     const {
       payment_type,
@@ -390,79 +318,61 @@ router.post('/payments', async (req, res) => {
       payment_date,
       journal_id,
       communication,
-      bill_ids, // Array of bill IDs to pay
+      bill_ids,
     } = req.body;
 
     // Generate payment reference
     const dateStr = new Date(payment_date).toISOString().slice(0, 10).replace(/-/g, '');
     const name = `PAY/${dateStr}/${Date.now().toString().slice(-6)}`;
 
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-
-      // Create payment
-      const paymentResult = await client.query(
-        `INSERT INTO account_payment 
-         (name, payment_type, payment_method, partner_id, amount, currency_id, payment_date, journal_id, communication, state)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'draft')
-         RETURNING *`,
-        [name, payment_type, payment_method, partner_id, amount, currency_id, payment_date, journal_id, communication || null]
-      );
-
-      const paymentId = paymentResult.rows[0].id;
-
-      // Link to bills if provided
-      if (bill_ids && bill_ids.length > 0) {
-        for (const billId of bill_ids) {
-          await client.query(
-            'INSERT INTO account_payment_bill_rel (payment_id, bill_id, amount) VALUES ($1, $2, $3)',
-            [paymentId, billId, amount / bill_ids.length] // Distribute amount equally
-          );
-        }
+    const billAllocations: any[] = [];
+    if (bill_ids && bill_ids.length > 0) {
+      for (const billId of bill_ids) {
+        billAllocations.push({
+          bill_id: billId,
+          amount: amount / bill_ids.length,
+        });
       }
-
-      await client.query('COMMIT');
-
-      const completeResult = await pool.query(
-        'SELECT * FROM account_payment WHERE id = $1',
-        [paymentId]
-      );
-
-      res.status(201).json(completeResult.rows[0]);
-    } catch (error: any) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
     }
+
+    const [payment] = await AccountPayment.create([{
+      name,
+      payment_type,
+      payment_method,
+      partner_id,
+      amount,
+      currency_id,
+      payment_date,
+      journal_id,
+      communication: communication || null,
+      state: 'draft',
+      bill_ids: billAllocations,
+    }], { session });
+
+    await session.commitTransaction();
+
+    res.status(201).json(payment);
   } catch (error: any) {
-    console.error('Error creating payment:', error);
-    res.status(500).json({ error: error.message || 'Internal server error' });
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
   }
-});
+}));
 
 // Post payment
-router.post('/payments/:id/post', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `UPDATE account_payment 
-       SET state = 'posted', updated_at = CURRENT_TIMESTAMP
-       WHERE id = $1 AND state = 'draft'
-       RETURNING *`,
-      [req.params.id]
-    );
+router.post('/payments/:id/post', asyncHandler(async (req, res) => {
+  const payment = await AccountPayment.findOneAndUpdate(
+    { _id: req.params.id, state: 'draft' },
+    { state: 'posted' },
+    { new: true }
+  );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Payment not found or cannot be posted' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error posting payment:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!payment) {
+    return res.status(404).json({ error: 'Payment not found or cannot be posted' });
   }
-});
+
+  res.json(payment);
+}));
 
 export default router;
-

@@ -1,5 +1,8 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
+import { PriceList, ProductPrice, CustomerPrice, PricingRule, DiscountApprovalRule, PromotionalPricing } from '../models/SalesPricing.js';
+import { Product } from '../models/Product.js';
 
 const router = express.Router();
 
@@ -8,487 +11,343 @@ const router = express.Router();
 // ============================================
 
 // Get all price lists
-router.get('/price-lists', async (req, res) => {
-  try {
-    const { is_active, currency } = req.query;
-    let query = 'SELECT * FROM price_lists WHERE 1=1';
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/price-lists', asyncHandler(async (req, res) => {
+  const { is_active, currency } = req.query;
+  const filter: any = {};
 
-    if (is_active !== undefined) {
-      query += ` AND is_active = $${paramCount++}`;
-      params.push(is_active === 'true');
-    }
+  if (is_active !== undefined) filter.is_active = is_active === 'true';
+  if (currency) filter.currency = currency;
 
-    if (currency) {
-      query += ` AND currency = $${paramCount++}`;
-      params.push(currency);
-    }
-
-    query += ' ORDER BY created_at DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching price lists:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  const params = getPaginationParams(req);
+  const result = await paginateQuery(PriceList.find(filter).sort({ created_at: -1 }).lean(), params, filter, PriceList);
+  res.json(result);
+}));
 
 // Get price list by ID
-router.get('/price-lists/:id', async (req, res) => {
-  try {
-    const listResult = await pool.query('SELECT * FROM price_lists WHERE id = $1', [req.params.id]);
-    
-    if (listResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Price list not found' });
-    }
+router.get('/price-lists/:id', asyncHandler(async (req, res) => {
+  const priceList = await PriceList.findById(req.params.id).lean();
 
-    const pricesResult = await pool.query(
-      'SELECT pp.*, p.name as product_name FROM product_prices pp JOIN products p ON pp.product_id = p.id WHERE pp.price_list_id = $1 ORDER BY p.name',
-      [req.params.id]
-    );
-
-    res.json({
-      ...listResult.rows[0],
-      products: pricesResult.rows,
-    });
-  } catch (error) {
-    console.error('Error fetching price list:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!priceList) {
+    return res.status(404).json({ error: 'Price list not found' });
   }
-});
+
+  const products = await ProductPrice.find({ price_list_id: req.params.id })
+    .populate('product_id', 'name')
+    .sort({ 'product_id.name': 1 })
+    .lean();
+
+  const productsResult = products.map((p: any) => ({
+    ...p,
+    product_name: p.product_id?.name,
+  }));
+
+  res.json({ ...priceList, products: productsResult });
+}));
 
 // Create price list
-router.post('/price-lists', async (req, res) => {
-  try {
-    const { name, currency, is_active, valid_from, valid_until, is_default, products } = req.body;
+router.post('/price-lists', asyncHandler(async (req, res) => {
+  const { name, currency, is_active, valid_from, valid_until, is_default, products } = req.body;
 
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-
-      // If this is set as default, unset other defaults
-      if (is_default) {
-        await client.query('UPDATE price_lists SET is_default = false WHERE is_default = true');
-      }
-
-      const result = await client.query(
-        `INSERT INTO price_lists (name, currency, is_active, valid_from, valid_until, is_default)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         RETURNING *`,
-        [name, currency || 'INR', is_active !== false, valid_from, valid_until, is_default || false]
-      );
-
-      const priceList = result.rows[0];
-
-      // Add products if provided
-      if (products && products.length > 0) {
-        for (const product of products) {
-          await client.query(
-            `INSERT INTO product_prices (price_list_id, product_id, price, min_quantity, valid_from, valid_until)
-             VALUES ($1, $2, $3, $4, $5, $6)`,
-            [
-              priceList.id,
-              product.product_id,
-              product.price,
-              product.min_quantity || 1,
-              product.valid_from || valid_from,
-              product.valid_until || valid_until,
-            ]
-          );
-        }
-      }
-
-      await client.query('COMMIT');
-      res.status(201).json(priceList);
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
-  } catch (error) {
-    console.error('Error creating price list:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (is_default) {
+    await PriceList.updateMany({ is_default: true }, { is_default: false });
   }
-});
+
+  const priceList = await PriceList.create({
+    name,
+    currency: currency || 'INR',
+    is_active: is_active !== false,
+    valid_from,
+    valid_until,
+    is_default: is_default || false,
+  });
+
+  if (products && products.length > 0) {
+    for (const product of products) {
+      await ProductPrice.create({
+        price_list_id: priceList._id,
+        product_id: product.product_id,
+        price: product.price,
+        min_quantity: product.min_quantity || 1,
+        valid_from: product.valid_from || valid_from,
+        valid_until: product.valid_until || valid_until,
+      });
+    }
+  }
+
+  res.status(201).json(priceList);
+}));
 
 // Update price list
-router.put('/price-lists/:id', async (req, res) => {
-  try {
-    const { name, currency, is_active, valid_from, valid_until, is_default } = req.body;
+router.put('/price-lists/:id', asyncHandler(async (req, res) => {
+  const { name, currency, is_active, valid_from, valid_until, is_default } = req.body;
 
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-
-      // If setting as default, unset other defaults
-      if (is_default) {
-        await client.query('UPDATE price_lists SET is_default = false WHERE is_default = true AND id != $1', [req.params.id]);
-      }
-
-      const result = await client.query(
-        `UPDATE price_lists 
-         SET name = COALESCE($1, name),
-             currency = COALESCE($2, currency),
-             is_active = COALESCE($3, is_active),
-             valid_from = $4,
-             valid_until = $5,
-             is_default = COALESCE($6, is_default),
-             updated_at = CURRENT_TIMESTAMP
-         WHERE id = $7
-         RETURNING *`,
-        [name, currency, is_active, valid_from, valid_until, is_default, req.params.id]
-      );
-
-      if (result.rows.length === 0) {
-        await client.query('ROLLBACK');
-        return res.status(404).json({ error: 'Price list not found' });
-      }
-
-      await client.query('COMMIT');
-      res.json(result.rows[0]);
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
-  } catch (error) {
-    console.error('Error updating price list:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (is_default) {
+    await PriceList.updateMany({ is_default: true, _id: { $ne: req.params.id } }, { is_default: false });
   }
-});
+
+  const updateData: any = {};
+  if (name !== undefined) updateData.name = name;
+  if (currency !== undefined) updateData.currency = currency;
+  if (is_active !== undefined) updateData.is_active = is_active;
+  if (valid_from !== undefined) updateData.valid_from = valid_from;
+  if (valid_until !== undefined) updateData.valid_until = valid_until;
+  if (is_default !== undefined) updateData.is_default = is_default;
+
+  const priceList = await PriceList.findByIdAndUpdate(req.params.id, updateData, { new: true }).lean();
+
+  if (!priceList) {
+    return res.status(404).json({ error: 'Price list not found' });
+  }
+
+  res.json(priceList);
+}));
 
 // Add/Update product price in price list
-router.post('/price-lists/:id/products', async (req, res) => {
-  try {
-    const { product_id, price, min_quantity, valid_from, valid_until } = req.body;
+router.post('/price-lists/:id/products', asyncHandler(async (req, res) => {
+  const { product_id, price, min_quantity, valid_from, valid_until } = req.body;
 
-    const result = await pool.query(
-      `INSERT INTO product_prices (price_list_id, product_id, price, min_quantity, valid_from, valid_until)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       ON CONFLICT (price_list_id, product_id, min_quantity) 
-       DO UPDATE SET price = EXCLUDED.price, valid_from = EXCLUDED.valid_from, valid_until = EXCLUDED.valid_until, updated_at = CURRENT_TIMESTAMP
-       RETURNING *`,
-      [req.params.id, product_id, price, min_quantity || 1, valid_from, valid_until]
-    );
+  const productPrice = await ProductPrice.findOneAndUpdate(
+    { price_list_id: req.params.id, product_id, min_quantity: min_quantity || 1 },
+    {
+      price_list_id: req.params.id,
+      product_id,
+      price,
+      min_quantity: min_quantity || 1,
+      valid_from,
+      valid_until,
+    },
+    { upsert: true, new: true }
+  ).lean();
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error adding product price:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.status(201).json(productPrice);
+}));
 
 // ============================================
 // CUSTOMER-SPECIFIC PRICING
 // ============================================
 
 // Get customer prices
-router.get('/customer-prices/:partnerId', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT cp.*, p.name as product_name 
-       FROM customer_prices cp 
-       JOIN products p ON cp.product_id = p.id 
-       WHERE cp.partner_id = $1 
-       ORDER BY p.name`,
-      [req.params.partnerId]
-    );
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching customer prices:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.get('/customer-prices/:partnerId', asyncHandler(async (req, res) => {
+  const prices = await CustomerPrice.find({ partner_id: req.params.partnerId })
+    .populate('product_id', 'name')
+    .lean();
+
+  const result = prices.map((p: any) => ({
+    ...p,
+    product_name: p.product_id?.name,
+  }));
+
+  res.json(result);
+}));
 
 // Set customer price
-router.post('/customer-prices', async (req, res) => {
-  try {
-    const { partner_id, product_id, price, valid_from, valid_until } = req.body;
+router.post('/customer-prices', asyncHandler(async (req, res) => {
+  const { partner_id, product_id, price, valid_from, valid_until } = req.body;
 
-    const result = await pool.query(
-      `INSERT INTO customer_prices (partner_id, product_id, price, valid_from, valid_until)
-       VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (partner_id, product_id) 
-       DO UPDATE SET price = EXCLUDED.price, valid_from = EXCLUDED.valid_from, valid_until = EXCLUDED.valid_until, updated_at = CURRENT_TIMESTAMP
-       RETURNING *`,
-      [partner_id, product_id, price, valid_from, valid_until]
-    );
+  const customerPrice = await CustomerPrice.findOneAndUpdate(
+    { partner_id, product_id },
+    { partner_id, product_id, price, valid_from, valid_until },
+    { upsert: true, new: true }
+  ).lean();
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error setting customer price:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.status(201).json(customerPrice);
+}));
 
 // ============================================
 // PRICING RULES
 // ============================================
 
 // Get all pricing rules
-router.get('/pricing-rules', async (req, res) => {
-  try {
-    const { is_active, rule_type } = req.query;
-    let query = 'SELECT * FROM pricing_rules WHERE 1=1';
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/pricing-rules', asyncHandler(async (req, res) => {
+  const { is_active, rule_type } = req.query;
+  const filter: any = {};
 
-    if (is_active !== undefined) {
-      query += ` AND is_active = $${paramCount++}`;
-      params.push(is_active === 'true');
-    }
+  if (is_active !== undefined) filter.is_active = is_active === 'true';
+  if (rule_type) filter.rule_type = rule_type;
 
-    if (rule_type) {
-      query += ` AND rule_type = $${paramCount++}`;
-      params.push(rule_type);
-    }
-
-    query += ' ORDER BY priority ASC, created_at DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching pricing rules:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  const params = getPaginationParams(req);
+  const result = await paginateQuery(PricingRule.find(filter).sort({ priority: 1, created_at: -1 }).lean(), params, filter, PricingRule);
+  res.json(result);
+}));
 
 // Create pricing rule
-router.post('/pricing-rules', async (req, res) => {
-  try {
-    const {
-      name,
-      rule_type,
-      conditions,
-      discount_type,
-      discount_value,
-      formula,
-      priority,
-      is_active,
-      valid_from,
-      valid_until,
-    } = req.body;
+router.post('/pricing-rules', asyncHandler(async (req, res) => {
+  const {
+    name, rule_type, conditions, discount_type, discount_value,
+    formula, priority, is_active, valid_from, valid_until,
+  } = req.body;
 
-    const result = await pool.query(
-      `INSERT INTO pricing_rules (name, rule_type, conditions, discount_type, discount_value, formula, priority, is_active, valid_from, valid_until)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-       RETURNING *`,
-      [
-        name,
-        rule_type,
-        JSON.stringify(conditions),
-        discount_type,
-        discount_value,
-        formula,
-        priority || 10,
-        is_active !== false,
-        valid_from,
-        valid_until,
-      ]
-    );
+  const rule = await PricingRule.create({
+    name,
+    rule_type,
+    conditions,
+    discount_type,
+    discount_value,
+    formula,
+    priority: priority || 10,
+    is_active: is_active !== false,
+    valid_from,
+    valid_until,
+  });
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating pricing rule:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.status(201).json(rule);
+}));
 
 // Calculate price for product (applies all rules)
-router.post('/calculate-price', async (req, res) => {
-  try {
-    const { product_id, partner_id, quantity, price_list_id } = req.body;
+router.post('/calculate-price', asyncHandler(async (req, res) => {
+  const { product_id, partner_id, quantity, price_list_id } = req.body;
 
-    // Get base price
-    let basePrice = 0;
-    
-    // Try customer-specific price first
-    if (partner_id) {
-      const customerPrice = await pool.query(
-        'SELECT price FROM customer_prices WHERE partner_id = $1 AND product_id = $2 AND (valid_until IS NULL OR valid_until >= CURRENT_DATE)',
-        [partner_id, product_id]
-      );
-      if (customerPrice.rows.length > 0) {
-        basePrice = parseFloat(customerPrice.rows[0].price);
-      }
+  let basePrice = 0;
+
+  // Try customer-specific price first
+  if (partner_id) {
+    const customerPrice = await CustomerPrice.findOne({
+      partner_id,
+      product_id,
+      $or: [{ valid_until: null }, { valid_until: { $gte: new Date() } }],
+    }).lean();
+    if (customerPrice) {
+      basePrice = customerPrice.price || 0;
     }
-
-    // If no customer price, get from price list
-    if (basePrice === 0 && price_list_id) {
-      const priceListPrice = await pool.query(
-        'SELECT price FROM product_prices WHERE price_list_id = $1 AND product_id = $2 AND min_quantity <= $3 ORDER BY min_quantity DESC LIMIT 1',
-        [price_list_id, product_id, quantity || 1]
-      );
-      if (priceListPrice.rows.length > 0) {
-        basePrice = parseFloat(priceListPrice.rows[0].price);
-      }
-    }
-
-    // If still no price, get standard price
-    if (basePrice === 0) {
-      const standardPrice = await pool.query('SELECT list_price FROM products WHERE id = $1', [product_id]);
-      if (standardPrice.rows.length > 0) {
-        basePrice = parseFloat(standardPrice.rows[0].list_price);
-      }
-    }
-
-    // Apply pricing rules
-    const rules = await pool.query(
-      `SELECT * FROM pricing_rules 
-       WHERE is_active = true 
-       AND (valid_from IS NULL OR valid_from <= CURRENT_DATE)
-       AND (valid_until IS NULL OR valid_until >= CURRENT_DATE)
-       ORDER BY priority ASC`
-    );
-
-    let finalPrice = basePrice;
-    let appliedRules: any[] = [];
-
-    for (const rule of rules.rows) {
-      const conditions = rule.conditions;
-      let matches = true;
-
-      // Check conditions (simplified - can be enhanced)
-      if (conditions) {
-        if (conditions.min_quantity && quantity < conditions.min_quantity) matches = false;
-        if (conditions.max_quantity && quantity > conditions.max_quantity) matches = false;
-        if (conditions.customer_segment && partner_id) {
-          // Check customer segment (would need partner segment field)
-        }
-      }
-
-      if (matches) {
-        if (rule.discount_type === 'percentage') {
-          finalPrice = finalPrice * (1 - (rule.discount_value / 100));
-        } else if (rule.discount_type === 'fixed') {
-          finalPrice = finalPrice - rule.discount_value;
-        }
-        appliedRules.push({ rule_id: rule.id, rule_name: rule.name });
-      }
-    }
-
-    res.json({
-      base_price: basePrice,
-      final_price: Math.max(0, finalPrice),
-      quantity: quantity || 1,
-      total: Math.max(0, finalPrice) * (quantity || 1),
-      applied_rules: appliedRules,
-    });
-  } catch (error) {
-    console.error('Error calculating price:', error);
-    res.status(500).json({ error: 'Internal server error' });
   }
-});
+
+  // If no customer price, get from price list
+  if (basePrice === 0 && price_list_id) {
+    const priceListPrice = await ProductPrice.findOne({
+      price_list_id,
+      product_id,
+      min_quantity: { $lte: quantity || 1 },
+    }).sort({ min_quantity: -1 }).lean();
+    if (priceListPrice) {
+      basePrice = priceListPrice.price || 0;
+    }
+  }
+
+  // If still no price, get standard price
+  if (basePrice === 0) {
+    const product = await Product.findById(product_id).lean();
+    if (product) {
+      basePrice = (product as any).list_price || 0;
+    }
+  }
+
+  // Apply pricing rules
+  const rules = await PricingRule.find({
+    is_active: true,
+    $or: [{ valid_from: null }, { valid_from: { $lte: new Date() } }],
+  }).find({
+    $or: [{ valid_until: null }, { valid_until: { $gte: new Date() } }],
+  }).sort({ priority: 1 }).lean();
+
+  let finalPrice = basePrice;
+  let appliedRules: any[] = [];
+
+  for (const rule of rules) {
+    const conditions = rule.conditions as any;
+    let matches = true;
+
+    if (conditions) {
+      if (conditions.min_quantity && quantity < conditions.min_quantity) matches = false;
+      if (conditions.max_quantity && quantity > conditions.max_quantity) matches = false;
+    }
+
+    if (matches) {
+      if (rule.discount_type === 'percentage') {
+        finalPrice = finalPrice * (1 - ((rule.discount_value || 0) / 100));
+      } else if (rule.discount_type === 'fixed') {
+        finalPrice = finalPrice - (rule.discount_value || 0);
+      }
+      appliedRules.push({ rule_id: rule._id, rule_name: rule.name });
+    }
+  }
+
+  res.json({
+    base_price: basePrice,
+    final_price: Math.max(0, finalPrice),
+    quantity: quantity || 1,
+    total: Math.max(0, finalPrice) * (quantity || 1),
+    applied_rules: appliedRules,
+  });
+}));
 
 // ============================================
 // DISCOUNT APPROVAL RULES
 // ============================================
 
 // Get discount approval rules
-router.get('/discount-approval-rules', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM discount_approval_rules WHERE is_active = true ORDER BY created_at DESC');
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching discount approval rules:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.get('/discount-approval-rules', asyncHandler(async (req, res) => {
+  const filter: any = { is_active: true };
+
+  const params = getPaginationParams(req);
+  const result = await paginateQuery(DiscountApprovalRule.find(filter).sort({ created_at: -1 }).lean(), params, filter, DiscountApprovalRule);
+  res.json(result);
+}));
 
 // Check if discount requires approval
-router.post('/check-discount-approval', async (req, res) => {
-  try {
-    const { discount_percentage, discount_amount, order_total } = req.body;
+router.post('/check-discount-approval', asyncHandler(async (req, res) => {
+  const { discount_percentage, discount_amount, order_total } = req.body;
 
-    const rules = await pool.query('SELECT * FROM discount_approval_rules WHERE is_active = true ORDER BY created_at DESC LIMIT 1');
-    
-    if (rules.rows.length === 0) {
-      return res.json({ requires_approval: false });
-    }
+  const rule = await DiscountApprovalRule.findOne({ is_active: true }).sort({ created_at: -1 }).lean();
 
-    const rule = rules.rows[0];
-    let requiresApproval = false;
-
-    if (rule.max_discount_percentage && discount_percentage > rule.max_discount_percentage) {
-      requiresApproval = true;
-    }
-
-    if (rule.max_discount_amount && discount_amount > rule.max_discount_amount) {
-      requiresApproval = true;
-    }
-
-    res.json({
-      requires_approval: requiresApproval,
-      approver_id: rule.approver_id,
-      approval_workflow: rule.approval_workflow,
-    });
-  } catch (error) {
-    console.error('Error checking discount approval:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!rule) {
+    return res.json({ requires_approval: false });
   }
-});
+
+  let requiresApproval = false;
+
+  if (rule.max_discount_percentage && discount_percentage > rule.max_discount_percentage) {
+    requiresApproval = true;
+  }
+
+  if (rule.max_discount_amount && discount_amount > rule.max_discount_amount) {
+    requiresApproval = true;
+  }
+
+  res.json({
+    requires_approval: requiresApproval,
+    approver_id: rule.approver_id,
+    approval_workflow: rule.approval_workflow,
+  });
+}));
 
 // ============================================
 // PROMOTIONAL PRICING
 // ============================================
 
 // Get active promotions
-router.get('/promotions', async (req, res) => {
-  try {
-    const { product_id } = req.query;
-    let query = `SELECT * FROM promotional_pricing 
-                 WHERE is_active = true 
-                 AND valid_from <= CURRENT_TIMESTAMP 
-                 AND valid_until >= CURRENT_TIMESTAMP`;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/promotions', asyncHandler(async (req, res) => {
+  const { product_id } = req.query;
+  const filter: any = {
+    is_active: true,
+    valid_from: { $lte: new Date() },
+    valid_until: { $gte: new Date() },
+  };
 
-    if (product_id) {
-      query += ` AND $${paramCount} = ANY(product_ids)`;
-      params.push(parseInt(product_id as string));
-    }
-
-    query += ' ORDER BY created_at DESC';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching promotions:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (product_id) {
+    filter.product_ids = product_id;
   }
-});
+
+  const params = getPaginationParams(req);
+  const result = await paginateQuery(PromotionalPricing.find(filter).sort({ created_at: -1 }).lean(), params, filter, PromotionalPricing);
+  res.json(result);
+}));
 
 // Create promotion
-router.post('/promotions', async (req, res) => {
-  try {
-    const { name, campaign_name, product_ids, discount_type, discount_value, buy_x_get_y_config, valid_from, valid_until } = req.body;
+router.post('/promotions', asyncHandler(async (req, res) => {
+  const { name, campaign_name, product_ids, discount_type, discount_value, buy_x_get_y_config, valid_from, valid_until } = req.body;
 
-    const result = await pool.query(
-      `INSERT INTO promotional_pricing (name, campaign_name, product_ids, discount_type, discount_value, buy_x_get_y_config, valid_from, valid_until)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING *`,
-      [
-        name,
-        campaign_name,
-        product_ids,
-        discount_type,
-        discount_value,
-        JSON.stringify(buy_x_get_y_config),
-        valid_from,
-        valid_until,
-      ]
-    );
+  const promotion = await PromotionalPricing.create({
+    name,
+    campaign_name,
+    product_ids,
+    discount_type,
+    discount_value,
+    buy_x_get_y_config,
+    valid_from,
+    valid_until,
+  });
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating promotion:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.status(201).json(promotion);
+}));
 
 export default router;
-

@@ -1,5 +1,8 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import { SupportTicket, TicketNote, TicketAttachment, TicketWatcher, TicketHistory } from '../models/SupportTicket.js';
+import { SlaPolicy } from '../models/SlaPolicy.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
@@ -8,672 +11,395 @@ const router = express.Router();
 // ============================================
 
 // Get all tickets
-router.get('/', async (req, res) => {
-  try {
-    const { status, priority, assigned_agent_id, assigned_team_id, partner_id, ticket_type, search } = req.query;
-    let query = `
-      SELECT t.*, 
-             p.name as partner_name,
-             p.email as partner_email,
-             a.user_id as agent_user_id,
-             u1.name as agent_name,
-             st.name as team_name,
-             tc.name as channel_name,
-             cat.name as category_name,
-             sla.name as sla_policy_name,
-             COUNT(DISTINCT tn.id) as note_count,
-             COUNT(DISTINCT tw.user_id) as watcher_count
-      FROM support_tickets t
-      LEFT JOIN partners p ON t.partner_id = p.id
-      LEFT JOIN support_agents a ON t.assigned_agent_id = a.id
-      LEFT JOIN users u1 ON a.user_id = u1.id
-      LEFT JOIN support_teams st ON t.assigned_team_id = st.id
-      LEFT JOIN ticket_channels tc ON t.channel_id = tc.id
-      LEFT JOIN ticket_categories cat ON t.category_id = cat.id
-      LEFT JOIN sla_policies sla ON t.sla_policy_id = sla.id
-      LEFT JOIN ticket_notes tn ON t.id = tn.ticket_id
-      LEFT JOIN ticket_watchers tw ON t.id = tw.ticket_id
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/', asyncHandler(async (req, res) => {
+  const { status, priority, assigned_agent_id, assigned_team_id, partner_id, ticket_type, search } = req.query;
+  const filter: any = {};
 
-    if (status) {
-      query += ` AND t.status = $${paramCount++}`;
-      params.push(status);
-    }
+  if (status) filter.status = status;
+  if (priority) filter.priority = priority;
+  if (assigned_agent_id) filter.assigned_agent_id = assigned_agent_id;
+  if (assigned_team_id) filter.assigned_team_id = assigned_team_id;
+  if (partner_id) filter.partner_id = partner_id;
+  if (ticket_type) filter.ticket_type = ticket_type;
 
-    if (priority) {
-      query += ` AND t.priority = $${paramCount++}`;
-      params.push(priority);
-    }
-
-    if (assigned_agent_id) {
-      query += ` AND t.assigned_agent_id = $${paramCount++}`;
-      params.push(assigned_agent_id);
-    }
-
-    if (assigned_team_id) {
-      query += ` AND t.assigned_team_id = $${paramCount++}`;
-      params.push(assigned_team_id);
-    }
-
-    if (partner_id) {
-      query += ` AND t.partner_id = $${paramCount++}`;
-      params.push(partner_id);
-    }
-
-    if (ticket_type) {
-      query += ` AND t.ticket_type = $${paramCount++}`;
-      params.push(ticket_type);
-    }
-
-    if (search) {
-      query += ` AND (t.subject ILIKE $${paramCount} OR t.description ILIKE $${paramCount} OR t.ticket_number ILIKE $${paramCount})`;
-      params.push(`%${search}%`);
-    }
-
-    query += ' GROUP BY t.id, p.name, p.email, a.user_id, u1.name, st.name, tc.name, cat.name, sla.name ORDER BY t.created_at DESC LIMIT 100';
-
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching tickets:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (search) {
+    filter.$or = [
+      { subject: { $regex: search, $options: 'i' } },
+      { description: { $regex: search, $options: 'i' } },
+      { ticket_number: { $regex: search, $options: 'i' } },
+    ];
   }
-});
+
+  const pagination = getPaginationParams(req);
+  const result = await paginateQuery(
+    SupportTicket.find(filter)
+      .populate('partner_id', 'name email')
+      .populate({ path: 'assigned_agent_id', populate: { path: 'user_id', select: 'name' } })
+      .populate('assigned_team_id', 'name')
+      .populate('channel_id', 'name')
+      .populate('category_id', 'name')
+      .populate('sla_policy_id', 'name')
+      .sort({ created_at: -1 })
+      .lean(),
+    pagination,
+    filter,
+    SupportTicket
+  );
+
+  const tickets = result.data || result;
+  const ticketIds = tickets.map((t: any) => t._id);
+
+  const [noteCounts, watcherCounts] = await Promise.all([
+    TicketNote.aggregate([
+      { $match: { ticket_id: { $in: ticketIds } } },
+      { $group: { _id: '$ticket_id', count: { $sum: 1 } } }
+    ]),
+    TicketWatcher.aggregate([
+      { $match: { ticket_id: { $in: ticketIds } } },
+      { $group: { _id: '$ticket_id', count: { $sum: 1 } } }
+    ]),
+  ]);
+
+  const noteCountMap = new Map(noteCounts.map((n: any) => [n._id.toString(), n.count]));
+  const watcherCountMap = new Map(watcherCounts.map((w: any) => [w._id.toString(), w.count]));
+
+  const ticketsWithCounts = tickets.map((t: any) => ({
+    ...t,
+    id: t._id,
+    partner_name: t.partner_id?.name,
+    partner_email: t.partner_id?.email,
+    agent_name: t.assigned_agent_id?.user_id?.name,
+    agent_user_id: t.assigned_agent_id?.user_id?._id,
+    team_name: t.assigned_team_id?.name,
+    channel_name: t.channel_id?.name,
+    category_name: t.category_id?.name,
+    sla_policy_name: t.sla_policy_id?.name,
+    note_count: noteCountMap.get(t._id.toString()) || 0,
+    watcher_count: watcherCountMap.get(t._id.toString()) || 0,
+  }));
+
+  if (result.data) {
+    res.json({ ...result, data: ticketsWithCounts });
+  } else {
+    res.json(ticketsWithCounts);
+  }
+}));
 
 // Get ticket by ID with full details
-router.get('/:id', async (req, res) => {
-  try {
-    // Get ticket details
-    const ticketResult = await pool.query(
-      `SELECT t.*, 
-              p.name as partner_name,
-              p.email as partner_email,
-              a.user_id as agent_user_id,
-              u1.name as agent_name,
-              u1.email as agent_email,
-              st.name as team_name,
-              tc.name as channel_name,
-              cat.name as category_name,
-              sla.name as sla_policy_name
-       FROM support_tickets t
-       LEFT JOIN partners p ON t.partner_id = p.id
-       LEFT JOIN support_agents a ON t.assigned_agent_id = a.id
-       LEFT JOIN users u1 ON a.user_id = u1.id
-       LEFT JOIN support_teams st ON t.assigned_team_id = st.id
-       LEFT JOIN ticket_channels tc ON t.channel_id = tc.id
-       LEFT JOIN ticket_categories cat ON t.category_id = cat.id
-       LEFT JOIN sla_policies sla ON t.sla_policy_id = sla.id
-       WHERE t.id = $1`,
-      [req.params.id]
-    );
+router.get('/:id', asyncHandler(async (req, res) => {
+  const ticket = await SupportTicket.findById(req.params.id)
+    .populate('partner_id', 'name email')
+    .populate({ path: 'assigned_agent_id', populate: { path: 'user_id', select: 'name email' } })
+    .populate('assigned_team_id', 'name')
+    .populate('channel_id', 'name')
+    .populate('category_id', 'name')
+    .populate('sla_policy_id', 'name')
+    .lean();
 
-    if (ticketResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Ticket not found' });
-    }
-
-    const ticket = ticketResult.rows[0];
-
-    // Get notes
-    const notesResult = await pool.query(
-      `SELECT tn.*, u.name as created_by_name
-       FROM ticket_notes tn
-       LEFT JOIN users u ON tn.created_by = u.id
-       WHERE tn.ticket_id = $1
-       ORDER BY tn.created_at`,
-      [req.params.id]
-    );
-
-    // Get attachments
-    const attachmentsResult = await pool.query(
-      `SELECT ta.*, u.name as uploaded_by_name
-       FROM ticket_attachments ta
-       LEFT JOIN users u ON ta.uploaded_by = u.id
-       WHERE ta.ticket_id = $1
-       ORDER BY ta.created_at`,
-      [req.params.id]
-    );
-
-    // Get watchers
-    const watchersResult = await pool.query(
-      `SELECT tw.*, u.name as user_name, u.email as user_email
-       FROM ticket_watchers tw
-       LEFT JOIN users u ON tw.user_id = u.id
-       WHERE tw.ticket_id = $1`,
-      [req.params.id]
-    );
-
-    // Get history
-    const historyResult = await pool.query(
-      `SELECT th.*, u.name as performed_by_name
-       FROM ticket_history th
-       LEFT JOIN users u ON th.performed_by = u.id
-       WHERE th.ticket_id = $1
-       ORDER BY th.created_at DESC`,
-      [req.params.id]
-    );
-
-    // Get child tickets
-    const childrenResult = await pool.query(
-      'SELECT * FROM support_tickets WHERE parent_ticket_id = $1 ORDER BY created_at',
-      [req.params.id]
-    );
-
-    res.json({
-      ...ticket,
-      notes: notesResult.rows,
-      attachments: attachmentsResult.rows,
-      watchers: watchersResult.rows,
-      history: historyResult.rows,
-      children: childrenResult.rows,
-    });
-  } catch (error) {
-    console.error('Error fetching ticket:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!ticket) {
+    return res.status(404).json({ error: 'Ticket not found' });
   }
-});
+
+  const [notes, attachments, watchers, history, children] = await Promise.all([
+    TicketNote.find({ ticket_id: req.params.id }).populate('created_by', 'name').sort({ created_at: 1 }).lean(),
+    TicketAttachment.find({ ticket_id: req.params.id }).populate('uploaded_by', 'name').sort({ created_at: 1 }).lean(),
+    TicketWatcher.find({ ticket_id: req.params.id }).populate('user_id', 'name email').lean(),
+    TicketHistory.find({ ticket_id: req.params.id }).populate('performed_by', 'name').sort({ created_at: -1 }).lean(),
+    SupportTicket.find({ parent_ticket_id: req.params.id }).sort({ created_at: 1 }).lean(),
+  ]);
+
+  const t: any = ticket;
+  res.json({
+    ...t,
+    id: t._id,
+    partner_name: t.partner_id?.name,
+    partner_email: t.partner_id?.email,
+    agent_name: t.assigned_agent_id?.user_id?.name,
+    agent_email: t.assigned_agent_id?.user_id?.email,
+    agent_user_id: t.assigned_agent_id?.user_id?._id,
+    team_name: t.assigned_team_id?.name,
+    channel_name: t.channel_id?.name,
+    category_name: t.category_id?.name,
+    sla_policy_name: t.sla_policy_id?.name,
+    notes: notes.map((n: any) => ({ ...n, id: n._id, created_by_name: n.created_by?.name })),
+    attachments: attachments.map((a: any) => ({ ...a, id: a._id, uploaded_by_name: a.uploaded_by?.name })),
+    watchers: watchers.map((w: any) => ({ ...w, id: w._id, user_name: w.user_id?.name, user_email: w.user_id?.email })),
+    history: history.map((h: any) => ({ ...h, id: h._id, performed_by_name: h.performed_by?.name })),
+    children,
+  });
+}));
 
 // Create ticket
-router.post('/', async (req, res) => {
-  try {
-    const {
-      subject,
-      description,
-      ticket_type,
-      priority,
-      channel_id,
-      category_id,
-      partner_id,
-      contact_id,
-      assigned_team_id,
-      source,
-      tags,
-      custom_fields,
-      is_public,
-    } = req.body;
+router.post('/', asyncHandler(async (req, res) => {
+  const {
+    subject, description, ticket_type, priority, channel_id, category_id,
+    partner_id, contact_id, assigned_team_id, source, tags, custom_fields, is_public,
+  } = req.body;
 
-    if (!subject || !description) {
-      return res.status(400).json({ error: 'Subject and description are required' });
-    }
-
-    // Generate ticket number
-    const ticketCount = await pool.query('SELECT COUNT(*) as count FROM support_tickets');
-    const num = parseInt(ticketCount.rows[0]?.count || '0') + 1;
-    const ticketNumber = `TKT-${Date.now()}-${num.toString().padStart(6, '0')}`;
-
-    // Auto-assign SLA based on priority (non-blocking)
-    let slaPolicyId = null;
-    let firstResponseDeadline = null;
-    let resolutionDeadline = null;
-    
-    try {
-      if (priority) {
-        const slaResult = await pool.query(
-          'SELECT id FROM sla_policies WHERE priority = $1 AND is_active = true LIMIT 1',
-          [priority]
-        );
-        if (slaResult.rows.length > 0) {
-          slaPolicyId = slaResult.rows[0].id;
-          
-          // Calculate SLA deadlines if SLA policy exists
-          const slaPolicy = await pool.query('SELECT * FROM sla_policies WHERE id = $1', [slaPolicyId]);
-          if (slaPolicy.rows.length > 0) {
-            const policy = slaPolicy.rows[0];
-            const now = new Date();
-            firstResponseDeadline = new Date(now.getTime() + policy.first_response_time_minutes * 60000);
-            resolutionDeadline = new Date(now.getTime() + policy.resolution_time_minutes * 60000);
-          }
-        }
-      }
-    } catch (slaError) {
-      console.warn('Failed to assign SLA policy (non-critical):', slaError);
-      // Continue without SLA - ticket creation should still work
-    }
-
-    const result = await pool.query(
-      `INSERT INTO support_tickets (
-        ticket_number, subject, description, ticket_type, priority,
-        channel_id, category_id, partner_id, contact_id, assigned_team_id,
-        sla_policy_id, source, tags, custom_fields, is_public,
-        sla_first_response_deadline, sla_resolution_deadline
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
-      RETURNING *`,
-      [
-        ticketNumber,
-        subject,
-        description,
-        ticket_type || 'issue',
-        priority || 'medium',
-        channel_id || null,
-        category_id || null,
-        partner_id || null,
-        contact_id || null,
-        assigned_team_id || null,
-        slaPolicyId || null,
-        source || null,
-        tags && Array.isArray(tags) ? tags : (tags ? [tags] : []),
-        custom_fields || null,
-        is_public !== undefined ? is_public : true,
-        firstResponseDeadline || null,
-        resolutionDeadline || null,
-      ]
-    );
-
-    // Log history (non-blocking - don't fail if this fails)
-    try {
-      await pool.query(
-        `INSERT INTO ticket_history (ticket_id, action, new_value, performed_by)
-         VALUES ($1, 'created', $2, $3)`,
-        [result.rows[0].id, 'Ticket created', ticketNumber, req.body.created_by || null]
-      );
-    } catch (historyError) {
-      console.warn('Failed to log ticket history (non-critical):', historyError);
-      // Continue anyway - history logging failure shouldn't break ticket creation
-    }
-
-    res.status(201).json(result.rows[0]);
-  } catch (error: any) {
-    console.error('Error creating ticket:', error);
-    console.error('Error details:', {
-      message: error.message,
-      code: error.code,
-      detail: error.detail,
-      constraint: error.constraint,
-      table: error.table,
-      column: error.column,
-      stack: error.stack
-    });
-    
-    // Return detailed error for debugging
-    const errorResponse: any = {
-      error: 'Internal server error',
-      message: error.message || 'Unknown error',
-    };
-    
-    if (error.code) {
-      errorResponse.code = error.code;
-    }
-    if (error.detail) {
-      errorResponse.details = error.detail;
-    }
-    if (error.constraint) {
-      errorResponse.constraint = error.constraint;
-    }
-    
-    res.status(500).json(errorResponse);
+  if (!subject || !description) {
+    return res.status(400).json({ error: 'Subject and description are required' });
   }
-});
+
+  const count = await SupportTicket.countDocuments();
+  const num = count + 1;
+  const ticketNumber = `TKT-${Date.now()}-${num.toString().padStart(6, '0')}`;
+
+  let slaPolicyId = null;
+  let firstResponseDeadline = null;
+  let resolutionDeadline = null;
+
+  try {
+    if (priority) {
+      const sla = await SlaPolicy.findOne({ priority, is_active: true });
+      if (sla) {
+        slaPolicyId = sla._id;
+        const now = new Date();
+        firstResponseDeadline = new Date(now.getTime() + sla.first_response_time_minutes * 60000);
+        resolutionDeadline = new Date(now.getTime() + sla.resolution_time_minutes * 60000);
+      }
+    }
+  } catch (slaError) {
+    console.warn('Failed to assign SLA policy (non-critical):', slaError);
+  }
+
+  const ticket = await SupportTicket.create({
+    ticket_number: ticketNumber,
+    subject,
+    description,
+    ticket_type: ticket_type || 'issue',
+    priority: priority || 'medium',
+    channel_id: channel_id || null,
+    category_id: category_id || null,
+    partner_id: partner_id || null,
+    contact_id: contact_id || null,
+    assigned_team_id: assigned_team_id || null,
+    sla_policy_id: slaPolicyId || null,
+    source: source || null,
+    tags: tags && Array.isArray(tags) ? tags : (tags ? [tags] : []),
+    custom_fields: custom_fields || null,
+    is_public: is_public !== undefined ? is_public : true,
+    sla_first_response_deadline: firstResponseDeadline || null,
+    sla_resolution_deadline: resolutionDeadline || null,
+  });
+
+  try {
+    await TicketHistory.create({
+      ticket_id: ticket._id,
+      action: 'created',
+      new_value: 'Ticket created',
+      performed_by: req.body.created_by || null,
+    });
+  } catch (historyError) {
+    console.warn('Failed to log ticket history (non-critical):', historyError);
+  }
+
+  res.status(201).json(ticket);
+}));
 
 // Update ticket
-router.put('/:id', async (req, res) => {
-  try {
-    const {
-      subject,
-      description,
-      ticket_type,
-      status,
-      priority,
-      channel_id,
-      category_id,
-      assigned_agent_id,
-      assigned_team_id,
-      tags,
-      custom_fields,
-    } = req.body;
+router.put('/:id', asyncHandler(async (req, res) => {
+  const {
+    subject, description, ticket_type, status, priority, channel_id,
+    category_id, assigned_agent_id, assigned_team_id, tags, custom_fields,
+  } = req.body;
 
-    // Get current ticket
-    const currentTicket = await pool.query('SELECT * FROM support_tickets WHERE id = $1', [
-      req.params.id,
-    ]);
-
-    if (currentTicket.rows.length === 0) {
-      return res.status(404).json({ error: 'Ticket not found' });
-    }
-
-    const oldTicket = currentTicket.rows[0];
-
-    const updateFields: string[] = [];
-    const params: any[] = [];
-    let paramCount = 1;
-
-    const fields = {
-      subject,
-      description,
-      ticket_type,
-      status,
-      priority,
-      channel_id,
-      category_id,
-      assigned_agent_id,
-      assigned_team_id,
-      tags,
-      custom_fields,
-    };
-
-    Object.entries(fields).forEach(([key, value]) => {
-      if (value !== undefined) {
-        updateFields.push(`${key} = $${paramCount++}`);
-        params.push(value);
-      }
-    });
-
-    // Handle status changes
-    if (status === 'in_progress' && oldTicket.status !== 'in_progress') {
-      updateFields.push(`first_response_at = CURRENT_TIMESTAMP`);
-      if (assigned_agent_id) {
-        updateFields.push(`first_response_by = $${paramCount++}`);
-        params.push(assigned_agent_id);
-      }
-    }
-
-    if (status === 'resolved' && oldTicket.status !== 'resolved') {
-      updateFields.push(`resolved_at = CURRENT_TIMESTAMP`);
-      if (assigned_agent_id) {
-        updateFields.push(`resolved_by = $${paramCount++}`);
-        params.push(assigned_agent_id);
-      }
-    }
-
-    if (status === 'closed' && oldTicket.status !== 'closed') {
-      updateFields.push(`closed_at = CURRENT_TIMESTAMP`);
-      if (assigned_agent_id) {
-        updateFields.push(`closed_by = $${paramCount++}`);
-        params.push(assigned_agent_id);
-      }
-    }
-
-    if (updateFields.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-
-    params.push(req.params.id);
-    const query = `UPDATE support_tickets SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
-
-    const result = await pool.query(query, params);
-
-    // Log history for changes
-    if (status && status !== oldTicket.status) {
-      await pool.query(
-        `INSERT INTO ticket_history (ticket_id, action, old_value, new_value, performed_by)
-         VALUES ($1, 'status_changed', $2, $3, $4)`,
-        [req.params.id, oldTicket.status, status, req.body.updated_by || null]
-      );
-    }
-
-    if (priority && priority !== oldTicket.priority) {
-      await pool.query(
-        `INSERT INTO ticket_history (ticket_id, action, old_value, new_value, performed_by)
-         VALUES ($1, 'priority_changed', $2, $3, $4)`,
-        [req.params.id, oldTicket.priority, priority, req.body.updated_by || null]
-      );
-    }
-
-    if (assigned_agent_id && assigned_agent_id !== oldTicket.assigned_agent_id) {
-      await pool.query(
-        `INSERT INTO ticket_history (ticket_id, action, old_value, new_value, performed_by)
-         VALUES ($1, 'assigned', $2, $3, $4)`,
-        [req.params.id, oldTicket.assigned_agent_id, assigned_agent_id, req.body.updated_by || null]
-      );
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating ticket:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  const oldTicket = await SupportTicket.findById(req.params.id);
+  if (!oldTicket) {
+    return res.status(404).json({ error: 'Ticket not found' });
   }
-});
+
+  const updateData: any = {};
+  const fields: any = { subject, description, ticket_type, status, priority, channel_id, category_id, assigned_agent_id, assigned_team_id, tags, custom_fields };
+
+  Object.entries(fields).forEach(([key, value]) => {
+    if (value !== undefined) updateData[key] = value;
+  });
+
+  if (status === 'in_progress' && oldTicket.status !== 'in_progress') {
+    updateData.first_response_at = new Date();
+    if (assigned_agent_id) updateData.first_response_by = assigned_agent_id;
+  }
+  if (status === 'resolved' && oldTicket.status !== 'resolved') {
+    updateData.resolved_at = new Date();
+    if (assigned_agent_id) updateData.resolved_by = assigned_agent_id;
+  }
+  if (status === 'closed' && oldTicket.status !== 'closed') {
+    updateData.closed_at = new Date();
+    if (assigned_agent_id) updateData.closed_by = assigned_agent_id;
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
+  }
+
+  const result = await SupportTicket.findByIdAndUpdate(req.params.id, updateData, { new: true });
+
+  if (status && status !== oldTicket.status) {
+    await TicketHistory.create({ ticket_id: req.params.id, action: 'status_changed', old_value: oldTicket.status, new_value: status, performed_by: req.body.updated_by || null });
+  }
+  if (priority && priority !== oldTicket.priority) {
+    await TicketHistory.create({ ticket_id: req.params.id, action: 'priority_changed', old_value: oldTicket.priority, new_value: priority, performed_by: req.body.updated_by || null });
+  }
+  if (assigned_agent_id && String(assigned_agent_id) !== String(oldTicket.assigned_agent_id)) {
+    await TicketHistory.create({ ticket_id: req.params.id, action: 'assigned', old_value: String(oldTicket.assigned_agent_id), new_value: String(assigned_agent_id), performed_by: req.body.updated_by || null });
+  }
+
+  res.json(result);
+}));
 
 // Delete ticket
-router.delete('/:id', async (req, res) => {
-  try {
-    const result = await pool.query('DELETE FROM support_tickets WHERE id = $1 RETURNING id', [
-      req.params.id,
-    ]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Ticket not found' });
-    }
-
-    res.json({ message: 'Ticket deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting ticket:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.delete('/:id', asyncHandler(async (req, res) => {
+  const result = await SupportTicket.findByIdAndDelete(req.params.id);
+  if (!result) {
+    return res.status(404).json({ error: 'Ticket not found' });
   }
-});
+  res.json({ message: 'Ticket deleted successfully' });
+}));
 
 // ============================================
 // TICKET ACTIONS
 // ============================================
 
 // Merge tickets
-router.post('/:id/merge', async (req, res) => {
-  try {
-    const { merge_into_ticket_id } = req.body;
-
-    if (!merge_into_ticket_id) {
-      return res.status(400).json({ error: 'Target ticket ID is required' });
-    }
-
-    // Update the ticket to be merged
-    await pool.query(
-      `UPDATE support_tickets 
-       SET merged_from_ticket_id = $1, status = 'closed'
-       WHERE id = $2
-       RETURNING *`,
-      [merge_into_ticket_id, req.params.id]
-    );
-
-    // Add note to target ticket
-    await pool.query(
-      `INSERT INTO ticket_notes (ticket_id, note_type, content, created_by)
-       VALUES ($1, 'internal', $2, $3)`,
-      [
-        merge_into_ticket_id,
-        `Ticket ${req.params.id} was merged into this ticket`,
-        req.body.merged_by || null,
-      ]
-    );
-
-    res.json({ message: 'Tickets merged successfully' });
-  } catch (error) {
-    console.error('Error merging tickets:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.post('/:id/merge', asyncHandler(async (req, res) => {
+  const { merge_into_ticket_id } = req.body;
+  if (!merge_into_ticket_id) {
+    return res.status(400).json({ error: 'Target ticket ID is required' });
   }
-});
+
+  await SupportTicket.findByIdAndUpdate(req.params.id, { merged_from_ticket_id: merge_into_ticket_id, status: 'closed' });
+
+  await TicketNote.create({
+    ticket_id: merge_into_ticket_id,
+    note_type: 'internal',
+    content: `Ticket ${req.params.id} was merged into this ticket`,
+    created_by: req.body.merged_by || null,
+  });
+
+  res.json({ message: 'Tickets merged successfully' });
+}));
 
 // Split ticket
-router.post('/:id/split', async (req, res) => {
-  try {
-    const { subjects, descriptions } = req.body;
-
-    if (!subjects || !descriptions || subjects.length !== descriptions.length) {
-      return res.status(400).json({ error: 'Subjects and descriptions arrays must match' });
-    }
-
-    const parentTicket = await pool.query('SELECT * FROM support_tickets WHERE id = $1', [
-      req.params.id,
-    ]);
-
-    if (parentTicket.rows.length === 0) {
-      return res.status(404).json({ error: 'Ticket not found' });
-    }
-
-    const parent = parentTicket.rows[0];
-    const childTickets = [];
-
-    for (let i = 0; i < subjects.length; i++) {
-      const ticketCount = await pool.query('SELECT COUNT(*) as count FROM support_tickets');
-      const num = parseInt(ticketCount.rows[0]?.count || '0') + i + 1;
-      const ticketNumber = `TKT-${Date.now()}-${num.toString().padStart(6, '0')}`;
-
-      const result = await pool.query(
-        `INSERT INTO support_tickets (
-          ticket_number, subject, description, ticket_type, priority,
-          channel_id, category_id, partner_id, assigned_team_id,
-          parent_ticket_id, sla_policy_id, tags, is_public
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-        RETURNING *`,
-        [
-          ticketNumber,
-          subjects[i],
-          descriptions[i],
-          parent.ticket_type,
-          parent.priority,
-          parent.channel_id,
-          parent.category_id,
-          parent.partner_id,
-          parent.assigned_team_id,
-          parent.id,
-          parent.sla_policy_id,
-          parent.tags,
-          parent.is_public,
-        ]
-      );
-
-      childTickets.push(result.rows[0]);
-    }
-
-    res.status(201).json({ message: 'Ticket split successfully', child_tickets: childTickets });
-  } catch (error) {
-    console.error('Error splitting ticket:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.post('/:id/split', asyncHandler(async (req, res) => {
+  const { subjects, descriptions } = req.body;
+  if (!subjects || !descriptions || subjects.length !== descriptions.length) {
+    return res.status(400).json({ error: 'Subjects and descriptions arrays must match' });
   }
-});
+
+  const parent = await SupportTicket.findById(req.params.id);
+  if (!parent) {
+    return res.status(404).json({ error: 'Ticket not found' });
+  }
+
+  const childTickets = [];
+  for (let i = 0; i < subjects.length; i++) {
+    const count = await SupportTicket.countDocuments();
+    const num = count + i + 1;
+    const ticketNumber = `TKT-${Date.now()}-${num.toString().padStart(6, '0')}`;
+
+    const child = await SupportTicket.create({
+      ticket_number: ticketNumber,
+      subject: subjects[i],
+      description: descriptions[i],
+      ticket_type: parent.ticket_type,
+      priority: parent.priority,
+      channel_id: parent.channel_id,
+      category_id: parent.category_id,
+      partner_id: parent.partner_id,
+      assigned_team_id: parent.assigned_team_id,
+      parent_ticket_id: parent._id,
+      sla_policy_id: parent.sla_policy_id,
+      tags: parent.tags,
+      is_public: parent.is_public,
+    });
+    childTickets.push(child);
+  }
+
+  res.status(201).json({ message: 'Ticket split successfully', child_tickets: childTickets });
+}));
 
 // Transfer ticket
-router.post('/:id/transfer', async (req, res) => {
-  try {
-    const { assigned_team_id, assigned_agent_id, reason } = req.body;
+router.post('/:id/transfer', asyncHandler(async (req, res) => {
+  const { assigned_team_id, assigned_agent_id, reason } = req.body;
+  const updateData: any = {};
 
-    const updateFields: string[] = [];
-    const params: any[] = [];
-    let paramCount = 1;
+  if (assigned_team_id) updateData.assigned_team_id = assigned_team_id;
+  if (assigned_agent_id !== undefined) updateData.assigned_agent_id = assigned_agent_id;
 
-    if (assigned_team_id) {
-      updateFields.push(`assigned_team_id = $${paramCount++}`);
-      params.push(assigned_team_id);
-    }
-
-    if (assigned_agent_id !== undefined) {
-      updateFields.push(`assigned_agent_id = $${paramCount++}`);
-      params.push(assigned_agent_id);
-    }
-
-    if (updateFields.length === 0) {
-      return res.status(400).json({ error: 'Must specify team or agent to transfer to' });
-    }
-
-    params.push(req.params.id);
-    const query = `UPDATE support_tickets SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING *`;
-
-    const result = await pool.query(query, params);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Ticket not found' });
-    }
-
-    // Add note
-    if (reason) {
-      await pool.query(
-        `INSERT INTO ticket_notes (ticket_id, note_type, content, created_by)
-         VALUES ($1, 'internal', $2, $3)`,
-        [req.params.id, `Ticket transferred. Reason: ${reason}`, req.body.transferred_by || null]
-      );
-    }
-
-    // Log history
-    await pool.query(
-      `INSERT INTO ticket_history (ticket_id, action, new_value, performed_by)
-       VALUES ($1, 'transferred', $2, $3)`,
-      [
-        req.params.id,
-        `Transferred to team: ${assigned_team_id}, agent: ${assigned_agent_id}`,
-        req.body.transferred_by || null,
-      ]
-    );
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error transferring ticket:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (Object.keys(updateData).length === 0) {
+    return res.status(400).json({ error: 'Must specify team or agent to transfer to' });
   }
-});
+
+  const result = await SupportTicket.findByIdAndUpdate(req.params.id, updateData, { new: true });
+  if (!result) {
+    return res.status(404).json({ error: 'Ticket not found' });
+  }
+
+  if (reason) {
+    await TicketNote.create({
+      ticket_id: req.params.id,
+      note_type: 'internal',
+      content: `Ticket transferred. Reason: ${reason}`,
+      created_by: req.body.transferred_by || null,
+    });
+  }
+
+  await TicketHistory.create({
+    ticket_id: req.params.id,
+    action: 'transferred',
+    new_value: `Transferred to team: ${assigned_team_id}, agent: ${assigned_agent_id}`,
+    performed_by: req.body.transferred_by || null,
+  });
+
+  res.json(result);
+}));
 
 // ============================================
 // TICKET NOTES
 // ============================================
 
 // Add note
-router.post('/:id/notes', async (req, res) => {
-  try {
-    const { note_type, content, created_by, is_pinned } = req.body;
-
-    if (!content) {
-      return res.status(400).json({ error: 'Note content is required' });
-    }
-
-    const result = await pool.query(
-      `INSERT INTO ticket_notes (ticket_id, note_type, content, created_by, is_pinned)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING *`,
-      [req.params.id, note_type || 'public', content, created_by, is_pinned || false]
-    );
-
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error adding note:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.post('/:id/notes', asyncHandler(async (req, res) => {
+  const { note_type, content, created_by, is_pinned } = req.body;
+  if (!content) {
+    return res.status(400).json({ error: 'Note content is required' });
   }
-});
+
+  const note = await TicketNote.create({
+    ticket_id: req.params.id,
+    note_type: note_type || 'public',
+    content,
+    created_by,
+    is_pinned: is_pinned || false,
+  });
+
+  res.status(201).json(note);
+}));
 
 // ============================================
 // TICKET WATCHERS
 // ============================================
 
 // Add watcher
-router.post('/:id/watchers', async (req, res) => {
-  try {
-    const { user_id } = req.body;
+router.post('/:id/watchers', asyncHandler(async (req, res) => {
+  const { user_id } = req.body;
 
-    const result = await pool.query(
-      `INSERT INTO ticket_watchers (ticket_id, user_id)
-       VALUES ($1, $2)
-       ON CONFLICT (ticket_id, user_id) DO NOTHING
-       RETURNING *`,
-      [req.params.id, user_id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(400).json({ error: 'User is already watching this ticket' });
-    }
-
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error adding watcher:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  const existing = await TicketWatcher.findOne({ ticket_id: req.params.id, user_id }).lean();
+  if (existing) {
+    return res.status(400).json({ error: 'User is already watching this ticket' });
   }
-});
+
+  const watcher = await TicketWatcher.create({ ticket_id: req.params.id, user_id });
+  res.status(201).json(watcher);
+}));
 
 // Remove watcher
-router.delete('/:id/watchers/:userId', async (req, res) => {
-  try {
-    const result = await pool.query(
-      'DELETE FROM ticket_watchers WHERE ticket_id = $1 AND user_id = $2 RETURNING id',
-      [req.params.id, req.params.userId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Watcher not found' });
-    }
-
-    res.json({ message: 'Watcher removed successfully' });
-  } catch (error) {
-    console.error('Error removing watcher:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.delete('/:id/watchers/:userId', asyncHandler(async (req, res) => {
+  const result = await TicketWatcher.findOneAndDelete({ ticket_id: req.params.id, user_id: req.params.userId });
+  if (!result) {
+    return res.status(404).json({ error: 'Watcher not found' });
   }
-});
+  res.json({ message: 'Watcher removed successfully' });
+}));
 
 export default router;
-

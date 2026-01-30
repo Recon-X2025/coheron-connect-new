@@ -1,5 +1,10 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import Project from '../models/Project.js';
+import ProjectPurchaseRequest from '../models/ProjectPurchaseRequest.js';
+import ProjectPurchaseRequestLine from '../models/ProjectPurchaseRequestLine.js';
+import ProjectInventoryReservation from '../models/ProjectInventoryReservation.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
@@ -8,281 +13,181 @@ const router = express.Router();
 // ============================================
 
 // Get project purchase requests
-router.get('/:projectId/purchase-requests', async (req, res) => {
-  try {
-    const { status } = req.query;
-    let query = `
-      SELECT pr.*, 
-             u.name as requested_by_name,
-             u2.name as approved_by_name,
-             t.name as task_name,
-             COUNT(prl.id) as line_count,
-             SUM(prl.total_amount) as total_amount
-      FROM project_purchase_requests pr
-      LEFT JOIN users u ON pr.requested_by = u.id
-      LEFT JOIN users u2 ON pr.approved_by = u2.id
-      LEFT JOIN project_tasks t ON pr.task_id = t.id
-      LEFT JOIN project_purchase_request_lines prl ON pr.id = prl.request_id
-      WHERE pr.project_id = $1
-    `;
-    const params: any[] = [req.params.projectId];
-    let paramCount = 2;
+router.get('/:projectId/purchase-requests', asyncHandler(async (req, res) => {
+  const { status } = req.query;
+  const filter: any = { project_id: req.params.projectId };
+  if (status) filter.status = status;
 
-    if (status) {
-      query += ` AND pr.status = $${paramCount++}`;
-      params.push(status);
-    }
+  const requests = await ProjectPurchaseRequest.find(filter)
+    .populate('requested_by', 'name')
+    .populate('approved_by', 'name')
+    .populate('task_id', 'name')
+    .sort({ created_at: -1 })
+    .lean();
 
-    query += ' GROUP BY pr.id, u.name, u2.name, t.name ORDER BY pr.created_at DESC';
+  const result = await Promise.all(requests.map(async (pr: any) => {
+    const obj: any = { ...pr };
+    if (obj.requested_by) obj.requested_by_name = obj.requested_by.name;
+    if (obj.approved_by) obj.approved_by_name = obj.approved_by.name;
+    if (obj.task_id) obj.task_name = obj.task_id.name;
 
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching purchase requests:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+    const lineAgg = await ProjectPurchaseRequestLine.aggregate([
+      { $match: { request_id: pr._id } },
+      { $group: { _id: null, line_count: { $sum: 1 }, total_amount: { $sum: '$total_amount' } } },
+    ]);
+    obj.line_count = lineAgg[0]?.line_count || 0;
+    obj.total_amount = lineAgg[0]?.total_amount || 0;
+    return obj;
+  }));
+
+  res.json(result);
+}));
 
 // Create purchase request
-router.post('/:projectId/purchase-requests', async (req, res) => {
-  try {
-    const {
-      task_id,
-      description,
-      required_date,
-      requested_by,
-      lines,
-    } = req.body;
+router.post('/:projectId/purchase-requests', asyncHandler(async (req, res) => {
+  const { task_id, description, required_date, requested_by, lines } = req.body;
 
-    if (!description) {
-      return res.status(400).json({ error: 'Description is required' });
-    }
-
-    // Generate request code
-    const project = await pool.query('SELECT code FROM projects WHERE id = $1', [
-      req.params.projectId,
-    ]);
-    const projectCode = project.rows[0]?.code || 'PROJ';
-    const count = await pool.query(
-      'SELECT COUNT(*) as count FROM project_purchase_requests WHERE project_id = $1',
-      [req.params.projectId]
-    );
-    const num = parseInt(count.rows[0]?.count || '0') + 1;
-    const requestCode = `${projectCode}-PR-${num.toString().padStart(4, '0')}`;
-
-    // Create request
-    const requestResult = await pool.query(
-      `INSERT INTO project_purchase_requests (
-        project_id, request_code, task_id, description, required_date, requested_by, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, 'draft')
-      RETURNING *`,
-      [
-        req.params.projectId,
-        requestCode,
-        task_id,
-        description,
-        required_date,
-        requested_by,
-      ]
-    );
-
-    const requestId = requestResult.rows[0].id;
-
-    // Create lines
-    if (lines && Array.isArray(lines) && lines.length > 0) {
-      for (const line of lines) {
-        const totalAmount = (line.quantity || 0) * (line.unit_price || 0);
-        await pool.query(
-          `INSERT INTO project_purchase_request_lines (
-            request_id, product_id, description, quantity, unit_price, total_amount, vendor_id
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [
-            requestId,
-            line.product_id,
-            line.description,
-            line.quantity,
-            line.unit_price,
-            totalAmount,
-            line.vendor_id,
-          ]
-        );
-      }
-    }
-
-    // Get full request with lines
-    const fullRequest = await pool.query(
-      `SELECT pr.*, 
-              u.name as requested_by_name,
-              t.name as task_name
-       FROM project_purchase_requests pr
-       LEFT JOIN users u ON pr.requested_by = u.id
-       LEFT JOIN project_tasks t ON pr.task_id = t.id
-       WHERE pr.id = $1`,
-      [requestId]
-    );
-
-    const linesResult = await pool.query(
-      `SELECT prl.*, 
-              p.name as product_name
-       FROM project_purchase_request_lines prl
-       LEFT JOIN products p ON prl.product_id = p.id
-       WHERE prl.request_id = $1`,
-      [requestId]
-    );
-
-    res.status(201).json({
-      ...fullRequest.rows[0],
-      lines: linesResult.rows,
-    });
-  } catch (error) {
-    console.error('Error creating purchase request:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!description) {
+    return res.status(400).json({ error: 'Description is required' });
   }
-});
+
+  const project = await Project.findById(req.params.projectId).lean();
+  const projectCode = project?.code || 'PROJ';
+  const count = await ProjectPurchaseRequest.countDocuments({ project_id: req.params.projectId });
+  const num = count + 1;
+  const requestCode = `${projectCode}-PR-${num.toString().padStart(4, '0')}`;
+
+  const request = await ProjectPurchaseRequest.create({
+    project_id: req.params.projectId,
+    request_code: requestCode,
+    task_id, description, required_date, requested_by,
+    status: 'draft',
+  });
+
+  if (lines && Array.isArray(lines) && lines.length > 0) {
+    for (const line of lines) {
+      const totalAmount = (line.quantity || 0) * (line.unit_price || 0);
+      await ProjectPurchaseRequestLine.create({
+        request_id: request._id,
+        product_id: line.product_id,
+        description: line.description,
+        quantity: line.quantity,
+        unit_price: line.unit_price,
+        total_amount: totalAmount,
+        vendor_id: line.vendor_id,
+      });
+    }
+  }
+
+  const fullRequest = await ProjectPurchaseRequest.findById(request._id)
+    .populate('requested_by', 'name')
+    .populate('task_id', 'name')
+    .lean();
+
+  const linesDocs = await ProjectPurchaseRequestLine.find({ request_id: request._id })
+    .populate('product_id', 'name')
+    .lean();
+
+  const lineRows = linesDocs.map((l: any) => {
+    const obj: any = { ...l };
+    if (obj.product_id) obj.product_name = obj.product_id.name;
+    return obj;
+  });
+
+  res.status(201).json({
+    ...(fullRequest || {}),
+    lines: lineRows,
+  });
+}));
 
 // Get purchase request lines
-router.get('/purchase-requests/:id/lines', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT prl.*, 
-              p.name as product_name,
-              p.default_code as product_code
-       FROM project_purchase_request_lines prl
-       LEFT JOIN products p ON prl.product_id = p.id
-       WHERE prl.request_id = $1`,
-      [req.params.id]
-    );
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching purchase request lines:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+router.get('/purchase-requests/:id/lines', asyncHandler(async (req, res) => {
+  const lines = await ProjectPurchaseRequestLine.find({ request_id: req.params.id })
+    .populate('product_id', 'name default_code')
+    .lean();
+
+  const rows = lines.map((l: any) => {
+    const obj: any = { ...l };
+    if (obj.product_id) {
+      obj.product_name = obj.product_id.name;
+      obj.product_code = obj.product_id.default_code;
+    }
+    return obj;
+  });
+
+  res.json(rows);
+}));
 
 // Approve purchase request
-router.post('/purchase-requests/:id/approve', async (req, res) => {
-  try {
-    const { approved_by } = req.body;
+router.post('/purchase-requests/:id/approve', asyncHandler(async (req, res) => {
+  const { approved_by } = req.body;
 
-    const result = await pool.query(
-      `UPDATE project_purchase_requests 
-       SET status = 'approved', approved_by = $1, approved_at = CURRENT_TIMESTAMP
-       WHERE id = $2
-       RETURNING *`,
-      [approved_by, req.params.id]
-    );
+  const request = await ProjectPurchaseRequest.findByIdAndUpdate(
+    req.params.id,
+    { status: 'approved', approved_by, approved_at: new Date() },
+    { new: true }
+  );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Purchase request not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error approving purchase request:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  if (!request) return res.status(404).json({ error: 'Purchase request not found' });
+  res.json(request);
+}));
 
 // ============================================
 // INVENTORY RESERVATIONS
 // ============================================
 
-// Get project inventory reservations
-router.get('/:projectId/inventory-reservations', async (req, res) => {
-  try {
-    const { status } = req.query;
-    let query = `
-      SELECT ir.*, 
-             p.name as product_name,
-             p.default_code as product_code,
-             t.name as task_name
-      FROM project_inventory_reservations ir
-      LEFT JOIN products p ON ir.product_id = p.id
-      LEFT JOIN project_tasks t ON ir.task_id = t.id
-      WHERE ir.project_id = $1
-    `;
-    const params: any[] = [req.params.projectId];
-    let paramCount = 2;
+router.get('/:projectId/inventory-reservations', asyncHandler(async (req, res) => {
+  const { status } = req.query;
+  const filter: any = { project_id: req.params.projectId };
+  if (status) filter.status = status;
 
-    if (status) {
-      query += ` AND ir.status = $${paramCount++}`;
-      params.push(status);
-    }
+  const reservations = await ProjectInventoryReservation.find(filter)
+    .populate('product_id', 'name default_code')
+    .populate('task_id', 'name')
+    .sort({ reserved_date: -1 })
+    .lean();
 
-    query += ' ORDER BY ir.reserved_date DESC';
+  const rows = reservations.map((ir: any) => {
+    const obj: any = { ...ir };
+    if (obj.product_id) { obj.product_name = obj.product_id.name; obj.product_code = obj.product_id.default_code; }
+    if (obj.task_id) obj.task_name = obj.task_id.name;
+    return obj;
+  });
 
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching inventory reservations:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  res.json(rows);
+}));
+
+router.post('/:projectId/inventory-reservations', asyncHandler(async (req, res) => {
+  const { task_id, product_id, quantity, batch_number, serial_number } = req.body;
+
+  if (!product_id || !quantity) {
+    return res.status(400).json({ error: 'Product ID and quantity are required' });
   }
-});
 
-// Create inventory reservation
-router.post('/:projectId/inventory-reservations', async (req, res) => {
-  try {
-    const {
-      task_id,
-      product_id,
-      quantity,
-      batch_number,
-      serial_number,
-    } = req.body;
+  const reservation = await ProjectInventoryReservation.create({
+    project_id: req.params.projectId,
+    task_id, product_id, quantity, batch_number, serial_number,
+    status: 'reserved',
+  });
 
-    if (!product_id || !quantity) {
-      return res.status(400).json({ error: 'Product ID and quantity are required' });
-    }
+  res.status(201).json(reservation);
+}));
 
-    const result = await pool.query(
-      `INSERT INTO project_inventory_reservations (
-        project_id, task_id, product_id, quantity, batch_number, serial_number, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, 'reserved')
-      RETURNING *`,
-      [
-        req.params.projectId,
-        task_id,
-        product_id,
-        quantity,
-        batch_number,
-        serial_number,
-      ]
-    );
+router.put('/inventory-reservations/:id', asyncHandler(async (req, res) => {
+  const { status } = req.body;
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating inventory reservation:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (!['reserved', 'allocated', 'consumed', 'released'].includes(status)) {
+    return res.status(400).json({ error: 'Invalid status' });
   }
-});
 
-// Update reservation status (allocate, consume, release)
-router.put('/inventory-reservations/:id', async (req, res) => {
-  try {
-    const { status } = req.body;
+  const reservation = await ProjectInventoryReservation.findByIdAndUpdate(
+    req.params.id,
+    { status },
+    { new: true }
+  );
 
-    if (!['reserved', 'allocated', 'consumed', 'released'].includes(status)) {
-      return res.status(400).json({ error: 'Invalid status' });
-    }
-
-    const result = await pool.query(
-      `UPDATE project_inventory_reservations 
-       SET status = $1
-       WHERE id = $2
-       RETURNING *`,
-      [status, req.params.id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Reservation not found' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating reservation:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  if (!reservation) return res.status(404).json({ error: 'Reservation not found' });
+  res.json(reservation);
+}));
 
 export default router;
-

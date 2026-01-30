@@ -1,87 +1,61 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import { Applicant } from '../models/Applicant.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 
 const router = express.Router();
 
 // Get applicants
-router.get('/', async (req, res) => {
-  try {
-    const { stage_id } = req.query;
-    let query = 'SELECT * FROM applicants WHERE 1=1';
-    const params: any[] = [];
-    let paramCount = 1;
+router.get('/', asyncHandler(async (req, res) => {
+  const { stage_id } = req.query;
+  const filter: any = {};
 
-    if (stage_id) {
-      query += ` AND stage_id = $${paramCount}`;
-      params.push(stage_id);
-      paramCount++;
-    }
-
-    query += ' ORDER BY created_at DESC';
-    const result = await pool.query(query, params);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching applicants:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (stage_id) {
+    filter.stage_id = stage_id;
   }
-});
+
+  const pagination = getPaginationParams(req);
+  const result = await paginateQuery(
+    Applicant.find(filter).sort({ created_at: -1 }).lean(),
+    pagination,
+    filter,
+    Applicant
+  );
+  res.json(result);
+}));
 
 // Create applicant
-router.post('/', async (req, res) => {
-  try {
-    const { partner_name, name, email_from, stage_id, priority } = req.body;
+router.post('/', asyncHandler(async (req, res) => {
+  const { partner_name, name, email_from, stage_id, priority } = req.body;
 
-    const result = await pool.query(`
-      INSERT INTO applicants (partner_name, name, email_from, stage_id, priority)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING *
-    `, [partner_name, name, email_from, stage_id || 1, priority || 0]);
+  const applicant = await Applicant.create({
+    partner_name, name, email_from,
+    stage_id: stage_id || 1,
+    priority: priority || 0
+  });
 
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating applicant:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.status(201).json(applicant);
+}));
 
 // Update applicant
-router.put('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { stage_id, priority } = req.body;
+router.put('/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { stage_id, priority } = req.body;
 
-    const updates: string[] = [];
-    const params: any[] = [];
-    let paramCount = 1;
+  const updateFields: any = {};
+  if (stage_id !== undefined) updateFields.stage_id = stage_id;
+  if (priority !== undefined) updateFields.priority = priority;
 
-    if (stage_id !== undefined) {
-      updates.push(`stage_id = $${paramCount}`);
-      params.push(stage_id);
-      paramCount++;
-    }
-    if (priority !== undefined) {
-      updates.push(`priority = $${paramCount}`);
-      params.push(priority);
-      paramCount++;
-    }
-
-    if (updates.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-
-    params.push(id);
-    const query = `UPDATE applicants SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING *`;
-    const result = await pool.query(query, params);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Applicant not found' });
-    }
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating applicant:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (Object.keys(updateFields).length === 0) {
+    return res.status(400).json({ error: 'No fields to update' });
   }
-});
+
+  const applicant = await Applicant.findByIdAndUpdate(id, updateFields, { new: true });
+
+  if (!applicant) {
+    return res.status(404).json({ error: 'Applicant not found' });
+  }
+  res.json(applicant);
+}));
 
 export default router;
-

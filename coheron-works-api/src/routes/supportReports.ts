@@ -1,5 +1,8 @@
 import express from 'express';
-import pool from '../database/connection.js';
+import { SupportTicket } from '../models/SupportTicket.js';
+import { SupportAgent } from '../models/SupportTeam.js';
+import { SurveyResponse } from '../models/SupportSurvey.js';
+import { asyncHandler } from '../middleware/asyncHandler.js';
 
 const router = express.Router();
 
@@ -8,302 +11,289 @@ const router = express.Router();
 // ============================================
 
 // Dashboard overview
-router.get('/dashboard', async (req, res) => {
-  try {
-    const { start_date, end_date } = req.query;
-
-    let dateFilter = '';
-    const params: any[] = [];
-    if (start_date && end_date) {
-      dateFilter = 'WHERE t.created_at BETWEEN $1 AND $2';
-      params.push(start_date, end_date);
-    }
-
-    // Total tickets
-    const totalTickets = await pool.query(
-      `SELECT COUNT(*) as count FROM support_tickets t ${dateFilter}`,
-      params
-    );
-
-    // Tickets by status
-    const ticketsByStatus = await pool.query(
-      `SELECT status, COUNT(*) as count 
-       FROM support_tickets t 
-       ${dateFilter}
-       GROUP BY status`,
-      params
-    );
-
-    // Tickets by priority
-    const ticketsByPriority = await pool.query(
-      `SELECT priority, COUNT(*) as count 
-       FROM support_tickets t 
-       ${dateFilter}
-       GROUP BY priority`,
-      params
-    );
-
-    // Tickets by channel
-    const ticketsByChannel = await pool.query(
-      `SELECT tc.name as channel_name, COUNT(*) as count 
-       FROM support_tickets t
-       LEFT JOIN ticket_channels tc ON t.channel_id = tc.id
-       ${dateFilter}
-       GROUP BY tc.name`,
-      params
-    );
-
-    // SLA metrics
-    const slaMetrics = await pool.query(
-      `SELECT 
-         COUNT(*) as total_tickets,
-         COUNT(CASE WHEN is_sla_breached = true THEN 1 END) as breached_count,
-         COUNT(CASE WHEN resolved_at IS NOT NULL AND resolved_at <= sla_resolution_deadline THEN 1 END) as met_count
-       FROM support_tickets t
-       ${dateFilter}`,
-      params
-    );
-
-    // Average response time
-    const avgResponseTime = await pool.query(
-      `SELECT AVG(EXTRACT(EPOCH FROM (first_response_at - created_at)) / 60) as avg_minutes
-       FROM support_tickets t
-       WHERE first_response_at IS NOT NULL ${dateFilter ? `AND ${dateFilter.replace('WHERE', '')}` : ''}`,
-      params
-    );
-
-    // Average resolution time
-    const avgResolutionTime = await pool.query(
-      `SELECT AVG(EXTRACT(EPOCH FROM (resolved_at - created_at)) / 60) as avg_minutes
-       FROM support_tickets t
-       WHERE resolved_at IS NOT NULL ${dateFilter ? `AND ${dateFilter.replace('WHERE', '')}` : ''}`,
-      params
-    );
-
-    res.json({
-      total_tickets: parseInt(totalTickets.rows[0]?.count || '0'),
-      tickets_by_status: ticketsByStatus.rows,
-      tickets_by_priority: ticketsByPriority.rows,
-      tickets_by_channel: ticketsByChannel.rows,
-      sla_metrics: {
-        ...slaMetrics.rows[0],
-        breach_rate:
-          slaMetrics.rows[0]?.total_tickets > 0
-            ? (slaMetrics.rows[0]?.breached_count / slaMetrics.rows[0]?.total_tickets) * 100
-            : 0,
-      },
-      avg_response_time_minutes: parseFloat(avgResponseTime.rows[0]?.avg_minutes || '0'),
-      avg_resolution_time_minutes: parseFloat(avgResolutionTime.rows[0]?.avg_minutes || '0'),
-    });
-  } catch (error) {
-    console.error('Error fetching dashboard data:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.get('/dashboard', asyncHandler(async (req, res) => {
+  const { start_date, end_date } = req.query;
+  const dateFilter: any = {};
+  if (start_date && end_date) {
+    dateFilter.created_at = { $gte: new Date(start_date as string), $lte: new Date(end_date as string) };
   }
-});
+
+  const totalTickets = await SupportTicket.countDocuments(dateFilter);
+
+  const ticketsByStatus = await SupportTicket.aggregate([
+    { $match: dateFilter },
+    { $group: { _id: '$status', count: { $sum: 1 } } },
+  ]);
+
+  const ticketsByPriority = await SupportTicket.aggregate([
+    { $match: dateFilter },
+    { $group: { _id: '$priority', count: { $sum: 1 } } },
+  ]);
+
+  const ticketsByChannel = await SupportTicket.aggregate([
+    { $match: dateFilter },
+    { $lookup: { from: 'ticketchannels', localField: 'channel_id', foreignField: '_id', as: 'channel' } },
+    { $unwind: { path: '$channel', preserveNullAndEmptyArrays: true } },
+    { $group: { _id: '$channel.name', count: { $sum: 1 } } },
+  ]);
+
+  const slaMetrics = await SupportTicket.aggregate([
+    { $match: dateFilter },
+    {
+      $group: {
+        _id: null,
+        total_tickets: { $sum: 1 },
+        breached_count: { $sum: { $cond: ['$is_sla_breached', 1, 0] } },
+        met_count: {
+          $sum: {
+            $cond: [
+              { $and: [{ $ne: ['$resolved_at', null] }, { $lte: ['$resolved_at', '$sla_resolution_deadline'] }] },
+              1, 0
+            ]
+          }
+        },
+      },
+    },
+  ]);
+
+  const avgResponseTime = await SupportTicket.aggregate([
+    { $match: { ...dateFilter, first_response_at: { $ne: null } } },
+    {
+      $group: {
+        _id: null,
+        avg_minutes: { $avg: { $divide: [{ $subtract: ['$first_response_at', '$created_at'] }, 60000] } },
+      },
+    },
+  ]);
+
+  const avgResolutionTime = await SupportTicket.aggregate([
+    { $match: { ...dateFilter, resolved_at: { $ne: null } } },
+    {
+      $group: {
+        _id: null,
+        avg_minutes: { $avg: { $divide: [{ $subtract: ['$resolved_at', '$created_at'] }, 60000] } },
+      },
+    },
+  ]);
+
+  const sla = slaMetrics[0] || { total_tickets: 0, breached_count: 0, met_count: 0 };
+
+  res.json({
+    total_tickets: totalTickets,
+    tickets_by_status: ticketsByStatus.map((s) => ({ status: s._id, count: s.count })),
+    tickets_by_priority: ticketsByPriority.map((p) => ({ priority: p._id, count: p.count })),
+    tickets_by_channel: ticketsByChannel.map((c) => ({ channel_name: c._id, count: c.count })),
+    sla_metrics: {
+      ...sla,
+      breach_rate: sla.total_tickets > 0 ? (sla.breached_count / sla.total_tickets) * 100 : 0,
+    },
+    avg_response_time_minutes: avgResponseTime[0]?.avg_minutes || 0,
+    avg_resolution_time_minutes: avgResolutionTime[0]?.avg_minutes || 0,
+  });
+}));
 
 // Agent performance report
-router.get('/agents/performance', async (req, res) => {
-  try {
-    const { start_date, end_date, agent_id } = req.query;
+router.get('/agents/performance', asyncHandler(async (req, res) => {
+  const { start_date, end_date, agent_id } = req.query;
 
-    let dateFilter = '';
-    const params: any[] = [];
-    let paramCount = 1;
+  const matchStage: any = { is_active: true };
+  if (agent_id) matchStage._id = agent_id;
 
-    if (start_date && end_date) {
-      dateFilter = `AND t.created_at BETWEEN $${paramCount++} AND $${paramCount++}`;
-      params.push(start_date, end_date);
-    }
-
-    if (agent_id) {
-      dateFilter += ` AND t.assigned_agent_id = $${paramCount++}`;
-      params.push(agent_id);
-    }
-
-    const result = await pool.query(
-      `SELECT 
-         sa.id as agent_id,
-         u.name as agent_name,
-         COUNT(DISTINCT t.id) as tickets_assigned,
-         COUNT(DISTINCT CASE WHEN t.status = 'resolved' THEN t.id END) as tickets_resolved,
-         COUNT(DISTINCT CASE WHEN t.status = 'closed' THEN t.id END) as tickets_closed,
-         AVG(EXTRACT(EPOCH FROM (t.first_response_at - t.created_at)) / 60) as avg_first_response_minutes,
-         AVG(EXTRACT(EPOCH FROM (t.resolved_at - t.created_at)) / 60) as avg_resolution_minutes,
-         COUNT(DISTINCT CASE WHEN t.is_sla_breached = false AND t.resolved_at IS NOT NULL THEN t.id END) as sla_met_count,
-         COUNT(DISTINCT CASE WHEN t.is_sla_breached = true THEN t.id END) as sla_breached_count
-       FROM support_agents sa
-       LEFT JOIN users u ON sa.user_id = u.id
-       LEFT JOIN support_tickets t ON sa.id = t.assigned_agent_id ${dateFilter}
-       WHERE sa.is_active = true
-       GROUP BY sa.id, u.name
-       ORDER BY tickets_resolved DESC`,
-      params
-    );
-
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching agent performance:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  const ticketMatch: any = {};
+  if (start_date && end_date) {
+    ticketMatch['tickets.created_at'] = { $gte: new Date(start_date as string), $lte: new Date(end_date as string) };
   }
-});
+
+  const agents = await SupportAgent.aggregate([
+    { $match: matchStage },
+    { $lookup: { from: 'users', localField: 'user_id', foreignField: '_id', as: 'user' } },
+    { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+    { $lookup: { from: 'supporttickets', localField: '_id', foreignField: 'assigned_agent_id', as: 'tickets' } },
+    {
+      $project: {
+        agent_id: '$_id',
+        agent_name: '$user.name',
+        tickets_assigned: { $size: '$tickets' },
+        tickets_resolved: {
+          $size: { $filter: { input: '$tickets', as: 't', cond: { $eq: ['$$t.status', 'resolved'] } } },
+        },
+        tickets_closed: {
+          $size: { $filter: { input: '$tickets', as: 't', cond: { $eq: ['$$t.status', 'closed'] } } },
+        },
+        avg_first_response_minutes: {
+          $avg: {
+            $map: {
+              input: { $filter: { input: '$tickets', as: 't', cond: { $ne: ['$$t.first_response_at', null] } } },
+              as: 't',
+              in: { $divide: [{ $subtract: ['$$t.first_response_at', '$$t.created_at'] }, 60000] },
+            },
+          },
+        },
+        avg_resolution_minutes: {
+          $avg: {
+            $map: {
+              input: { $filter: { input: '$tickets', as: 't', cond: { $ne: ['$$t.resolved_at', null] } } },
+              as: 't',
+              in: { $divide: [{ $subtract: ['$$t.resolved_at', '$$t.created_at'] }, 60000] },
+            },
+          },
+        },
+        sla_met_count: {
+          $size: {
+            $filter: {
+              input: '$tickets', as: 't',
+              cond: { $and: [{ $eq: ['$$t.is_sla_breached', false] }, { $ne: ['$$t.resolved_at', null] }] },
+            },
+          },
+        },
+        sla_breached_count: {
+          $size: { $filter: { input: '$tickets', as: 't', cond: { $eq: ['$$t.is_sla_breached', true] } } },
+        },
+      },
+    },
+    { $sort: { tickets_resolved: -1 } },
+  ]);
+
+  res.json(agents);
+}));
 
 // Ticket volume trends
-router.get('/tickets/trends', async (req, res) => {
-  try {
-    const { period = 'day', start_date, end_date } = req.query;
-
-    let dateFilter = '';
-    const params: any[] = [];
-    if (start_date && end_date) {
-      dateFilter = 'WHERE created_at BETWEEN $1 AND $2';
-      params.push(start_date, end_date);
-    }
-
-    let groupBy = '';
-    if (period === 'day') {
-      groupBy = "DATE_TRUNC('day', created_at)";
-    } else if (period === 'week') {
-      groupBy = "DATE_TRUNC('week', created_at)";
-    } else if (period === 'month') {
-      groupBy = "DATE_TRUNC('month', created_at)";
-    }
-
-    const result = await pool.query(
-      `SELECT 
-         ${groupBy} as period,
-         COUNT(*) as ticket_count,
-         COUNT(CASE WHEN status = 'open' THEN 1 END) as open_count,
-         COUNT(CASE WHEN status = 'resolved' THEN 1 END) as resolved_count
-       FROM support_tickets
-       ${dateFilter}
-       GROUP BY ${groupBy}
-       ORDER BY period`,
-      params
-    );
-
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching ticket trends:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.get('/tickets/trends', asyncHandler(async (req, res) => {
+  const { period = 'day', start_date, end_date } = req.query;
+  const dateFilter: any = {};
+  if (start_date && end_date) {
+    dateFilter.created_at = { $gte: new Date(start_date as string), $lte: new Date(end_date as string) };
   }
-});
+
+  let dateFormat: string;
+  if (period === 'week') {
+    dateFormat = '%Y-%U';
+  } else if (period === 'month') {
+    dateFormat = '%Y-%m';
+  } else {
+    dateFormat = '%Y-%m-%d';
+  }
+
+  const result = await SupportTicket.aggregate([
+    { $match: dateFilter },
+    {
+      $group: {
+        _id: { $dateToString: { format: dateFormat, date: '$created_at' } },
+        ticket_count: { $sum: 1 },
+        open_count: { $sum: { $cond: [{ $eq: ['$status', 'open'] }, 1, 0] } },
+        resolved_count: { $sum: { $cond: [{ $eq: ['$status', 'resolved'] }, 1, 0] } },
+      },
+    },
+    { $sort: { _id: 1 } },
+    { $project: { period: '$_id', ticket_count: 1, open_count: 1, resolved_count: 1, _id: 0 } },
+  ]);
+
+  res.json(result);
+}));
 
 // Category-wise tickets
-router.get('/tickets/by-category', async (req, res) => {
-  try {
-    const { start_date, end_date } = req.query;
-
-    let dateFilter = '';
-    const params: any[] = [];
-    if (start_date && end_date) {
-      dateFilter = 'AND t.created_at BETWEEN $1 AND $2';
-      params.push(start_date, end_date);
-    }
-
-    const result = await pool.query(
-      `SELECT 
-         tc.id as category_id,
-         tc.name as category_name,
-         COUNT(*) as ticket_count,
-         AVG(EXTRACT(EPOCH FROM (t.resolved_at - t.created_at)) / 60) as avg_resolution_minutes
-       FROM support_tickets t
-       LEFT JOIN ticket_categories tc ON t.category_id = tc.id
-       WHERE 1=1 ${dateFilter}
-       GROUP BY tc.id, tc.name
-       ORDER BY ticket_count DESC`,
-      params
-    );
-
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching category-wise tickets:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.get('/tickets/by-category', asyncHandler(async (req, res) => {
+  const { start_date, end_date } = req.query;
+  const dateFilter: any = {};
+  if (start_date && end_date) {
+    dateFilter.created_at = { $gte: new Date(start_date as string), $lte: new Date(end_date as string) };
   }
-});
+
+  const result = await SupportTicket.aggregate([
+    { $match: dateFilter },
+    { $lookup: { from: 'ticketcategories', localField: 'category_id', foreignField: '_id', as: 'category' } },
+    { $unwind: { path: '$category', preserveNullAndEmptyArrays: true } },
+    {
+      $group: {
+        _id: { category_id: '$category_id', category_name: '$category.name' },
+        ticket_count: { $sum: 1 },
+        avg_resolution_minutes: {
+          $avg: {
+            $cond: [
+              { $ne: ['$resolved_at', null] },
+              { $divide: [{ $subtract: ['$resolved_at', '$created_at'] }, 60000] },
+              null,
+            ],
+          },
+        },
+      },
+    },
+    { $sort: { ticket_count: -1 } },
+    { $project: { category_id: '$_id.category_id', category_name: '$_id.category_name', ticket_count: 1, avg_resolution_minutes: 1, _id: 0 } },
+  ]);
+
+  res.json(result);
+}));
 
 // Backlog aging report
-router.get('/tickets/backlog-aging', async (req, res) => {
-  try {
-    const result = await pool.query(
-      `SELECT 
-         id,
-         ticket_number,
-         subject,
-         status,
-         priority,
-         created_at,
-         EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - created_at)) / 86400 as age_days,
-         assigned_agent_id,
-         assigned_team_id
-       FROM support_tickets
-       WHERE status NOT IN ('resolved', 'closed', 'cancelled')
-       ORDER BY created_at ASC`
-    );
+router.get('/tickets/backlog-aging', asyncHandler(async (req, res) => {
+  const tickets = await SupportTicket.find({
+    status: { $nin: ['resolved', 'closed', 'cancelled'] },
+  })
+    .sort({ created_at: 1 })
+    .lean();
 
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching backlog aging:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  const now = new Date();
+  const result = tickets.map((t: any) => ({
+    ...t,
+    id: t._id,
+    age_days: (now.getTime() - new Date(t.created_at).getTime()) / 86400000,
+  }));
+
+  res.json(result);
+}));
 
 // Customer satisfaction trends
-router.get('/surveys/satisfaction-trends', async (req, res) => {
-  try {
-    const { start_date, end_date } = req.query;
-
-    let dateFilter = '';
-    const params: any[] = [];
-    if (start_date && end_date) {
-      dateFilter = 'WHERE sr.submitted_at BETWEEN $1 AND $2';
-      params.push(start_date, end_date);
-    }
-
-    const result = await pool.query(
-      `SELECT 
-         DATE_TRUNC('month', sr.submitted_at) as month,
-         AVG(sr.score) as avg_score,
-         COUNT(*) as response_count
-       FROM survey_responses sr
-       ${dateFilter}
-       WHERE sr.score IS NOT NULL
-       GROUP BY DATE_TRUNC('month', sr.submitted_at)
-       ORDER BY month`,
-      params
-    );
-
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching satisfaction trends:', error);
-    res.status(500).json({ error: 'Internal server error' });
+router.get('/surveys/satisfaction-trends', asyncHandler(async (req, res) => {
+  const { start_date, end_date } = req.query;
+  const dateFilter: any = { score: { $ne: null } };
+  if (start_date && end_date) {
+    dateFilter.submitted_at = { $gte: new Date(start_date as string), $lte: new Date(end_date as string) };
   }
-});
+
+  const result = await SurveyResponse.aggregate([
+    { $match: dateFilter },
+    {
+      $group: {
+        _id: { $dateToString: { format: '%Y-%m', date: '$submitted_at' } },
+        avg_score: { $avg: '$score' },
+        response_count: { $sum: 1 },
+      },
+    },
+    { $sort: { _id: 1 } },
+    { $project: { month: '$_id', avg_score: 1, response_count: 1, _id: 0 } },
+  ]);
+
+  res.json(result);
+}));
 
 // Top recurring issues
-router.get('/tickets/recurring-issues', async (req, res) => {
-  try {
-    const { limit = 10 } = req.query;
+router.get('/tickets/recurring-issues', asyncHandler(async (req, res) => {
+  const { limit = 10 } = req.query;
 
-    const result = await pool.query(
-      `SELECT 
-         subject,
-         category_id,
-         COUNT(*) as occurrence_count,
-         COUNT(DISTINCT partner_id) as affected_customers
-       FROM support_tickets
-       GROUP BY subject, category_id
-       HAVING COUNT(*) > 1
-       ORDER BY occurrence_count DESC
-       LIMIT $1`,
-      [limit]
-    );
+  const result = await SupportTicket.aggregate([
+    {
+      $group: {
+        _id: { subject: '$subject', category_id: '$category_id' },
+        occurrence_count: { $sum: 1 },
+        affected_customers: { $addToSet: '$partner_id' },
+      },
+    },
+    { $match: { occurrence_count: { $gt: 1 } } },
+    { $sort: { occurrence_count: -1 } },
+    { $limit: parseInt(limit as string) },
+    {
+      $project: {
+        subject: '$_id.subject',
+        category_id: '$_id.category_id',
+        occurrence_count: 1,
+        affected_customers: { $size: '$affected_customers' },
+        _id: 0,
+      },
+    },
+  ]);
 
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching recurring issues:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+  res.json(result);
+}));
 
 export default router;
-
