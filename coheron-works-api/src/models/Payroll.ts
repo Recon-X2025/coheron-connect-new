@@ -15,6 +15,16 @@ const payslipSchema = new Schema({
   gross_wage: { type: Number, default: 0 },
   net_wage: { type: Number, default: 0 },
   state: { type: String, default: 'draft' },
+  tax_deductions: {
+    tds: { type: Number, default: 0 },
+    professional_tax: { type: Number, default: 0 },
+    regime: { type: String, enum: ['old', 'new'], default: 'new' },
+  },
+  deduction_breakdown: [{
+    name: { type: String },
+    amount: { type: Number },
+    section: { type: String },
+  }],
 }, schemaOptions);
 
 payslipSchema.index({ employee_id: 1 });

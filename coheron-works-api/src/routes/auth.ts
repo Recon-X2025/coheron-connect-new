@@ -1,9 +1,11 @@
 import express from 'express';
 import User from '../models/User.js';
+import { TwoFactorAuth } from '../models/TwoFactorAuth.js';
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { getUserRoles, getUserPermissions } from '../utils/permissions.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
+import { generateOTP, sendEmailOTP, sendSmsOTP } from '../services/twoFactorService.js';
 
 const router = express.Router();
 
@@ -48,6 +50,45 @@ router.post('/login', asyncHandler(async (req, res) => {
 
   const jwtSecret = process.env.JWT_SECRET || 'secret';
   const expiresIn = process.env.JWT_EXPIRES_IN || '24h';
+
+  // Check if 2FA is enabled
+  if (user.two_factor_enabled) {
+    const tfa = await TwoFactorAuth.findOne({ user_id: user._id, is_verified: true });
+    if (tfa) {
+      // Send OTP if sms/email method
+      if (tfa.method === 'email') {
+        const { code, expiresAt } = generateOTP();
+        tfa.set({ otp_code: code, otp_expires_at: expiresAt });
+        await tfa.save();
+        await sendEmailOTP(user.email, code);
+      } else if (tfa.method === 'sms' && tfa.phone_number) {
+        const { code, expiresAt } = generateOTP();
+        tfa.set({ otp_code: code, otp_expires_at: expiresAt });
+        await tfa.save();
+        await sendSmsOTP(tfa.phone_number, code);
+      }
+
+      // Issue 5-minute partial JWT
+      const partialToken = jwt.sign(
+        {
+          userId: user._id.toString(),
+          uid: user.uid,
+          email: user.email,
+          tenant_id: user.tenant_id?.toString(),
+          twoFactorPending: true,
+        },
+        jwtSecret,
+        { expiresIn: '5m' } as SignOptions
+      );
+
+      return res.json({
+        requiresTwoFactor: true,
+        method: tfa.method,
+        partialToken,
+      });
+    }
+  }
+
   const token = jwt.sign(
     {
       userId: user._id.toString(),

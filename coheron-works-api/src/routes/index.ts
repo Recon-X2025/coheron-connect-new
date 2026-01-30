@@ -93,11 +93,18 @@ import customFieldsRoutes from './customFields.js';
 import stockReservationsRoutes from './stockReservations.js';
 import paymentsRoutes from './payments.js';
 import filesRoutes from './files.js';
+import twoFactorRoutes from './twoFactor.js';
+import whatsappWebhookRoutes from './whatsappWebhook.js';
+import taxComplianceRoutes from './taxCompliance.js';
 
 const router = express.Router();
 
+// WhatsApp webhook (public, no auth — must be before auth middleware)
+router.use('/whatsapp', whatsappWebhookRoutes);
+
 // Always-available routes (no module guard)
 router.use('/auth', authRoutes);
+router.use('/auth/2fa', twoFactorRoutes);
 router.use('/partners', partnersRoutes);
 router.use('/rbac', rbacRoutes);
 router.use('/activities', activitiesRoutes);
@@ -135,6 +142,9 @@ router.use('/goals', requireModule('hr'), goalsRoutes);
 router.use('/courses', requireModule('hr'), coursesRoutes);
 router.use('/applicants', requireModule('hr'), applicantsRoutes);
 router.use('/policies', requireModule('hr'), policiesRoutes);
+
+// HR - Tax Compliance
+router.use('/hr/tax', requireModule('hr'), taxComplianceRoutes);
 
 // Manufacturing Module
 router.use('/manufacturing', requireModule('manufacturing'), manufacturingRoutes);

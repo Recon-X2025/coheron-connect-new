@@ -4,6 +4,7 @@ import { SlaPolicy } from '../models/SlaPolicy.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 import { triggerWorkflows } from '../middleware/workflowTrigger.js';
+import { getWhatsAppService } from '../services/whatsappService.js';
 
 const router = express.Router();
 
@@ -419,6 +420,20 @@ router.post('/:id/conversations', asyncHandler(async (req, res) => {
   if (!ticket) {
     return res.status(404).json({ error: 'Ticket not found' });
   }
+
+  // If this is a WhatsApp ticket and direction is outbound, send via WhatsApp
+  const cf = (ticket as any).custom_fields;
+  if (cf?.channel_type === 'whatsapp' && cf?.whatsapp_phone && req.body.direction === 'outbound') {
+    try {
+      const wa = getWhatsAppService();
+      if (wa.isEnabled()) {
+        await wa.sendTextMessage(cf.whatsapp_phone, req.body.body_text || '');
+      }
+    } catch (err) {
+      // Non-critical: message saved but WhatsApp send failed
+    }
+  }
+
   res.status(201).json(ticket);
 }));
 

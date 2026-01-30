@@ -3,6 +3,7 @@ import { Payslip, SalaryStructure } from '../models/Payroll.js';
 import { Employee } from '../models/Employee.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
+import { calculateOldRegimeTax, calculateNewRegimeTax, TaxInput } from '../services/taxCalculationService.js';
 
 const router = express.Router();
 
@@ -95,8 +96,46 @@ router.delete('/salary-structure/:id', asyncHandler(async (req, res) => {
 router.post('/payslips', asyncHandler(async (req, res) => {
   const { employee_id, name, date_from, date_to, basic_wage, gross_wage, net_wage } = req.body;
 
+  // Compute TDS if employee exists
+  let taxDeductions: any = undefined;
+  let deductionBreakdown: any[] = [];
+
+  try {
+    const emp = await Employee.findById(employee_id).lean() as any;
+    if (emp) {
+      const declarations = emp.tax_declarations || {};
+      const regime = declarations.regime || emp.tax_regime || 'new';
+      const salary = emp.salary || {};
+      const annualGross = (gross_wage || basic_wage || salary.ctc || salary.basic || 0) * 12;
+
+      const input: TaxInput = {
+        gross_annual_salary: annualGross,
+        basic_salary: (salary.basic || 0) * 12,
+        hra_received: (salary.hra || 0) * 12,
+        rent_paid: declarations.rent_paid || 0,
+        metro_city: declarations.metro_city || false,
+        lta_claimed: declarations.lta_claimed || 0,
+        section_80c: declarations.section_80c || 0,
+        section_80d: declarations.section_80d || 0,
+        section_24b: declarations.section_24b || 0,
+      };
+
+      const taxResult = regime === 'old' ? calculateOldRegimeTax(input) : calculateNewRegimeTax(input);
+      const monthlyTds = Math.round(taxResult.total_tax / 12);
+
+      taxDeductions = { tds: monthlyTds, professional_tax: 200, regime };
+      deductionBreakdown = [
+        { name: 'TDS', amount: monthlyTds, section: 'Section 192' },
+        { name: 'Professional Tax', amount: 200, section: 'State PT' },
+      ];
+    }
+  } catch (err) {
+    // Non-critical: payslip still created without TDS
+  }
+
   const payslip = await Payslip.create({
-    employee_id, name, date_from, date_to, basic_wage, gross_wage, net_wage, state: 'draft'
+    employee_id, name, date_from, date_to, basic_wage, gross_wage, net_wage, state: 'draft',
+    ...(taxDeductions && { tax_deductions: taxDeductions, deduction_breakdown: deductionBreakdown }),
   });
 
   res.status(201).json(payslip);

@@ -20,6 +20,8 @@ const twoFactorAuthSchema = new Schema({
   last_used_at: { type: Date },
   phone_number: { type: String },
   email: { type: String },
+  otp_code: { type: String },
+  otp_expires_at: { type: Date },
 }, schemaOptions);
 
 twoFactorAuthSchema.index({ user_id: 1 }, { unique: true });
