@@ -1,5 +1,6 @@
 import express from 'express';
 import { asyncHandler } from '../middleware/asyncHandler.js';
+import { getPaginationParams, paginateQuery } from '../utils/pagination.js';
 import { WebsiteOrder, WebsiteOrderItem, WebsiteOrderStatusHistory } from '../models/WebsiteOrder.js';
 import { WebsiteCart, WebsiteCartItem } from '../models/WebsiteCart.js';
 import Product from '../models/Product.js';
@@ -21,13 +22,17 @@ router.get('/', asyncHandler(async (req, res) => {
     ];
   }
 
-  const orders = await WebsiteOrder.find(filter)
-    .populate('customer_id', 'name email')
-    .sort({ created_at: -1 })
-    .lean();
+  const pagination = getPaginationParams(req);
+  const paginatedResult = await paginateQuery(
+    WebsiteOrder.find(filter)
+      .populate('customer_id', 'name email')
+      .sort({ created_at: -1 })
+      .lean(),
+    pagination, filter, WebsiteOrder
+  );
 
   // If search includes partner name, we need post-filter
-  let result = orders.map((o: any) => ({
+  let result = paginatedResult.data.map((o: any) => ({
     ...o,
     id: o._id,
     customer_name: o.customer_id?.name,
@@ -41,7 +46,7 @@ router.get('/', asyncHandler(async (req, res) => {
     );
   }
 
-  res.json(result);
+  res.json({ data: result, pagination: paginatedResult.pagination });
 }));
 
 // Get order by ID
@@ -137,16 +142,20 @@ router.post('/checkout', asyncHandler(async (req, res) => {
   // Create ERP sales order
   let erpOrderId = null;
   if (customer_id) {
-    const erpOrder = await SaleOrder.create({
-      name: `SO-${orderNumber}`,
-      partner_id: customer_id,
-      date_order: new Date(),
-      amount_total: order.total,
-      state: 'draft',
-    });
-    erpOrderId = erpOrder._id;
+    try {
+      const erpOrder = await SaleOrder.create({
+        name: `SO-${orderNumber}`,
+        partner_id: customer_id,
+        date_order: new Date(),
+        amount_total: order.total,
+        state: 'draft',
+      });
+      erpOrderId = erpOrder._id;
 
-    await WebsiteOrder.findByIdAndUpdate(order._id, { erp_order_id: erpOrderId });
+      await WebsiteOrder.findByIdAndUpdate(order._id, { erp_order_id: erpOrderId });
+    } catch (erpError) {
+      console.error('Error creating ERP order:', erpError);
+    }
   }
 
   // Add status history
@@ -164,58 +173,48 @@ router.post('/checkout', asyncHandler(async (req, res) => {
 }));
 
 // Update order status
-router.put('/:id/status', async (req, res) => {
-  try {
-    const { status, notes } = req.body;
+router.put('/:id/status', asyncHandler(async (req, res) => {
+  const { status, notes } = req.body;
 
-    const order = await WebsiteOrder.findById(req.params.id);
-    if (!order) {
-      return res.status(404).json({ error: 'Order not found' });
-    }
-
-    await WebsiteOrder.findByIdAndUpdate(req.params.id, { status });
-
-    await WebsiteOrderStatusHistory.create({
-      order_id: req.params.id,
-      status,
-      notes: notes || '',
-    });
-
-    // Update ERP order if linked
-    if (order.erp_order_id) {
-      let erpState = 'draft';
-      if (status === 'confirmed' || status === 'paid') erpState = 'sale';
-      else if (status === 'cancelled') erpState = 'cancel';
-
-      await SaleOrder.findByIdAndUpdate(order.erp_order_id, { state: erpState });
-    }
-
-    res.json({ message: 'Order status updated', status });
-  } catch (error) {
-    console.error('Error updating order status:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  const order = await WebsiteOrder.findById(req.params.id).lean();
+  if (!order) {
+    return res.status(404).json({ error: 'Order not found' });
   }
-});
+
+  await WebsiteOrder.findByIdAndUpdate(req.params.id, { status });
+
+  await WebsiteOrderStatusHistory.create({
+    order_id: req.params.id,
+    status,
+    notes: notes || '',
+  });
+
+  // Update ERP order if linked
+  if (order.erp_order_id) {
+    let erpState = 'draft';
+    if (status === 'confirmed' || status === 'paid') erpState = 'sale';
+    else if (status === 'cancelled') erpState = 'cancel';
+
+    await SaleOrder.findByIdAndUpdate(order.erp_order_id, { state: erpState });
+  }
+
+  res.json({ message: 'Order status updated', status });
+}));
 
 // Update payment status
-router.put('/:id/payment', async (req, res) => {
-  try {
-    const { payment_status, payment_reference } = req.body;
+router.put('/:id/payment', asyncHandler(async (req, res) => {
+  const { payment_status, payment_reference } = req.body;
 
-    const updateData: any = { payment_status };
-    if (payment_reference) updateData.payment_reference = payment_reference;
+  const updateData: any = { payment_status };
+  if (payment_reference) updateData.payment_reference = payment_reference;
 
-    await WebsiteOrder.findByIdAndUpdate(req.params.id, updateData);
+  await WebsiteOrder.findByIdAndUpdate(req.params.id, updateData);
 
-    if (payment_status === 'paid') {
-      await WebsiteOrder.findByIdAndUpdate(req.params.id, { status: 'confirmed' });
-    }
-
-    res.json({ message: 'Payment status updated' });
-  } catch (error) {
-    console.error('Error updating payment status:', error);
-    res.status(500).json({ error: 'Internal server error' });
+  if (payment_status === 'paid') {
+    await WebsiteOrder.findByIdAndUpdate(req.params.id, { status: 'confirmed' });
   }
-});
+
+  res.json({ message: 'Payment status updated' });
+}));
 
 export default router;
