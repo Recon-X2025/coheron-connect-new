@@ -466,7 +466,7 @@ git pull && docker compose up -d --build
 |-------|-------|
 | URL | `http://<your-server-ip>` |
 | Email | `admin@coheron.com` |
-| Password | `admin123` |
+| Password | `Coheron@2025!` |
 
 Demo data includes sample partners, products, leads, sale orders, invoices, manufacturing orders, campaigns, and employees.
 

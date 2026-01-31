@@ -22,7 +22,7 @@ async function seed() {
     console.log('Seeding database with sample data...');
 
     // Create default admin user
-    const hashedPassword = await bcrypt.hash('admin123', 10);
+    const hashedPassword = await bcrypt.hash('Coheron@2025!', 10);
     const user = await User.findOneAndUpdate(
       { uid: 1 },
       { uid: 1, name: 'Admin User', email: 'admin@coheron.com', password_hash: hashedPassword },
@@ -206,7 +206,7 @@ async function seed() {
     console.log('Database seeding completed successfully!');
     console.log('Default credentials:');
     console.log('   Email: admin@coheron.com');
-    console.log('   Password: admin123');
+    console.log('   Password: Coheron@2025!');
     console.log('Sample HR data created:');
     console.log('   - 4 employees');
     console.log('   - 3 leave requests');

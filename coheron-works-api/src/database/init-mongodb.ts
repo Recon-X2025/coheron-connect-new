@@ -113,7 +113,7 @@ async function initMongoDB() {
     // 3. USERS (test accounts by role)
     // =============================================
     console.log('\n--- Creating Users ---');
-    const password = await bcrypt.hash('admin123', 10);
+    const password = await bcrypt.hash('Coheron@2025!', 10);
 
     interface UserSeed { uid: number; name: string; email: string; role: string }
     const usersData: UserSeed[] = [
@@ -436,7 +436,7 @@ async function initMongoDB() {
     console.log('========================================\n');
     console.log(`Tenant ID: ${tenantId}`);
     console.log('');
-    console.log('Test Accounts (all password: admin123):');
+    console.log('Test Accounts (all password: Coheron@2025!):');
     console.log('┌──────────────────────────┬────────────────────────┬─────────────────────┐');
     console.log('│ Name                     │ Email                  │ Role                │');
     console.log('├──────────────────────────┼────────────────────────┼─────────────────────┤');
