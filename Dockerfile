@@ -15,7 +15,7 @@ WORKDIR /app/api
 COPY coheron-works-api/package*.json ./
 RUN npm ci --production=false
 COPY coheron-works-api/ ./
-RUN NODE_OPTIONS="--max-old-space-size=1024" npm run build
+RUN NODE_OPTIONS="--max-old-space-size=4096" npm run build
 
 # Stage 3: Production image
 FROM node:20-alpine AS production
@@ -31,9 +31,11 @@ COPY --from=api-build /app/api/dist ./dist
 # Copy built frontend into public/ — served by Express
 COPY --from=frontend-build /app/web/dist ./public
 
-# Non-root user for security
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -S appuser -u 1001 -G appgroup
+# Create uploads directory and non-root user for security
+RUN mkdir -p /app/uploads/esignature && \
+    addgroup -g 1001 -S appgroup && \
+    adduser -S appuser -u 1001 -G appgroup && \
+    chown -R appuser:appgroup /app/uploads
 USER appuser
 
 ENV NODE_ENV=production
