@@ -158,14 +158,20 @@ router.post('/login', asyncHandler(async (req, res) => {
 
   const { accessToken, refreshToken, jti } = generateTokenPair(tokenPayload);
 
-  // Create session record
-  await Session.create({
-    user_id: user._id,
-    jti,
-    ip_address: req.ip,
-    user_agent: req.headers['user-agent'] || '',
-    is_active: true,
-  });
+  // Create session record (best-effort — don't block login)
+  try {
+    if (user.tenant_id) {
+      await Session.create({
+        user_id: user._id,
+        tenant_id: user.tenant_id,
+        jti,
+        ip_address: req.ip,
+        user_agent: req.headers['user-agent'] || '',
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        is_active: true,
+      });
+    }
+  } catch (_) { /* session tracking is non-critical */ }
 
   res.json({
     token: accessToken,
@@ -245,14 +251,20 @@ router.post('/register', asyncHandler(async (req, res) => {
 
   const { accessToken, refreshToken, jti } = generateTokenPair(tokenPayload);
 
-  // Create session record
-  await Session.create({
-    user_id: user._id,
-    jti,
-    ip_address: req.ip,
-    user_agent: req.headers['user-agent'] || '',
-    is_active: true,
-  });
+  // Create session record (best-effort)
+  try {
+    if (user.tenant_id) {
+      await Session.create({
+        user_id: user._id,
+        tenant_id: user.tenant_id,
+        jti,
+        ip_address: req.ip,
+        user_agent: req.headers['user-agent'] || '',
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        is_active: true,
+      });
+    }
+  } catch (_) { /* non-critical */ }
 
   res.status(201).json({
     token: accessToken,
@@ -327,14 +339,20 @@ router.post('/refresh', asyncHandler(async (req, res) => {
 
   const { accessToken, refreshToken: newRefreshToken, jti } = generateTokenPair(payload);
 
-  // Create new session
-  await Session.create({
-    user_id: decoded.userId,
-    jti,
-    ip_address: req.ip,
-    user_agent: req.headers['user-agent'] || '',
-    is_active: true,
-  });
+  // Create new session (best-effort)
+  try {
+    if (decoded.tenant_id) {
+      await Session.create({
+        user_id: decoded.userId,
+        tenant_id: decoded.tenant_id,
+        jti,
+        ip_address: req.ip,
+        user_agent: req.headers['user-agent'] || '',
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        is_active: true,
+      });
+    }
+  } catch (_) { /* non-critical */ }
 
   res.json({ token: accessToken, refresh_token: newRefreshToken });
 }));
