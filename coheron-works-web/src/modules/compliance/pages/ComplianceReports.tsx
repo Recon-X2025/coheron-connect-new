@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { FileText, Download, CheckCircle, AlertTriangle, Info } from 'lucide-react';
+import React, { useState } from 'react';
+import { FileText, CheckCircle, AlertTriangle, Info } from 'lucide-react';
 
 type ReportType = 'soc2' | 'gdpr' | 'iso27001';
 
@@ -75,7 +75,7 @@ export default function ComplianceReports() {
 function ReportContent({ report }: { report: ReportData }) {
   const { type, generated_at, ...metrics } = report;
 
-  const renderValue = (key: string, value: any): JSX.Element => {
+  const renderValue = (key: string, value: any): React.ReactElement => {
     if (typeof value === 'object' && value !== null) {
       return (
         <div className="report-section" key={key}>

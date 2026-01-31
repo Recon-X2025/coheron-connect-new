@@ -1,4 +1,4 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { FileText, Shield, Database, Clock, AlertTriangle } from 'lucide-react';
 
 type Tab = 'consent' | 'dsars' | 'breaches' | 'processing' | 'retention';
