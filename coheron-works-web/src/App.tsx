@@ -14,6 +14,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m
 const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
 const Pricing = lazy(() => import('./pages/Pricing'));
+const Compare = lazy(() => import('./pages/Compare'));
 const Subscription = lazy(() => import('./pages/Subscription').then(m => ({ default: m.Subscription })));
 const Settings = lazy(() => import('./modules/admin/pages/Settings').then(m => ({ default: m.Settings })));
 
@@ -45,6 +46,7 @@ function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/pricing" element={<Layout><Pricing /></Layout>} />
+      <Route path="/compare" element={<Compare />} />
 
       {/* App routes */}
       <Route path="/dashboard" element={<Layout><Dashboard /></Layout>} />

@@ -11,21 +11,22 @@ import './LandingPage.css';
 const innerOrbitModules = [
   { name: 'CRM', color: '#03E1AC' },
   { name: 'Sales', color: '#E85002' },
-  { name: 'Inventory', color: '#4169E1' },
-  { name: 'Accounting', color: '#D9C3AB' },
+  { name: 'Accounting', color: '#4169E1' },
+  { name: 'Support', color: '#D9C3AB' },
+  { name: 'HR', color: '#F16001' },
 ];
 
 const outerOrbitModules = [
-  { name: 'HR & People', color: '#F16001' },
+  { name: 'Inventory', color: '#03E1AC' },
   { name: 'Manufacturing', color: '#C10B01' },
-  { name: 'Marketing', color: '#03E1AC' },
-  { name: 'Projects', color: '#4169E1' },
-  { name: 'Support', color: '#E85002' },
+  { name: 'Marketing', color: '#4169E1' },
+  { name: 'Projects', color: '#E85002' },
   { name: 'POS', color: '#D9C3AB' },
   { name: 'eCommerce', color: '#013D68' },
   { name: 'E-Signature', color: '#6B8DD6' },
   { name: 'AI Copilot', color: '#F16001' },
   { name: 'Platform', color: '#03E1AC' },
+  { name: 'Compliance', color: '#C10B01' },
 ];
 
 const allModules = [...innerOrbitModules, ...outerOrbitModules];
@@ -214,6 +215,7 @@ export const LandingPage: React.FC = () => {
         <div className="lp-nav-links">
           <a href="#platform">Platform</a>
           <a href="#modules">Modules</a>
+          <Link to="/compare">Compare</Link>
           <Link to="/pricing">Pricing</Link>
         </div>
         <Link to="/dashboard" className="lp-nav-cta">Launch App</Link>
@@ -412,6 +414,64 @@ export const LandingPage: React.FC = () => {
                 <span className="lp-comparison-badge">Included</span>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== CONDENSED COMPARISON TABLE ===== */}
+      <section className="lp-compare-table-section">
+        <div className="lp-container">
+          <div className="lp-compare-table-header lp-reveal" ref={setRevealRef(5)}>
+            <span className="lp-section-tag">Compare</span>
+            <h2 className="lp-section-title">Module Coverage at a Glance</h2>
+            <p className="lp-section-desc">See how Coheron covers every module — no add-ons required.</p>
+          </div>
+          <div className="lp-compare-table-wrap">
+            <table className="lp-compare-table">
+              <thead>
+                <tr>
+                  <th>Module</th>
+                  <th className="lp-ct-highlight">Coheron</th>
+                  <th>SAP</th>
+                  <th>Dynamics</th>
+                  <th>Odoo</th>
+                  <th>Zoho</th>
+                  <th>ERPNext</th>
+                </tr>
+              </thead>
+              <tbody>
+                {([
+                  ['CRM',           '✓','✓','✓','✓','✓','~'],
+                  ['Sales',         '✓','✓','✓','✓','✓','✓'],
+                  ['Inventory',     '✓','✓','✓','✓','~','✓'],
+                  ['Accounting',    '✓','✓','✓','✓','✓','✓'],
+                  ['HR & Payroll',  '✓','✓','$','✓','✓','✓'],
+                  ['Manufacturing', '✓','✓','✓','✓','~','✓'],
+                  ['Marketing',     '✓','$','$','✓','✓','✗'],
+                  ['POS',           '✓','$','✓','✓','✗','~'],
+                  ['Support',       '✓','$','✓','✓','✓','~'],
+                  ['Projects',      '✓','~','✓','✓','✓','✓'],
+                  ['E-Signature',   '✓','✗','✗','✓','✓','✗'],
+                  ['Platform',      '✓','~','✓','✓','✓','✓'],
+                  ['AI Copilot',    '✓','$','$','✗','$','✗'],
+                  ['Compliance',    '✓','✓','$','$','✓','✓'],
+                ] as string[][]).map((row) => (
+                  <tr key={row[0]}>
+                    <td className="lp-ct-module">{row[0]}</td>
+                    {row.slice(1).map((cell, i) => (
+                      <td key={i} className={`lp-ct-cell ${i === 0 ? 'lp-ct-highlight' : ''} ${cell === '✓' ? 'lp-ct-full' : cell === '$' ? 'lp-ct-addon' : cell === '~' ? 'lp-ct-partial' : 'lp-ct-none'}`}>
+                        {cell}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ textAlign: 'center', marginTop: 32 }}>
+            <Link to="/compare" className="lp-btn-outline">
+              See Full Comparison <ArrowRight size={16} />
+            </Link>
           </div>
         </div>
       </section>
