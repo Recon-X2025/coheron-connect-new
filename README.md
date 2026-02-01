@@ -10,25 +10,28 @@ CoheronERP/
 ├── coheron-works-web/    # React 19 + Vite frontend
 ```
 
-## Modules (15)
+## Modules
 
-| Module | Description |
-|--------|-------------|
-| **CRM** | Pipeline management, lead scoring, customer 360, territory rules |
-| **Sales** | Quotations, orders, invoicing, pricing rules, forecasting |
-| **Inventory** | Multi-warehouse, barcode, stock reservations, GRN, batch/serial |
-| **Accounting** | Double-entry GL, AP/AR, GST/TDS, bank reconciliation, fixed assets |
-| **HR** | Employees, recruitment (ATS), leave, attendance, payroll, appraisals |
-| **Projects** | Kanban/Gantt, milestones, timesheets, budgets, inspections |
-| **Support** | Tickets, SLA, live chat, knowledge base, CSAT surveys |
-| **Marketing** | Campaigns, email designer, automation workflows, RFM analysis |
-| **Manufacturing** | BOM, MRP, manufacturing orders, routing, quality checklists, costing |
-| **POS** | Touch point-of-sale, payments, receipt printing |
-| **eCommerce** | Online store, product catalog, cart, checkout, promotions |
-| **E-Signature** | Digital signing, audit trail, signer management |
-| **Platform** | No-code studio, extensions, custom apps, API access |
-| **Compliance** | Compliance frameworks, policy management, incident tracking |
-| **AI** | AI assistant, predictive analytics, smart automation |
+| Module | Status | Description |
+|--------|--------|-------------|
+| **Sales** | Stable | Orders, pricing rules, commissions, ATP, subscriptions |
+| **Inventory** | Stable | Multi-warehouse, wave picking, cross-docking, GRN, batch/serial |
+| **Accounting** | Stable | Double-entry GL, AP/AR, GST/TDS, budgeting, consolidation |
+| **HR** | Stable | Employees, recruitment, leave, attendance, payroll, benefits |
+| **Projects** | Stable | Agile/Gantt, milestones, timesheets, risk management |
+| **Support** | Stable | Omnichannel ticketing, ITSM, knowledge base, SLA automation |
+| **Manufacturing** | Stable | BOM, MRP, PLM, quality control, routing, kanban |
+| **CRM** | Beta | Pipelines, leads, automation — AI scoring still in progress |
+| **Marketing** | Beta | Campaigns, journeys, email/SMS — analytics limited |
+| **POS** | Beta | Transactions, loyalty, kitchen display — offline/payments limited |
+| **E-Signature** | Preview | Document signing scaffolding |
+| **Platform** | Preview | API/webhook management, workflows in progress |
+| **Compliance** | Preview | Frontend-only audit/GDPR scaffolding, no backend yet |
+| **AI** | Preview | Chatbot/copilot stubs with LLM integration hooks |
+
+*eCommerce is integrated into the Sales module via ECommerceChannel.*
+
+**Status key:** Stable = full feature set, Beta = core features working but incomplete, Preview = scaffolded / early
 
 ## Pricing & Packages
 
@@ -67,8 +70,14 @@ Individual modules available from ₹699–₹2,499/user/month with an interacti
 - Real-time module hot-toggle via WebSockets
 - Two-factor authentication & SSO
 - Data import/export
-- AI-powered assistant add-on
-- PWA support
+
+## Security
+
+- JWT-based authentication with optional two-factor (TOTP)
+- Role-based access control (RBAC) with granular per-module permissions
+- Per-tenant data isolation via tenant-scoped queries
+- Audit logging for admin actions
+- Non-root Docker container in production
 
 ## Brand
 
@@ -105,7 +114,7 @@ npm run dev
 
 ### Default Credentials
 
-After seeding: `admin@coheron.com` / `admin123`
+After seeding, see `.env.example` for default admin credentials.
 
 ## Admin
 
