@@ -3,12 +3,14 @@
 @import './styles/reset.css';
 @import './styles/typography.css';
 @import './styles/responsive.css';
+@import './styles/modals.css';
+@import './styles/print.css';
 
 /* Global Utilities */
 .container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 var(--space-md);
+  width: 100%;
+  padding: 0 var(--space-lg);
+  box-sizing: border-box;
 }
 
 .flex-center {

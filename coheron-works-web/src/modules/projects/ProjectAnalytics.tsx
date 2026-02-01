@@ -5,7 +5,7 @@ import { LoadingSpinner } from '../../components/LoadingSpinner';
 import './ProjectAnalytics.css';
 
 interface ProjectAnalyticsProps {
-  projectId: number;
+  projectId: string;
 }
 
 export const ProjectAnalytics = ({ projectId }: ProjectAnalyticsProps) => {

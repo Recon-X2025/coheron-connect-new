@@ -8,3 +8,6 @@ export { default as courses } from './courses.js';
 export { default as applicants } from './applicants.js';
 export { default as policies } from './policies.js';
 export { default as taxCompliance } from './taxCompliance.js';
+export { default as selfService } from './selfService.js';
+export { default as shifts } from './shifts.js';
+export { default as orgChart } from './orgChart.js';

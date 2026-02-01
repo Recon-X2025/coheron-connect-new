@@ -37,7 +37,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  background: white;
+  background: var(--surface);
   border: 1px solid #e0e0e0;
   border-radius: 6px;
   flex: 1;
@@ -64,7 +64,7 @@
 
 .view-toggle {
   display: flex;
-  background: white;
+  background: var(--surface);
   border: 1px solid #e0e0e0;
   border-radius: 6px;
   overflow: hidden;
@@ -73,7 +73,7 @@
 .view-toggle button {
   padding: 0.5rem 1rem;
   border: none;
-  background: white;
+  background: var(--surface);
   color: #666;
   cursor: pointer;
   font-size: 0.875rem;
@@ -90,7 +90,7 @@
 }
 
 .opportunities-table-container {
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -183,7 +183,7 @@
 }
 
 .opportunities-kanban {
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
   padding: 1.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -243,7 +243,7 @@
 }
 
 .kanban-card {
-  background: white;
+  background: var(--surface);
   border: 1px solid #e0e0e0;
   border-radius: 6px;
   padding: 1rem;
@@ -322,7 +322,7 @@
 }
 
 .opportunity-detail-content {
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
   width: 100%;
   max-width: 800px;

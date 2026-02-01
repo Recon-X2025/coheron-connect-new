@@ -1,0 +1,21 @@
+.bank-recon-page { padding: 2rem; max-width: 1000px; }
+.bank-recon-header { margin-bottom: 2rem; }
+.bank-recon-header h1 { font-size: 1.75rem; font-weight: 700; color: var(--text); margin: 0; }
+.bank-recon-subtitle { color: var(--text-muted); font-size: 0.875rem; margin: 0.25rem 0 0; }
+.bank-recon-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.5rem; }
+.bank-recon-card h2 { font-size: 1.125rem; font-weight: 600; color: var(--text); margin: 0 0 1rem; }
+.bank-recon-hint { color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem; }
+.bank-recon-upload { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.bank-recon-upload-btn { display: flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1.25rem; background: var(--muted-surface); border: 1px dashed var(--border); border-radius: var(--radius-sm); color: var(--text); cursor: pointer; font-size: 0.875rem; transition: all 0.2s; }
+.bank-recon-upload-btn:hover { border-color: var(--primary); color: var(--primary); }
+.bank-recon-preview { display: flex; align-items: center; gap: 1rem; }
+.bank-recon-preview span { color: var(--text-muted); font-size: 0.875rem; }
+.bank-recon-table-wrap { margin-top: 1rem; overflow-x: auto; }
+.bank-recon-results { display: flex; gap: 1rem; margin-top: 1rem; }
+.bank-recon-result-card { display: flex; align-items: center; gap: 0.75rem; padding: 1rem 1.5rem; border-radius: var(--radius-sm); flex: 1; }
+.bank-recon-result-card div { display: flex; flex-direction: column; }
+.bank-recon-result-card strong { font-size: 1.5rem; font-weight: 700; }
+.bank-recon-result-card span { font-size: 0.75rem; color: var(--text-muted); }
+.bank-recon-result-card.success { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.bank-recon-result-card.warning { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+@media (max-width: 768px) { .bank-recon-results { flex-direction: column; } }

@@ -22,7 +22,7 @@
 }
 
 .terminal-card {
-  background: white;
+  background: var(--surface);
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   padding: 20px;
@@ -178,28 +178,6 @@
   opacity: 0.5;
 }
 
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 600px;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
 .modal-header {
   display: flex;
   justify-content: space-between;
@@ -250,4 +228,3 @@
   border-top: 1px solid #e5e7eb;
   margin-top: 20px;
 }
-

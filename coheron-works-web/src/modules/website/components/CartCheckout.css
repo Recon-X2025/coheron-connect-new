@@ -35,13 +35,13 @@
 }
 
 .tab-switcher button.active {
-  background: white;
+  background: var(--surface);
   color: var(--primary-color, #2563eb);
   font-weight: 500;
 }
 
 .cart-checkout-content {
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--border-color, #e0e0e0);
   border-radius: 8px;
   padding: 2rem;

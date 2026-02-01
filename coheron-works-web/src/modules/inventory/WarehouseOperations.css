@@ -51,7 +51,7 @@
   padding: 8px 12px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  background: white;
+  background: var(--surface);
   flex: 1;
   max-width: 300px;
 }
@@ -83,7 +83,7 @@
 .cycle-counts table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
   overflow: hidden;
 }

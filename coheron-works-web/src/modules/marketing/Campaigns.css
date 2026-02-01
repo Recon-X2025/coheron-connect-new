@@ -37,7 +37,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  background: white;
+  background: var(--surface);
   border: 1px solid #e0e0e0;
   border-radius: 6px;
   flex: 1;
@@ -63,7 +63,7 @@
 }
 
 .campaign-card {
-  background: white;
+  background: var(--surface);
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   padding: 1.5rem;
@@ -176,7 +176,7 @@
 }
 
 .campaign-detail-content {
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
   width: 100%;
   max-width: 900px;
@@ -303,7 +303,7 @@
 }
 
 .metric-card {
-  background: white;
+  background: var(--surface);
   padding: 1rem;
   border-radius: 6px;
   border: 1px solid #e0e0e0;
@@ -335,4 +335,3 @@
 .metric-value-large.negative {
   color: #ef4444;
 }
-

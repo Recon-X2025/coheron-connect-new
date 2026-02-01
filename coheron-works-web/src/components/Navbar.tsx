@@ -68,6 +68,8 @@ export const Navbar: React.FC = () => {
                     </Link>
                     <button
                         className="mobile-menu-btn"
+                        aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                        aria-expanded={mobileMenuOpen}
                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                     >
                         {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}

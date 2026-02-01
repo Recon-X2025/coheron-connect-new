@@ -35,6 +35,9 @@ import projectQualityRoutes from '../modules/projects/routes/projectQuality.js';
 import projectResourcesRoutes from '../modules/projects/routes/projectResources.js';
 import projectProcurementRoutes from '../modules/projects/routes/projectProcurement.js';
 import projectChangeRequestsRoutes from '../modules/projects/routes/projectChangeRequests.js';
+import ganttRoutes from '../modules/projects/routes/gantt.js';
+import reportBuilderRoutes from '../modules/accounting/routes/reportBuilder.js';
+import bankFeedRoutes from '../modules/accounting/routes/bankFeeds.js';
 import projectAnalyticsRoutes from '../modules/projects/routes/projectAnalytics.js';
 // HR Module Routes
 import employeesRoutes from '../modules/hr/routes/employees.js';
@@ -46,6 +49,11 @@ import goalsRoutes from '../modules/hr/routes/goals.js';
 import coursesRoutes from '../modules/hr/routes/courses.js';
 import applicantsRoutes from '../modules/hr/routes/applicants.js';
 import policiesRoutes from '../modules/hr/routes/policies.js';
+import selfServiceRoutes from '../modules/hr/routes/selfService.js';
+import shiftsRoutes from '../modules/hr/routes/shifts.js';
+import orgChartRoutes from '../modules/hr/routes/orgChart.js';
+import customerPortalRoutes from '../modules/support/routes/customerPortal.js';
+import emailPipingRoutes from '../modules/support/routes/emailPiping.js';
 import supportTicketsRoutes from '../modules/support/routes/supportTickets.js';
 import emailWebhookRoutes from '../modules/crossmodule/routes/emailWebhook.js';
 // Sales Module Routes
@@ -99,10 +107,16 @@ import stockReservationsRoutes from '../modules/inventory/routes/stockReservatio
 import paymentsRoutes from '../modules/crossmodule/routes/payments.js';
 import filesRoutes from '../modules/crossmodule/routes/files.js';
 import twoFactorRoutes from '../modules/admin/routes/twoFactor.js';
+import ssoRoutes from '../modules/admin/routes/sso.js';
+import dataImportRoutes from '../modules/admin/routes/dataImport.js';
 import whatsappWebhookRoutes from '../modules/crossmodule/routes/whatsappWebhook.js';
 import taxComplianceRoutes from '../modules/hr/routes/taxCompliance.js';
 import rfmRoutes from '../modules/crm/routes/rfm.js';
 import mrpRoutes from '../modules/manufacturing/routes/mrp.js';
+import subcontractingRoutes from '../modules/manufacturing/routes/subcontracting.js';
+import capacityPlanningRoutes from '../modules/manufacturing/routes/capacityPlanning.js';
+import mpsRoutes from '../modules/manufacturing/routes/mps.js';
+import shopFloorRoutes from '../modules/manufacturing/routes/shopFloor.js';
 // Support Module — additional routes
 import supportTeamsRoutes from '../modules/support/routes/supportTeams.js';
 import supportSurveysRoutes from '../modules/support/routes/supportSurveys.js';
@@ -115,6 +129,65 @@ import knowledgeBaseRoutes from '../modules/support/routes/knowledgeBase.js';
 import itsmRoutes from '../modules/support/routes/itsm.js';
 // Projects — standalone issue types
 import issueTypesRoutes from '../modules/projects/routes/issueTypes.js';
+// Batch 1 - Core Business Engine Routes
+import documentSequencesRoutes from '../modules/platform/routes/documentSequences.js';
+import currencyRoutes from '../modules/accounting/routes/currency.js';
+import pdfRoutes from '../modules/crossmodule/routes/pdf.js';
+// Batch 3 - Lifecycle Routes
+import quotationsRoutes from '../modules/sales/routes/quotations.js';
+import purchaseOrdersRoutes from '../modules/inventory/routes/purchaseOrders.js';
+import bankReconciliationRoutes from '../modules/accounting/routes/bankReconciliation.js';
+// Batch 4 - Analytics, Import/Export, Reorder
+import analyticsRoutes from '../modules/platform/routes/analytics.js';
+import importExportRoutes from '../modules/crossmodule/routes/importExport.js';
+import reorderRoutes from '../modules/inventory/routes/reorder.js';
+import serialNumberRoutes from '../modules/inventory/routes/serialNumbers.js';
+import batchRoutes from '../modules/inventory/routes/batches.js';
+import warehouseZonesRoutes from '../modules/inventory/routes/warehouseZones.js';
+import barcodeRoutes from '../modules/inventory/routes/barcode.js';
+import shippingRoutes from '../modules/inventory/routes/shipping.js';
+import subscriptionRoutes from '../modules/sales/routes/subscriptions.js';
+import expenseRoutes from '../modules/hr/routes/expenses.js';
+import landedCostRoutes from '../modules/inventory/routes/landedCost.js';
+import cycleCountingRoutes from '../modules/inventory/routes/cycleCounting.js';
+import dropshipRoutes from '../modules/sales/routes/dropship.js';
+// Sales Commissions
+import commissionsRoutes from '../modules/sales/routes/commissions.js';
+// Marketing: Social, A/B Testing, Landing Pages
+import socialRoutes from '../modules/marketing/routes/social.js';
+import abTestingRoutes from '../modules/marketing/routes/abTesting.js';
+import landingPagesRoutes from '../modules/marketing/routes/landingPages.js';
+import aiRoutes from '../modules/admin/routes/ai.js';
+import emailThreadRoutes from '../modules/crm/routes/emailThreads.js';
+import campaignAnalyticsRoutes from '../modules/marketing/routes/campaignAnalytics.js';
+import schedulingRoutes from '../modules/manufacturing/routes/scheduling.js';
+import workInstructionsRoutes from '../modules/manufacturing/routes/workInstructions.js';
+import rfidRoutes from '../modules/inventory/routes/rfid.js';
+import smsRoutes from '../modules/marketing/routes/sms.js';
+import studioRoutes from '../modules/admin/routes/studio.js';
+import extensionRoutes from '../modules/admin/routes/extensions.js';
+import costCentersRoutes from '../modules/accounting/routes/costCenters.js';
+import currencyRevaluationRoutes from '../modules/accounting/routes/currencyRevaluation.js';
+import iotRoutes from '../modules/manufacturing/routes/iot.js';
+
+import journeysRoutes from "../modules/marketing/routes/journeys.js";
+import payrollLocalizationRoutes from "../modules/hr/routes/payrollLocalization.js";
+
+import aiCopilotRoutes from '../modules/ai/routes/copilot.js';
+import aiChatbotRoutes from '../modules/ai/routes/chatbot.js';
+import aiConfigRoutes from '../modules/ai/routes/config.js';
+
+import omnichannelRoutes from "../modules/support/routes/omnichannel.js";
+import fieldServiceRoutes from "../modules/support/routes/fieldService.js";
+
+import messagingRoutes from '../modules/admin/routes/messaging.js';
+
+// Compliance Framework Routes
+import complianceFrameworkRoutes from '../modules/admin/routes/complianceFramework.js';
+// HR Lifecycle Routes
+import lifecycleRoutes from '../modules/hr/routes/lifecycle.js';
+// Inventory Putaway Routes
+import putawayRoutes from '../modules/inventory/routes/putaway.js';
 
 const router = express.Router();
 
@@ -124,9 +197,11 @@ router.use('/whatsapp', whatsappWebhookRoutes);
 // Always-available routes (no module guard)
 router.use('/auth', authRoutes);
 router.use('/auth/2fa', twoFactorRoutes);
+router.use('/admin/sso', ssoRoutes);
 router.use('/partners', partnersRoutes);
 router.use('/rbac', rbacRoutes);
 router.use('/activities', activitiesRoutes);
+router.use('/admin/import', dataImportRoutes);
 router.use('/email-webhook', emailWebhookRoutes);
 router.use('/tenant-config', tenantConfigRoutes);
 
@@ -183,6 +258,10 @@ router.use('/manufacturing/work-orders', requireModule('manufacturing'), manufac
 router.use('/manufacturing/quality', requireModule('manufacturing'), manufacturingQualityRoutes);
 router.use('/manufacturing/costing', requireModule('manufacturing'), manufacturingCostingRoutes);
 router.use('/manufacturing/mrp', requireModule('manufacturing'), mrpRoutes);
+router.use('/manufacturing/subcontracting', requireModule('manufacturing'), subcontractingRoutes);
+router.use('/manufacturing/capacity', requireModule('manufacturing'), capacityPlanningRoutes);
+router.use('/manufacturing/mps', requireModule('manufacturing'), mpsRoutes);
+router.use('/manufacturing/shop-floor', requireModule('manufacturing'), shopFloorRoutes);
 
 // Inventory Module
 router.use('/inventory', requireModule('inventory'), inventoryRoutes);
@@ -259,5 +338,138 @@ router.use('/payments', paymentsRoutes);
 
 // File Storage (no module guard - cross-module)
 router.use('/files', filesRoutes);
+
+// Document Sequences (platform)
+router.use('/document-sequences', requireModule('platform'), documentSequencesRoutes);
+
+// Currency & Exchange Rates (accounting)
+router.use('/accounting/currency', requireModule('accounting'), currencyRoutes);
+
+// PDF Generation (cross-module)
+router.use('/pdf', pdfRoutes);
+
+// Quotations (sales)
+router.use('/quotations', requireModule('sales'), quotationsRoutes);
+
+// Purchase Orders (inventory)
+router.use('/purchase-orders', requireModule('inventory'), purchaseOrdersRoutes);
+
+// Bank Reconciliation (accounting)
+router.use('/accounting/bank-reconciliation', requireModule('accounting'), bankReconciliationRoutes);
+
+// Analytics (platform)
+router.use('/analytics', analyticsRoutes);
+
+// Import/Export (cross-module)
+router.use('/data', importExportRoutes);
+
+// Reorder (inventory)
+router.use('/inventory/reorder', requireModule('inventory'), reorderRoutes);
+
+// Inventory - Serial Numbers & Batches
+router.use('/inventory/serial-numbers', requireModule('inventory'), serialNumberRoutes);
+router.use('/inventory/batches', requireModule('inventory'), batchRoutes);
+
+
+// Inventory - Warehouse Zones, Bins, Barcode, Shipping
+router.use('/inventory/warehouse-zones', requireModule('inventory'), warehouseZonesRoutes);
+router.use('/inventory/barcode', requireModule('inventory'), barcodeRoutes);
+router.use('/inventory/shipping', requireModule('inventory'), shippingRoutes);
+
+// HR - Self Service, Shifts, Org Chart
+router.use('/hr/self-service', requireModule('hr'), selfServiceRoutes);
+router.use('/hr/shifts', requireModule('hr'), shiftsRoutes);
+router.use('/hr/org-chart', requireModule('hr'), orgChartRoutes);
+
+// Support - Customer Portal, Email Piping
+router.use('/support/portal', customerPortalRoutes);
+router.use('/support/email-piping', requireModule('support'), emailPipingRoutes);
+
+
+// Subscriptions (sales)
+router.use('/sales/subscriptions', requireModule('sales'), subscriptionRoutes);
+
+// Expenses (HR)
+router.use('/hr/expenses', requireModule('hr'), expenseRoutes);
+
+// AI Copilot
+router.use('/admin/ai', aiRoutes);
+
+
+// Inventory - Landed Cost & Cycle Counting
+router.use('/inventory/landed-costs', requireModule('inventory'), landedCostRoutes);
+router.use('/inventory/cycle-counting', requireModule('inventory'), cycleCountingRoutes);
+
+// Sales - Dropship
+router.use('/sales/dropship', requireModule('sales'), dropshipRoutes);
+
+
+// CRM - Email Threads
+router.use('/crm/email-threads', requireModule('crm'), emailThreadRoutes);
+
+// Marketing - Campaign Analytics, SMS
+router.use('/marketing/campaign-analytics', requireModule('marketing'), campaignAnalyticsRoutes);
+router.use('/marketing/sms', requireModule('marketing'), smsRoutes);
+
+
+// Gantt Chart (projects)
+router.use('/projects/gantt', requireModule('projects'), ganttRoutes);
+// Financial Report Builder (accounting)
+router.use('/accounting/report-builder', requireModule('accounting'), reportBuilderRoutes);
+// Bank Feeds (accounting)
+router.use('/accounting/bank-feeds', requireModule('accounting'), bankFeedRoutes);
+
+
+// Studio & Extensions (admin)
+router.use('/admin/studio', studioRoutes);
+router.use('/admin/extensions', extensionRoutes);
+
+
+// Cost Centers & Allocation (accounting)
+router.use('/accounting/cost-centers', requireModule('accounting'), costCentersRoutes);
+// Currency Revaluation (accounting)
+router.use('/accounting/currency-revaluation', requireModule('accounting'), currencyRevaluationRoutes);
+// IoT Equipment Monitoring (manufacturing)
+router.use('/manufacturing/iot', requireModule('manufacturing'), iotRoutes);
+
+// Marketing - Journey Builder
+router.use("/marketing/journeys", requireModule("marketing"), journeysRoutes);
+
+// HR - Multi-Country Payroll
+router.use("/hr/payroll-localization", requireModule("hr"), payrollLocalizationRoutes);
+
+
+// AI Add-on Module
+router.use('/ai/copilot', aiCopilotRoutes);
+router.use('/ai/chatbot', aiChatbotRoutes);
+router.use('/ai/config', aiConfigRoutes);
+
+
+// Support - Omnichannel Voice & Sessions
+router.use('/support/omnichannel', requireModule('support'), omnichannelRoutes);
+
+// Support - Field Service & Warranties
+router.use('/support/field-service', requireModule('support'), fieldServiceRoutes);
+
+
+// Manufacturing - Scheduling & Work Instructions
+router.use('/manufacturing/scheduling', requireModule('manufacturing'), schedulingRoutes);
+router.use('/manufacturing/work-instructions', requireModule('manufacturing'), workInstructionsRoutes);
+
+// Inventory - RFID
+router.use('/inventory/rfid', requireModule('inventory'), rfidRoutes);
+
+// Messaging Integrations (Slack/Teams)
+router.use('/admin/messaging', messagingRoutes);
+
+
+// Compliance Framework
+router.use('/compliance-framework', complianceFrameworkRoutes);
+
+// HR Lifecycle
+router.use('/hr/lifecycle', requireModule('hr'), lifecycleRoutes);
+
+// Inventory Putaway
+router.use('/inventory/putaway', requireModule('inventory'), putawayRoutes);
 
 export default router;

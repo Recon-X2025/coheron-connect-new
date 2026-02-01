@@ -23,6 +23,8 @@ export interface IUser extends Document {
   account_locked_until: Date;
   last_login_ip: string;
   last_login_user_agent: string;
+  team_id: mongoose.Types.ObjectId;
+  department_id: mongoose.Types.ObjectId;
 }
 
 const userSchema = new Schema<IUser>({
@@ -48,6 +50,9 @@ const userSchema = new Schema<IUser>({
   account_locked_until: { type: Date },
   last_login_ip: { type: String },
   last_login_user_agent: { type: String },
+  // --- Organization ---
+  team_id: { type: Schema.Types.ObjectId, ref: 'Team' },
+  department_id: { type: Schema.Types.ObjectId, ref: 'Department' },
 }, defaultSchemaOptions);
 
 // Indexes

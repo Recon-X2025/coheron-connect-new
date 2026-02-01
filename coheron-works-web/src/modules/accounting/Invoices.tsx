@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Search, FileText, Plus, CheckCircle, Clock, Eye, Edit, Trash2, Download, X } from 'lucide-react';
+import { Search, FileText, Plus, CheckCircle, Clock, Eye, Edit, Trash2, Download, X, Printer } from 'lucide-react';
 import { Pagination } from '../../shared/components/Pagination';
-import { usePagination } from '../../hooks/usePagination';
+import { useServerPagination } from '../../hooks/useServerPagination';
 import { Button } from '../../components/Button';
 import { invoiceService, partnerService } from '../../services/odooService';
 import { DateRangeFilter } from '../../components/DateRangeFilter';
@@ -13,9 +13,7 @@ import { useModalDismiss } from '../../hooks/useModalDismiss';
 import './Invoices.css';
 
 export const Invoices = () => {
-    const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [partners, setPartners] = useState<Partner[]>([]);
-    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
     const [showViewModal, setShowViewModal] = useState(false);
@@ -29,24 +27,29 @@ export const Invoices = () => {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
 
-    useEffect(() => {
-        loadData();
-    }, []);
+    const {
+        data: invoices,
+        pagination: paginationMeta,
+        loading,
+        setPage,
+        setPageSize,
+        setFilters: setServerFilters,
+        refresh: loadData,
+    } = useServerPagination<Invoice>('/invoices');
 
-    const loadData = async () => {
-        try {
-            const [invoicesData, partnersData] = await Promise.all([
-                invoiceService.getAll(),
-                partnerService.getAll(),
-            ]);
-            setInvoices(invoicesData);
-            setPartners(partnersData);
-        } catch (error) {
-            console.error('Failed to load data:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    // Sync filters to server pagination
+    useEffect(() => {
+        const filters: Record<string, any> = {};
+        if (searchTerm) filters.search = searchTerm;
+        if (startDate) filters.start_date = startDate;
+        if (endDate) filters.end_date = endDate;
+        setServerFilters(filters);
+    }, [searchTerm, startDate, endDate, setServerFilters]);
+
+    // Load partners separately
+    useEffect(() => {
+        partnerService.getAll().then(setPartners);
+    }, []);
 
     const getPartnerName = (partnerId: number) => {
         return partners.find(p => p.id === partnerId)?.name || 'Unknown';
@@ -133,8 +136,8 @@ export const Invoices = () => {
 
         try {
             await invoiceService.delete(invoiceId);
-            setInvoices(prev => prev.filter(inv => inv.id !== invoiceId));
             showToast('Invoice deleted successfully', 'success');
+            loadData();
         } catch (error: any) {
             console.error('Failed to delete invoice:', error);
             showToast(error?.userMessage || error?.message || 'Failed to delete invoice. Please try again.', 'error');
@@ -161,22 +164,9 @@ export const Invoices = () => {
         }
     };
 
-    const filteredInvoices = invoices.filter(invoice => {
-        const matchesSearch = invoice.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            getPartnerName(invoice.partner_id).toLowerCase().includes(searchTerm.toLowerCase());
-        const invDate = invoice.invoice_date ? (invoice.invoice_date.includes('T') ? invoice.invoice_date.split('T')[0] : invoice.invoice_date.split(' ')[0]) : '';
-        const matchesStart = !startDate || invDate >= startDate;
-        const matchesEnd = !endDate || invDate <= endDate;
-        return matchesSearch && matchesStart && matchesEnd;
-    });
-
-    const { paginatedItems: paginatedInvoices, page, setPage, pageSize, setPageSize, totalPages, totalItems, resetPage } = usePagination(filteredInvoices);
-
-    // Reset page when filters change
-    useEffect(() => { resetPage(); }, [searchTerm, startDate, endDate, resetPage]);
-
-    const totalAmount = filteredInvoices.reduce((sum, inv) => sum + inv.amount_total, 0);
-    const totalPaid = filteredInvoices.filter(inv => inv.payment_state === 'paid').reduce((sum, inv) => sum + inv.amount_total, 0);
+    const paginatedInvoices = invoices;
+    const totalAmount = invoices.reduce((sum, inv) => sum + inv.amount_total, 0);
+    const totalPaid = invoices.filter(inv => inv.payment_state === 'paid').reduce((sum, inv) => sum + inv.amount_total, 0);
 
     if (loading) {
         return <div className="invoices-page"><div className="container"><h1>Loading...</h1></div></div>;
@@ -189,17 +179,20 @@ export const Invoices = () => {
                     <div>
                         <h1>Invoices</h1>
                         <p className="invoices-subtitle">
-                            {filteredInvoices.length} invoices · {formatInLakhsCompact(totalAmount)} total
+                            {paginationMeta.total} invoices · {formatInLakhsCompact(totalAmount)} total
                         </p>
                     </div>
-                    <Button 
-                        icon={<Plus size={20} />}
-                        onClick={() => {
-                            showToast('New Invoice functionality will be available soon', 'info');
-                        }}
-                    >
-                        New Invoice
-                    </Button>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <Button variant="ghost" className="no-print" icon={<Printer size={16} />} onClick={() => window.print()}>Print</Button>
+                        <Button
+                            icon={<Plus size={20} />}
+                            onClick={() => {
+                                showToast('New Invoice functionality will be available soon', 'info');
+                            }}
+                        >
+                            New Invoice
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="invoices-stats">
@@ -252,7 +245,7 @@ export const Invoices = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredInvoices.length === 0 ? (
+                            {invoices.length === 0 && !loading ? (
                                 <tr>
                                     <td colSpan={7} style={{ textAlign: 'center', padding: '20px' }}>
                                         No invoices found
@@ -319,10 +312,10 @@ export const Invoices = () => {
                 </div>
 
                 <Pagination
-                    currentPage={page}
-                    totalPages={totalPages}
-                    pageSize={pageSize}
-                    totalItems={totalItems}
+                    currentPage={paginationMeta.page}
+                    totalPages={paginationMeta.totalPages}
+                    pageSize={paginationMeta.limit}
+                    totalItems={paginationMeta.total}
                     onPageChange={setPage}
                     onPageSizeChange={setPageSize}
                     pageSizeOptions={[10, 25, 50]}

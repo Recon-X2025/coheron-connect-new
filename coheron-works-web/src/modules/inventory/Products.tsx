@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Search, Package, Plus, MapPin, AlertTriangle, Eye, Edit, Trash2, Check, X } from 'lucide-react';
 import { Pagination } from '../../shared/components/Pagination';
-import { usePagination } from '../../hooks/usePagination';
+import { useServerPagination } from '../../hooks/useServerPagination';
 import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { productService } from '../../services/odooService';
+import { apiService } from '../../services/apiService';
 import { inventoryService, type StockSummary, type StockQuant } from '../../services/inventoryService';
 import { ProductForm } from './components/ProductForm';
 import { showToast } from '../../components/Toast';
@@ -16,9 +17,7 @@ import { EditableCell } from '../../components/EditableCell';
 import './Products.css';
 
 export const Products = () => {
-    const [products, setProducts] = useState<Product[]>([]);
     const [stockSummary, setStockSummary] = useState<Record<number, StockSummary>>({});
-    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [showStockDetails, setShowStockDetails] = useState(false);
@@ -31,31 +30,35 @@ export const Products = () => {
     const closeStockModal = useCallback(() => { setShowStockDetails(false); setSelectedProduct(null); }, []);
     useModalDismiss(showStockDetails, closeStockModal);
 
-    useEffect(() => {
-        loadData();
-    }, []);
+    const {
+        data: products,
+        pagination: paginationMeta,
+        loading,
+        setPage,
+        setPageSize,
+        setFilters: setServerFilters,
+        refresh: loadData,
+    } = useServerPagination<Product>('/products');
 
-    const loadData = async () => {
-        try {
-            setLoading(true);
-            const [productsData, stockData] = await Promise.all([
-                productService.getAll(),
-                inventoryService.getStockSummary()
-            ]);
-            setProducts(productsData);
-            
-            // Create a map of product_id -> stock summary
+    // Sync search to server pagination
+    useEffect(() => {
+        const filters: Record<string, any> = {};
+        if (searchTerm) filters.search = searchTerm;
+        setServerFilters(filters);
+    }, [searchTerm, setServerFilters]);
+
+    // Load stock summary separately
+    useEffect(() => {
+        inventoryService.getStockSummary().then(stockData => {
             const stockMap: Record<number, StockSummary> = {};
             stockData.forEach(item => {
                 stockMap[item.product_id] = item;
             });
             setStockSummary(stockMap);
-        } catch (error) {
-            console.error('Failed to load products:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+        }).catch(error => {
+            console.error('Failed to load stock summary:', error);
+        });
+    }, []);
 
     const loadStockDetails = async (productId: number) => {
         try {
@@ -99,12 +102,20 @@ export const Products = () => {
         }
     };
 
-    const handleInlineSave = (productId: number) => {
+    const handleInlineSave = async (productId: number) => {
         const values = inlineEdit.saveEdit();
-        setProducts(prev => prev.map(p =>
-            p.id === productId ? { ...p, ...values, list_price: values.list_price !== undefined ? Number(values.list_price) : p.list_price, qty_available: values.qty_available !== undefined ? Number(values.qty_available) : p.qty_available } : p
-        ));
-        showToast('Product updated successfully', 'success');
+        try {
+            const updateData = {
+                ...values,
+                list_price: values.list_price !== undefined ? Number(values.list_price) : undefined,
+                qty_available: values.qty_available !== undefined ? Number(values.qty_available) : undefined,
+            };
+            await apiService.update('/products', productId, updateData);
+            showToast('Product updated successfully', 'success');
+            loadData();
+        } catch (error: any) {
+            showToast(error?.message || 'Failed to update product', 'error');
+        }
     };
 
     const handleProductSaved = () => {
@@ -120,15 +131,7 @@ export const Products = () => {
         };
     };
 
-    const filteredProducts = products.filter(product =>
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.default_code.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    const { paginatedItems: paginatedProducts, page, setPage, pageSize, setPageSize, totalPages, totalItems, resetPage } = usePagination(filteredProducts);
-
-    // Reset page when filters change
-    useEffect(() => { resetPage(); }, [searchTerm, resetPage]);
+    const paginatedProducts = products;
 
     if (loading) {
         return <div className="products-page"><div className="container"><LoadingSpinner /></div></div>;
@@ -140,7 +143,7 @@ export const Products = () => {
                 <div className="products-header">
                     <div>
                         <h1>Products</h1>
-                        <p className="products-subtitle">{filteredProducts.length} products</p>
+                        <p className="products-subtitle">{paginationMeta.total} products</p>
                     </div>
                     <Button icon={<Plus size={20} />} onClick={handleNewProduct}>New Product</Button>
                 </div>
@@ -297,10 +300,10 @@ export const Products = () => {
                 </div>
 
                 <Pagination
-                    currentPage={page}
-                    totalPages={totalPages}
-                    pageSize={pageSize}
-                    totalItems={totalItems}
+                    currentPage={paginationMeta.page}
+                    totalPages={paginationMeta.totalPages}
+                    pageSize={paginationMeta.limit}
+                    totalItems={paginationMeta.total}
                     onPageChange={setPage}
                     onPageSizeChange={setPageSize}
                     pageSizeOptions={[10, 25, 50]}

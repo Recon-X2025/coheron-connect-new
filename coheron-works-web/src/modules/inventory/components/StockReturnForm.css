@@ -13,7 +13,7 @@
 }
 
 .stock-return-form-content {
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
   width: 100%;
   max-width: 900px;

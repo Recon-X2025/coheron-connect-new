@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { getUserPermissions, getUserRoles } from '../utils/permissions.js';
+import { getUserPermissions, getUserRoles, getUserRecordAccessLevel } from '../utils/permissions.js';
 import { getJwtSecret } from '../utils/auth-config.js';
 import { TokenBlacklist } from '../models/TokenBlacklist.js';
 import AccessAttempt from '../models/AccessAttempt.js';
@@ -18,6 +18,7 @@ declare global {
         roles?: string[];
         permissions?: string[];
       };
+      recordFilter?: Record<string, any>;
     }
   }
 }
@@ -170,16 +171,51 @@ export function requireRole(roleCode: string) {
   };
 }
 
-export function checkRecordAccess(
-  resourceType: string,
-  resourceId: string,
-  accessLevel: 'own' | 'team' | 'department' | 'all'
-) {
+export function checkRecordAccess(resourceType: string) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!req.user) return res.status(401).json({ error: 'User not authenticated' });
-      if (accessLevel === 'all') return next();
-      // Simplified: allow all for now
+
+      const accessLevel = await getUserRecordAccessLevel(req.user.userId, resourceType);
+
+      if (accessLevel === 'all') {
+        req.recordFilter = {};
+        return next();
+      }
+
+      if (accessLevel === 'own') {
+        req.recordFilter = { created_by: req.user.userId };
+        return next();
+      }
+
+      if (accessLevel === 'team') {
+        // Find all users in the same team
+        const currentUser = await User.findById(req.user.userId).select('team_id').lean();
+        if (!currentUser?.team_id) {
+          req.recordFilter = { created_by: req.user.userId };
+          return next();
+        }
+        const teamMembers = await User.find({ team_id: currentUser.team_id, active: true }).select('_id').lean();
+        const teamMemberIds = teamMembers.map(u => u._id);
+        req.recordFilter = { created_by: { $in: teamMemberIds } };
+        return next();
+      }
+
+      if (accessLevel === 'department') {
+        // Find all users in the same department
+        const currentUser = await User.findById(req.user.userId).select('department_id').lean();
+        if (!currentUser?.department_id) {
+          req.recordFilter = { created_by: req.user.userId };
+          return next();
+        }
+        const deptMembers = await User.find({ department_id: currentUser.department_id, active: true }).select('_id').lean();
+        const deptMemberIds = deptMembers.map(u => u._id);
+        req.recordFilter = { created_by: { $in: deptMemberIds } };
+        return next();
+      }
+
+      // Default to own
+      req.recordFilter = { created_by: req.user.userId };
       next();
     } catch (error) {
       logger.error({ err: error }, 'Record access check error');

@@ -7,7 +7,7 @@ import { WikiForm } from './components/WikiForm';
 import './ProjectWiki.css';
 
 interface ProjectWikiProps {
-  projectId: number;
+  projectId: string;
 }
 
 export const ProjectWiki = ({ projectId }: ProjectWikiProps) => {
@@ -43,7 +43,7 @@ export const ProjectWiki = ({ projectId }: ProjectWikiProps) => {
     }
   };
 
-  const loadPages = async (spaceId: number) => {
+  const loadPages = async (spaceId: string) => {
     try {
       const pagesData = await wikiService.getPages(spaceId);
       setPages(pagesData);

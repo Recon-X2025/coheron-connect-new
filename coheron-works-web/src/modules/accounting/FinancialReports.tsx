@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { FileText, TrendingUp, DollarSign, BarChart3 } from 'lucide-react';
+import { FileText, TrendingUp, DollarSign, BarChart3, Printer, Download } from 'lucide-react';
+import { Button } from '../../components/Button';
 import { financialReportsService } from '../../services/accountingService';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
 import './FinancialReports.css';
@@ -278,6 +279,10 @@ export const FinancialReports = () => {
           <div>
             <h1>Financial Reports</h1>
             <p className="fr-subtitle">Financial statements and analysis</p>
+          </div>
+          <div className="fr-actions no-print" style={{ display: 'flex', gap: '8px' }}>
+            <Button variant="ghost" className="no-print" icon={<Printer size={16} />} onClick={() => window.print()}>Print</Button>
+            <Button variant="ghost" className="no-print" icon={<Download size={16} />} onClick={() => window.print()}>Download PDF</Button>
           </div>
         </div>
 

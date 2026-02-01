@@ -12,7 +12,7 @@
 }
 
 .bulk-action-modal {
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
   width: 90%;
   max-width: 500px;
@@ -24,7 +24,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border);
 }
 
 .bulk-action-modal-header h3 {
@@ -45,13 +45,13 @@
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
-  color: #374151;
+  color: var(--text);
 }
 
 .bulk-action-modal .form-control {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border);
   border-radius: 6px;
   font-size: 14px;
 }
@@ -77,12 +77,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #6b7280;
+  color: var(--text-muted);
   border-radius: 4px;
 }
 
 .modal-close:hover {
-  background-color: #f3f4f6;
-  color: #374151;
+  background: var(--muted-surface);
+  color: var(--text);
 }
 

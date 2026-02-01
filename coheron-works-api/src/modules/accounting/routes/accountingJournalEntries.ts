@@ -4,6 +4,10 @@ import AccountMove from '../../../models/AccountMove.js';
 import AccountJournal from '../../../models/AccountJournal.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
+import { validate } from '../../../shared/middleware/validate.js';
+import { checkRecordAccess } from '../../../shared/middleware/permissions.js';
+import { objectIdParam } from '../../../shared/schemas/common.js';
+import { createJournalEntrySchema, updateJournalEntrySchema } from '../schemas.js';
 
 const router = express.Router();
 
@@ -55,8 +59,8 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get journal entry by ID with lines
-router.get('/:id', asyncHandler(async (req, res) => {
-  const move = await AccountMove.findById(req.params.id)
+router.get('/:id', checkRecordAccess('journal_entries'), asyncHandler(async (req, res) => {
+  const move = await AccountMove.findOne({ _id: req.params.id, ...req.recordFilter })
     .populate('journal_id', 'name code')
     .populate('partner_id', 'name')
     .populate('lines.account_id', 'code name')
@@ -90,7 +94,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create journal entry
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', validate({ body: createJournalEntrySchema }), asyncHandler(async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
@@ -185,14 +189,14 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update journal entry
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', validate({ params: objectIdParam, body: updateJournalEntrySchema }), checkRecordAccess('journal_entries'), asyncHandler(async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
     const { date, ref, partner_id, lines } = req.body;
     const moveId = req.params.id;
 
-    const move = await AccountMove.findById(moveId).session(session);
+    const move = await AccountMove.findOne({ _id: moveId, ...req.recordFilter }).session(session);
 
     if (!move) {
       return res.status(404).json({ error: 'Journal entry not found' });
@@ -259,7 +263,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Post journal entry
-router.post('/:id/post', asyncHandler(async (req, res) => {
+router.post('/:id/post', validate({ params: objectIdParam }), asyncHandler(async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
@@ -307,7 +311,7 @@ router.post('/:id/post', asyncHandler(async (req, res) => {
 }));
 
 // Cancel journal entry
-router.post('/:id/cancel', asyncHandler(async (req, res) => {
+router.post('/:id/cancel', validate({ params: objectIdParam }), asyncHandler(async (req, res) => {
   const move = await AccountMove.findOneAndUpdate(
     { _id: req.params.id, state: 'posted' },
     { state: 'cancel' },
@@ -322,8 +326,8 @@ router.post('/:id/cancel', asyncHandler(async (req, res) => {
 }));
 
 // Delete journal entry
-router.delete('/:id', asyncHandler(async (req, res) => {
-  const move = await AccountMove.findById(req.params.id);
+router.delete('/:id', checkRecordAccess('journal_entries'), asyncHandler(async (req, res) => {
+  const move = await AccountMove.findOne({ _id: req.params.id, ...req.recordFilter });
 
   if (!move) {
     return res.status(404).json({ error: 'Journal entry not found' });
@@ -333,7 +337,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
     return res.status(400).json({ error: 'Cannot delete posted entry' });
   }
 
-  await AccountMove.findByIdAndDelete(req.params.id);
+  await AccountMove.findOneAndDelete({ _id: req.params.id, ...req.recordFilter });
 
   res.json({ message: 'Journal entry deleted successfully' });
 }));

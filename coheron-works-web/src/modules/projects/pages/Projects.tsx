@@ -29,9 +29,9 @@ export const Projects = () => {
       if (Array.isArray(projectsData)) {
         // Map old schema to new schema if needed
         const mappedProjects = projectsData.map((p: any) => ({
-          id: p.id,
+          id: p._id || p.id,
           name: p.name,
-          key: p.key || p.code || `PROJ-${p.id}`,
+          key: p.key || p.code || `PROJ-${p._id || p.id}`,
           description: p.description,
           project_type: p.project_type || 'scrum',
           lead_id: p.lead_id || p.project_manager_id,
@@ -86,7 +86,7 @@ export const Projects = () => {
     return `status-badge status-${status}`;
   };
 
-  const handleProjectClick = (projectId: number) => {
+  const handleProjectClick = (projectId: string) => {
     navigate(`/projects/${projectId}`);
   };
 

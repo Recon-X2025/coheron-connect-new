@@ -6,6 +6,8 @@ export interface IRolePermission extends Document {
   permission_id: mongoose.Types.ObjectId;
   granted: boolean;
   conditions: any;
+  resource_type: string;
+  access_level: 'own' | 'team' | 'department' | 'all';
 }
 
 const rolePermissionSchema = new Schema<IRolePermission>({
@@ -13,6 +15,8 @@ const rolePermissionSchema = new Schema<IRolePermission>({
   permission_id: { type: Schema.Types.ObjectId, ref: 'Permission', required: true },
   granted: { type: Boolean, default: true },
   conditions: { type: Schema.Types.Mixed, default: {} },
+  resource_type: { type: String },
+  access_level: { type: String, enum: ['own', 'team', 'department', 'all'], default: 'own' },
 }, defaultSchemaOptions);
 
 rolePermissionSchema.index({ role_id: 1, permission_id: 1 }, { unique: true });

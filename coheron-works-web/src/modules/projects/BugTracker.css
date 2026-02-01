@@ -11,7 +11,7 @@
 
 .bug-header p {
   margin: 0;
-  color: var(--text-secondary, #666);
+  color: var(--text-muted);
 }
 
 .bug-statistics {
@@ -21,8 +21,8 @@
 }
 
 .stat-card {
-  background: white;
-  border: 1px solid var(--border-color, #e0e0e0);
+  background: var(--bg-surface, var(--surface));
+  border: 1px solid var(--border-light, #333);
   border-radius: 8px;
   padding: 1.5rem;
   text-align: center;
@@ -31,24 +31,24 @@
 .stat-value {
   font-size: 2.5rem;
   font-weight: 700;
-  color: var(--primary-color, #1976d2);
+  color: var(--color-primary, #6366f1);
   margin-bottom: 0.5rem;
 }
 
 .stat-value.open {
-  color: #ff9800;
+  color: #fbbf24;
 }
 
 .stat-value.resolved {
-  color: #4caf50;
+  color: #34d399;
 }
 
 .stat-value.critical {
-  color: #f44336;
+  color: #f87171;
 }
 
 .stat-label {
-  color: var(--text-secondary, #666);
+  color: var(--text-muted);
   font-size: 0.875rem;
   font-weight: 500;
 }
@@ -73,9 +73,9 @@
   justify-content: space-between;
   align-items: flex-start;
   padding: 1rem;
-  background: white;
-  border: 1px solid var(--border-color, #e0e0e0);
-  border-left: 4px solid var(--primary-color, #1976d2);
+  background: var(--bg-surface, var(--surface));
+  border: 1px solid var(--border-light, #333);
+  border-left: 4px solid var(--color-primary, #6366f1);
   border-radius: 6px;
   margin-bottom: 0.75rem;
   transition: all 0.2s;
@@ -83,15 +83,15 @@
 }
 
 .bug-item:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .bug-item.open {
-  border-left-color: #ff9800;
+  border-left-color: #fbbf24;
 }
 
 .bug-item.resolved {
-  border-left-color: #4caf50;
+  border-left-color: #34d399;
   opacity: 0.8;
 }
 
@@ -108,7 +108,7 @@
 
 .bug-key {
   font-size: 0.75rem;
-  color: var(--text-secondary, #666);
+  color: var(--text-muted);
   font-weight: 500;
 }
 
@@ -116,12 +116,12 @@
   margin: 0.5rem 0;
   font-size: 1rem;
   font-weight: 500;
-  color: var(--text-primary, #333);
+  color: var(--text-main);
 }
 
 .bug-description {
   margin: 0.5rem 0 0 0;
-  color: var(--text-secondary, #666);
+  color: var(--text-muted);
   font-size: 0.875rem;
   line-height: 1.5;
 }
@@ -133,13 +133,13 @@
   gap: 0.5rem;
   margin-left: 1rem;
   font-size: 0.75rem;
-  color: var(--text-secondary, #666);
+  color: var(--text-muted);
 }
 
 .resolution {
   padding: 0.25rem 0.5rem;
-  background: #4caf50;
-  color: white;
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
   border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 500;
@@ -148,8 +148,8 @@
 .empty-bugs {
   text-align: center;
   padding: 3rem 2rem;
-  color: var(--text-secondary, #666);
-  background: var(--bg-secondary, #f5f5f5);
+  color: var(--text-muted);
+  background: var(--bg-surface-hover, rgba(255, 255, 255, 0.05));
   border-radius: 8px;
 }
 
@@ -173,4 +173,3 @@
     align-items: flex-start;
   }
 }
-

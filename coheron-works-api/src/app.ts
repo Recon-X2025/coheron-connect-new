@@ -23,6 +23,7 @@ const app = express();
 app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false,
+  hsts: false, // Disable HSTS until SSL is configured
 }));
 app.use((_req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -51,6 +52,7 @@ app.use(requestLogger);
 // API Documentation (non-production or explicitly enabled)
 if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_API_DOCS === 'true') {
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  app.get('/api-docs.json', (_req, res) => res.json(swaggerSpec));
 }
 
 // Health check

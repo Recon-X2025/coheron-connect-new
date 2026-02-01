@@ -28,7 +28,7 @@
 }
 
 .dashboard-card {
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
   padding: 1.5rem;
   display: flex;
@@ -100,7 +100,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  background: white;
+  background: var(--surface);
   border: 1px solid #e0e0e0;
   border-radius: 6px;
   flex: 1;
@@ -121,7 +121,7 @@
 
 .filter-select {
   padding: 0.75rem 1rem;
-  background: white;
+  background: var(--surface);
   border: 1px solid #e0e0e0;
   border-radius: 6px;
   font-size: 0.9375rem;
@@ -129,7 +129,7 @@
 }
 
 .work-orders-table-container {
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -262,7 +262,7 @@
 }
 
 .wo-detail-content {
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
   width: 100%;
   max-width: 800px;
@@ -405,4 +405,3 @@
   font-size: 0.875rem;
   color: #333;
 }
-

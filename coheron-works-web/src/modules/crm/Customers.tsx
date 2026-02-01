@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, Mail, Phone, Building, User, Edit, Trash2 } from 'lucide-react';
 import { Pagination } from '../../shared/components/Pagination';
-import { usePagination } from '../../hooks/usePagination';
+import { useServerPagination } from '../../hooks/useServerPagination';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { partnerService } from '../../services/odooService';
@@ -12,40 +12,32 @@ import { confirmAction } from '../../components/ConfirmDialog';
 import './Customers.css';
 
 export const Customers = () => {
-    const [partners, setPartners] = useState<Partner[]>([]);
-    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [typeFilter, setTypeFilter] = useState<'all' | 'company' | 'contact'>('all');
     const [showPartnerForm, setShowPartnerForm] = useState(false);
     const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
 
+    const {
+        data: partners,
+        pagination: paginationMeta,
+        loading,
+        setPage,
+        setPageSize,
+        setFilters: setServerFilters,
+        refresh: loadData,
+    } = useServerPagination<Partner>('/customers');
+
+    // Sync filters to server pagination
     useEffect(() => {
-        loadData();
-    }, []);
+        const filters: Record<string, any> = {};
+        if (searchTerm) filters.search = searchTerm;
+        if (typeFilter !== 'all') filters.type = typeFilter;
+        setServerFilters(filters);
+    }, [searchTerm, typeFilter, setServerFilters]);
 
-    const loadData = async () => {
-        try {
-            const partnersData = await partnerService.getAll();
-            setPartners(partnersData);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const filteredPartners = partners.filter(partner => {
-        const matchesSearch = partner.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            partner.email.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesType = typeFilter === 'all' || partner.type === typeFilter;
-        return matchesSearch && matchesType;
-    });
-
-    const companies = filteredPartners.filter(p => p.type === 'company');
-    const contacts = filteredPartners.filter(p => p.type === 'contact');
-
-    const { paginatedItems: paginatedPartners, page, setPage, pageSize, setPageSize, totalPages, totalItems, resetPage } = usePagination(filteredPartners);
-
-    // Reset page when filters change
-    useEffect(() => { resetPage(); }, [searchTerm, typeFilter, resetPage]);
+    const paginatedPartners = partners;
+    const companies = partners.filter(p => p.type === 'company');
+    const contacts = partners.filter(p => p.type === 'contact');
 
     if (loading) {
         return <div className="customers-page"><div className="container"><h1>Loading...</h1></div></div>;
@@ -84,7 +76,7 @@ export const Customers = () => {
                             className={typeFilter === 'all' ? 'active' : ''}
                             onClick={() => setTypeFilter('all')}
                         >
-                            All ({filteredPartners.length})
+                            All ({paginationMeta.total})
                         </button>
                         <button
                             className={typeFilter === 'company' ? 'active' : ''}
@@ -168,16 +160,16 @@ export const Customers = () => {
                 </div>
 
                 <Pagination
-                    currentPage={page}
-                    totalPages={totalPages}
-                    pageSize={pageSize}
-                    totalItems={totalItems}
+                    currentPage={paginationMeta.page}
+                    totalPages={paginationMeta.totalPages}
+                    pageSize={paginationMeta.limit}
+                    totalItems={paginationMeta.total}
                     onPageChange={setPage}
                     onPageSizeChange={setPageSize}
                     pageSizeOptions={[10, 25, 50]}
                 />
 
-                {filteredPartners.length === 0 && (
+                {partners.length === 0 && !loading && (
                     <div className="empty-state">
                         <p>No customers found</p>
                     </div>

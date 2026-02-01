@@ -35,8 +35,8 @@ export const ProjectDetail = () => {
   const loadProject = async () => {
     try {
       setLoading(true);
-      const projectData = await projectService.getProject(parseInt(id!));
-      setProject(projectData);
+      const projectData: any = await projectService.getProject(id!);
+      setProject({ ...projectData, id: projectData._id || projectData.id });
     } catch (error) {
       console.error('Failed to load project:', error);
     } finally {

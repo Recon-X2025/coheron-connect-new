@@ -6,7 +6,7 @@ import { showToast } from '../../../components/Toast';
 import './IssueForm.css';
 
 interface IssueFormProps {
-  projectId: number;
+  projectId: string;
   onClose: () => void;
   onSave: () => void;
 }
@@ -15,7 +15,7 @@ export const IssueForm = ({ projectId, onClose, onSave }: IssueFormProps) => {
   const [formData, setFormData] = useState({
     summary: '',
     description: '',
-    issue_type_id: 1,
+    issue_type_id: '1',
     priority: 'medium' as Issue['priority'],
     story_points: undefined as number | undefined,
   });

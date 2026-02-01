@@ -7,7 +7,7 @@ import { IssueForm } from './components/IssueForm';
 import './BacklogView.css';
 
 interface BacklogViewProps {
-  projectId: number;
+  projectId: string;
 }
 
 export const BacklogView = ({ projectId }: BacklogViewProps) => {

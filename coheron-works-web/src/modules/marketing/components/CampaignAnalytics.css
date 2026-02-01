@@ -37,14 +37,14 @@
   border: 1px solid #e0e0e0;
   border-radius: 6px;
   font-size: 0.9375rem;
-  background: white;
+  background: var(--surface);
   cursor: pointer;
 }
 
 .view-mode-tabs {
   display: flex;
   gap: 0.5rem;
-  background: white;
+  background: var(--surface);
   border: 1px solid #e0e0e0;
   border-radius: 6px;
   padding: 0.25rem;
@@ -78,7 +78,7 @@
 }
 
 .metric-card {
-  background: white;
+  background: var(--surface);
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   padding: 1.5rem;
@@ -154,7 +154,7 @@
 }
 
 .chart-section {
-  background: white;
+  background: var(--surface);
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   padding: 1.5rem;
@@ -192,7 +192,7 @@
 }
 
 .channel-breakdown {
-  background: white;
+  background: var(--surface);
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   padding: 1.5rem;
@@ -239,7 +239,7 @@
 
 .attribution-view,
 .comparison-view {
-  background: white;
+  background: var(--surface);
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   padding: 2rem;

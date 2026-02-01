@@ -68,7 +68,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem;
-  background: white;
+  background: var(--surface);
   border: 1px solid #e0e0e0;
   border-radius: 8px;
 }
@@ -85,7 +85,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem;
-  background: white;
+  background: var(--surface);
   border: 1px solid #e0e0e0;
   border-radius: 8px;
 }
@@ -98,7 +98,7 @@
 }
 
 .itsm-content {
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
   padding: 1.5rem;
   min-height: 400px;

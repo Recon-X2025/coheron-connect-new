@@ -6,7 +6,7 @@ import { showToast } from '../../../components/Toast';
 import './SprintForm.css';
 
 interface SprintFormProps {
-  projectId: number;
+  projectId: string;
   onClose: () => void;
   onSave: () => void;
 }

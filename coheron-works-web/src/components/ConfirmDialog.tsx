@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { AlertTriangle, Trash2, HelpCircle } from 'lucide-react';
 import './ConfirmDialog.css';
 
@@ -31,7 +32,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   onConfirm,
   onCancel,
 }) => {
-  const dialogRef = useRef<HTMLDivElement>(null);
+  const focusTrapRef = useFocusTrap(open);
   const cancelRef = useRef<HTMLButtonElement>(null);
   const [loading, setLoading] = useState(false);
 
@@ -63,7 +64,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
   return (
     <div className="confirm-overlay" onClick={onCancel} role="dialog" aria-modal="true" aria-labelledby="confirm-title">
-      <div className="confirm-dialog" onClick={(e) => e.stopPropagation()} ref={dialogRef}>
+      <div className="confirm-dialog" onClick={(e) => e.stopPropagation()} ref={focusTrapRef}>
         <div className="confirm-icon-wrapper" style={{ backgroundColor: `${color}12` }}>
           <Icon size={24} style={{ color }} />
         </div>

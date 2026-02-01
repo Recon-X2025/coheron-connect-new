@@ -110,6 +110,7 @@ const ToastItem = ({ toast, onRemove }: ToastProps) => {
       <button
         type="button"
         className="toast-close"
+        aria-label="Dismiss notification"
         onClick={() => dismiss()}
       >
         <X size={16} />
@@ -152,7 +153,7 @@ export const ToastContainer = () => {
   };
 
   return (
-    <div className="toast-container">
+    <div className="toast-container" role="status" aria-live="polite">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onRemove={removeToast} />
       ))}

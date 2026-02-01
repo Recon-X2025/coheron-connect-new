@@ -2,6 +2,10 @@ import express from 'express';
 import Product from '../../../shared/models/Product.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
+import { validate } from '../../../shared/middleware/validate.js';
+import { checkRecordAccess } from '../../../shared/middleware/permissions.js';
+import { objectIdParam } from '../../../shared/schemas/common.js';
+import { createProductSchema, updateProductSchema, addSupplierSchema } from '../schemas.js';
 
 const router = express.Router();
 
@@ -46,8 +50,8 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get product by ID
-router.get('/:id', asyncHandler(async (req, res) => {
-  const product = await Product.findById(req.params.id).lean();
+router.get('/:id', checkRecordAccess('products'), asyncHandler(async (req, res) => {
+  const product = await Product.findOne({ _id: req.params.id, ...req.recordFilter }).lean();
   if (!product) return res.status(404).json({ error: 'Product not found' });
   res.json(product);
 }));
@@ -76,7 +80,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
  *       201:
  *         description: Product created
  */
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', validate({ body: createProductSchema }), asyncHandler(async (req, res) => {
   const { name, default_code, list_price, standard_price, qty_available, type, categ_id, image_url } = req.body;
   const product = await Product.create({
     name, default_code,
@@ -90,10 +94,10 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update product
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', validate({ params: objectIdParam, body: updateProductSchema }), checkRecordAccess('products'), asyncHandler(async (req, res) => {
   const { name, default_code, list_price, standard_price, qty_available, type, categ_id, image_url } = req.body;
-  const product = await Product.findByIdAndUpdate(
-    req.params.id,
+  const product = await Product.findOneAndUpdate(
+    { _id: req.params.id, ...req.recordFilter },
     { name, default_code, list_price, standard_price, qty_available, type, categ_id, image_url },
     { new: true }
   );
@@ -102,8 +106,8 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete product
-router.delete('/:id', asyncHandler(async (req, res) => {
-  const product = await Product.findByIdAndDelete(req.params.id);
+router.delete('/:id', checkRecordAccess('products'), asyncHandler(async (req, res) => {
+  const product = await Product.findOneAndDelete({ _id: req.params.id, ...req.recordFilter });
   if (!product) return res.status(404).json({ error: 'Product not found' });
   res.json({ message: 'Product deleted successfully' });
 }));
@@ -116,7 +120,7 @@ router.get('/:id/stock', asyncHandler(async (req, res) => {
 }));
 
 // Manage suppliers
-router.post('/:id/suppliers', asyncHandler(async (req, res) => {
+router.post('/:id/suppliers', validate({ params: objectIdParam, body: addSupplierSchema }), asyncHandler(async (req, res) => {
   const product = await Product.findByIdAndUpdate(
     req.params.id,
     { $push: { suppliers: req.body } },

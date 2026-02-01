@@ -80,7 +80,13 @@ class ApiService {
     return body;
   }
 
-  async getById<T>(endpoint: string, id: number): Promise<T> {
+  // Raw GET that preserves the full response body (including pagination metadata)
+  async getRaw<T = any>(endpoint: string, params?: any): Promise<T> {
+    const response = await this.axiosInstance.get<T>(endpoint, { params });
+    return response.data;
+  }
+
+  async getById<T>(endpoint: string, id: number | string): Promise<T> {
     const response = await this.axiosInstance.get<T>(`${endpoint}/${id}`);
     return response.data;
   }
@@ -90,12 +96,12 @@ class ApiService {
     return response.data;
   }
 
-  async update<T>(endpoint: string, id: number, data: any): Promise<T> {
+  async update<T>(endpoint: string, id: number | string, data: any): Promise<T> {
     const response = await this.axiosInstance.put<T>(`${endpoint}/${id}`, data);
     return response.data;
   }
 
-  async delete(endpoint: string, id: number): Promise<void> {
+  async delete(endpoint: string, id: number | string): Promise<void> {
     await this.axiosInstance.delete(`${endpoint}/${id}`);
   }
 

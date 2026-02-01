@@ -47,7 +47,7 @@
 }
 
 .summary-card {
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
   padding: 1.5rem;
   display: flex;
@@ -128,7 +128,7 @@
 
 .cost-breakdown-section,
 .oee-section {
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
   padding: 1.5rem;
   margin-bottom: 2rem;

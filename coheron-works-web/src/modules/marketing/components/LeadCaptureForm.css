@@ -13,7 +13,7 @@
 }
 
 .lead-capture-form-modal {
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
   width: 100%;
   max-width: 900px;
@@ -128,7 +128,7 @@
   border: 1px solid #e0e0e0;
   border-radius: 4px;
   font-size: 0.9375rem;
-  background: white;
+  background: var(--surface);
 }
 
 .required-toggle {
@@ -189,7 +189,7 @@
 }
 
 .preview-form {
-  background: white;
+  background: var(--surface);
   border: 1px solid #e0e0e0;
   border-radius: 6px;
   padding: 1.5rem;
@@ -280,4 +280,3 @@
     align-items: stretch;
   }
 }
-

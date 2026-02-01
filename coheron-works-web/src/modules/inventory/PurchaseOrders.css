@@ -1,0 +1,29 @@
+.po-page { padding: 2rem; }
+.po-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
+.po-header h1 { font-size: 1.75rem; font-weight: 700; color: var(--text); margin: 0; }
+.po-subtitle { color: var(--text-muted); font-size: 0.875rem; margin: 0.25rem 0 0; }
+.po-btn-primary { display: flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1.25rem; background: var(--primary); color: white; border: none; border-radius: var(--radius-sm); font-weight: 500; cursor: pointer; transition: opacity 0.2s; }
+.po-btn-primary:hover { opacity: 0.9; }
+.po-toolbar { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; }
+.po-search { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; background: var(--muted-surface); border: 1px solid var(--border); border-radius: var(--radius-sm); flex: 1; max-width: 400px; }
+.po-search input { background: none; border: none; outline: none; color: var(--text); font-size: 0.875rem; width: 100%; }
+.po-search svg { color: var(--text-muted); }
+.po-filters { display: flex; gap: 0.25rem; flex-wrap: wrap; }
+.po-filter-btn { padding: 0.375rem 0.75rem; background: var(--muted-surface); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-muted); font-size: 0.8125rem; cursor: pointer; text-transform: capitalize; transition: all 0.2s; }
+.po-filter-btn:hover { border-color: var(--primary); color: var(--text); }
+.po-filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+.po-table-wrap { overflow-x: auto; }
+.po-table { width: 100%; border-collapse: collapse; }
+.po-table th { text-align: left; padding: 0.75rem 1rem; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+.po-table td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.875rem; color: var(--text); }
+.po-table tbody tr:hover { background: var(--muted-surface); }
+.po-number { font-weight: 600; color: var(--primary); }
+.po-amount { font-weight: 600; font-variant-numeric: tabular-nums; }
+.po-status-badge { padding: 0.25rem 0.625rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+.po-actions { display: flex; gap: 0.25rem; }
+.po-actions button { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.375rem; cursor: pointer; color: var(--text-muted); transition: all 0.2s; display: flex; align-items: center; }
+.po-actions button:hover { border-color: var(--primary); color: var(--primary); }
+.po-empty { text-align: center; color: var(--text-muted); padding: 2rem !important; }
+.po-btn-add-line { background: none; border: 1px dashed var(--border); border-radius: var(--radius-sm); padding: 0.5rem; width: 100%; color: var(--text-muted); cursor: pointer; font-size: 0.875rem; }
+.po-btn-add-line:hover { border-color: var(--primary); color: var(--primary); }
+@media (max-width: 768px) { .po-header { flex-direction: column; gap: 1rem; } .po-toolbar { flex-direction: column; } .po-search { max-width: 100%; } }

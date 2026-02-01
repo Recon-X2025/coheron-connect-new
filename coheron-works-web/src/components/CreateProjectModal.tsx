@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { X } from 'lucide-react';
 import { Button } from './Button';
 import { projectService } from '../services/projectService';
@@ -22,6 +23,17 @@ export const CreateProjectModal = ({ isOpen, onClose, onSuccess }: CreateProject
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const focusTrapRef = useFocusTrap(isOpen);
+
+  const handleEscKey = useCallback((e: KeyboardEvent) => {
+    if (e.key === "Escape") onClose();
+  }, [onClose]);
+
+  useEffect(() => {
+    if (isOpen) document.addEventListener("keydown", handleEscKey);
+    return () => document.removeEventListener("keydown", handleEscKey);
+  }, [isOpen, handleEscKey]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -42,7 +54,7 @@ export const CreateProjectModal = ({ isOpen, onClose, onSuccess }: CreateProject
         description: formData.description,
         project_type: formData.project_type,
         status: formData.status,
-        lead_id: formData.lead_id ? parseInt(formData.lead_id) : undefined,
+        lead_id: formData.lead_id || undefined,
       };
 
       await projectService.createProject(projectData);
@@ -87,11 +99,11 @@ export const CreateProjectModal = ({ isOpen, onClose, onSuccess }: CreateProject
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="create-project-title">
+      <div className="modal-content" onClick={(e) => e.stopPropagation()} ref={focusTrapRef}>
         <div className="modal-header">
-          <h2>Create New Project</h2>
-          <button className="modal-close" onClick={onClose}>
+          <h2 id="create-project-title">Create New Project</h2>
+          <button className="modal-close" onClick={onClose} aria-label="Close dialog">
             <X size={20} />
           </button>
         </div>

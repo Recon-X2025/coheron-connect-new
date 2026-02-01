@@ -117,6 +117,48 @@ export async function logPermissionChange(
   });
 }
 
+export async function getUserRecordAccessLevel(
+  userId: string,
+  resourceType: string
+): Promise<'own' | 'team' | 'department' | 'all'> {
+  const now = new Date();
+
+  // Get user's active roles
+  const userRoles = await UserRole.find({
+    user_id: userId,
+    is_active: true,
+    $or: [{ expires_at: null }, { expires_at: { $gt: now } }],
+  }).lean();
+
+  const activeRoleIds = userRoles.map(ur => ur.role_id);
+  const activeRoles = await Role.find({ _id: { $in: activeRoleIds }, is_active: true }).lean();
+  const activeRoleIdStrings = activeRoles.map(r => r._id);
+
+  // Find role permissions that match the resource type
+  const rolePerms = await RolePermission.find({
+    role_id: { $in: activeRoleIdStrings },
+    granted: true,
+    resource_type: resourceType,
+  }).lean();
+
+  if (rolePerms.length === 0) {
+    return 'own'; // Default to most restrictive
+  }
+
+  // Return the highest access level across all roles
+  const levelPriority: Record<string, number> = { own: 0, team: 1, department: 2, all: 3 };
+  let highest: 'own' | 'team' | 'department' | 'all' = 'own';
+
+  for (const rp of rolePerms) {
+    const level = (rp as any).access_level || 'own';
+    if ((levelPriority[level] ?? 0) > (levelPriority[highest] ?? 0)) {
+      highest = level;
+    }
+  }
+
+  return highest;
+}
+
 export async function checkSodViolations(userId: string): Promise<any[]> {
   return [];
 }

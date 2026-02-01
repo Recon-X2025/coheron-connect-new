@@ -37,7 +37,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  background: white;
+  background: var(--surface);
   border: 1px solid #e0e0e0;
   border-radius: 6px;
   flex: 1;
@@ -63,7 +63,7 @@
 }
 
 .quotation-card {
-  background: white;
+  background: var(--surface);
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   padding: 1.5rem;
@@ -159,7 +159,7 @@
   color: #333;
   cursor: pointer;
   transition: all 0.2s;
-  background: white;
+  background: var(--surface);
 }
 
 .quotation-actions .action-btn:hover {
@@ -198,29 +198,6 @@
   background: #f1f5f9;
   border-color: #cbd5e1;
   color: #475569;
-}
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 0.75rem;
-  width: 90%;
-  max-width: 600px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
 .modal-header {
@@ -299,7 +276,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: white;
+  background: var(--surface);
   border: 1px solid #e2e8f0;
   border-radius: 0.375rem;
   color: #475569;
@@ -319,4 +296,3 @@
   padding: 2rem;
   color: #64748b;
 }
-

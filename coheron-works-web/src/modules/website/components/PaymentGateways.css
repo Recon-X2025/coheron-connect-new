@@ -22,7 +22,7 @@
 }
 
 .gateway-card {
-  background: white;
+  background: var(--surface);
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   padding: 20px;
@@ -103,7 +103,7 @@
   width: 18px;
   left: 3px;
   bottom: 3px;
-  background-color: white;
+  background-color: var(--surface);
   transition: 0.4s;
   border-radius: 50%;
 }
@@ -170,21 +170,8 @@
   background: #fecaca;
 }
 
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
 .modal-content {
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
   width: 90%;
   max-width: 600px;
@@ -248,4 +235,3 @@
   border-top: 1px solid #e5e7eb;
   margin-top: 20px;
 }
-

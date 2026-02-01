@@ -9,3 +9,5 @@ export { default as cannedResponses } from './cannedResponses.js';
 export { default as knowledgeBase } from './knowledgeBase.js';
 export { default as itsm } from './itsm.js';
 export { default as liveChat } from './liveChat.js';
+export { default as customerPortal } from './customerPortal.js';
+export { default as emailPiping } from './emailPiping.js';

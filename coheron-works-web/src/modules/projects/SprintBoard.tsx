@@ -7,7 +7,7 @@ import { SprintForm } from './components/SprintForm';
 import './SprintBoard.css';
 
 interface SprintBoardProps {
-  projectId: number;
+  projectId: string;
 }
 
 export const SprintBoard = ({ projectId }: SprintBoardProps) => {
@@ -47,7 +47,7 @@ export const SprintBoard = ({ projectId }: SprintBoardProps) => {
     }
   };
 
-  const loadSprintIssues = async (sprintId: number) => {
+  const loadSprintIssues = async (sprintId: string) => {
     try {
       const planning = await projectService.getSprintPlanning(sprintId);
       setIssues(planning.issues || []);

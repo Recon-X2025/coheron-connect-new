@@ -20,7 +20,7 @@
 .rbac-title h2 {
   margin: 0;
   font-size: 1.5rem;
-  color: #333;
+  color: var(--text);
 }
 
 .rbac-title svg {
@@ -40,7 +40,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: white;
+  background: var(--surface);
   border: 1px solid #e0e0e0;
   border-radius: 6px;
   flex: 1;
@@ -57,7 +57,7 @@
 
 .search-box svg,
 .filter-box svg {
-  color: #666;
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 
@@ -104,13 +104,13 @@
 .role-info h3 {
   margin: 0 0 0.25rem 0;
   font-size: 1rem;
-  color: #333;
+  color: var(--text);
 }
 
 .role-code {
   margin: 0;
   font-size: 0.8125rem;
-  color: #666;
+  color: var(--text-muted);
   font-family: monospace;
 }
 
@@ -120,13 +120,13 @@
   border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #666;
+  color: var(--text-muted);
 }
 
 .role-description {
   margin: 0.75rem 0;
   font-size: 0.875rem;
-  color: #666;
+  color: var(--text-muted);
   line-height: 1.5;
 }
 
@@ -192,7 +192,7 @@
 .group-title {
   margin: 0 0 1rem 0;
   font-size: 1.125rem;
-  color: #333;
+  color: var(--text);
   font-weight: 600;
   padding-bottom: 0.5rem;
   border-bottom: 2px solid #875A7B;
@@ -221,13 +221,13 @@
 .permission-header h4 {
   margin: 0 0 0.25rem 0;
   font-size: 0.9375rem;
-  color: #333;
+  color: var(--text);
 }
 
 .permission-code {
   margin: 0;
   font-size: 0.75rem;
-  color: #666;
+  color: var(--text-muted);
   font-family: monospace;
 }
 
@@ -248,7 +248,7 @@
 .permission-description {
   margin: 0.5rem 0;
   font-size: 0.8125rem;
-  color: #666;
+  color: var(--text-muted);
 }
 
 .permission-meta {
@@ -261,10 +261,10 @@
 .access-level,
 .resource-type {
   padding: 0.25rem 0.5rem;
-  background: white;
+  background: var(--surface);
   border-radius: 4px;
   font-size: 0.75rem;
-  color: #666;
+  color: var(--text-muted);
 }
 
 /* User Role Assignments */
@@ -297,7 +297,7 @@
 }
 
 .user-card:hover {
-  background: #f5f5f5;
+  background: var(--muted-surface);
 }
 
 .user-card.selected {
@@ -327,19 +327,19 @@
 .user-info h4 {
   margin: 0 0 0.25rem 0;
   font-size: 0.9375rem;
-  color: #333;
+  color: var(--text);
 }
 
 .user-info p {
   margin: 0;
   font-size: 0.8125rem;
-  color: #666;
+  color: var(--text-muted);
 }
 
 .user-role-count {
   margin-top: 0.5rem;
   font-size: 0.8125rem;
-  color: #666;
+  color: var(--text-muted);
 }
 
 .user-roles-panel {
@@ -360,13 +360,13 @@
 .panel-header h3 {
   margin: 0 0 0.25rem 0;
   font-size: 1.25rem;
-  color: #333;
+  color: var(--text);
 }
 
 .panel-header p {
   margin: 0;
   font-size: 0.875rem;
-  color: #666;
+  color: var(--text-muted);
 }
 
 .roles-list {
@@ -438,7 +438,7 @@
   align-items: center;
   gap: 0.25rem;
   font-size: 0.8125rem;
-  color: #666;
+  color: var(--text-muted);
 }
 
 .log-details {
@@ -455,12 +455,12 @@
 
 .detail-label {
   font-weight: 600;
-  color: #666;
+  color: var(--text-muted);
   font-size: 0.875rem;
 }
 
 .detail-value {
-  color: #333;
+  color: var(--text);
   font-size: 0.875rem;
 }
 
@@ -478,13 +478,13 @@
 .change-item strong {
   display: block;
   margin-bottom: 0.5rem;
-  color: #333;
+  color: var(--text);
 }
 
 .change-item pre {
   margin: 0;
   padding: 0.5rem;
-  background: white;
+  background: var(--surface);
   border-radius: 4px;
   font-size: 0.8125rem;
   overflow-x: auto;
@@ -500,33 +500,11 @@
 }
 
 /* Modal */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 8px;
-  padding: 2rem;
-  max-width: 600px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-}
 
 .modal-content h3 {
   margin: 0 0 1.5rem 0;
   font-size: 1.25rem;
-  color: #333;
+  color: var(--text);
 }
 
 .form-group {
@@ -537,7 +515,7 @@
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 600;
-  color: #333;
+  color: var(--text);
   font-size: 0.875rem;
 }
 
@@ -554,7 +532,7 @@
 
 .form-group input:disabled,
 .form-group select:disabled {
-  background: #f5f5f5;
+  background: var(--muted-surface);
   cursor: not-allowed;
 }
 
@@ -566,7 +544,7 @@
   display: block;
   margin-top: 0.25rem;
   font-size: 0.75rem;
-  color: #666;
+  color: var(--text-muted);
 }
 
 .form-row {
@@ -592,7 +570,7 @@
   justify-content: center;
   padding: 4rem 2rem;
   text-align: center;
-  color: #666;
+  color: var(--text-muted);
 }
 
 .empty-state svg {
@@ -639,4 +617,3 @@
     grid-template-columns: 1fr;
   }
 }
-

@@ -20,7 +20,7 @@
 }
 
 .settings-sidebar {
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--border-color, #e0e0e0);
   border-radius: 8px;
   padding: 0.5rem;
@@ -51,7 +51,7 @@
 }
 
 .settings-content {
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--border-color, #e0e0e0);
   border-radius: 8px;
   padding: 2rem;

@@ -45,7 +45,7 @@
 }
 
 .reports-content {
-  background: white;
+  background: var(--surface);
   border-radius: 12px;
   padding: 1.5rem;
   border: 1px solid #e5e7eb;

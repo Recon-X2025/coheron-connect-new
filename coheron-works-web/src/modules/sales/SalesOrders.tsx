@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Search, Plus, FileText, CheckCircle, Clock, XCircle, Eye } from 'lucide-react';
+import { Search, Plus, FileText, CheckCircle, Clock, XCircle, Eye, Printer } from 'lucide-react';
 import { Pagination } from '../../shared/components/Pagination';
-import { usePagination } from '../../hooks/usePagination';
+import { useServerPagination } from '../../hooks/useServerPagination';
 import { Button } from '../../components/Button';
 import { saleOrderService, partnerService } from '../../services/odooService';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
@@ -22,9 +22,7 @@ import { useModalDismiss } from '../../hooks/useModalDismiss';
 import './SalesOrders.css';
 
 export const SalesOrders = () => {
-    const [orders, setOrders] = useState<SaleOrder[]>([]);
     const [partners, setPartners] = useState<Partner[]>([]);
-    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -39,33 +37,39 @@ export const SalesOrders = () => {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
 
+    const serverPaginationFilters: Record<string, any> = {};
+    if (searchTerm) serverPaginationFilters.search = searchTerm;
+    if (statusFilter !== 'all') serverPaginationFilters.state = statusFilter;
+    if (startDate) serverPaginationFilters.start_date = startDate;
+    if (endDate) serverPaginationFilters.end_date = endDate;
+
+    const {
+        data: orders,
+        pagination: paginationMeta,
+        loading,
+        setPage,
+        setPageSize,
+        setFilters: setServerFilters,
+        refresh: loadData,
+    } = useServerPagination<SaleOrder>('/sale-orders', serverPaginationFilters);
+
     const closeDetailModal = useCallback(() => setSelectedOrder(null), []);
     useModalDismiss(!!selectedOrder && !showConfirmation, closeDetailModal);
 
+    // Sync filters to server pagination
     useEffect(() => {
-        loadData();
-    }, [filterDomain]);
+        const filters: Record<string, any> = {};
+        if (searchTerm) filters.search = searchTerm;
+        if (statusFilter !== 'all') filters.state = statusFilter;
+        if (startDate) filters.start_date = startDate;
+        if (endDate) filters.end_date = endDate;
+        setServerFilters(filters);
+    }, [searchTerm, statusFilter, startDate, endDate, filterDomain, setServerFilters]);
 
-    const loadData = async () => {
-        try {
-            setLoading(true);
-            const domain: any[] = filterDomain.length > 0 ? filterDomain : [];
-            
-            const [ordersData, partnersData] = await Promise.all([
-                domain.length > 0 
-                    ? saleOrderService.getAll().then(orders => {
-                        // Client-side filtering for now
-                        return orders;
-                    })
-                    : saleOrderService.getAll(),
-                partnerService.getAll(),
-            ]);
-            setOrders(ordersData);
-            setPartners(partnersData);
-        } finally {
-            setLoading(false);
-        }
-    };
+    // Load partners separately
+    useEffect(() => {
+        partnerService.getAll().then(setPartners);
+    }, []);
 
     const handleDelete = async (ids: number[]) => {
         const ok = await confirmAction({
@@ -186,22 +190,8 @@ export const SalesOrders = () => {
     };
 
 
-    const filteredOrders = orders.filter(order => {
-        const matchesSearch = order.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            getPartnerName(order.partner_id).toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = statusFilter === 'all' || order.state === statusFilter;
-        const orderDate = order.date_order ? order.date_order.split('T')[0].split(' ')[0] : '';
-        const matchesStart = !startDate || orderDate >= startDate;
-        const matchesEnd = !endDate || orderDate <= endDate;
-        return matchesSearch && matchesStatus && matchesStart && matchesEnd;
-    });
-
-    const { paginatedItems: paginatedOrders, page, setPage, pageSize, setPageSize, totalPages, totalItems, resetPage } = usePagination(filteredOrders);
-
-    // Reset page when filters change
-    useEffect(() => { resetPage(); }, [searchTerm, statusFilter, filterDomain, startDate, endDate, resetPage]);
-
-    const totalRevenue = filteredOrders.reduce((sum, order) => sum + order.amount_total, 0);
+    const paginatedOrders = orders;
+    const totalRevenue = orders.reduce((sum, order) => sum + order.amount_total, 0);
 
     const filterFields = [
         { name: 'state', label: 'State', type: 'selection' as const },
@@ -226,10 +216,13 @@ export const SalesOrders = () => {
                     <div>
                         <h1>Sales Orders</h1>
                         <p className="sales-subtitle">
-                            {filteredOrders.length} orders · {formatInLakhsCompact(totalRevenue)} total
+                            {paginationMeta.total} orders · {formatInLakhsCompact(totalRevenue)} total
                         </p>
                     </div>
-                    <Button icon={<Plus size={20} />} onClick={() => setShowOrderForm(true)}>New Order</Button>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <Button variant="ghost" className="no-print" icon={<Printer size={16} />} onClick={() => window.print()}>Print</Button>
+                        <Button icon={<Plus size={20} />} onClick={() => setShowOrderForm(true)}>New Order</Button>
+                    </div>
                 </div>
 
                 <div className="sales-toolbar">
@@ -290,13 +283,13 @@ export const SalesOrders = () => {
                 {selectedIds.length > 0 && (
                     <BulkActions
                         selectedIds={selectedIds}
-                        totalCount={filteredOrders.length}
+                        totalCount={paginationMeta.total}
                         onSelectionChange={setSelectedIds}
                         actions={createCommonBulkActions(handleDelete, handleBulkAssign, handleBulkUpdate)}
                     />
                 )}
 
-                {filteredOrders.length === 0 ? (
+                {orders.length === 0 && !loading ? (
                     <EmptyState
                         icon={<FileText size={48} />}
                         title="No sales orders yet"
@@ -454,10 +447,10 @@ export const SalesOrders = () => {
                 )}
 
                 <Pagination
-                    currentPage={page}
-                    totalPages={totalPages}
-                    pageSize={pageSize}
-                    totalItems={totalItems}
+                    currentPage={paginationMeta.page}
+                    totalPages={paginationMeta.totalPages}
+                    pageSize={paginationMeta.limit}
+                    totalItems={paginationMeta.total}
                     onPageChange={setPage}
                     onPageSizeChange={setPageSize}
                     pageSizeOptions={[10, 25, 50]}

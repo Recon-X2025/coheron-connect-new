@@ -72,7 +72,7 @@
   border: 2px solid var(--border);
   border-radius: var(--radius);
   cursor: crosshair;
-  background: white;
+  background: var(--surface);
   touch-action: none;
 }
 
@@ -118,7 +118,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: white;
+  background: var(--surface);
   color: var(--text);
 }
 

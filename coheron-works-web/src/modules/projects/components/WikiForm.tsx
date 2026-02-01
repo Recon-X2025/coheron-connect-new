@@ -8,9 +8,9 @@ import './WikiForm.css';
 interface WikiFormProps {
   onClose: () => void;
   onSave: () => void;
-  projectId: number;
+  projectId: string;
   type: 'space' | 'page';
-  spaceId?: number;
+  spaceId?: string;
   initialData?: any;
 }
 

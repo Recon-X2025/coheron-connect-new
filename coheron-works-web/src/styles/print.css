@@ -1,0 +1,154 @@
+/* Print Styles for CoheronERP */
+
+@media print {
+  /* Hide non-printable UI elements */
+  nav,
+  .sidebar,
+  .no-print,
+  .modal-overlay,
+  .toast-container,
+  .search-box,
+  .status-filter,
+  .view-toggle,
+  .toolbar-actions,
+  .sales-toolbar,
+  .invoices-toolbar,
+  .fr-tabs,
+  .fr-filters,
+  .pagination,
+  .bulk-actions,
+  .action-buttons,
+  .action-btn,
+  .order-actions,
+  button:not(.no-hide-print) {
+    display: none !important;
+  }
+
+  /* Page setup */
+  @page {
+    margin: 1.5cm 2cm;
+    size: A4;
+  }
+
+  /* Clean background and typography */
+  * {
+    color: #000 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  body {
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.5;
+  }
+
+  h1 {
+    font-size: 18pt;
+    margin-bottom: 4pt;
+  }
+
+  h2 {
+    font-size: 14pt;
+  }
+
+  h3 {
+    font-size: 12pt;
+  }
+
+  /* Full-width layout */
+  .container,
+  .financial-reports-page,
+  .sales-orders-page,
+  .invoices-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Tables */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  th,
+  td {
+    border: 1px solid #ccc !important;
+    padding: 6px 10px !important;
+    text-align: left;
+    font-size: 10pt;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  th {
+    background-color: #f0f0f0 !important;
+    font-weight: 600;
+  }
+
+  /* Page-break rules */
+  table {
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  thead {
+    page-break-after: avoid;
+  }
+
+  h1, h2, h3 {
+    page-break-after: avoid;
+  }
+
+  .report-table-container,
+  .invoices-table-container,
+  .orders-table-container {
+    page-break-before: avoid;
+    overflow: visible !important;
+  }
+
+  /* Financial report sections */
+  .pl-section,
+  .bs-section,
+  .cf-section {
+    page-break-inside: avoid;
+  }
+
+  /* Order cards in grid view */
+  .orders-grid {
+    display: block !important;
+  }
+
+  .order-card {
+    page-break-inside: avoid;
+    border: 1px solid #ccc !important;
+    margin-bottom: 8pt;
+    padding: 8pt !important;
+  }
+
+  /* Stat cards */
+  .invoices-stats,
+  .stat-card {
+    border: 1px solid #ccc !important;
+  }
+
+  /* Links */
+  a {
+    text-decoration: none !important;
+  }
+
+  /* Amount columns alignment */
+  .amount-col,
+  .amount {
+    text-align: right !important;
+  }
+}

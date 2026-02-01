@@ -1,0 +1,135 @@
+.data-import {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.data-import h2 {
+  color: var(--text-main);
+  margin-bottom: 24px;
+  font-size: 1.5rem;
+}
+
+.data-import__form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.data-import__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.data-import__field label {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--text-main);
+}
+
+.data-import__field select,
+.data-import__field input[type="file"] {
+  padding: 8px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  background: var(--bg-surface);
+  color: var(--text-main);
+  font-size: 0.875rem;
+}
+
+.data-import__field select:focus {
+  outline: 2px solid var(--primary, #3b82f6);
+  outline-offset: -1px;
+}
+
+.data-import__actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.data-import__preview {
+  margin-bottom: 24px;
+}
+
+.data-import__preview h3 {
+  color: var(--text-main);
+  margin-bottom: 12px;
+  font-size: 1rem;
+}
+
+.data-import__table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+}
+
+.data-import__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.data-import__table th,
+.data-import__table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+.data-import__table th {
+  background: var(--bg-surface);
+  font-weight: 600;
+}
+
+.data-import__table tr:last-child td {
+  border-bottom: none;
+}
+
+.data-import__results {
+  padding: 20px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+}
+
+.data-import__results h3 {
+  color: var(--text-main);
+  margin-bottom: 12px;
+  font-size: 1rem;
+}
+
+.data-import__success {
+  color: #22c55e;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.data-import__errors {
+  margin-top: 12px;
+}
+
+.data-import__errors h4 {
+  color: #ef4444;
+  margin-bottom: 8px;
+  font-size: 0.875rem;
+}
+
+.data-import__error-row {
+  padding: 6px 0;
+  font-size: 0.8125rem;
+  color: var(--text-main);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.data-import__error-row:last-child {
+  border-bottom: none;
+}

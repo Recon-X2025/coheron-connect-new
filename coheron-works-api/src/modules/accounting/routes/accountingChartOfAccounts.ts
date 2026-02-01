@@ -2,6 +2,9 @@ import express from 'express';
 import AccountAccount from '../../../models/AccountAccount.js';
 import AccountMove from '../../../models/AccountMove.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { validate } from '../../../shared/middleware/validate.js';
+import { objectIdParam } from '../../../shared/schemas/common.js';
+import { createAccountSchema, updateAccountSchema } from '../schemas.js';
 
 const router = express.Router();
 
@@ -58,7 +61,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create account
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', validate({ body: createAccountSchema }), asyncHandler(async (req, res) => {
   const {
     code,
     name,
@@ -97,7 +100,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update account
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', validate({ params: objectIdParam, body: updateAccountSchema }), asyncHandler(async (req, res) => {
   const {
     name,
     account_type,

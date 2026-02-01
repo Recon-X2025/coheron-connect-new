@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Filter, Plus, Mail, Phone, TrendingUp, Edit, Trash2, CheckCircle, Check, X } from 'lucide-react';
 import { Pagination } from '../../shared/components/Pagination';
-import { usePagination } from '../../hooks/usePagination';
+import { useServerPagination } from '../../hooks/useServerPagination';
 import { Button } from '../../components/Button';
 import { leadService, partnerService } from '../../services/odooService';
 import { apiService } from '../../services/apiService';
@@ -19,9 +19,7 @@ import { EditableCell } from '../../components/EditableCell';
 import './LeadsList.css';
 
 export const LeadsList = () => {
-    const [leads, setLeads] = useState<Lead[]>([]);
     const [partners, setPartners] = useState<Partner[]>([]);
-    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [stageFilter, setStageFilter] = useState<string>('all');
     const [sortBy, setSortBy] = useState<'name' | 'revenue' | 'probability'>('revenue');
@@ -36,28 +34,30 @@ export const LeadsList = () => {
     const [bulkActionIds, setBulkActionIds] = useState<number[]>([]);
     const inlineEdit = useInlineEdit<Lead>();
 
-    useEffect(() => {
-        loadData();
-    }, [filterDomain]);
+    const {
+        data: leads,
+        pagination: paginationMeta,
+        loading,
+        setPage,
+        setPageSize,
+        setFilters: setServerFilters,
+        refresh: loadData,
+    } = useServerPagination<Lead>('/leads');
 
-    const loadData = async () => {
-        try {
-            setLoading(true);
-            const [leadsData, partnersData] = await Promise.all([
-                leadService.getAll().then(allLeads => {
-                    // Filter by type='lead' and apply domain filters
-                    // Simple client-side filtering for now
-                    // In production, this would be done server-side via domain
-                    return allLeads;
-                }),
-                partnerService.getAll(),
-            ]);
-            setLeads(leadsData);
-            setPartners(partnersData);
-        } finally {
-            setLoading(false);
-        }
-    };
+    // Sync filters to server pagination
+    useEffect(() => {
+        const filters: Record<string, any> = {};
+        if (searchTerm) filters.search = searchTerm;
+        if (stageFilter !== 'all') filters.stage = stageFilter;
+        if (sortBy) filters.sort_by = sortBy;
+        if (sortOrder) filters.sort_order = sortOrder;
+        setServerFilters(filters);
+    }, [searchTerm, stageFilter, sortBy, sortOrder, filterDomain, setServerFilters]);
+
+    // Load partners separately
+    useEffect(() => {
+        partnerService.getAll().then(setPartners);
+    }, []);
 
     const handleDelete = async (ids: number[]) => {
         const ok = await confirmAction({
@@ -131,26 +131,23 @@ export const LeadsList = () => {
 
     const handleStageChange = async (leadId: number, newStage: string) => {
         try {
-            // Optimistic update
-            setLeads(prev => prev.map(lead =>
-                lead.id === leadId ? { ...lead, stage: newStage as any } : lead
-            ));
-
-            // Update via API
             await apiService.update('/leads', leadId, { stage: newStage });
+            loadData();
         } catch (error) {
             console.error('Failed to update stage:', error);
-            // Revert on error
             loadData();
         }
     };
 
-    const handleInlineSave = (leadId: number) => {
+    const handleInlineSave = async (leadId: number) => {
         const values = inlineEdit.saveEdit();
-        setLeads(prev => prev.map(lead =>
-            lead.id === leadId ? { ...lead, ...values } : lead
-        ));
-        showToast('Lead updated successfully', 'success');
+        try {
+            await apiService.update('/leads', leadId, values);
+            showToast('Lead updated successfully', 'success');
+            loadData();
+        } catch (error: any) {
+            showToast(error?.message || 'Failed to update lead', 'error');
+        }
     };
 
     const handleConvertSuccess = () => {
@@ -177,30 +174,7 @@ export const LeadsList = () => {
         return priority.charAt(0).toUpperCase() + priority.slice(1);
     };
 
-    // Filter and sort leads
-    const filteredLeads = leads
-        .filter(lead => {
-            const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                getPartnerName(lead.partner_id).toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesStage = stageFilter === 'all' || lead.stage === stageFilter;
-            return matchesSearch && matchesStage;
-        })
-        .sort((a, b) => {
-            let comparison = 0;
-            if (sortBy === 'name') {
-                comparison = a.name.localeCompare(b.name);
-            } else if (sortBy === 'revenue') {
-                comparison = a.expected_revenue - b.expected_revenue;
-            } else if (sortBy === 'probability') {
-                comparison = a.probability - b.probability;
-            }
-            return sortOrder === 'asc' ? comparison : -comparison;
-        });
-
-    const { paginatedItems: paginatedLeads, page, setPage, pageSize, setPageSize, totalPages, totalItems, resetPage } = usePagination(filteredLeads);
-
-    // Reset page when filters change
-    useEffect(() => { resetPage(); }, [searchTerm, stageFilter, filterDomain, resetPage]);
+    const paginatedLeads = leads;
 
     const handleSort = (field: 'name' | 'revenue' | 'probability') => {
         if (sortBy === field) {
@@ -234,7 +208,7 @@ export const LeadsList = () => {
                 <div className="leads-header">
                     <div>
                         <h1>Leads</h1>
-                        <p className="leads-subtitle">{filteredLeads.length} leads found</p>
+                        <p className="leads-subtitle">{paginationMeta.total} leads found</p>
                     </div>
                     <Button icon={<Plus size={20} />} onClick={handleNewLead}>New Lead</Button>
                 </div>
@@ -274,7 +248,7 @@ export const LeadsList = () => {
                 {selectedIds.length > 0 && (
                     <BulkActions
                         selectedIds={selectedIds}
-                        totalCount={filteredLeads.length}
+                        totalCount={paginationMeta.total}
                         onSelectionChange={setSelectedIds}
                         actions={createCommonBulkActions(handleDelete, handleBulkAssign, handleBulkUpdate)}
                     />
@@ -457,10 +431,10 @@ export const LeadsList = () => {
                 </div>
 
                 <Pagination
-                    currentPage={page}
-                    totalPages={totalPages}
-                    pageSize={pageSize}
-                    totalItems={totalItems}
+                    currentPage={paginationMeta.page}
+                    totalPages={paginationMeta.totalPages}
+                    pageSize={paginationMeta.limit}
+                    totalItems={paginationMeta.total}
                     onPageChange={setPage}
                     onPageSizeChange={setPageSize}
                     pageSizeOptions={[10, 25, 50]}

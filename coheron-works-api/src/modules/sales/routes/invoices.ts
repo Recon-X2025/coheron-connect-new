@@ -5,6 +5,9 @@ import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 import { invoiceEmailTemplate } from '../../../templates/email/invoiceTemplate.js';
 import { redisConnection } from '../../../jobs/connection.js';
+import { validate } from '../../../shared/middleware/validate.js';
+import { objectIdParam } from '../../../shared/schemas/common.js';
+import { createInvoiceSchema, updateInvoiceSchema, sendInvoiceSchema } from '../schemas.js';
 
 const emailQueue = new Queue('email', { connection: redisConnection });
 
@@ -62,7 +65,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create invoice
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', validate({ body: createInvoiceSchema }), asyncHandler(async (req, res) => {
   const { name, partner_id, invoice_date, amount_total, amount_residual, state, payment_state, move_type } = req.body;
 
   const invoice = await Invoice.create({
@@ -80,7 +83,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update invoice
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', validate({ params: objectIdParam, body: updateInvoiceSchema }), asyncHandler(async (req, res) => {
   const { state, payment_state, amount_residual } = req.body;
 
   const updateData: any = {};
@@ -98,7 +101,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Send invoice via email
-router.post('/:id/send', asyncHandler(async (req, res) => {
+router.post('/:id/send', validate({ params: objectIdParam, body: sendInvoiceSchema }), asyncHandler(async (req, res) => {
   const invoice = await Invoice.findById(req.params.id).populate('partner_id', 'name email').lean() as any;
   if (!invoice) {
     return res.status(404).json({ error: 'Invoice not found' });

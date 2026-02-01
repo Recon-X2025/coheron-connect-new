@@ -13,7 +13,7 @@
 }
 
 .lead-conversion-modal {
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
   width: 100%;
   max-width: 600px;
@@ -225,7 +225,7 @@
 }
 
 .btn-secondary {
-  background: white;
+  background: var(--surface);
   border: 1px solid #e0e0e0;
   color: #333;
 }
@@ -250,4 +250,3 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
-

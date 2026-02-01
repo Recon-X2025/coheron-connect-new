@@ -32,7 +32,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  background: white;
+  background: var(--surface);
   border: 1px solid #e0e0e0;
   border-radius: 6px;
   max-width: 400px;
@@ -51,7 +51,7 @@
 }
 
 .boms-table-container {
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -155,7 +155,7 @@
 }
 
 .bom-detail-content {
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
   width: 100%;
   max-width: 900px;
@@ -246,7 +246,7 @@
 .bom-lines-table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
+  background: var(--surface);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -325,4 +325,3 @@
   padding-top: 1.5rem;
   border-top: 1px solid #e0e0e0;
 }
-

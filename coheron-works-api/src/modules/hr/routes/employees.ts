@@ -2,6 +2,9 @@ import express from 'express';
 import { Employee } from '../../../models/Employee.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
+import { validate } from '../../../shared/middleware/validate.js';
+import { objectIdParam } from '../../../shared/schemas/common.js';
+import { createEmployeeSchema, updateEmployeeSchema, addDocumentSchema } from '../schemas.js';
 
 const router = express.Router();
 
@@ -30,7 +33,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create employee
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', validate({ body: createEmployeeSchema }), asyncHandler(async (req, res) => {
   const {
     employee_id, name, work_email, work_phone, job_title,
     department_id, manager_id, hire_date, employment_type
@@ -45,7 +48,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update employee
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', validate({ params: objectIdParam, body: updateEmployeeSchema }), asyncHandler(async (req, res) => {
   const { id } = req.params;
   const {
     name, work_email, work_phone, job_title,
@@ -85,7 +88,7 @@ router.get('/:id/leave-balances', asyncHandler(async (req, res) => {
 }));
 
 // Add document to employee
-router.post('/:id/documents', asyncHandler(async (req, res) => {
+router.post('/:id/documents', validate({ params: objectIdParam, body: addDocumentSchema }), asyncHandler(async (req, res) => {
   const employee = await Employee.findByIdAndUpdate(
     req.params.id,
     { $push: { documents: req.body } },

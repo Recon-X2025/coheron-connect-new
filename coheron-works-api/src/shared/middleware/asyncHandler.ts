@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import logger from '../utils/logger.js';
 import { Sentry } from '../utils/sentry.js';
+import { AppError } from '../errors.js';
 
 export function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -27,6 +28,10 @@ export function errorHandler(err: any, req: Request, res: Response, _next: NextF
   // Mongoose cast error (invalid ObjectId etc)
   if (err.name === 'CastError') {
     return res.status(400).json({ error: `Invalid ${err.path}: ${err.value}` });
+  }
+
+  if (err instanceof AppError) {
+    return res.status(err.statusCode).json({ error: err.message, code: err.code });
   }
 
   const status = err.status || 500;

@@ -5,7 +5,7 @@ import {
   AlertCircle, CheckCircle2, Check, X
 } from 'lucide-react';
 import { Pagination } from '../../shared/components/Pagination';
-import { usePagination } from '../../hooks/usePagination';
+import { useServerPagination } from '../../hooks/useServerPagination';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
@@ -23,8 +23,6 @@ type ViewMode = 'list' | 'grid' | 'detail';
 type EmployeeTab = 'all' | 'active' | 'inactive' | 'onboarding' | 'offboarding';
 
 export const Employees = () => {
-  const [employees, setEmployees] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [activeTab, setActiveTab] = useState<EmployeeTab>('all');
@@ -33,50 +31,37 @@ export const Employees = () => {
   const [filterDepartment, setFilterDepartment] = useState<string>('all');
   const inlineEdit = useInlineEdit<any>();
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const {
+    data: employees,
+    pagination: paginationMeta,
+    loading,
+    setPage,
+    setPageSize,
+    setFilters: setServerFilters,
+    refresh: loadData,
+  } = useServerPagination<any>('/employees');
 
-  const loadData = async () => {
+  // Sync filters to server pagination
+  useEffect(() => {
+    const filters: Record<string, any> = {};
+    if (searchTerm) filters.search = searchTerm;
+    if (activeTab !== 'all') filters.status = activeTab;
+    if (filterDepartment !== 'all') filters.department_id = filterDepartment;
+    setServerFilters(filters);
+  }, [searchTerm, activeTab, filterDepartment, setServerFilters]);
+
+  const handleInlineSave = async (empId: number) => {
+    const values = inlineEdit.saveEdit();
     try {
-      setLoading(true);
-      const employeesData = await apiService.get<any>('/employees');
-      setEmployees(employeesData);
-    } finally {
-      setLoading(false);
+      await apiService.update('/employees', empId, values);
+      showToast('Employee updated successfully', 'success');
+      loadData();
+    } catch (error: any) {
+      showToast(error?.message || 'Failed to update employee', 'error');
     }
   };
 
-  const handleInlineSave = (empId: number) => {
-    const values = inlineEdit.saveEdit();
-    setEmployees(prev => prev.map(e =>
-      e.id === empId ? { ...e, ...values } : e
-    ));
-    showToast('Employee updated successfully', 'success');
-  };
-
-  const filteredEmployees = employees.filter(emp => {
-    const matchesSearch = 
-      emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.job_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.work_email?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesTab = 
-      activeTab === 'all' ||
-      (activeTab === 'active' && emp.attendance_state === 'checked_in') ||
-      (activeTab === 'inactive' && emp.attendance_state === 'checked_out');
-    
-    const matchesDept = 
-      filterDepartment === 'all' || 
-      emp.department_id?.toString() === filterDepartment;
-
-    return matchesSearch && matchesTab && matchesDept;
-  });
-
-  const { paginatedItems: paginatedEmployees, page, setPage, pageSize, setPageSize, totalPages, totalItems, resetPage } = usePagination(filteredEmployees);
-
-  // Reset page when filters change
-  useEffect(() => { resetPage(); }, [searchTerm, activeTab, filterDepartment, resetPage]);
+  const paginatedEmployees = employees;
 
   const stats = {
     total: employees.length,
@@ -117,7 +102,7 @@ export const Employees = () => {
             <p className="employees-subtitle">Comprehensive employee information management</p>
           </div>
           <div className="header-actions">
-            <Button variant="secondary" icon={<Download size={18} />} onClick={() => exportToCSV(filteredEmployees, 'employees', [
+            <Button variant="secondary" icon={<Download size={18} />} onClick={() => exportToCSV(employees, 'employees', [
               { key: 'name', label: 'Employee' },
               { key: 'job_title', label: 'Job Title' },
               { key: 'department_id', label: 'Department' },
@@ -427,10 +412,10 @@ export const Employees = () => {
         )}
 
         <Pagination
-          currentPage={page}
-          totalPages={totalPages}
-          pageSize={pageSize}
-          totalItems={totalItems}
+          currentPage={paginationMeta.page}
+          totalPages={paginationMeta.totalPages}
+          pageSize={paginationMeta.limit}
+          totalItems={paginationMeta.total}
           onPageChange={setPage}
           onPageSizeChange={setPageSize}
           pageSizeOptions={[10, 25, 50]}

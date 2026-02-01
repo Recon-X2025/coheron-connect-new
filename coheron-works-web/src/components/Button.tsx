@@ -21,9 +21,11 @@ export const Button: React.FC<ButtonProps> = ({
   type = 'button',
   ...props
 }) => {
+  const isIconOnly = icon && !children;
   return (
     <button
       type={type}
+      aria-label={isIconOnly ? (props["aria-label"] || "Button") : props["aria-label"]}
       className={clsx(
         'btn',
         `btn-${variant}`,

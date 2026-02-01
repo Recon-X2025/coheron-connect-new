@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Settings, CreditCard, Shield, Activity, TrendingUp, Key, FileText, UserCheck } from 'lucide-react';
+import { Users, Settings, CreditCard, Shield, Activity, TrendingUp, Key, FileText, UserCheck, Upload } from 'lucide-react';
 import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
@@ -8,6 +8,7 @@ import { RolesManagement } from '../RolesManagement';
 import { PermissionsManagement } from '../PermissionsManagement';
 import { UserRoleAssignments } from '../UserRoleAssignments';
 import { AuditLogsViewer } from '../AuditLogsViewer';
+import { DataImport } from '../DataImport';
 import { showToast } from '../../../components/Toast';
 import './AdminPortal.css';
 
@@ -19,7 +20,7 @@ interface Subscription {
   expiresAt: string;
 }
 
-type AdminTab = 'overview' | 'roles' | 'permissions' | 'assignments' | 'audit';
+type AdminTab = 'overview' | 'roles' | 'permissions' | 'assignments' | 'audit' | 'import';
 
 export const AdminPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
@@ -109,6 +110,13 @@ export const AdminPortal: React.FC = () => {
           >
             <FileText size={18} />
             Audit Logs
+          </button>
+          <button
+            className={`admin-tab ${activeTab === 'import' ? 'active' : ''}`}
+            onClick={() => setActiveTab('import')}
+          >
+            <Upload size={18} />
+            Data Import
           </button>
         </div>
 
@@ -241,6 +249,7 @@ export const AdminPortal: React.FC = () => {
         {activeTab === 'permissions' && <PermissionsManagement />}
         {activeTab === 'assignments' && <UserRoleAssignments />}
         {activeTab === 'audit' && <AuditLogsViewer />}
+        {activeTab === 'import' && <DataImport />}
       </div>
     </div>
   );

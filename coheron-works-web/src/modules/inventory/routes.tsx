@@ -8,6 +8,7 @@ const BatchSerialManagement = lazy(() => import('./BatchSerialManagement').then(
 const WarehouseOperations = lazy(() => import('./WarehouseOperations').then(m => ({ default: m.WarehouseOperations })));
 const StockReports = lazy(() => import('./StockReports').then(m => ({ default: m.StockReports })));
 const InventorySettings = lazy(() => import('./InventorySettings').then(m => ({ default: m.InventorySettings })));
+const PurchaseOrders = lazy(() => import('./PurchaseOrders').then(m => ({ default: m.PurchaseOrders })));
 
 export const inventoryRoutes = [
   { path: '/inventory', element: <Inventory /> },
@@ -19,4 +20,5 @@ export const inventoryRoutes = [
   { path: '/inventory/warehouse-ops', element: <WarehouseOperations /> },
   { path: '/inventory/reports', element: <StockReports /> },
   { path: '/inventory/settings', element: <InventorySettings /> },
+  { path: '/inventory/purchase-orders', element: <PurchaseOrders /> },
 ];

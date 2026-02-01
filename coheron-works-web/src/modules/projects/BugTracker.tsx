@@ -7,7 +7,7 @@ import { IssueForm } from './components/IssueForm';
 import './BugTracker.css';
 
 interface BugTrackerProps {
-  projectId: number;
+  projectId: string;
 }
 
 export const BugTracker = ({ projectId }: BugTrackerProps) => {

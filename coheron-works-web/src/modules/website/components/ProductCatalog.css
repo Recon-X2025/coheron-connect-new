@@ -18,7 +18,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem;
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--border-color, #e0e0e0);
   border-radius: 8px;
   margin-bottom: 1.5rem;
@@ -32,7 +32,7 @@
 }
 
 .product-catalog-table {
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--border-color, #e0e0e0);
   border-radius: 8px;
   overflow: hidden;

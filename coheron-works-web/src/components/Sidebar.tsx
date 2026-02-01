@@ -294,6 +294,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCollapseChange }) => {
                 <div key={item.label} className="nav-section">
                     <button
                         className={`nav-item ${sectionActive ? 'active' : ''} ${isChild ? 'nav-child' : ''}`}
+                        aria-expanded={expanded}
                         onClick={() => toggleSection(item.label)}
                     >
                         <div className="nav-item-content">
@@ -319,6 +320,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCollapseChange }) => {
             <Link
                 key={item.path}
                 to={item.path}
+                aria-current={active ? "page" : undefined}
                 className={`nav-item ${active ? 'active' : ''} ${isChild ? 'nav-child' : ''}`}
             >
                 <div className="nav-item-content">
@@ -335,7 +337,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCollapseChange }) => {
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
         >
-            <div className="sidebar-header">
+            <div className="sidebar-header" role="banner">
                 <Link to="/dashboard" className="sidebar-brand">
                     <div className="logo-icon">
                         <svg width="24" height="24" viewBox="0 0 40 40">
@@ -348,6 +350,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCollapseChange }) => {
                 </Link>
                 <button
                     className="collapse-btn"
+                    aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
                     onClick={() => setCollapsed(!collapsed)}
                     title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                 >
