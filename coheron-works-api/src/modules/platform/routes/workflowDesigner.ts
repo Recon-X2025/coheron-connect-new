@@ -61,7 +61,7 @@ const visualWorkflowSchema = new Schema({
   created_by: { type: Schema.Types.ObjectId },
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 
-const VisualWorkflow = mongoose.model<IVisualWorkflow>('VisualWorkflow', visualWorkflowSchema);
+const VisualWorkflow = (mongoose.models.VisualWorkflow as mongoose.Model<IVisualWorkflow>) || mongoose.model<IVisualWorkflow>('VisualWorkflow', visualWorkflowSchema);
 
 // ── Routes ──────────────────────────────────────────────────────────
 

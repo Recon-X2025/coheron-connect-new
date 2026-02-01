@@ -44,5 +44,5 @@ const PaymentGatewaySchema = new Schema({
 PaymentGatewaySchema.index({ tenant_id: 1, provider: 1 });
 PaymentGatewaySchema.index({ tenant_id: 1, is_default: 1 });
 
-export const PaymentGateway = mongoose.model<IPaymentGateway>('PaymentGateway', PaymentGatewaySchema);
+export const PaymentGateway = (mongoose.models.PaymentGateway as mongoose.Model<IPaymentGateway>) || mongoose.model<IPaymentGateway>('PaymentGateway', PaymentGatewaySchema);
 export default PaymentGateway;

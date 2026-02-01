@@ -192,7 +192,7 @@ router.post('/:id/slas', asyncHandler(async (req, res) => {
 router.post('/slas/:slaId/performance', asyncHandler(async (req, res) => {
   const { measurement_date, actual_value, target_value, is_violated, violation_count, penalty_applied, credit_applied } = req.body;
 
-  const sla = await Sla.findById(req.params.slaId).lean();
+  const sla: any = await Sla.findById(req.params.slaId).lean();
   if (!sla) {
     return res.status(404).json({ error: 'SLA not found' });
   }

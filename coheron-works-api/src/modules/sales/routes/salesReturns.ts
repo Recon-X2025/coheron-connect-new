@@ -39,7 +39,7 @@ router.get('/', asyncHandler(async (req, res) => {
 
 // Get RMA by ID
 router.get('/:id', asyncHandler(async (req, res) => {
-  const rma = await Rma.findById(req.params.id)
+  const rma: any = await Rma.findById(req.params.id)
     .populate('sale_order_id', 'name')
     .populate('partner_id', 'name')
     .lean();
@@ -50,8 +50,8 @@ router.get('/:id', asyncHandler(async (req, res) => {
 
   res.json({
     ...rma,
-    sale_order_name: (rma.sale_order_id as any)?.name,
-    partner_name: (rma.partner_id as any)?.name,
+    sale_order_name: rma.sale_order_id?.name,
+    partner_name: rma.partner_id?.name,
   });
 }));
 

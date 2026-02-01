@@ -30,4 +30,4 @@ const journeyEnrollmentSchema = new Schema<IJourneyEnrollment>({
 
 journeyEnrollmentSchema.index({ tenant_id: 1, journey_id: 1, contact_id: 1 });
 
-export const JourneyEnrollment = mongoose.model<IJourneyEnrollment>('JourneyEnrollment', journeyEnrollmentSchema);
+export const JourneyEnrollment = (mongoose.models.JourneyEnrollment as mongoose.Model<IJourneyEnrollment>) || mongoose.model<IJourneyEnrollment>('JourneyEnrollment', journeyEnrollmentSchema);

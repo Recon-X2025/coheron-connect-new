@@ -52,4 +52,4 @@ const socialPostSchema = new Schema<ISocialPost>({
 
 socialPostSchema.index({ tenant_id: 1, scheduled_at: 1 });
 
-export const SocialPost = mongoose.model<ISocialPost>('SocialPost', socialPostSchema);
+export const SocialPost = (mongoose.models.SocialPost as mongoose.Model<ISocialPost>) || mongoose.model<ISocialPost>('SocialPost', socialPostSchema);

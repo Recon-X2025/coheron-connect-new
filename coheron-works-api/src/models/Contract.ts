@@ -105,8 +105,8 @@ const usageBillingRuleSchema = new Schema({
 
 usageBillingRuleSchema.index({ subscription_id: 1 });
 
-export const Contract = mongoose.model('Contract', contractSchema);
-export const Sla = mongoose.model('Sla', slaSchema);
-export const SlaPerformance = mongoose.model('SlaPerformance', slaPerformanceSchema);
-export const Subscription = mongoose.model('Subscription', subscriptionSchema);
-export const UsageBillingRule = mongoose.model('UsageBillingRule', usageBillingRuleSchema);
+export const Contract = mongoose.models.Contract || mongoose.model('Contract', contractSchema);
+export const Sla = mongoose.models.Sla || mongoose.model('Sla', slaSchema);
+export const SlaPerformance = mongoose.models.SlaPerformance || mongoose.model('SlaPerformance', slaPerformanceSchema);
+export const Subscription = mongoose.models.Subscription || mongoose.model('Subscription', subscriptionSchema);
+export const UsageBillingRule = mongoose.models.UsageBillingRule || mongoose.model('UsageBillingRule', usageBillingRuleSchema);

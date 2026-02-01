@@ -85,5 +85,5 @@ SubscriptionSchema.index({ tenant_id: 1, status: 1 });
 SubscriptionSchema.index({ tenant_id: 1, customer_id: 1 });
 SubscriptionSchema.index({ tenant_id: 1, next_billing_date: 1 });
 
-export const Subscription = mongoose.model<ISubscription>('Subscription', SubscriptionSchema);
+export const Subscription = (mongoose.models.Subscription as mongoose.Model<ISubscription>) || mongoose.model<ISubscription>('Subscription', SubscriptionSchema);
 export default Subscription;

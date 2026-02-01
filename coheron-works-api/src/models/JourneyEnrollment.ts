@@ -43,4 +43,4 @@ export interface IJourneyEnrollment extends Document {
   created_at: Date;
 }
 
-export const JourneyEnrollment = mongoose.model<IJourneyEnrollment>("JourneyEnrollment", journeyEnrollmentSchema);
+export const JourneyEnrollment = (mongoose.models.JourneyEnrollment as mongoose.Model<IJourneyEnrollment>) || mongoose.model<IJourneyEnrollment>("JourneyEnrollment", journeyEnrollmentSchema);

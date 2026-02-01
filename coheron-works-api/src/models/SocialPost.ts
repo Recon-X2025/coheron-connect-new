@@ -36,4 +36,4 @@ const socialPostSchema = new Schema({
 socialPostSchema.index({ tenant_id: 1, status: 1, scheduled_at: 1 });
 socialPostSchema.index({ tenant_id: 1, campaign_id: 1 });
 
-export const SocialPost = mongoose.model('SocialPost', socialPostSchema);
+export const SocialPost = mongoose.models.SocialPost || mongoose.model('SocialPost', socialPostSchema);

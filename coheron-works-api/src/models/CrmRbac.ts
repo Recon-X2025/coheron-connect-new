@@ -67,8 +67,8 @@ exportApprovalSchema.index({ requested_by: 1 });
 exportApprovalSchema.index({ status: 1 });
 exportApprovalSchema.index({ resource_type: 1 });
 
-export const DiscountApproval = mongoose.model('DiscountApproval', discountApprovalSchema);
-export const Territory = mongoose.model('Territory', territorySchema);
-export const UserTerritory = mongoose.model('UserTerritory', userTerritorySchema);
-export const ExportApproval = mongoose.model('ExportApproval', exportApprovalSchema);
-export const DiscountThreshold = mongoose.model('DiscountThreshold', discountThresholdSchema);
+export const DiscountApproval = mongoose.models.DiscountApproval || mongoose.model('DiscountApproval', discountApprovalSchema);
+export const Territory = mongoose.models.Territory || mongoose.model('Territory', territorySchema);
+export const UserTerritory = mongoose.models.UserTerritory || mongoose.model('UserTerritory', userTerritorySchema);
+export const ExportApproval = mongoose.models.ExportApproval || mongoose.model('ExportApproval', exportApprovalSchema);
+export const DiscountThreshold = mongoose.models.DiscountThreshold || mongoose.model('DiscountThreshold', discountThresholdSchema);

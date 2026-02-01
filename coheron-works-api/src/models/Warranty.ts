@@ -59,4 +59,4 @@ WarrantySchema.index({ tenant_id: 1, customer_id: 1 });
 WarrantySchema.index({ tenant_id: 1, serial_number_id: 1 });
 WarrantySchema.index({ tenant_id: 1, end_date: 1 });
 
-export const Warranty = mongoose.model<IWarranty>('Warranty', WarrantySchema);
+export const Warranty = (mongoose.models.Warranty as mongoose.Model<IWarranty>) || mongoose.model<IWarranty>('Warranty', WarrantySchema);

@@ -20,4 +20,4 @@ marketingWorkflowSchema.index({ campaign_id: 1 });
 marketingWorkflowSchema.index({ is_active: 1 });
 marketingWorkflowSchema.index({ trigger_type: 1 });
 
-export const MarketingWorkflow = mongoose.model('MarketingWorkflow', marketingWorkflowSchema);
+export const MarketingWorkflow = mongoose.models.MarketingWorkflow || mongoose.model('MarketingWorkflow', marketingWorkflowSchema);

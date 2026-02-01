@@ -16,4 +16,4 @@ const territorySchema = new Schema<ITerritory>({
 // Indexes
 territorySchema.index({ is_active: 1 });
 
-export default mongoose.model<ITerritory>('Territory', territorySchema);
+export default (mongoose.models.Territory as mongoose.Model<ITerritory>) || mongoose.model<ITerritory>('Territory', territorySchema);

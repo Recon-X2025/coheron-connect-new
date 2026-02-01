@@ -23,6 +23,8 @@ const app = express();
 app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false,
+  crossOriginOpenerPolicy: false,
+  originAgentCluster: false,
   hsts: false, // Disable HSTS until SSL is configured
 }));
 app.use((_req, res, next) => {

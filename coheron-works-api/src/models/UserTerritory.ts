@@ -23,4 +23,4 @@ userTerritorySchema.index({ user_id: 1, territory_id: 1 }, { unique: true });
 userTerritorySchema.index({ territory_id: 1 });
 userTerritorySchema.index({ assigned_by: 1 });
 
-export default mongoose.model<IUserTerritory>('UserTerritory', userTerritorySchema);
+export default (mongoose.models.UserTerritory as mongoose.Model<IUserTerritory>) || mongoose.model<IUserTerritory>('UserTerritory', userTerritorySchema);

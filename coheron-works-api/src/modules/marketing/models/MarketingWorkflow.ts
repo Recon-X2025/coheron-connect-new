@@ -31,4 +31,4 @@ const marketingWorkflowSchema = new Schema<IMarketingWorkflow>({
   created_by: String,
 }, defaultSchemaOptions);
 
-export const MarketingWorkflow = mongoose.model<IMarketingWorkflow>('MarketingWorkflow', marketingWorkflowSchema);
+export const MarketingWorkflow = (mongoose.models.MarketingWorkflow as mongoose.Model<IMarketingWorkflow>) || mongoose.model<IMarketingWorkflow>('MarketingWorkflow', marketingWorkflowSchema);

@@ -21,4 +21,4 @@ const socialAccountSchema = new Schema({
 
 socialAccountSchema.index({ tenant_id: 1, platform: 1, account_id: 1 }, { unique: true });
 
-export const SocialAccount = mongoose.model('SocialAccount', socialAccountSchema);
+export const SocialAccount = mongoose.models.SocialAccount || mongoose.model('SocialAccount', socialAccountSchema);

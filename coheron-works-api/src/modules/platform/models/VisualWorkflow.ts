@@ -79,4 +79,4 @@ const VisualWorkflowSchema = new Schema<IVisualWorkflow>({
   created_by: { type: Schema.Types.ObjectId },
 }, defaultSchemaOptions);
 
-export default mongoose.model<IVisualWorkflow>('VisualWorkflow', VisualWorkflowSchema);
+export default (mongoose.models.VisualWorkflow as mongoose.Model<IVisualWorkflow>) || mongoose.model<IVisualWorkflow>('VisualWorkflow', VisualWorkflowSchema);

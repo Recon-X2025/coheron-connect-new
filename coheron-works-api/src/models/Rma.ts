@@ -85,6 +85,6 @@ repairRequestSchema.index({ partner_id: 1 });
 repairRequestSchema.index({ product_id: 1 });
 repairRequestSchema.index({ status: 1 });
 
-export const Rma = mongoose.model('Rma', rmaSchema);
-export const Warranty = mongoose.model('Warranty', warrantySchema);
-export const RepairRequest = mongoose.model('RepairRequest', repairRequestSchema);
+export const Rma = mongoose.models.Rma || mongoose.model('Rma', rmaSchema);
+export const Warranty = mongoose.models.Warranty || mongoose.model('Warranty', warrantySchema);
+export const RepairRequest = mongoose.models.RepairRequest || mongoose.model('RepairRequest', repairRequestSchema);

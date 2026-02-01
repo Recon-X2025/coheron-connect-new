@@ -89,9 +89,9 @@ WebsiteAnalyticsSchema.index({ page_id: 1 });
 WebsiteAnalyticsSchema.index({ visitor_id: 1 });
 WebsiteAnalyticsSchema.index({ created_at: -1 });
 
-export const WebsitePage = mongoose.model<IWebsitePage>('WebsitePage', websitePageSchema);
-export const PaymentGateway = mongoose.model('PaymentGateway', PaymentGatewaySchema);
-export const WebsiteSetting = mongoose.model('WebsiteSetting', WebsiteSettingSchema);
-export const WebsiteAnalytics = mongoose.model('WebsiteAnalytics', WebsiteAnalyticsSchema);
+export const WebsitePage = (mongoose.models.WebsitePage as mongoose.Model<IWebsitePage>) || mongoose.model<IWebsitePage>('WebsitePage', websitePageSchema);
+export const PaymentGateway = mongoose.models.PaymentGateway || mongoose.model('PaymentGateway', PaymentGatewaySchema);
+export const WebsiteSetting = mongoose.models.WebsiteSetting || mongoose.model('WebsiteSetting', WebsiteSettingSchema);
+export const WebsiteAnalytics = mongoose.models.WebsiteAnalytics || mongoose.model('WebsiteAnalytics', WebsiteAnalyticsSchema);
 
 export default WebsitePage;
