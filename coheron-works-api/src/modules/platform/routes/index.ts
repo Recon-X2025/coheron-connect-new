@@ -12,3 +12,7 @@ export { default as analytics } from './analytics.js';
 export { default as workflowDesigner } from './workflowDesigner.js';
 export { default as localization } from './localization.js';
 export { default as marketplace } from './marketplace.js';
+export { default as visualWorkflows } from './visualWorkflows.js';
+export { default as apiBuilder } from './apiBuilder.js';
+export { default as webhookManager } from './webhookManager.js';
+export { default as developerPortal } from './developerPortal.js';

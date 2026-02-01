@@ -9,3 +9,6 @@ export { default as aiScoring } from './aiScoring.js';
 export { default as territories } from './territories.js';
 export { default as cpq } from './cpq.js';
 export { default as forecasting } from './forecasting.js';
+export { default as automationFlows } from './automationFlows.js';
+export { default as nurtureSequences } from './nurtureSequences.js';
+export { default as assignmentRules } from './assignmentRules.js';

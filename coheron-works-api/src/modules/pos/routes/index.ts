@@ -3,3 +3,7 @@ export { default as posTablet } from './posTablet.js';
 export { default as loyalty } from './loyalty.js';
 export { default as kitchenDisplay } from './kitchenDisplay.js';
 export { default as multiStore } from './multiStore.js';
+export { default as paymentGateways } from './paymentGateways.js';
+export { default as hardwareIntegration } from './hardwareIntegration.js';
+export { default as offlineSync } from './offlineSync.js';
+export { default as posAnalytics } from './posAnalytics.js';

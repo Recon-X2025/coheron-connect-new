@@ -14,6 +14,8 @@ const Offboarding = lazy(() => import('./Offboarding').then(m => ({ default: m.O
 const CompensationPlanning = lazy(() => import('./pages/CompensationPlanning').then(m => ({ default: m.CompensationPlanning })));
 const SuccessionPlanning = lazy(() => import('./pages/SuccessionPlanning').then(m => ({ default: m.SuccessionPlanning })));
 const BenefitsAdmin = lazy(() => import('./pages/BenefitsAdmin').then(m => ({ default: m.BenefitsAdmin })));
+const ATS = lazy(() => import('./pages/ATS').then(m => ({ default: m.ATS })));
+const LMSHub = lazy(() => import('./pages/LMSHub').then(m => ({ default: m.LMSHub })));
 
 export const hrRoutes = [
   { path: '/hr', element: <HRDashboard /> },
@@ -31,4 +33,6 @@ export const hrRoutes = [
   { path: '/hr/compensation', element: <CompensationPlanning /> },
   { path: '/hr/succession', element: <SuccessionPlanning /> },
   { path: '/hr/benefits', element: <BenefitsAdmin /> },
+  { path: '/hr/ats', element: <ATS /> },
+  { path: '/hr/lms-hub', element: <LMSHub /> },
 ];

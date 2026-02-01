@@ -9,6 +9,9 @@ const CostingAnalytics = lazy(() => import('./CostingAnalytics'));
 const ProcessManufacturing = lazy(() => import('./pages/ProcessManufacturing'));
 const ByProducts = lazy(() => import('./pages/ByProducts'));
 const KanbanProduction = lazy(() => import('./pages/KanbanProduction'));
+const AdvancedQuality = lazy(() => import('./pages/AdvancedQuality'));
+const CostRollupPage = lazy(() => import('./pages/CostRollup'));
+const FMEAWorksheet = lazy(() => import('./pages/FMEAWorksheet'));
 
 export const manufacturingRoutes = [
   { path: '/manufacturing/dashboard', element: <ManufacturingDashboard /> },
@@ -21,4 +24,7 @@ export const manufacturingRoutes = [
   { path: '/manufacturing/process', element: <ProcessManufacturing /> },
   { path: '/manufacturing/byproducts', element: <ByProducts /> },
   { path: '/manufacturing/kanban', element: <KanbanProduction /> },
+  { path: '/manufacturing/advanced-quality', element: <AdvancedQuality /> },
+  { path: '/manufacturing/cost-rollup', element: <CostRollupPage /> },
+  { path: '/manufacturing/fmea', element: <FMEAWorksheet /> },
 ];

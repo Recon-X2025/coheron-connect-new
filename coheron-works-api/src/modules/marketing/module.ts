@@ -28,5 +28,9 @@ export function register(): ModuleRoute[] {
     { path: '/marketing/events', router: routes.events },
     { path: '/marketing/attribution', router: routes.attribution },
     { path: '/marketing/seo', router: routes.seo },
+    { path: '/marketing/journey-builder', router: routes.journeyBuilder },
+    { path: '/marketing/email-templates', router: routes.emailTemplatesV2 },
+    { path: '/marketing/social-scheduler', router: routes.socialScheduler },
+    { path: '/marketing/workflows', router: routes.marketingWorkflows },
   ];
 }

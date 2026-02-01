@@ -11,6 +11,9 @@ const CustomerPortal = lazy(() => import('./CustomerPortal').then(m => ({ defaul
 const CommunityForums = lazy(() => import('./pages/CommunityForums'));
 const CMDB = lazy(() => import('./pages/CMDB'));
 const SLAPrediction = lazy(() => import('./pages/SLAPrediction'));
+const TriggerEngine = lazy(() => import('./pages/TriggerEngine'));
+const ViewsBuilder = lazy(() => import('./pages/ViewsBuilder'));
+const AgentDashboard = lazy(() => import('./pages/AgentDashboard'));
 
 export const supportRoutes = [
   { path: '/support/dashboard', element: <SupportDashboard /> },
@@ -25,4 +28,7 @@ export const supportRoutes = [
   { path: '/support/forums', element: <CommunityForums /> },
   { path: '/support/cmdb', element: <CMDB /> },
   { path: '/support/sla-prediction', element: <SLAPrediction /> },
+  { path: '/support/triggers', element: <TriggerEngine /> },
+  { path: '/support/views', element: <ViewsBuilder /> },
+  { path: '/support/agent-dashboard', element: <AgentDashboard /> },
 ];

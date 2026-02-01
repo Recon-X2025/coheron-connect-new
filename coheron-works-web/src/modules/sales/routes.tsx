@@ -10,6 +10,9 @@ const SalesForecasting = lazy(() => import('./SalesForecasting').then(m => ({ de
 const SalesTeamPerformance = lazy(() => import('./SalesTeamPerformance').then(m => ({ default: m.SalesTeamPerformance })));
 const CreditLimits = lazy(() => import('./pages/CreditLimits').then(m => ({ default: m.CreditLimits })));
 const BlanketOrders = lazy(() => import('./pages/BlanketOrders').then(m => ({ default: m.BlanketOrders })));
+const PricingEngine = lazy(() => import('./pages/PricingEngine').then(m => ({ default: m.PricingEngine })));
+const ATPDashboard = lazy(() => import('./pages/ATPDashboard').then(m => ({ default: m.ATPDashboard })));
+const SalesAgreements = lazy(() => import('./pages/SalesAgreements').then(m => ({ default: m.SalesAgreements })));
 
 export const salesRoutes = [
   { path: '/sales/dashboard', element: <SalesDashboard /> },
@@ -23,4 +26,7 @@ export const salesRoutes = [
   { path: '/sales/team', element: <SalesTeamPerformance /> },
   { path: '/sales/credit-limits', element: <CreditLimits /> },
   { path: '/sales/blanket-orders', element: <BlanketOrders /> },
+  { path: '/sales/pricing-engine', element: <PricingEngine /> },
+  { path: '/sales/atp', element: <ATPDashboard /> },
+  { path: '/sales/agreements', element: <SalesAgreements /> },
 ];

@@ -35,5 +35,8 @@ export function register(): ModuleRoute[] {
     { path: '/manufacturing/process', router: routes.processManufacturing },
     { path: '/manufacturing/byproducts', router: routes.byproducts },
     { path: '/manufacturing/kanban', router: routes.kanban },
+    { path: '/manufacturing/advanced-quality', router: routes.advancedQuality },
+    { path: '/manufacturing/cost-rollup', router: routes.costRollup },
+    { path: '/manufacturing/fmea', router: routes.fmea },
   ];
 }

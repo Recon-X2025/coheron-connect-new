@@ -35,5 +35,10 @@ export function register(): ModuleRoute[] {
     { path: '/support/forums', router: routes.forums },
     { path: '/support/cmdb', router: routes.cmdb },
     { path: '/support/sla-prediction', router: routes.slaPrediction },
+    { path: '/support/triggers', router: routes.triggerEngine },
+    { path: '/support/views', router: routes.ticketViews },
+    { path: '/support/presence', router: routes.agentPresence },
+    { path: '/support/sentiment', router: routes.sentimentAnalysis },
+    { path: '/support/macros', router: routes.macros },
   ];
 }

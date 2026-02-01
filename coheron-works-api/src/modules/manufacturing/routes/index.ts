@@ -17,3 +17,6 @@ export { default as preventiveMaintenance } from './preventiveMaintenance.js';
 export { default as processManufacturing } from './processManufacturing.js';
 export { default as byproducts } from './byproducts.js';
 export { default as kanban } from './kanban.js';
+export { default as advancedQuality } from './advancedQuality.js';
+export { default as costRollup } from './costRollup.js';
+export { default as fmea } from './fmea.js';

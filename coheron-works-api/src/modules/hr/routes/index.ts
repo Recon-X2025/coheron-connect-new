@@ -20,3 +20,5 @@ export { default as fullFinalSettlement } from './fullFinalSettlement.js';
 export { default as compensation } from './compensation.js';
 export { default as succession } from './succession.js';
 export { default as benefits } from './benefits.js';
+export { default as ats } from './ats.js';
+export { default as lms } from './lms.js';

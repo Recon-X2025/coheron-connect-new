@@ -10,6 +10,9 @@ const AILeadScoring = lazy(() => import('./pages/AILeadScoring').then(m => ({ de
 const TerritoryManagement = lazy(() => import('./pages/TerritoryManagement').then(m => ({ default: m.TerritoryManagement })));
 const CPQ = lazy(() => import('./pages/CPQ').then(m => ({ default: m.CPQ })));
 const CRMForecasting = lazy(() => import('./pages/CRMForecasting').then(m => ({ default: m.CRMForecasting })));
+const AutomationFlows = lazy(() => import('./pages/AutomationFlows').then(m => ({ default: m.AutomationFlows })));
+const NurtureSequences = lazy(() => import('./pages/NurtureSequences').then(m => ({ default: m.NurtureSequences })));
+const AssignmentRules = lazy(() => import('./pages/AssignmentRules').then(m => ({ default: m.AssignmentRules })));
 
 export const crmRoutes = [
   { path: '/crm/dashboard', element: <CRMDashboard /> },
@@ -23,4 +26,7 @@ export const crmRoutes = [
   { path: '/crm/territories', element: <TerritoryManagement /> },
   { path: '/crm/cpq', element: <CPQ /> },
   { path: '/crm/forecasting', element: <CRMForecasting /> },
+  { path: '/crm/automation-flows', element: <AutomationFlows /> },
+  { path: '/crm/nurture-sequences', element: <NurtureSequences /> },
+  { path: '/crm/assignment-rules', element: <AssignmentRules /> },
 ];

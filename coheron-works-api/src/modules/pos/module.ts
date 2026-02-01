@@ -22,5 +22,9 @@ export function register(): ModuleRoute[] {
     { path: '/pos/loyalty', router: routes.loyalty, middleware: [requireModule('pos')] },
     { path: '/pos/kitchen', router: routes.kitchenDisplay, middleware: [requireModule('pos')] },
     { path: '/pos/stores', router: routes.multiStore, middleware: [requireModule('pos')] },
+    { path: '/pos/payment-gateways', router: routes.paymentGateways, middleware: [requireModule('pos')] },
+    { path: '/pos/hardware', router: routes.hardwareIntegration, middleware: [requireModule('pos')] },
+    { path: '/pos/offline-sync', router: routes.offlineSync, middleware: [requireModule('pos')] },
+    { path: '/pos/analytics', router: routes.posAnalytics, middleware: [requireModule('pos')] },
   ];
 }

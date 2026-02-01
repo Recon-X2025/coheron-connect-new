@@ -10,3 +10,7 @@ export { default as emailBuilder } from './emailBuilder.js';
 export { default as events } from './events.js';
 export { default as attribution } from './attribution.js';
 export { default as seo } from './seo.js';
+export { default as journeyBuilder } from './journeyBuilder.js';
+export { default as emailTemplatesV2 } from './emailTemplatesV2.js';
+export { default as socialScheduler } from './socialScheduler.js';
+export { default as marketingWorkflows } from './marketingWorkflows.js';

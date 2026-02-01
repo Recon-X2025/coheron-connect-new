@@ -27,5 +27,8 @@ export function register(): ModuleRoute[] {
     { path: '/crm/territories', router: routes.territories },
     { path: '/crm/cpq', router: routes.cpq },
     { path: '/crm/forecasting', router: routes.forecasting },
+    { path: '/crm/automation-flows', router: routes.automationFlows },
+    { path: '/crm/nurture-sequences', router: routes.nurtureSequences },
+    { path: '/crm/assignment-rules', router: routes.assignmentRules },
   ];
 }

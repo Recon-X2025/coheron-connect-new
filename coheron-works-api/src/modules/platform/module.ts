@@ -30,5 +30,9 @@ export function register(): ModuleRoute[] {
     { path: '/platform/localization', router: routes.localization },
     { path: '/platform/workflow-designer', router: routes.workflowDesigner },
     { path: '/marketplace', router: routes.marketplace },
+    { path: '/platform/visual-workflows', router: routes.visualWorkflows },
+    { path: '/platform/api-builder', router: routes.apiBuilder },
+    { path: '/platform/webhooks', router: routes.webhookManager },
+    { path: '/platform/developer', router: routes.developerPortal },
   ];
 }

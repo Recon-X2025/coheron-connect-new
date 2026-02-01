@@ -38,5 +38,7 @@ export function register(): ModuleRoute[] {
     { path: '/hr/compensation', router: routes.compensation },
     { path: '/hr/succession', router: routes.succession },
     { path: '/hr/benefits', router: routes.benefits },
+    { path: '/hr/ats', router: routes.ats },
+    { path: '/hr/lms', router: routes.lms },
   ];
 }

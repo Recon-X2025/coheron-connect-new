@@ -14,3 +14,6 @@ export { default as commissionsRoutes } from './commissions.js';
 export { default as ecommerceConnectorRoutes } from './ecommerceConnector.js';
 export { default as creditLimitsRoutes } from './creditLimits.js';
 export { default as blanketOrdersRoutes } from './blanketOrders.js';
+export { default as pricingEngineRoutes } from './pricingEngine.js';
+export { default as atpRoutes } from './atp.js';
+export { default as salesAgreementsRoutes } from './salesAgreements.js';

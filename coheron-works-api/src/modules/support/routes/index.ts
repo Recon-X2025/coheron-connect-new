@@ -17,3 +17,8 @@ export { default as aiAutoResponse } from './aiAutoResponse.js';
 export { default as forums } from './forums.js';
 export { default as cmdb } from './cmdb.js';
 export { default as slaPrediction } from './slaPrediction.js';
+export { default as triggerEngine } from './triggerEngine.js';
+export { default as ticketViews } from './ticketViews.js';
+export { default as agentPresence } from './agentPresence.js';
+export { default as sentimentAnalysis } from './sentimentAnalysis.js';
+export { default as macros } from './macros.js';

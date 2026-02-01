@@ -15,6 +15,9 @@ import {
   ecommerceConnectorRoutes,
   creditLimitsRoutes,
   blanketOrdersRoutes,
+  pricingEngineRoutes,
+  atpRoutes,
+  salesAgreementsRoutes,
 } from './routes/index.js';
 
 export const metadata = {
@@ -41,5 +44,8 @@ export function register() {
     { path: '/sales/ecommerce', router: ecommerceConnectorRoutes },
     { path: '/sales/credit-limits', router: creditLimitsRoutes },
     { path: '/sales/blanket-orders', router: blanketOrdersRoutes },
+    { path: '/sales/pricing-engine', router: pricingEngineRoutes },
+    { path: '/sales/atp', router: atpRoutes },
+    { path: '/sales/agreements', router: salesAgreementsRoutes },
   ];
 }
