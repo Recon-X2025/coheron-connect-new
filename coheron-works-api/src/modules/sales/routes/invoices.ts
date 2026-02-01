@@ -66,18 +66,32 @@ router.get('/:id', asyncHandler(async (req, res) => {
 
 // Create invoice
 router.post('/', validate({ body: createInvoiceSchema }), asyncHandler(async (req, res) => {
-  const { name, partner_id, invoice_date, amount_total, amount_residual, state, payment_state, move_type } = req.body;
+  const { name, partner_id, partner_name, invoice_date, due_date, amount_total, amount_residual, state, payment_state, move_type, invoice_line_ids } = req.body;
 
-  const invoice = await Invoice.create({
-    name,
+  const lineItems = (invoice_line_ids || []).map((l: any) => ({
+    product_id: l.product_id || undefined,
+    description: l.product_name || '',
+    quantity: l.quantity || 1,
+    unit_price: l.price_unit || 0,
+    total: l.price_subtotal || 0,
+  }));
+
+  const invoiceData: any = {
+    name: name || `INV/${Date.now()}`,
     partner_id,
     invoice_date: invoice_date || new Date(),
+    due_date: due_date || null,
     amount_total: amount_total || 0,
     amount_residual: amount_residual || amount_total || 0,
     state: state || 'draft',
     payment_state: payment_state || 'not_paid',
     move_type: move_type || 'out_invoice',
-  });
+    line_items: lineItems,
+  };
+
+  if (partner_name) invoiceData.partner_name = partner_name;
+
+  const invoice = await Invoice.create(invoiceData);
 
   res.status(201).json(invoice);
 }));

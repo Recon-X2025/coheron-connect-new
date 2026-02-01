@@ -41,13 +41,22 @@ export const updateQuotationSchema = z.object({
 
 export const createInvoiceSchema = z.object({
   name: z.string().optional(),
-  partner_id: objectIdString.optional(),
-  invoice_date: z.string().datetime().optional(),
+  partner_id: z.string().optional(),
+  partner_name: z.string().optional(),
+  invoice_date: z.string().optional(),
+  due_date: z.string().optional(),
   amount_total: z.number().min(0).optional(),
   amount_residual: z.number().min(0).optional(),
   state: z.enum(['draft', 'posted', 'cancel']).optional(),
   payment_state: z.enum(['not_paid', 'partial', 'paid']).optional(),
   move_type: z.enum(['out_invoice', 'in_invoice', 'out_refund', 'in_refund']).optional(),
+  invoice_line_ids: z.array(z.object({
+    product_id: z.string().optional(),
+    product_name: z.string().optional(),
+    quantity: z.number().optional(),
+    price_unit: z.number().optional(),
+    price_subtotal: z.number().optional(),
+  })).optional(),
 });
 
 export const updateInvoiceSchema = z.object({
