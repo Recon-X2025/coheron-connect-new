@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, Truck, CheckCircle, Send, Package, ArrowRight } from 'lucide-react';
+import { Plus, Truck, CheckCircle, Package } from 'lucide-react';
 
 interface Transfer {
   _id: string;

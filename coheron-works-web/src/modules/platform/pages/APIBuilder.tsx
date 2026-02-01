@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Trash2, Play, Code, BarChart3, X, Save, FileJson, Copy } from 'lucide-react';
+import { Plus, Trash2, Play, Code, X, Save, FileJson, Copy } from 'lucide-react';
 
 const API = '/api/platform/api-builder';
 

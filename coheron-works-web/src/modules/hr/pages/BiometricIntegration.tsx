@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Fingerprint, Wifi, WifiOff, RefreshCw, Plus, Trash2, Eye, Clock, Server, Activity, Link } from 'lucide-react';
+import { Fingerprint, Wifi, WifiOff, RefreshCw, Plus, Trash2, Clock, Server, Link } from 'lucide-react';
 
 interface BiometricDevice {
   _id: string;

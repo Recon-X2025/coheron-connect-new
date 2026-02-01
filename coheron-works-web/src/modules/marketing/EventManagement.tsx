@@ -7,9 +7,9 @@ import {
   Users,
   DollarSign,
   Clock,
-  CheckCircle,
-  XCircle,
-  Eye,
+  
+  
+  
   Edit3,
   Trash2,
   X,
@@ -20,9 +20,9 @@ import {
   Building,
   Tag,
   ArrowLeft,
-  Filter,
-  Download,
-  QrCode,
+  
+  
+  
 } from 'lucide-react';
 
 const API_BASE = '/api/marketing/events';

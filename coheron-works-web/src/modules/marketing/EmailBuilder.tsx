@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Type,
   Image,
@@ -7,7 +7,7 @@ import {
   Columns,
   Share2,
   Heading1,
-  GripVertical,
+  
   Plus,
   Trash2,
   Eye,
@@ -16,11 +16,11 @@ import {
   Save,
   ArrowLeft,
   X,
-  ChevronDown,
+  
   Layout,
   Mail,
   Search,
-  MoreHorizontal,
+  
   MoveUp,
   MoveDown,
 } from 'lucide-react';

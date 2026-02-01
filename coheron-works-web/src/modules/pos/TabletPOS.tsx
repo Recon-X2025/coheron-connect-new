@@ -12,7 +12,7 @@ import {
   Plus,
   Minus,
   X,
-  RotateCcw,
+  
   Package,
   Tag,
   ChevronRight,

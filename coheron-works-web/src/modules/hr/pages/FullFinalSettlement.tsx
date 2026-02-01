@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { DollarSign, FileText, CheckCircle2, XCircle, Clock, Plus, Trash2, CreditCard, AlertTriangle, Users } from 'lucide-react';
+import { DollarSign, FileText, Clock, Plus, Trash2, CreditCard } from 'lucide-react';
 
 interface SettlementComponent {
   component: string;

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Play, Save, Upload, Zap, Mail, GitBranch, Clock, RotateCw,
-  Plus, Trash2, Settings, ChevronRight, Check, AlertCircle, Globe, Bell, Database,
+  Plus, Trash2, Check, Globe, Bell, Database,
 } from 'lucide-react';
 
 // ── Types ───────────────────────────────────────────────────────────

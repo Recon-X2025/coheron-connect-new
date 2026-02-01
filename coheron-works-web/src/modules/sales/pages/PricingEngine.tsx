@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { DollarSign, Plus, Trash2, Play, BarChart3, Upload, Download, GripVertical, Tag, Percent, Calculator, ChevronDown, ChevronUp } from 'lucide-react';
+import { DollarSign, Plus, Trash2, Play, BarChart3, Download, GripVertical, Tag, Percent, Calculator } from 'lucide-react';
 
 const API_BASE = '/api/sales/pricing-engine';
 const getToken = () => localStorage.getItem('token') || '';
@@ -28,7 +28,7 @@ type Tab = 'conditions' | 'simulator' | 'margins';
 export const PricingEngine: React.FC = () => {
   const [tab, setTab] = useState<Tab>('conditions');
   const [conditions, setConditions] = useState<any[]>([]);
-  const [total, setTotal] = useState(0);
+  const [_total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);

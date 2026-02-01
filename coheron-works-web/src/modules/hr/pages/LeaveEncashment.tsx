@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { DollarSign, ArrowRightLeft, CheckCircle2, XCircle, Clock, Plus, Filter, Download, Calendar } from 'lucide-react';
+import { DollarSign, ArrowRightLeft, XCircle, Plus, Calendar } from 'lucide-react';
 
 interface EncashmentRecord {
   _id: string;

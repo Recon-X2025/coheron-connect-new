@@ -16,7 +16,7 @@ const gradeColors: Record<string, string> = { A: '#22c55e', B: '#3b82f6', C: '#e
 
 export const AILeadScoring: React.FC = () => {
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
-  const [config, setConfig] = useState<any>(null);
+  const [_config, setConfig] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [scoring, setScoring] = useState(false);
   const [search, setSearch] = useState('');

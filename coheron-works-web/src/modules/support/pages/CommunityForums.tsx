@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   MessageCircle, Plus, Search, Pin, Lock, CheckCircle, ThumbsUp, ThumbsDown,
-  Eye, ChevronLeft, Tag, BarChart3, Hash,
+  Eye, ChevronLeft, Tag, Hash,
 } from 'lucide-react';
 
 const TOKEN = localStorage.getItem('token') || '';

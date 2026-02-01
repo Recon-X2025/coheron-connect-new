@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
-  Wrench, Plus, Calendar, DollarSign, AlertTriangle, CheckCircle, Clock, Pause,
-  ChevronDown, X, Filter, Search,
+  Wrench, Plus, DollarSign, AlertTriangle, CheckCircle, Pause,
+  X, Search,
 } from 'lucide-react';
 
 const TOKEN = localStorage.getItem('token') || '';

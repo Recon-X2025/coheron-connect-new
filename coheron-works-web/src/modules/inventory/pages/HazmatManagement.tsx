@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, AlertTriangle, Shield, Thermometer, FileText, Search } from 'lucide-react';
+import { Plus, AlertTriangle, Shield, FileText } from 'lucide-react';
 
 interface HazmatItem {
   _id: string;

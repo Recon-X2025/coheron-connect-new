@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, ChevronLeft, ArrowRight, Truck, Package, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Search, ChevronLeft, ArrowRight, CheckCircle } from 'lucide-react';
 
 interface CrossDockOrder {
   _id: string;
@@ -139,7 +139,6 @@ export const CrossDocking: React.FC = () => {
             {workflowSteps.map((step, i) => {
               const isActive = i === stepIdx;
               const isDone = i < stepIdx;
-              const color = isDone ? '#00C971' : isActive ? '#00C971' : '#333';
               return (
                 <React.Fragment key={step}>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>

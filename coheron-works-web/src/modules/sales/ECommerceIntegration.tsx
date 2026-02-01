@@ -9,7 +9,7 @@ import {
   Clock,
   Link2,
   Trash2,
-  Settings,
+  
   Activity,
   ArrowRight,
   Globe,
@@ -54,12 +54,6 @@ interface SyncLog {
   completed_at?: string;
 }
 
-const platformIcons: Record<string, string> = {
-  shopify: 'https://cdn.shopify.com/s/files/1/0070/7032/files/favicon.ico',
-  woocommerce: 'https://woocommerce.com/favicon.ico',
-  magento: 'https://magento.com/favicon.ico',
-  custom: '',
-};
 
 const statusColors: Record<string, string> = {
   active: '#00C971',

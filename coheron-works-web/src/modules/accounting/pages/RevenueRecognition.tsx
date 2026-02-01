@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  TrendingUp, Plus, X, Search, Calendar, DollarSign, FileText, CheckCircle, Trash2,
+  TrendingUp, Plus, X, Search, Calendar, FileText, CheckCircle, Trash2,
 } from 'lucide-react';
 
 const TOKEN = localStorage.getItem('token') || '';
@@ -68,7 +68,7 @@ export const RevenueRecognition: React.FC = () => {
   const statusColor = (s: string) => s === 'active' ? '#00C971' : s === 'completed' ? '#3b82f6' : s === 'cancelled' ? '#ef4444' : '#f59e0b';
   const filtered = contracts.filter(c => c.contract_number.toLowerCase().includes(search.toLowerCase()));
 
-  const st: Record<string, React.CSSProperties> = {
+  const st: Record<string, any> = {
     page: { background: '#0a0a0a', minHeight: '100vh', color: '#e5e5e5', padding: 32 },
     card: { background: '#141414', borderRadius: 12, border: '1px solid #262626', padding: 24, marginBottom: 16 },
     btn: { background: '#00C971', color: '#000', border: 'none', borderRadius: 8, padding: '10px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 14, display: 'inline-flex', alignItems: 'center', gap: 6 },

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { DollarSign, TrendingUp, Users, PieChart, Plus, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { TrendingUp, PieChart, Plus, CheckCircle2, Clock } from 'lucide-react';
 
 interface Plan { _id: string; name: string; fiscal_year: number; total_budget: number; allocated_budget: number; status: string; guidelines: any; pay_bands: any[]; created_at: string; }
 interface Review { _id: string; plan_id: string; employee_id: any; current_salary: number; proposed_salary: number; increase_pct: number; increase_type: string; justification: string; status: string; effective_date: string; }

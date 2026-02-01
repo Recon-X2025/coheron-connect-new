@@ -1,5 +1,6 @@
-import React, { useState, useEffect, FC } from 'react';
-import { CreditCard, Plus, Settings, ToggleLeft, ToggleRight, RefreshCw, Search, Download, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import type { FC } from 'react';
+import { CreditCard, Plus, Settings, ToggleLeft, ToggleRight, X } from 'lucide-react';
 
 const API = '/api/pos/payment-gateways';
 const PROVIDERS = ['stripe', 'razorpay', 'square', 'paypal', 'adyen', 'worldpay', 'custom'] as const;

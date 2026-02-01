@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { GitBranch, BarChart3, DollarSign, MousePointer, Plus, Zap, TrendingUp } from 'lucide-react';
+import { GitBranch, DollarSign, MousePointer, Plus, Zap, TrendingUp } from 'lucide-react';
 
 interface Model { _id: string; name: string; type: string; config: any; is_default: boolean; created_at: string; }
 interface ChannelPerf { channel: string; touchpoints: number; total_revenue: number; unique_contacts: number; }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, ChevronLeft, FileText, Package, DollarSign, RefreshCw, CheckCircle, XCircle, BarChart3 } from 'lucide-react';
+import { Plus, Search, DollarSign, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
 
 interface ConsignmentAgreement {
   _id: string;
@@ -53,7 +53,7 @@ export const ConsignmentManagement: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [showCreate, setShowCreate] = useState(false);
-  const [selectedAgreement, setSelectedAgreement] = useState<ConsignmentAgreement | null>(null);
+  const [selectedAgreement, _setSelectedAgreement] = useState<ConsignmentAgreement | null>(null);
   const [settlementData, setSettlementData] = useState<any>(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);

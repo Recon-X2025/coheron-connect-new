@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Package, Search, Calendar, Warehouse, TrendingUp, Clock, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import { Package, Search, Warehouse, TrendingUp, Clock, CheckCircle, XCircle } from 'lucide-react';
 
 const API_BASE = '/api/sales/atp';
 const getToken = () => localStorage.getItem('token') || '';

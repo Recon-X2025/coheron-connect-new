@@ -17,7 +17,7 @@ const s = {
 const WebhookManager: React.FC = () => {
   const [subs, setSubs] = useState<Subscription[]>([]);
   const [events, setEvents] = useState<any[]>([]);
-  const [health, setHealth] = useState<any[]>([]);
+  const [_health, setHealth] = useState<any[]>([]);
   const [view, setView] = useState<'list' | 'editor' | 'logs'>('list');
   const [current, setCurrent] = useState<Partial<Subscription>>({});
   const [logs, setLogs] = useState<any[]>([]);
@@ -62,7 +62,6 @@ const WebhookManager: React.FC = () => {
     setCurrent({ ...current, events: evts.includes(event) ? evts.filter(e => e !== event) : [...evts, event] });
   };
 
-  const getHealthInfo = (id: string) => health.find(h => h.id === id);
 
   if (view === 'logs') return (
     <div style={s.page}>
@@ -150,7 +149,7 @@ const WebhookManager: React.FC = () => {
         </button>
       </div>
       {subs.map(sub => {
-        const hi = getHealthInfo(sub._id);
+        
         const total = (sub.success_count || 0) + (sub.failure_count || 0);
         const rate = total > 0 ? (sub.success_count / total * 100) : 100;
         return (

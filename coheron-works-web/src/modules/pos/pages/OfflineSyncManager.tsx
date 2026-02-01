@@ -1,5 +1,6 @@
-import React, { useState, useEffect, FC } from 'react';
-import { CloudOff, RefreshCw, AlertTriangle, CheckCircle, Clock, Wifi, WifiOff, Download } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import type { FC } from 'react';
+import { CloudOff, RefreshCw, AlertTriangle, Clock, Wifi, WifiOff, Download } from 'lucide-react';
 
 const API = '/api/pos/offline-sync';
 
@@ -11,8 +12,8 @@ const sBadge = (color: string): React.CSSProperties => ({ display: 'inline-block
 export const OfflineSyncManager: FC = () => {
   const [storeStatus, setStoreStatus] = useState<any>(null);
   const [pendingItems, setPendingItems] = useState<any[]>([]);
-  const [storeId, setStoreId] = useState('default');
-  const [terminalId, setTerminalId] = useState('terminal-1');
+  const [storeId, _setStoreId] = useState('default');
+  const [terminalId, _setTerminalId] = useState('terminal-1');
   const [syncing, setSyncing] = useState(false);
 
   const fetchStatus = () => fetch(`${API}/sync-status/${storeId}`).then(r => r.json()).then(setStoreStatus).catch(() => {});
@@ -51,8 +52,6 @@ export const OfflineSyncManager: FC = () => {
   const statusColor = (s: string) => ({ pending: '#f59e0b', conflict: '#ef4444', failed: '#ef4444', syncing: '#3b82f6', synced: '#00C971' }[s] || '#888');
 
   const conflicts = pendingItems.filter(i => i.status === 'conflict');
-  const failed = pendingItems.filter(i => i.status === 'failed');
-  const pending = pendingItems.filter(i => i.status === 'pending');
 
   return (
     <div style={{ padding: 32, background: '#0a0a0a', minHeight: '100vh', color: '#fff' }}>

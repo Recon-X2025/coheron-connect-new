@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Key, Plus, Trash2, Copy, ChevronDown, ChevronRight, Clock, Shield, Code, Book, Zap } from 'lucide-react';
+import { Key, Plus, Trash2, Copy, ChevronDown, ChevronRight, Clock, Shield, Code, Book } from 'lucide-react';
 
 const API = '/api/platform/developer';
 

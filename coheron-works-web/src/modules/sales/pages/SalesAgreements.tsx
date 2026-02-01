@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Plus, AlertTriangle, CheckCircle, Clock, RefreshCw, BarChart3, Search, XCircle } from 'lucide-react';
+import { FileText, Plus, AlertTriangle, CheckCircle, Clock, RefreshCw, BarChart3, XCircle } from 'lucide-react';
 
 const API_BASE = '/api/sales/agreements';
 const getToken = () => localStorage.getItem('token') || '';
@@ -25,7 +25,7 @@ export const SalesAgreements: React.FC = () => {
   const [total, setTotal] = useState(0);
   const [expiring, setExpiring] = useState<any[]>([]);
   const [compliance, setCompliance] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [form, setForm] = useState<any>({

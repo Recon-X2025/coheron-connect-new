@@ -9,10 +9,10 @@ import {
   Clock,
   TrendingUp,
   X,
-  ChevronDown,
-  Settings,
-  BarChart3,
-  Shield,
+  
+  
+  
+  
 } from 'lucide-react';
 
 interface Schedule {

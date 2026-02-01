@@ -351,7 +351,7 @@ export const PLMDashboard: React.FC = () => {
                     position: 'absolute', left: '11px', top: '0', bottom: '0', width: '2px',
                     backgroundColor: '#262626',
                   }} />
-                  {revisions.map((rev, i) => (
+                  {revisions.map((rev, _i) => (
                     <div key={rev._id} style={{ position: 'relative', marginBottom: '24px' }}>
                       {/* Timeline dot */}
                       <div style={{

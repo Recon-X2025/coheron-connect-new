@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, AlertTriangle, Shield, Star, Plus, Target, BarChart3 } from 'lucide-react';
+import { Users, AlertTriangle, Shield, Star, Plus, Target } from 'lucide-react';
 
 interface Plan { _id: string; position_title: string; department: string; incumbent_id: any; criticality: string; risk_of_loss: string; impact_of_loss: string; status: string; notes: string; }
 interface Candidate { _id: string; plan_id: string; candidate_id: any; readiness: string; strengths: string[]; development_areas: string[]; development_actions: any[]; overall_rating: number; mentor_id: any; }

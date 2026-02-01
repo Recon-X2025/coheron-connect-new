@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  Clock, AlertTriangle, TrendingUp, Users, Settings, BarChart3, Shield,
+  Clock, AlertTriangle, TrendingUp, Users, Settings, Shield,
 } from 'lucide-react';
 
 const TOKEN = localStorage.getItem('token') || '';
@@ -79,7 +79,7 @@ export const SLAPrediction: React.FC = () => {
     badge: (color: string) => ({ background: color + '22', color, borderRadius: 12, padding: '2px 8px', fontSize: 11, fontWeight: 600 }) as React.CSSProperties,
     th: { textAlign: 'left' as const, padding: '8px 12px', fontSize: 12, color: '#939393', borderBottom: '1px solid #222' },
     td: { padding: '8px 12px', fontSize: 13, borderBottom: '1px solid #1a1a1a' },
-    progressBar: (pct: number) => ({ width: '100%', height: 6, background: '#222', borderRadius: 3, overflow: 'hidden' as const }),
+    progressBar: (_pct: number) => ({ width: '100%', height: 6, background: '#222', borderRadius: 3, overflow: 'hidden' as const }),
     progressFill: (pct: number) => ({ width: `${Math.min(pct, 100)}%`, height: '100%', borderRadius: 3, background: pct >= 90 ? '#f44336' : pct >= 75 ? '#ff9800' : pct >= 50 ? '#2196f3' : '#00C971' }),
   };
 

@@ -1,5 +1,6 @@
-import React, { useState, useEffect, FC } from 'react';
-import { Zap, Plus, Trash2, Play, ToggleLeft, ToggleRight, ChevronDown, ChevronUp, Filter, GripVertical } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import type { FC } from 'react';
+import { Zap, Plus, Trash2, Play, ToggleLeft, ToggleRight, Filter, GripVertical } from 'lucide-react';
 
 const API = '/api/support/triggers';
 

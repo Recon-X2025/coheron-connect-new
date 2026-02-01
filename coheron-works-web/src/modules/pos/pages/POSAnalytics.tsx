@@ -1,4 +1,5 @@
-import React, { useState, useEffect, FC } from 'react';
+import React, { useState, useEffect } from 'react';
+import type { FC } from 'react';
 import { BarChart3, TrendingUp, ShoppingCart, DollarSign, Users, Store } from 'lucide-react';
 
 const API = '/api/pos/analytics';

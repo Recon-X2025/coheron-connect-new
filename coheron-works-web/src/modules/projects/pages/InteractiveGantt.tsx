@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
-  ZoomIn, ZoomOut, Plus, Calendar, Diamond, ArrowRight, ChevronLeft, ChevronRight,
-  Maximize2, AlertTriangle, Save,
+  Plus, Diamond, ChevronLeft, ChevronRight,
+  AlertTriangle, Save,
 } from 'lucide-react';
 
 // ── Types ───────────────────────────────────────────────────────────
@@ -65,7 +65,7 @@ export const InteractiveGantt: React.FC<{ projectId?: string }> = ({ projectId }
   const [dragging, setDragging] = useState<{ taskId: string; type: 'move' | 'resize'; startX: number; origStart: Date; origEnd: Date } | null>(null);
   const [showNewTask, setShowNewTask] = useState(false);
   const [newTaskName, setNewTaskName] = useState('');
-  const [scrollOffset, setScrollOffset] = useState(0);
+  const [_scrollOffset, setScrollOffset] = useState(0);
   const [showCriticalPath, setShowCriticalPath] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -98,7 +98,7 @@ export const InteractiveGantt: React.FC<{ projectId?: string }> = ({ projectId }
   const HEADER_HEIGHT = 50;
   const LEFT_PANEL_W = 240;
 
-  const { minDate, maxDate, totalDays } = useMemo(() => {
+  const { minDate, totalDays } = useMemo(() => {
     if (tasks.length === 0) {
       const now = new Date();
       return { minDate: now, maxDate: addDays(now, 30), totalDays: 30 };
@@ -387,7 +387,7 @@ export const InteractiveGantt: React.FC<{ projectId?: string }> = ({ projectId }
           <div style={{ height: HEADER_HEIGHT, borderBottom: '1px solid #222', padding: '0 12px', display: 'flex', alignItems: 'center', fontWeight: 600, fontSize: 13 }}>
             Task Name
           </div>
-          {tasks.map((t, idx) => (
+          {tasks.map((t, _idx) => (
             <div key={t.id} style={{ height: ROW_HEIGHT, borderBottom: '1px solid #1a1a1a', padding: '0 12px', display: 'flex', alignItems: 'center', fontSize: 12, gap: 6 }}>
               {t.milestone ? <Diamond size={12} color="#e91e63" /> : <div style={{ width: 8, height: 8, borderRadius: 2, background: t.color, flexShrink: 0 }} />}
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</span>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Globe, TrendingUp, TrendingDown, AlertTriangle, Plus, BarChart3, Zap, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, Globe, TrendingUp, AlertTriangle, Plus, BarChart3, Zap, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface Audit { _id: string; url: string; audit_date: string; scores: any; issues: any[]; page_speed: any; status: string; }
 interface Keyword { _id: string; keyword: string; search_volume: number; difficulty: number; current_position: number; previous_position: number; position_change: number; target_url: string; status: string; cpc: number; competition: string; }

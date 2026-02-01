@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  Bot, ToggleLeft, ToggleRight, Sliders, MessageSquare, BarChart3, Send, AlertCircle, CheckCircle,
+  Bot, ToggleLeft, ToggleRight, Sliders, MessageSquare, Send, AlertCircle, CheckCircle,
 } from 'lucide-react';
 
 const TOKEN = localStorage.getItem('token') || '';

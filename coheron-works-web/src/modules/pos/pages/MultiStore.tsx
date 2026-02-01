@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Store, Plus, Search, MapPin, Settings, BarChart3, Clock } from 'lucide-react';
+import { Store, Plus, MapPin, Settings, BarChart3, Clock } from 'lucide-react';
 
 const API_BASE = '/api/pos/stores';
 const getToken = () => localStorage.getItem('token') || '';

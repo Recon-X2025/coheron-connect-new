@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, type FC } from 'react';
-import { Plus, Save, BarChart3, FileCheck, X, AlertTriangle } from 'lucide-react';
+import { Plus, BarChart3, FileCheck, X, AlertTriangle } from 'lucide-react';
 
 const API = '/api/manufacturing/fmea';
 
@@ -227,7 +227,7 @@ export const FMEAWorksheet: FC = () => {
                       const barW = 40;
                       const gap = 20;
                       const chartH = 240;
-                      const padL = 50, padB = 40;
+                      const padL = 50;
 
                       return (
                         <>

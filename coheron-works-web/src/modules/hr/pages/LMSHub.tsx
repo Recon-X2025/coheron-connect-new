@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  BookOpen, Award, Users, TrendingUp, AlertTriangle, Trophy,
-  ChevronRight, Search, Plus, X, CheckCircle, Clock, BarChart3,
-  Grid, Shield, GraduationCap
+  BookOpen, Award, Users, AlertTriangle, Trophy,
+  Search, Plus, X, CheckCircle, Clock, 
+  Grid, Shield
 } from 'lucide-react';
 
 const API = '/api/hr/lms';
@@ -19,10 +19,6 @@ interface CertRecord {
   status: string; earned_at?: string; expires_at?: string; score: number;
 }
 
-interface Enrollment {
-  _id: string; path_id: any; employee_id: any;
-  status: string; progress_pct: number; started_at?: string; completed_at?: string;
-}
 
 type Tab = 'paths' | 'certifications' | 'skills' | 'compliance' | 'leaderboard';
 
@@ -45,7 +41,7 @@ const btnSecondary: React.CSSProperties = {
   borderRadius: 6, padding: '8px 16px', cursor: 'pointer', fontSize: 13,
 };
 
-const badge = (text: string, color: string): React.CSSProperties => ({
+const badge = (_text: string, color: string): React.CSSProperties => ({
   display: 'inline-block', padding: '2px 10px', borderRadius: 12,
   fontSize: 12, fontWeight: 600, background: color, color: '#fff',
 });

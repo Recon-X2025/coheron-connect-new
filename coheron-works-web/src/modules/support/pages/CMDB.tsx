@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  Server, Plus, Search, Network, AlertTriangle, Shield, ChevronDown, X, GitBranch, BarChart3,
+  Server, Plus, Search, AlertTriangle, X, GitBranch, 
 } from 'lucide-react';
 
 const TOKEN = localStorage.getItem('token') || '';

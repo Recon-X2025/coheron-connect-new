@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, type FC } from 'react';
-import { DollarSign, RefreshCw, Lock, ChevronRight, ChevronDown, SlidersHorizontal, TrendingUp, BarChart3 } from 'lucide-react';
+import { RefreshCw, Lock, ChevronRight, ChevronDown, SlidersHorizontal, BarChart3 } from 'lucide-react';
 
 const API = '/api/manufacturing/cost-rollup';
 

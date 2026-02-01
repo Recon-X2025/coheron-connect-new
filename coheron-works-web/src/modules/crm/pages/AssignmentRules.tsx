@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Shield, Plus, Trash2, GripVertical, ToggleLeft, ToggleRight, Play, ChevronDown, X, Users, Target, Scale, MapPin, UserCheck } from 'lucide-react';
+import { Shield, Plus, Trash2, GripVertical, ToggleLeft, ToggleRight, Play, X, Users, Target, Scale, MapPin, UserCheck } from 'lucide-react';
 
 const API = '/api/crm/assignment-rules';
 const getToken = () => localStorage.getItem('token') || '';

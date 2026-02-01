@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  Store, Search, Download, Trash2, Star, CheckCircle, Settings, Grid, List, ExternalLink,
+  Store, Search, Download, Trash2, Star, CheckCircle, 
 } from 'lucide-react';
 
 const TOKEN = localStorage.getItem('token') || '';
@@ -13,7 +13,6 @@ interface CategoryCount { category: string; count: number; }
 
 type Tab = 'browse' | 'installed' | 'featured';
 
-const CATEGORIES = ['integration', 'analytics', 'automation', 'communication', 'finance', 'hr', 'other'];
 
 export const Marketplace: React.FC = () => {
   const [tab, setTab] = useState<Tab>('browse');

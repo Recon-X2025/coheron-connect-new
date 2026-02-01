@@ -1,5 +1,6 @@
-import React, { useState, useEffect, FC } from 'react';
-import { Headphones, Users, AlertTriangle, Smile, Meh, Frown, Angry, Zap, Activity, Eye, ChevronRight, BarChart3, Shield, Clock, Star } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import type { FC } from 'react';
+import { Headphones, Users, AlertTriangle, Smile, Meh, Frown, Angry, Zap, ChevronRight, BarChart3, Star } from 'lucide-react';
 
 const s = {
   page: { background: '#0a0a0a', color: '#e0e0e0', minHeight: '100vh', padding: '24px', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' } as React.CSSProperties,
@@ -14,7 +15,7 @@ const s = {
   label: { fontSize: 12, color: '#888', marginBottom: 4, display: 'block' } as React.CSSProperties,
   muted: { fontSize: 12, color: '#666' } as React.CSSProperties,
   dot: (color: string) => ({ width: 8, height: 8, borderRadius: '50%', background: color, display: 'inline-block', marginRight: 6 }) as React.CSSProperties,
-  meter: (pct: number) => ({ height: 6, borderRadius: 3, background: '#222', width: '100%', position: 'relative' as const, overflow: 'hidden' as const }),
+  meter: (_pct: number) => ({ height: 6, borderRadius: 3, background: '#222', width: '100%', position: 'relative' as const, overflow: 'hidden' as const }),
   meterFill: (pct: number) => ({ height: '100%', borderRadius: 3, width: `${Math.min(100, pct)}%`, background: pct > 80 ? '#DC2626' : pct > 60 ? '#F59E0B' : '#00C971', transition: 'width 0.3s' }) as React.CSSProperties,
   sentimentIcon: (sentiment: string) => {
     switch (sentiment) {

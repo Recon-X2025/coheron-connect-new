@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Gift, Plus, Star, Users, Trophy, Coins } from 'lucide-react';
+import { Gift, Plus, Star, Trophy, Coins } from 'lucide-react';
 
 const API_BASE = '/api/pos/loyalty';
 const getToken = () => localStorage.getItem('token') || '';

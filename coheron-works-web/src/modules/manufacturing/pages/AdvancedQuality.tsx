@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, type FC } from 'react';
 import {
-  ClipboardCheck, TrendingUp, AlertTriangle, DollarSign, Plus, Check, Search,
-  ChevronDown, ChevronRight, Trash2, Eye, X
+  TrendingUp, Plus, Check, 
+  Trash2, X
 } from 'lucide-react';
 
 const API = '/api/manufacturing/advanced-quality';

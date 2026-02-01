@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CreditCard, Plus, Search, AlertTriangle, Shield, ShieldAlert, ShieldCheck, RefreshCw } from 'lucide-react';
+import { CreditCard, Plus, Search, AlertTriangle, Shield, ShieldAlert, ShieldCheck } from 'lucide-react';
 
 const API_BASE = '/api/sales/credit-limits';
 const getToken = () => localStorage.getItem('token') || '';
@@ -19,7 +19,7 @@ export const CreditLimits: React.FC = () => {
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ partner_id: '', credit_limit: 0, currency: 'USD', risk_rating: 'low', review_date: '' });
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
 
   const load = async () => {
     setLoading(true);

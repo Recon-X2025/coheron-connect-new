@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, Edit2, Trash2, Package, ChevronRight, Layers, Box } from 'lucide-react';
+import { Plus, Edit2, Trash2, Package, Layers, Box } from 'lucide-react';
 
 interface PackagingLevel {
   _id: string;

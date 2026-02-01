@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Copy, Send, Palette, Type, Image, MousePointer, Minus, Columns, Share2, Video, ShoppingBag, Timer, Trash2, ArrowUp, ArrowDown, Eye, ChevronRight, BarChart3 } from 'lucide-react';
+import { Plus, Send, Palette, Type, Image, MousePointer, Minus, Columns, Share2, Video, ShoppingBag, Timer, Trash2, ArrowUp, ArrowDown, Eye, ChevronRight } from 'lucide-react';
 
 type BlockType = 'header' | 'text' | 'image' | 'button' | 'divider' | 'columns' | 'social' | 'video' | 'product_card' | 'countdown';
 

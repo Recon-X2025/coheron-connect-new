@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Plus, Search, Calendar, Package, Clock } from 'lucide-react';
+import { FileText, Plus, Calendar, Package, Clock } from 'lucide-react';
 
 const API_BASE = '/api/sales/blanket-orders';
 const getToken = () => localStorage.getItem('token') || '';
@@ -14,7 +14,7 @@ const statusColors: Record<string, string> = { draft: '#888', active: '#00C971',
 export const BlanketOrders: React.FC = () => {
   const [items, setItems] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
+  const [page, _setPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
   const [selected, setSelected] = useState<any>(null);
   const [releases, setReleases] = useState<any[]>([]);

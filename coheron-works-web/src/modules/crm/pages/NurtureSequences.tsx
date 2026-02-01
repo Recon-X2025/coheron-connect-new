@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Mail, Plus, Play, Pause, Trash2, Clock, MessageSquare, CheckSquare, Phone, Users, BarChart3, ChevronDown, ChevronRight, X } from 'lucide-react';
+import { Mail, Plus, Play, Pause, Trash2, Clock, MessageSquare, CheckSquare, Phone, Users, BarChart3, ChevronRight, X } from 'lucide-react';
 
 const API = '/api/crm/nurture-sequences';
 const getToken = () => localStorage.getItem('token') || '';

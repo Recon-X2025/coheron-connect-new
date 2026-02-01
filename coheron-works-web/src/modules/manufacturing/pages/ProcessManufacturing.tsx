@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Beaker, Play, CheckCircle, BarChart3, FlaskConical } from 'lucide-react';
+import { Plus, Play, CheckCircle } from 'lucide-react';
 
 interface FormulaItem {
   _id: string;

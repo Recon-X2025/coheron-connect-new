@@ -83,7 +83,7 @@ export const Budgeting: React.FC = () => {
 
   const statusColor = (s: string) => s === 'approved' ? '#00C971' : s === 'closed' ? '#888' : '#f59e0b';
 
-  const s: Record<string, React.CSSProperties> = {
+  const s: Record<string, any> = {
     page: { background: '#0a0a0a', minHeight: '100vh', color: '#e5e5e5', padding: 32 },
     card: { background: '#141414', borderRadius: 12, border: '1px solid #262626', padding: 24, marginBottom: 16 },
     btn: { background: '#00C971', color: '#000', border: 'none', borderRadius: 8, padding: '10px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 14, display: 'inline-flex', alignItems: 'center', gap: 6 },

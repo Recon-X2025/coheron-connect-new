@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, Filter, MoreHorizontal, Play, CheckCircle, Send, ChevronLeft, Package, Users, Clock, BarChart3 } from 'lucide-react';
+import { Plus, Search, Play, CheckCircle, Send, ChevronLeft, Package, Users, BarChart3 } from 'lucide-react';
 
 interface PickWave {
   _id: string;

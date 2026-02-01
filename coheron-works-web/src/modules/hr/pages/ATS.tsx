@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Briefcase, Users, Plus, Search, Star, Calendar, BarChart3,
-  ChevronRight, X, Clock, MapPin, Building, Filter, Eye,
-  Send, UserCheck, UserX, ArrowRight, Phone, Video, FileText
+  X, Clock, MapPin, Building, Eye,
+  Send, UserX, ArrowRight, Phone
 } from 'lucide-react';
 
 const API = '/api/hr/ats';
@@ -30,7 +30,7 @@ interface Interview {
 
 type Tab = 'jobs' | 'pipeline' | 'analytics';
 
-const badge = (text: string, color: string): React.CSSProperties => ({
+const badge = (_text: string, color: string): React.CSSProperties => ({
   display: 'inline-block', padding: '2px 10px', borderRadius: 12,
   fontSize: 12, fontWeight: 600, background: color, color: '#fff',
 });
@@ -75,7 +75,7 @@ export const ATS: React.FC = () => {
   const [tab, setTab] = useState<Tab>('jobs');
   const [jobs, setJobs] = useState<Job[]>([]);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  const [applications, setApplications] = useState<Application[]>([]);
+  const [_applications, setApplications] = useState<Application[]>([]);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [analytics, setAnalytics] = useState<any>(null);
@@ -473,7 +473,7 @@ export const ATS: React.FC = () => {
             {/* Pipeline conversion */}
             <div style={cardStyle}>
               <h3 style={{ margin: '0 0 16px', color: '#fff', fontSize: 16 }}>Pipeline Conversion</h3>
-              {(analytics.pipeline_conversion || []).map((stage: any, i: number) => {
+              {(analytics.pipeline_conversion || []).map((stage: any, _i: number) => {
                 const maxCount = Math.max(...(analytics.pipeline_conversion || []).map((s: any) => s.count), 1);
                 return (
                   <div key={stage.stage} style={{ marginBottom: 10 }}>

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, FC } from 'react';
+import React, { useState, useEffect } from 'react';
+import type { FC } from 'react';
 import { Monitor, Printer, Scan, DollarSign, CreditCard, Scale, Plus, Wifi, WifiOff, Settings, X, CheckCircle, AlertCircle } from 'lucide-react';
 
 const API = '/api/pos/hardware';

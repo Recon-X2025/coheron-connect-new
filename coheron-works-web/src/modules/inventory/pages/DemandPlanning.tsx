@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, TrendingUp, BarChart3, Play, RefreshCw, ChevronLeft, Target } from 'lucide-react';
+import { TrendingUp, BarChart3, Play, RefreshCw, Target } from 'lucide-react';
 
 interface Forecast {
   _id: string;
