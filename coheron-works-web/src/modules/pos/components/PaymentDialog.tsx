@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { X, CreditCard, CircleDollarSign, Smartphone, Wallet } from 'lucide-react';
-import { odooService } from '../../../services/odooService';
+import { apiService } from '../../../services/apiService';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
-import type { Partner } from '../../../types/odoo';
 import './PaymentDialog.css';
 
 interface CartItem {
@@ -16,7 +15,7 @@ interface CartItem {
 
 interface PaymentDialogProps {
   cart: CartItem[];
-  customer: Partner | null;
+  customer: any | null;
   total: number;
   onClose: () => void;
   onSuccess: () => void;
@@ -61,7 +60,7 @@ export const PaymentDialog: React.FC<PaymentDialogProps> = ({
         amount_paid: amountPaid,
       };
 
-      await odooService.create('pos.order', orderData as any);
+      await apiService.create('/pos/orders', orderData as any);
 
       // Generate receipt would go here
       onSuccess();

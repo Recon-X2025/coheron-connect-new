@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { X, CheckCircle, User, Building2, TrendingUp } from 'lucide-react';
-import { odooService } from '../../../services/odooService';
+import { apiService } from '../../../services/apiService';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
-import type { Lead, Partner } from '../../../types/odoo';
 import { useModalDismiss } from '../../../hooks/useModalDismiss';
 import './LeadConversion.css';
 
 interface LeadConversionProps {
-  lead: Lead;
+  lead: any;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -50,19 +49,19 @@ export const LeadConversion: React.FC<LeadConversionProps> = ({
       // Create partner if needed
       if (options.action === 'create_partner' || options.action === 'create_opportunity_and_partner') {
         if (!partnerId || options.partnerName !== lead.name) {
-          const newPartner = await odooService.create<Partner>('res.partner', {
+          const newPartner = await apiService.create('/partners', {
             name: options.partnerName || lead.name,
             email: lead.email,
             phone: lead.phone,
             type: 'contact',
           });
-          partnerId = newPartner;
+          partnerId = (newPartner as any)._id || (newPartner as any).id;
         }
       }
 
       // Create opportunity if needed
       if (options.action === 'create_opportunity' || options.action === 'create_opportunity_and_partner') {
-        await odooService.create('crm.lead', {
+        await apiService.create('/leads', {
           name: options.opportunityName || `${lead.name} - Opportunity`,
           partner_id: partnerId,
           type: 'opportunity',
@@ -73,7 +72,7 @@ export const LeadConversion: React.FC<LeadConversionProps> = ({
       }
 
       // Mark lead as converted (update stage to 'won' or archive)
-      await odooService.write('crm.lead', [lead.id], {
+      await apiService.update('/leads', lead._id || lead.id, {
         stage: 'won',
         active: false, // Archive the lead
       });

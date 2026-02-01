@@ -1,25 +1,24 @@
 import { useState, useEffect } from 'react';
 import { Search, User, X } from 'lucide-react';
-import { odooService } from '../../services/odooService';
+import { apiService } from '../../services/apiService';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { ProductGrid } from './components/ProductGrid';
 import { Cart } from './components/Cart';
 import { PaymentDialog } from './components/PaymentDialog';
-import type { Product, Partner } from '../../types/odoo';
 import './POSInterface.css';
 
 interface CartItem {
-  product: Product;
+  product: any;
   quantity: number;
   price: number;
   discount?: number;
 }
 
 export const POSInterface = () => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [partners, setPartners] = useState<Partner[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [partners, setPartners] = useState<any[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [selectedCustomer, setSelectedCustomer] = useState<Partner | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [showPayment, setShowPayment] = useState(false);
@@ -32,14 +31,8 @@ export const POSInterface = () => {
     try {
       setLoading(true);
       const [productsData, partnersData] = await Promise.all([
-        odooService.search<Product>('product.product', [['sale_ok', '=', true]], [
-          'id',
-          'name',
-          'list_price',
-          'qty_available',
-          'image',
-        ]),
-        odooService.search<Partner>('res.partner', [], ['id', 'name', 'email', 'phone']),
+        apiService.get<any[]>('/products'),
+        apiService.get<any[]>('/partners'),
       ]);
       setProducts(productsData);
       setPartners(partnersData);
@@ -48,7 +41,7 @@ export const POSInterface = () => {
     }
   };
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: any) => {
     setCart((prevCart) => {
       const existingItem = prevCart.find((item) => item.product.id === product.id);
       if (existingItem) {

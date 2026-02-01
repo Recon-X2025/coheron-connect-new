@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { leadService, partnerService } from '../../../services/odooService';
+import { apiService } from '../../../services/apiService';
 import { showToast } from '../../../components/Toast';
-import type { Lead, Partner } from '../../../types/odoo';
 import { useModalDismiss } from '../../../hooks/useModalDismiss';
 import './LeadForm.css';
 
 interface LeadFormProps {
-  lead?: Lead;
+  lead?: any;
   onClose: () => void;
   onSave: () => void;
 }
@@ -22,11 +21,11 @@ export const LeadForm = ({ lead, onClose, onSave }: LeadFormProps) => {
     partner_id: 0,
     expected_revenue: 0,
     probability: 0,
-    stage: 'new' as Lead['stage'],
-    priority: 'medium' as Lead['priority'],
+    stage: 'new' as string,
+    priority: 'medium' as string,
     type: 'lead' as 'lead' | 'opportunity',
   });
-  const [partners, setPartners] = useState<Partner[]>([]);
+  const [partners, setPartners] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -48,7 +47,7 @@ export const LeadForm = ({ lead, onClose, onSave }: LeadFormProps) => {
 
   const loadPartners = async () => {
     try {
-      const data = await partnerService.getAll();
+      const data = await apiService.get('/partners');
       setPartners(data);
     } catch (error) {
       console.error('Failed to load partners:', error);
@@ -65,10 +64,10 @@ export const LeadForm = ({ lead, onClose, onSave }: LeadFormProps) => {
     setLoading(true);
     try {
       if (lead) {
-        await leadService.update(lead.id, formData);
+        await apiService.update('/leads', lead._id || lead.id, formData);
         showToast('Lead updated successfully', 'success');
       } else {
-        await leadService.create(formData);
+        await apiService.create('/leads', formData);
         showToast('Lead created successfully', 'success');
       }
       onSave();
@@ -183,7 +182,7 @@ export const LeadForm = ({ lead, onClose, onSave }: LeadFormProps) => {
                 id="stage"
                 name="stage"
                 value={formData.stage}
-                onChange={(e) => setFormData({ ...formData, stage: e.target.value as Lead['stage'] })}
+                onChange={(e) => setFormData({ ...formData, stage: e.target.value })}
               >
                 <option value="new">New</option>
                 <option value="qualified">Qualified</option>
@@ -199,7 +198,7 @@ export const LeadForm = ({ lead, onClose, onSave }: LeadFormProps) => {
                 id="priority"
                 name="priority"
                 value={formData.priority}
-                onChange={(e) => setFormData({ ...formData, priority: e.target.value as Lead['priority'] })}
+                onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>

@@ -2,11 +2,10 @@ import { useState } from 'react';
 import { ArrowLeft, Edit, Download, FileText, Phone, Mail, Plus } from 'lucide-react';
 import { Button } from '../../../components/Button';
 import { Card } from '../../../components/Card';
-import type { Employee } from '../../../types/odoo';
 import './EmployeeDetailView.css';
 
 interface EmployeeDetailViewProps {
-  employee: Employee;
+  employee: any;
   onBack: () => void;
   onEdit: () => void;
 }
@@ -73,7 +72,7 @@ export const EmployeeDetailView = ({ employee, onBack, onEdit }: EmployeeDetailV
   );
 };
 
-const OverviewTab = ({ employee }: { employee: Employee }) => (
+const OverviewTab = ({ employee }: { employee: any }) => (
   <div className="overview-grid">
     <Card>
       <h3>Quick Info</h3>
@@ -138,7 +137,7 @@ const PersonalTab = () => (
   </Card>
 );
 
-const EmploymentTab = ({ employee }: { employee: Employee }) => {
+const EmploymentTab = ({ employee }: { employee: any }) => {
   return (
   <Card>
     <h3>Employment Details</h3>

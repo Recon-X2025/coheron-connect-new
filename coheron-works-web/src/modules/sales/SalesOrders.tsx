@@ -3,7 +3,7 @@ import { Search, Plus, FileText, CheckCircle, Clock, XCircle, Eye, Printer } fro
 import { Pagination } from '../../shared/components/Pagination';
 import { useServerPagination } from '../../hooks/useServerPagination';
 import { Button } from '../../components/Button';
-import { saleOrderService, partnerService } from '../../services/odooService';
+import { apiService } from '../../services/apiService';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { AdvancedFilter } from '../../shared/components/AdvancedFilter';
 import { BulkActions, createCommonBulkActions } from '../../shared/components/BulkActions';
@@ -16,18 +16,17 @@ import { EmptyState } from '../../components/EmptyState';
 import { DateRangeFilter } from '../../components/DateRangeFilter';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
 import { showToast } from '../../components/Toast';
-import type { SaleOrder, Partner } from '../../types/odoo';
 import { confirmAction } from '../../components/ConfirmDialog';
 import { useModalDismiss } from '../../hooks/useModalDismiss';
 import './SalesOrders.css';
 
 export const SalesOrders = () => {
-    const [partners, setPartners] = useState<Partner[]>([]);
+    const [partners, setPartners] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [filterDomain, setFilterDomain] = useState<any[]>([]);
-    const [selectedOrder, setSelectedOrder] = useState<SaleOrder | null>(null);
+    const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
     const [showConfirmation, setShowConfirmation] = useState(false);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [showBulkUpdateModal, setShowBulkUpdateModal] = useState(false);
@@ -51,7 +50,7 @@ export const SalesOrders = () => {
         setPageSize,
         setFilters: setServerFilters,
         refresh: loadData,
-    } = useServerPagination<SaleOrder>('/sale-orders', serverPaginationFilters);
+    } = useServerPagination<any>('/sale-orders', serverPaginationFilters);
 
     const closeDetailModal = useCallback(() => setSelectedOrder(null), []);
     useModalDismiss(!!selectedOrder && !showConfirmation, closeDetailModal);
@@ -68,7 +67,7 @@ export const SalesOrders = () => {
 
     // Load partners separately
     useEffect(() => {
-        partnerService.getAll().then(setPartners);
+        apiService.get<any[]>('/partners').then(setPartners);
     }, []);
 
     const handleDelete = async (ids: number[]) => {
@@ -80,7 +79,7 @@ export const SalesOrders = () => {
         });
         if (!ok) return;
         try {
-            await saleOrderService.delete(ids[0]);
+            await apiService.delete('/sale-orders', ids[0]);
             await loadData();
             setSelectedIds([]);
         } catch (error) {
@@ -96,7 +95,7 @@ export const SalesOrders = () => {
     const handleBulkUpdateConfirm = async (newState: string) => {
         try {
             for (const id of bulkActionIds) {
-                await saleOrderService.update(id, { state: newState as any });
+                await apiService.update('/sale-orders', id, { state: newState as any });
             }
             await loadData();
             setSelectedIds([]);
@@ -117,7 +116,7 @@ export const SalesOrders = () => {
     const handleBulkAssignConfirm = async (userId: string) => {
         try {
             for (const id of bulkActionIds) {
-                await saleOrderService.update(id, { user_id: parseInt(userId) });
+                await apiService.update('/sale-orders', id, { user_id: parseInt(userId) });
             }
             await loadData();
             setSelectedIds([]);
@@ -134,10 +133,8 @@ export const SalesOrders = () => {
         loadData();
         if (selectedOrder) {
             // Reload selected order
-            saleOrderService.getById(selectedOrder.id).then(updated => {
-                if (updated.length > 0) {
-                    setSelectedOrder(updated[0]);
-                }
+            apiService.getById<any>('/sale-orders', selectedOrder.id).then(updated => {
+                setSelectedOrder(updated);
             });
         }
     };
@@ -146,10 +143,8 @@ export const SalesOrders = () => {
         loadData();
         setShowConfirmation(false);
         if (selectedOrder) {
-            saleOrderService.getById(selectedOrder.id).then(updated => {
-                if (updated.length > 0) {
-                    setSelectedOrder(updated[0]);
-                }
+            apiService.getById<any>('/sale-orders', selectedOrder.id).then(updated => {
+                setSelectedOrder(updated);
             });
         }
     };

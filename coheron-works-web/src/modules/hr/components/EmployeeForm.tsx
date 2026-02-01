@@ -1,11 +1,10 @@
 import { X } from 'lucide-react';
 import { Button } from '../../../components/Button';
-import type { Employee } from '../../../types/odoo';
 import { useModalDismiss } from '../../../hooks/useModalDismiss';
 import './EmployeeForm.css';
 
 interface EmployeeFormProps {
-  employee?: Employee;
+  employee?: any;
   onClose: () => void;
   onSave: () => void;
 }

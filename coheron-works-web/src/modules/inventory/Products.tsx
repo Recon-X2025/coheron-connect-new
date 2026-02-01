@@ -4,12 +4,11 @@ import { Pagination } from '../../shared/components/Pagination';
 import { useServerPagination } from '../../hooks/useServerPagination';
 import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
-import { productService } from '../../services/odooService';
 import { apiService } from '../../services/apiService';
 import { inventoryService, type StockSummary, type StockQuant } from '../../services/inventoryService';
 import { ProductForm } from './components/ProductForm';
 import { showToast } from '../../components/Toast';
-import type { Product } from '../../types/odoo';
+type Product = any;
 import { confirmAction } from '../../components/ConfirmDialog';
 import { useInlineEdit } from '../../hooks/useInlineEdit';
 import { useModalDismiss } from '../../hooks/useModalDismiss';
@@ -93,7 +92,7 @@ export const Products = () => {
         if (!ok) return;
 
         try {
-            await productService.delete(product.id);
+            await apiService.delete('/products', product.id);
             showToast('Product deleted successfully', 'success');
             loadData();
         } catch (error: any) {

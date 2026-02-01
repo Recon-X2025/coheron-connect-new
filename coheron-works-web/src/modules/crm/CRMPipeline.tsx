@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react';
 import { TrendingUp, Mail, Phone, User, Plus } from 'lucide-react';
 import { KanbanBoard } from '../../shared/views/KanbanBoard';
 import { Button } from '../../components/Button';
-import { leadService, partnerService } from '../../services/odooService';
+import { apiService } from '../../services/apiService';
 import { LeadForm } from './components/LeadForm';
-import type { Lead, Partner } from '../../types/odoo';
 import './CRMPipeline.css';
 
 const PIPELINE_STAGES = [
@@ -16,8 +15,8 @@ const PIPELINE_STAGES = [
 ];
 
 export const CRMPipeline = () => {
-    const [leads, setLeads] = useState<Lead[]>([]);
-    const [partners, setPartners] = useState<Partner[]>([]);
+    const [leads, setLeads] = useState<any[]>([]);
+    const [partners, setPartners] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showLeadForm, setShowLeadForm] = useState(false);
 
@@ -28,8 +27,8 @@ export const CRMPipeline = () => {
     const loadData = async () => {
         try {
             const [leadsData, partnersData] = await Promise.all([
-                leadService.getAll(),
-                partnerService.getAll(),
+                apiService.get('/leads'),
+                apiService.get('/partners'),
             ]);
             setLeads(leadsData);
             setPartners(partnersData);
@@ -45,7 +44,7 @@ export const CRMPipeline = () => {
         ));
 
         // Update via API
-        await leadService.update(leadId, { stage: newStage as any });
+        await apiService.update('/leads', leadId, { stage: newStage as any });
     };
 
     const getPartnerName = (partnerId: number) => {
@@ -60,7 +59,7 @@ export const CRMPipeline = () => {
         }
     };
 
-    const renderLeadCard = (lead: Lead) => (
+    const renderLeadCard = (lead: any) => (
         <div className="lead-card">
             <div className="lead-card-header">
                 <h4 className="lead-title">{lead.name}</h4>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, Megaphone, TrendingUp, Users, Mail, Calendar } from 'lucide-react';
 import { Button } from '../../components/Button';
-import { odooService } from '../../services/odooService';
+import { apiService } from '../../services/apiService';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { AdvancedFilter } from '../../shared/components/AdvancedFilter';
 import { BulkActions, createCommonBulkActions } from '../../shared/components/BulkActions';
@@ -47,26 +47,7 @@ export const Campaigns = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const campaignsData = await odooService.search<Campaign>(
-        'utm.campaign',
-        filterDomain,
-        [
-          'id',
-          'name',
-          'campaign_type',
-          'state',
-          'start_date',
-          'end_date',
-          'budget',
-          'revenue',
-          'expected_revenue',
-          'user_id',
-          'total_cost',
-          'clicks',
-          'impressions',
-          'leads_count',
-        ]
-      );
+      const campaignsData = await apiService.get<Campaign[]>('/campaigns');
 
       setCampaigns(campaignsData);
     } catch (error) {
@@ -134,7 +115,7 @@ export const Campaigns = () => {
     });
     if (!ok) return;
     try {
-      await odooService.unlink('utm.campaign', ids);
+      await Promise.all(ids.map(id => apiService.delete('/campaigns', id)));
       await loadData();
       setSelectedIds([]);
     } catch (error) {

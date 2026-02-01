@@ -1,6 +1,5 @@
 import React from 'react';
 import { ShoppingCart, User, Plus, Minus, Trash2, CreditCard } from 'lucide-react';
-import type { Partner } from '../../../types/odoo';
 import './Cart.css';
 
 interface CartItem {
@@ -16,7 +15,7 @@ interface CartItem {
 
 interface CartProps {
   cart: CartItem[];
-  customer: Partner | null;
+  customer: any | null;
   onUpdateQuantity: (productId: number, quantity: number) => void;
   onRemoveItem: (productId: number) => void;
   onClearCart: () => void;

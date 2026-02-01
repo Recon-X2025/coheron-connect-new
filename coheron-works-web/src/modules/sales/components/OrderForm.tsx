@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
-import { saleOrderService, partnerService, productService } from '../../../services/odooService';
+import { apiService } from '../../../services/apiService';
 import { showToast } from '../../../components/Toast';
-import type { SaleOrder, Partner, Product } from '../../../types/odoo';
 import { useModalDismiss } from '../../../hooks/useModalDismiss';
 import './OrderForm.css';
 
 interface OrderFormProps {
-  order?: SaleOrder | null;
+  order?: any | null;
   onClose: () => void;
   onSave: () => void;
 }
@@ -23,8 +22,8 @@ interface OrderLine {
 export const OrderForm = ({ order, onClose, onSave }: OrderFormProps) => {
   useModalDismiss(true, onClose);
   const [loading, setLoading] = useState(false);
-  const [partners, setPartners] = useState<Partner[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [partners, setPartners] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [orderLines, setOrderLines] = useState<OrderLine[]>([]);
   const [formData, setFormData] = useState({
     partner_id: order?.partner_id || '',
@@ -33,8 +32,8 @@ export const OrderForm = ({ order, onClose, onSave }: OrderFormProps) => {
   });
 
   useEffect(() => {
-    partnerService.getAll().then(setPartners);
-    productService.getAll().then(setProducts);
+    apiService.get<any[]>('/partners').then(setPartners);
+    apiService.get<any[]>('/products').then(setProducts);
   }, []);
 
   const handleAddLine = () => {
@@ -90,10 +89,10 @@ export const OrderForm = ({ order, onClose, onSave }: OrderFormProps) => {
       }
 
       if (order) {
-        await saleOrderService.update(order.id, orderData);
+        await apiService.update('/sale-orders', order.id, orderData);
         showToast('Order updated successfully', 'success');
       } else {
-        await saleOrderService.create(orderData);
+        await apiService.create('/sale-orders', orderData);
         showToast('Order created successfully', 'success');
       }
       onSave();

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Phone, Mail, MessageSquare, FileText, CheckCircle, User } from 'lucide-react';
-import { odooService } from '../../../services/odooService';
+import { apiService } from '../../../services/apiService';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import './ActivityTimeline.css';
 
@@ -47,24 +47,20 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
       setLoading(true);
       // In Odoo, activities are stored in mail.activity model
       // We'll fetch activities related to this record
-      const activityData = await odooService.search<Activity>(
-        'mail.activity',
-        [
-          ['res_id', '=', resId],
-          ['res_model', '=', resModel],
-        ],
-        ['id', 'activity_type_id', 'summary', 'note', 'date_deadline', 'user_id', 'state']
-      );
+      const activityData = await apiService.get('/activities', {
+        res_id: resId,
+        res_model: resModel,
+      });
 
-      // Transform Odoo activities to our Activity format
-      const transformed = activityData.map((act: any) => ({
-        id: act.id,
-        type: mapActivityType(act.activity_type_id?.[1] || 'note'),
+      // Transform activities to our Activity format
+      const transformed = (activityData as any[]).map((act: any) => ({
+        id: act._id || act.id,
+        type: act.type || mapActivityType(act.activity_type || 'note'),
         summary: act.summary || 'Activity',
-        description: act.note || '',
-        date: act.date_deadline || new Date().toISOString(),
-        user_id: act.user_id?.[0] || 0,
-        user_name: act.user_id?.[1] || 'Unknown',
+        description: act.description || act.note || '',
+        date: act.date || act.date_deadline || new Date().toISOString(),
+        user_id: act.user_id || 0,
+        user_name: act.user_name || 'Unknown',
         state: act.state || 'planned',
       }));
 
@@ -99,16 +95,16 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
 
     try {
       // Create activity in Odoo
-      const activityId = await odooService.create('mail.activity', {
+      const result = await apiService.create('/activities', {
         res_id: resId,
         res_model: resModel,
-        activity_type_id: getActivityTypeId(newActivity.type || 'note'),
+        type: newActivity.type || 'note',
         summary: newActivity.summary,
-        note: newActivity.description,
-        date_deadline: newActivity.date,
-        user_id: 1, // Current user
+        description: newActivity.description,
+        date: newActivity.date,
         state: newActivity.state || 'planned',
       });
+      const activityId = (result as any)._id || (result as any).id;
 
       if (onCreateActivity) {
         onCreateActivity({ ...newActivity, id: activityId });

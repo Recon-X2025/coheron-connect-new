@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Globe, Edit, Trash2, Eye } from 'lucide-react';
 import { Button } from '../../components/Button';
-import { odooService } from '../../services/odooService';
+import { apiService } from '../../services/apiService';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import './Pages.css';
 
@@ -48,11 +48,7 @@ export const Pages = ({ onNewPage }: PagesProps) => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const pagesData = await odooService.search<WebsitePage>(
-        'website.page',
-        [],
-        ['id', 'name', 'url', 'is_published', 'view_id', 'create_date', 'write_date']
-      );
+      const pagesData = await apiService.get<WebsitePage[]>('/website/pages');
       setPages(pagesData);
     } finally {
       setLoading(false);

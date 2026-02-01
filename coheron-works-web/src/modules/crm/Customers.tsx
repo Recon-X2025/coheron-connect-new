@@ -4,10 +4,9 @@ import { Pagination } from '../../shared/components/Pagination';
 import { useServerPagination } from '../../hooks/useServerPagination';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
-import { partnerService } from '../../services/odooService';
+import { apiService } from '../../services/apiService';
 import { PartnerForm } from './components/PartnerForm';
 import { showToast } from '../../components/Toast';
-import type { Partner } from '../../types/odoo';
 import { confirmAction } from '../../components/ConfirmDialog';
 import './Customers.css';
 
@@ -15,7 +14,7 @@ export const Customers = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [typeFilter, setTypeFilter] = useState<'all' | 'company' | 'contact'>('all');
     const [showPartnerForm, setShowPartnerForm] = useState(false);
-    const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
+    const [editingPartner, setEditingPartner] = useState<any | null>(null);
 
     const {
         data: partners,
@@ -25,7 +24,7 @@ export const Customers = () => {
         setPageSize,
         setFilters: setServerFilters,
         refresh: loadData,
-    } = useServerPagination<Partner>('/customers');
+    } = useServerPagination<any>('/customers');
 
     // Sync filters to server pagination
     useEffect(() => {
@@ -121,7 +120,7 @@ export const Customers = () => {
                                         });
                                         if (!ok) return;
                                         try {
-                                            await partnerService.delete(partner.id);
+                                            await apiService.delete('/partners', partner._id || partner.id);
                                             showToast('Customer deleted successfully', 'success');
                                             await loadData();
                                         } catch (error: any) {

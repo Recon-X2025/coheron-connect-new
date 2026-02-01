@@ -1,11 +1,10 @@
 import React from 'react';
 import { Package } from 'lucide-react';
-import type { Product } from '../../../types/odoo';
 import './ProductGrid.css';
 
 interface ProductGridProps {
-  products: Product[];
-  onProductClick: (product: Product) => void;
+  products: any[];
+  onProductClick: (product: any) => void;
 }
 
 export const ProductGrid: React.FC<ProductGridProps> = ({ products, onProductClick }) => {

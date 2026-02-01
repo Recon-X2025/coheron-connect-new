@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import { partnerService } from '../../../services/odooService';
+import { apiService } from '../../../services/apiService';
 import { showToast } from '../../../components/Toast';
-import type { Partner } from '../../../types/odoo';
 import './PartnerForm.css';
 
 interface PartnerFormProps {
-  partner?: Partner | null;
+  partner?: any | null;
   onClose: () => void;
   onSave: () => void;
 }
@@ -30,10 +29,10 @@ export const PartnerForm = ({ partner, onClose, onSave }: PartnerFormProps) => {
 
     try {
       if (partner) {
-        await partnerService.update(partner.id, formData);
+        await apiService.update('/partners', partner._id || partner.id, formData);
         showToast('Customer updated successfully', 'success');
       } else {
-        await partnerService.create(formData);
+        await apiService.create('/partners', formData);
         showToast('Customer created successfully', 'success');
       }
       onSave();

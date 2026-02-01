@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { CheckCircle, XCircle, Send, FileCheck, Truck } from 'lucide-react';
-import { odooService } from '../../../services/odooService';
+import { apiService } from '../../../services/apiService';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
-import type { SaleOrder } from '../../../types/odoo';
 import './OrderWorkflow.css';
 
 interface OrderWorkflowProps {
-  order: SaleOrder;
+  order: any;
   onStateChange: () => void;
 }
 
@@ -110,11 +109,11 @@ export const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ order, onStateChan
       }
 
       if (method) {
-        // Call the workflow method
-        await odooService.call('sale.order', method, [[order.id]]);
+        // Call the workflow method via state update
+        await apiService.update('/sale-orders', order.id, { state: newState });
       } else {
         // Direct state update
-        await odooService.write('sale.order', [order.id], values);
+        await apiService.update('/sale-orders', order.id, values);
       }
 
       onStateChange();

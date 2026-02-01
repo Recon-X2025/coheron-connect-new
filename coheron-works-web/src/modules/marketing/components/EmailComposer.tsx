@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Send, Mail, Users, FileText } from 'lucide-react';
-import { odooService } from '../../../services/odooService';
+import { apiService } from '../../../services/apiService';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
 import './EmailComposer.css';
 
@@ -42,11 +42,7 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
 
   const loadTemplates = async () => {
     try {
-      const templateData = await odooService.search<EmailTemplate>(
-        'mail.template',
-        [],
-        ['id', 'name', 'subject', 'body_html']
-      );
+      const templateData = await apiService.get<EmailTemplate[]>('/email/templates');
       setTemplates(templateData);
     } catch (error) {
       console.error('Failed to load templates:', error);
@@ -86,11 +82,11 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
 
     try {
       // Create mass mailing record
-      await odooService.create('mailing.mailing', {
+      await apiService.create('/email/mailings', {
         name: formData.subject,
         subject: formData.subject,
         body_html: formData.body_html,
-        mailing_model_id: 1, // res.partner model
+        mailing_model_id: 1,
         contact_list_ids: formData.recipient_ids,
         campaign_id: campaignId,
         email_from: formData.email_from,

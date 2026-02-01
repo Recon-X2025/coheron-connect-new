@@ -3,11 +3,12 @@ import { Search, FileText, Plus, CheckCircle, Clock, Eye, Edit, Trash2, Download
 import { Pagination } from '../../shared/components/Pagination';
 import { useServerPagination } from '../../hooks/useServerPagination';
 import { Button } from '../../components/Button';
-import { invoiceService, partnerService } from '../../services/odooService';
+import { apiService } from '../../services/apiService';
 import { DateRangeFilter } from '../../components/DateRangeFilter';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
 import { showToast } from '../../components/Toast';
-import type { Invoice, Partner } from '../../types/odoo';
+type Invoice = any;
+type Partner = any;
 import { confirmAction } from '../../components/ConfirmDialog';
 import { useModalDismiss } from '../../hooks/useModalDismiss';
 import { InvoiceWizard } from './components/InvoiceWizard';
@@ -50,7 +51,7 @@ export const Invoices = () => {
 
     // Load partners separately
     useEffect(() => {
-        partnerService.getAll().then(setPartners);
+        apiService.get('/partners').then(setPartners);
     }, []);
 
     const getPartnerName = (partnerId: number) => {
@@ -60,9 +61,9 @@ export const Invoices = () => {
     // Simple, direct handlers
     const handleViewInvoice = async (invoiceId: number) => {
         try {
-            const invoiceData = await invoiceService.getById(invoiceId);
-            if (invoiceData && invoiceData.length > 0) {
-                setSelectedInvoice(invoiceData[0]);
+            const invoiceData = await apiService.getById('/invoices', invoiceId);
+            if (invoiceData) {
+                setSelectedInvoice(invoiceData);
                 setShowViewModal(true);
             } else {
                 const invoice = invoices.find(inv => inv.id === invoiceId);
@@ -85,9 +86,9 @@ export const Invoices = () => {
 
     const handleEditInvoice = async (invoiceId: number) => {
         try {
-            const invoiceData = await invoiceService.getById(invoiceId);
-            if (invoiceData && invoiceData.length > 0) {
-                setEditingInvoice(invoiceData[0]);
+            const invoiceData = await apiService.getById('/invoices', invoiceId);
+            if (invoiceData) {
+                setEditingInvoice(invoiceData);
                 setShowEditModal(true);
             } else {
                 const invoice = invoices.find(inv => inv.id === invoiceId);
@@ -137,7 +138,7 @@ export const Invoices = () => {
         if (!ok) return;
 
         try {
-            await invoiceService.delete(invoiceId);
+            await apiService.delete('/invoices', invoiceId);
             showToast('Invoice deleted successfully', 'success');
             loadData();
         } catch (error: any) {
@@ -155,7 +156,7 @@ export const Invoices = () => {
                 invoice_date: editingInvoice.invoice_date,
             };
             
-            await invoiceService.update(editingInvoice.id, updateData);
+            await apiService.update('/invoices', editingInvoice.id, updateData);
             await loadData();
             setShowEditModal(false);
             setEditingInvoice(null);

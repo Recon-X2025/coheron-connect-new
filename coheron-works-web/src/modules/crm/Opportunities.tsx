@@ -3,7 +3,6 @@ import { Search, Plus, TrendingUp, Edit, Trash2, Eye } from 'lucide-react';
 import { Pagination } from '../../shared/components/Pagination';
 import { usePagination } from '../../hooks/usePagination';
 import { Button } from '../../components/Button';
-import { odooService } from '../../services/odooService';
 import { apiService } from '../../services/apiService';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { AdvancedFilter } from '../../shared/components/AdvancedFilter';
@@ -22,13 +21,22 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { formatInLakhsCompact } from '../../utils/currencyFormatter';
-import type { Lead, Partner } from '../../types/odoo';
 import { confirmAction } from '../../components/ConfirmDialog';
 import { useModalDismiss } from '../../hooks/useModalDismiss';
 import './Opportunities.css';
 
 // Opportunity is essentially a Lead with type='opportunity'
-export interface Opportunity extends Lead {
+export interface Opportunity {
+  id: number;
+  _id?: string;
+  name: string;
+  partner_id: number;
+  email?: string;
+  phone?: string;
+  stage: string;
+  user_id?: number;
+  create_date?: string;
+  priority: string;
   type: 'opportunity';
   probability: number;
   expected_revenue: number;
@@ -37,7 +45,7 @@ export interface Opportunity extends Lead {
 
 export const Opportunities = () => {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
-  const [partners, setPartners] = useState<Partner[]>([]);
+  const [partners, setPartners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -72,21 +80,8 @@ export const Opportunities = () => {
       ];
 
       const [oppsData, partnersData] = await Promise.all([
-        odooService.search<Opportunity>('crm.lead', domain, [
-          'id',
-          'name',
-          'partner_id',
-          'email',
-          'phone',
-          'expected_revenue',
-          'probability',
-          'stage',
-          'user_id',
-          'create_date',
-          'priority',
-          'date_deadline',
-        ]),
-        odooService.search<Partner>('res.partner', [], ['id', 'name']),
+        apiService.get('/leads', { type: 'opportunity' }),
+        apiService.get('/partners'),
       ]);
 
       setOpportunities(oppsData);
@@ -146,7 +141,9 @@ export const Opportunities = () => {
     });
     if (!ok) return;
     try {
-      await odooService.unlink('crm.lead', ids);
+      for (const id of ids) {
+        await apiService.delete('/leads', id);
+      }
       await loadData();
       setSelectedIds([]);
     } catch (error) {

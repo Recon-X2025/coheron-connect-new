@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { productService } from '../../../services/odooService';
+import { apiService } from '../../../services/apiService';
 import { showToast } from '../../../components/Toast';
-import type { Product } from '../../../types/odoo';
+type Product = any;
 import { useModalDismiss } from '../../../hooks/useModalDismiss';
 import './ProductForm.css';
 
@@ -52,11 +52,11 @@ export const ProductForm = ({ product, onClose, onSave }: ProductFormProps) => {
     try {
       if (product) {
         // Update existing product
-        await productService.update(product.id, formData);
+        await apiService.update('/products', product.id, formData);
         showToast('Product updated successfully', 'success');
       } else {
         // Create new product
-        await productService.create(formData);
+        await apiService.create('/products', formData);
         showToast('Product created successfully', 'success');
       }
       onSave();

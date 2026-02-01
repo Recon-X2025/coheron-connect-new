@@ -3,7 +3,6 @@ import { Search, Filter, Plus, Mail, Phone, TrendingUp, Edit, Trash2, CheckCircl
 import { Pagination } from '../../shared/components/Pagination';
 import { useServerPagination } from '../../hooks/useServerPagination';
 import { Button } from '../../components/Button';
-import { leadService, partnerService } from '../../services/odooService';
 import { apiService } from '../../services/apiService';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { AdvancedFilter } from '../../shared/components/AdvancedFilter';
@@ -12,27 +11,26 @@ import { BulkActionModal } from '../../shared/components/BulkActionModal';
 import { LeadConversion } from './components/LeadConversion';
 import { LeadForm } from './components/LeadForm';
 import { showToast } from '../../components/Toast';
-import type { Lead, Partner } from '../../types/odoo';
 import { confirmAction } from '../../components/ConfirmDialog';
 import { useInlineEdit } from '../../hooks/useInlineEdit';
 import { EditableCell } from '../../components/EditableCell';
 import './LeadsList.css';
 
 export const LeadsList = () => {
-    const [partners, setPartners] = useState<Partner[]>([]);
+    const [partners, setPartners] = useState<any[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [stageFilter, setStageFilter] = useState<string>('all');
     const [sortBy, setSortBy] = useState<'name' | 'revenue' | 'probability'>('revenue');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [filterDomain, setFilterDomain] = useState<any[]>([]);
-    const [convertingLead, setConvertingLead] = useState<Lead | null>(null);
+    const [convertingLead, setConvertingLead] = useState<any | null>(null);
     const [showLeadForm, setShowLeadForm] = useState(false);
-    const [editingLead, setEditingLead] = useState<Lead | null>(null);
+    const [editingLead, setEditingLead] = useState<any | null>(null);
     const [showBulkUpdateModal, setShowBulkUpdateModal] = useState(false);
     const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
     const [bulkActionIds, setBulkActionIds] = useState<number[]>([]);
-    const inlineEdit = useInlineEdit<Lead>();
+    const inlineEdit = useInlineEdit<any>();
 
     const {
         data: leads,
@@ -42,7 +40,7 @@ export const LeadsList = () => {
         setPageSize,
         setFilters: setServerFilters,
         refresh: loadData,
-    } = useServerPagination<Lead>('/leads');
+    } = useServerPagination<any>('/leads');
 
     // Sync filters to server pagination
     useEffect(() => {
@@ -56,7 +54,7 @@ export const LeadsList = () => {
 
     // Load partners separately
     useEffect(() => {
-        partnerService.getAll().then(setPartners);
+        apiService.get('/partners').then(setPartners);
     }, []);
 
     const handleDelete = async (ids: number[]) => {
@@ -68,7 +66,7 @@ export const LeadsList = () => {
         });
         if (!ok) return;
         try {
-            await leadService.delete(ids[0]); // For now, delete one at a time
+            await apiService.delete('/leads', ids[0]); // For now, delete one at a time
             showToast('Lead deleted successfully', 'success');
             await loadData();
             setSelectedIds([]);

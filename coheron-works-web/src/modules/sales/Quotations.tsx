@@ -3,24 +3,22 @@ import { Search, Plus, FileText, Send, CheckCircle, Mail, History, Eye } from 'l
 import { Pagination } from '../../shared/components/Pagination';
 import { usePagination } from '../../hooks/usePagination';
 import { Button } from '../../components/Button';
-import { saleOrderService, partnerService } from '../../services/odooService';
 import { apiService } from '../../services/apiService';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { AdvancedFilter } from '../../shared/components/AdvancedFilter';
 import { BulkActions, createCommonBulkActions } from '../../shared/components/BulkActions';
 import { OrderForm } from './components/OrderForm';
-import type { SaleOrder, Partner } from '../../types/odoo';
 import { confirmAction } from '../../components/ConfirmDialog';
 import './Quotations.css';
 
 export const Quotations = () => {
-  const [quotations, setQuotations] = useState<SaleOrder[]>([]);
-  const [partners, setPartners] = useState<Partner[]>([]);
+  const [quotations, setQuotations] = useState<any[]>([]);
+  const [partners, setPartners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [filterDomain, setFilterDomain] = useState<any[]>([]);
-  const [selectedQuote, setSelectedQuote] = useState<SaleOrder | null>(null);
+  const [selectedQuote, setSelectedQuote] = useState<any | null>(null);
   const [quoteVersions, setQuoteVersions] = useState<any[]>([]);
   const [showVersions, setShowVersions] = useState(false);
   const [showQuotationForm, setShowQuotationForm] = useState(false);
@@ -34,10 +32,10 @@ export const Quotations = () => {
       setLoading(true);
       // Quotations are sales orders in 'draft' or 'sent' state
       const [quotesData, partnersData] = await Promise.all([
-        saleOrderService.getAll().then(orders => 
-          orders.filter(order => order.state === 'draft' || order.state === 'sent')
+        apiService.get<any[]>('/sale-orders').then(orders =>
+          orders.filter((order: any) => order.state === 'draft' || order.state === 'sent')
         ),
-        partnerService.getAll(),
+        apiService.get<any[]>('/partners'),
       ]);
       setQuotations(quotesData);
       setPartners(partnersData);
@@ -53,7 +51,7 @@ export const Quotations = () => {
   const handleSendQuotation = async (id: number) => {
     try {
       // Send quotation via email
-      await saleOrderService.update(id, {
+      await apiService.update('/sale-orders', id, {
         state: 'sent',
       });
       await loadData();
@@ -65,7 +63,7 @@ export const Quotations = () => {
   const handleConvertToOrder = async (id: number) => {
     try {
       // Convert quotation to sales order
-      await saleOrderService.update(id, {
+      await apiService.update('/sale-orders', id, {
         state: 'sale',
       });
       await loadData();
@@ -83,7 +81,7 @@ export const Quotations = () => {
     });
     if (!ok) return;
     try {
-      await saleOrderService.delete(ids[0]);
+      await apiService.delete('/sale-orders', ids[0]);
       await loadData();
       setSelectedIds([]);
     } catch (error) {

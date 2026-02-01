@@ -11,7 +11,7 @@ export interface OdooSession {
   expiresAt?: number;
 }
 
-const SESSION_STORAGE_KEY = 'odoo_session';
+const SESSION_STORAGE_KEY = 'erp_session';
 const SESSION_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours
 
 /**

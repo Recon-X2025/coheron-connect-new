@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Truck, Package, CheckCircle, Clock, MapPin } from 'lucide-react';
-import { odooService } from '../../../services/odooService';
+import { apiService } from '../../../services/apiService';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
-import type { SaleOrder } from '../../../types/odoo';
 import './DeliveryTracking.css';
 
 interface DeliveryTrackingProps {
-  order: SaleOrder;
+  order: any;
 }
 
 interface Delivery {
@@ -30,15 +29,8 @@ export const DeliveryTracking: React.FC<DeliveryTrackingProps> = ({ order }) => 
   const loadDeliveries = async () => {
     try {
       setLoading(true);
-      // In Odoo, deliveries are stored in stock.picking model
-      const pickingData = await odooService.search<Delivery>(
-        'stock.picking',
-        [
-          ['sale_id', '=', order.id],
-          ['picking_type_code', '=', 'outgoing'],
-        ],
-        ['id', 'name', 'scheduled_date', 'state', 'carrier_id', 'location_id']
-      );
+      // Fetch deliveries from API
+      const pickingData = await apiService.get<any[]>(`/sales-delivery?sale_id=${order.id}`);
 
       // Transform to our Delivery format
       const transformed = pickingData.map((pick: any) => ({

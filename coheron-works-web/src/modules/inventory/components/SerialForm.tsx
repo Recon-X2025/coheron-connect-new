@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { inventoryService, type StockSerial, type StockLot } from '../../../services/inventoryService';
-import { productService } from '../../../services/odooService';
+import { apiService } from '../../../services/apiService';
 import { showToast } from '../../../components/Toast';
-import type { Product } from '../../../types/odoo';
+type Product = any;
 import './SerialForm.css';
 
 interface SerialFormProps {
@@ -44,7 +44,7 @@ export const SerialForm = ({ serial, onClose, onSave }: SerialFormProps) => {
 
   const loadProducts = async () => {
     try {
-      const data = await productService.getAll();
+      const data = await apiService.get('/products');
       setProducts(data);
     } catch (error) {
       console.error('Failed to load products:', error);

@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Search, FolderKanban, Plus } from 'lucide-react';
 import { Button } from '../../components/Button';
-import { projectService } from '../../services/odooService';
+import { apiService } from '../../services/apiService';
 import { CreateProjectModal } from '../../components/CreateProjectModal';
-import type { Project } from '../../types/odoo';
 import './ProjectsList.css';
 
 export const ProjectsList = () => {
-    const [projects, setProjects] = useState<Project[]>([]);
+    const [projects, setProjects] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -18,7 +17,7 @@ export const ProjectsList = () => {
 
     const loadData = async () => {
         try {
-            const projectsData = await projectService.getAll();
+            const projectsData = await apiService.get<any[]>('/projects');
             setProjects(projectsData);
         } finally {
             setLoading(false);

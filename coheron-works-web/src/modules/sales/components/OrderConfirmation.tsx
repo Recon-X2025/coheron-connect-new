@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { X, CheckCircle, AlertCircle } from 'lucide-react';
-import { odooService } from '../../../services/odooService';
+import { apiService } from '../../../services/apiService';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
-import type { SaleOrder } from '../../../types/odoo';
 import { useModalDismiss } from '../../../hooks/useModalDismiss';
 import './OrderConfirmation.css';
 
 interface OrderConfirmationProps {
-  order: SaleOrder;
+  order: any;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -39,14 +38,14 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
 
     try {
       // Update order with confirmation data
-      await odooService.write('sale.order', [order.id], {
+      await apiService.update('/sale-orders', order.id, {
         payment_term_id: data.paymentTerms,
         commitment_date: data.deliveryDate,
         note: data.notes,
       });
 
       // Confirm the order (transition to 'sale' state)
-      await odooService.call('sale.order', 'action_confirm', [[order.id]]);
+      await apiService.update('/sale-orders', order.id, { state: 'sale' });
 
       onSuccess();
       onClose();

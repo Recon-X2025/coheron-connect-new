@@ -1,7 +1,6 @@
-import type { Partner, Lead, SaleOrder, Product, Invoice, Employee, Project, Task, StockPicking, User, Ticket } from '../types/odoo';
 
 // Mock Users
-export const mockUsers: User[] = [
+export const mockUsers: any[] = [
     { id: 1, name: 'Admin User', email: 'admin@coheronworks.com' },
     { id: 2, name: 'Sarah Chen', email: 'sarah.chen@coheronworks.com' },
     { id: 3, name: 'Mike Johnson', email: 'mike.j@coheronworks.com' },
@@ -10,7 +9,7 @@ export const mockUsers: User[] = [
 ];
 
 // Mock Tickets
-export const mockTickets: Ticket[] = [
+export const mockTickets: any[] = [
     { id: 1, name: 'Website not loading', description: 'The company website is showing a 500 error.', partner_id: 1, user_id: 2, stage_id: 1, priority: 'high', create_date: '2024-02-01', close_date: null },
     { id: 2, name: 'Email sync issue', description: 'Emails are not syncing with the CRM for user Mike Johnson.', partner_id: 2, user_id: 3, stage_id: 2, priority: 'medium', create_date: '2024-01-28', close_date: null },
     { id: 3, name: 'New feature request: Reporting', description: 'Request for advanced reporting features in the analytics dashboard.', partner_id: 3, user_id: 4, stage_id: 3, priority: 'low', create_date: '2024-01-25', close_date: '2024-02-05' },
@@ -18,7 +17,7 @@ export const mockTickets: Ticket[] = [
 ];
 
 // Mock Partners (Customers/Vendors)
-export const mockPartners: Partner[] = [
+export const mockPartners: any[] = [
     { id: 1, name: 'Acme Corporation', email: 'contact@acme.com', phone: '+1-555-0101', company: 'Acme Corporation', type: 'company' },
     { id: 2, name: 'TechStart Inc', email: 'hello@techstart.io', phone: '+1-555-0102', company: 'TechStart Inc', type: 'company' },
     { id: 3, name: 'Global Solutions Ltd', email: 'info@globalsolutions.com', phone: '+1-555-0103', company: 'Global Solutions Ltd', type: 'company' },
@@ -30,7 +29,7 @@ export const mockPartners: Partner[] = [
 ];
 
 // Mock Leads/Opportunities
-export const mockLeads: Lead[] = [
+export const mockLeads: any[] = [
     { id: 1, name: 'Enterprise Software Deal', partner_id: 1, email: 'contact@acme.com', phone: '+1-555-0101', expected_revenue: 10000000, probability: 75, stage: 'proposition', user_id: 2, create_date: '2024-01-15', priority: 'high' },
     { id: 2, name: 'Cloud Migration Project', partner_id: 2, email: 'hello@techstart.io', phone: '+1-555-0102', expected_revenue: 6800000, probability: 60, stage: 'qualified', user_id: 3, create_date: '2024-01-20', priority: 'medium' },
     { id: 3, name: 'New Website Development', partner_id: 3, email: 'info@globalsolutions.com', phone: '+1-555-0103', expected_revenue: 3600000, probability: 40, stage: 'new', user_id: 2, create_date: '2024-01-25', priority: 'medium' },
@@ -40,7 +39,7 @@ export const mockLeads: Lead[] = [
 ];
 
 // Mock Products
-export const mockProducts: Product[] = [
+export const mockProducts: any[] = [
     { id: 1, name: 'Professional Services - Consulting', default_code: 'SERV-001', list_price: 12000, standard_price: 8000, qty_available: 0, type: 'service', categ_id: 1 },
     { id: 2, name: 'Software License - Enterprise', default_code: 'SOFT-001', list_price: 400000, standard_price: 240000, qty_available: 100, type: 'product', categ_id: 2 },
     { id: 3, name: 'Cloud Hosting - Monthly', default_code: 'HOST-001', list_price: 24000, standard_price: 12000, qty_available: 0, type: 'service', categ_id: 1 },
@@ -50,7 +49,7 @@ export const mockProducts: Product[] = [
 ];
 
 // Mock Sale Orders
-export const mockSaleOrders: SaleOrder[] = [
+export const mockSaleOrders: any[] = [
     {
         id: 1,
         name: 'SO001',
@@ -90,7 +89,7 @@ export const mockSaleOrders: SaleOrder[] = [
 ];
 
 // Mock Invoices
-export const mockInvoices: Invoice[] = [
+export const mockInvoices: any[] = [
     { id: 1, name: 'INV/2024/0001', partner_id: 1, invoice_date: '2024-01-20', amount_total: 2000000, amount_residual: 0, state: 'posted', payment_state: 'paid', move_type: 'out_invoice' },
     { id: 2, name: 'INV/2024/0002', partner_id: 2, invoice_date: '2024-01-22', amount_total: 717600, amount_residual: 717600, state: 'posted', payment_state: 'not_paid', move_type: 'out_invoice' },
     { id: 3, name: 'INV/2024/0003', partner_id: 3, invoice_date: '2024-01-23', amount_total: 960000, amount_residual: 480000, state: 'posted', payment_state: 'partial', move_type: 'out_invoice' },
@@ -98,7 +97,7 @@ export const mockInvoices: Invoice[] = [
 ];
 
 // Mock Employees
-export const mockEmployees: Employee[] = [
+export const mockEmployees: any[] = [
     { id: 1, name: 'Sarah Chen', job_title: 'Sales Manager', department_id: 1, work_email: 'sarah.chen@coheronworks.com', work_phone: '+1-555-1001', attendance_state: 'checked_in' },
     { id: 2, name: 'Mike Johnson', job_title: 'Software Developer', department_id: 2, work_email: 'mike.j@coheronworks.com', work_phone: '+1-555-1002', attendance_state: 'checked_in' },
     { id: 3, name: 'Emma Davis', job_title: 'UI/UX Designer', department_id: 2, work_email: 'emma.d@coheronworks.com', work_phone: '+1-555-1003', attendance_state: 'checked_out' },
@@ -107,14 +106,14 @@ export const mockEmployees: Employee[] = [
 ];
 
 // Mock Projects
-export const mockProjects: Project[] = [
+export const mockProjects: any[] = [
     { id: 1, name: 'Mobile App Redesign', user_id: 2, partner_id: 1, date_start: '2024-01-01', date: '2024-03-31', task_count: 18, progress: 65 },
     { id: 2, name: 'API Gateway v2', user_id: 3, partner_id: 2, date_start: '2023-12-01', date: '2024-02-28', task_count: 24, progress: 100 },
     { id: 3, name: 'Dashboard Analytics', user_id: 4, partner_id: 3, date_start: '2024-01-15', date: '2024-04-15', task_count: 20, progress: 40 },
 ];
 
 // Mock Tasks
-export const mockTasks: Task[] = [
+export const mockTasks: any[] = [
     { id: 1, name: 'Design new login screen', project_id: 1, user_id: 3, stage_id: 2, priority: '1', date_deadline: '2024-02-10', description: 'Create mockups for the new login interface' },
     { id: 2, name: 'Implement authentication API', project_id: 1, user_id: 2, stage_id: 3, priority: '2', date_deadline: '2024-02-15', description: 'Build JWT-based authentication' },
     { id: 3, name: 'Database migration', project_id: 2, user_id: 4, stage_id: 4, priority: '0', date_deadline: '2024-02-01', description: 'Migrate from MySQL to PostgreSQL' },
@@ -122,7 +121,7 @@ export const mockTasks: Task[] = [
 ];
 
 // Mock Stock Pickings
-export const mockStockPickings: StockPicking[] = [
+export const mockStockPickings: any[] = [
     { id: 1, name: 'WH/IN/00001', partner_id: 6, scheduled_date: '2024-01-25', state: 'done', picking_type: 'incoming', location_id: 1, location_dest_id: 2 },
     { id: 2, name: 'WH/OUT/00001', partner_id: 1, scheduled_date: '2024-01-26', state: 'assigned', picking_type: 'outgoing', location_id: 2, location_dest_id: 3 },
     { id: 3, name: 'WH/OUT/00002', partner_id: 2, scheduled_date: '2024-01-27', state: 'confirmed', picking_type: 'outgoing', location_id: 2, location_dest_id: 3 },
