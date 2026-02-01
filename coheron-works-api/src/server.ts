@@ -6,7 +6,7 @@ initSentry();
 
 import mongoose, { connectDB } from './database/connection.js';
 import logger from './shared/utils/logger.js';
-import app from './app.js';
+import { initApp } from './app.js';
 import { startWorkers } from './jobs/index.js';
 import { initSocket } from './socket/index.js';
 
@@ -14,7 +14,8 @@ const PORT = process.env.PORT || 3000;
 
 // Connect to MongoDB then start server
 let server: any;
-connectDB().then(() => {
+connectDB().then(async () => {
+  const app = await initApp();
   startWorkers();
   server = app.listen(PORT, () => {
     logger.info(`Coheron ERP API Server running on http://localhost:${PORT}`);

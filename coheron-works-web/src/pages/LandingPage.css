@@ -16,9 +16,9 @@
   --accent-smalt: #013D68;
   --accent-cream: #D9C3AB;
   --text-primary: #FFFFFF;
-  --text-secondary: #D9C3AB;
-  --text-tertiary: #A7A7A7;
-  --text-muted: #646464;
+  --text-secondary: #E0D4C4;
+  --text-tertiary: #C8C8C8;
+  --text-muted: #9A9A9A;
   --border-subtle: rgba(255, 255, 255, 0.06);
   --border-light: rgba(255, 255, 255, 0.12);
   --glow-green: 0 0 20px rgba(3, 225, 172, 0.3);
@@ -908,7 +908,7 @@
   font-size: 0.8125rem;
   color: var(--text-muted);
   text-decoration: line-through;
-  text-decoration-color: rgba(255, 255, 255, 0.15);
+  text-decoration-color: rgba(255, 255, 255, 0.3);
 }
 
 .lp-comparison-badge {
@@ -1081,7 +1081,7 @@
 }
 
 .lp-footer-copy {
-  color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.45);
   font-size: 0.8125rem;
   margin: 0;
 }
