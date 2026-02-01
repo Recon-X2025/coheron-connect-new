@@ -129,6 +129,51 @@ After seeding: `admin@coheron.com` / `admin123`
 
 See `coheron-works-api/README.md` for full API endpoint listing.
 
+## Deployment
+
+### Docker (Local Dev)
+
+```bash
+docker compose up --build
+```
+
+This uses `docker-compose.yml` which builds the image locally from the `Dockerfile`.
+
+### Production (CI/CD via GitHub Actions)
+
+Production deploys are automated. Pushing to `main` triggers the GitHub Actions workflow (`.github/workflows/deploy.yml`) which:
+
+1. Builds the Docker image on GitHub's runners
+2. Pushes it to `ghcr.io/recon-x2025/coheron-erp:latest`
+3. SSHs into the Vultr VPS and runs `docker pull` + `docker compose up -d`
+
+The VPS uses `docker-compose.prod.yml` which pulls the pre-built image instead of building locally (avoids OOM on the 512MB VPS).
+
+#### Required GitHub Secrets
+
+Add these in **Repo → Settings → Secrets and variables → Actions**:
+
+| Secret | Value |
+|--------|-------|
+| `VULTR_SSH_KEY` | Private SSH key for `root@<server-ip>` |
+| `VULTR_HOST` | Server IP address |
+
+#### First-Time Server Setup
+
+Copy the production compose file to the server:
+
+```bash
+scp docker-compose.prod.yml root@<server-ip>:/root/CoheronERP/
+```
+
+Ensure `.env` exists on the server with the required environment variables.
+
+#### Health Check
+
+```
+GET /health → {"status":"ok"}
+```
+
 ## License
 
 Proprietary — Coheron Tech

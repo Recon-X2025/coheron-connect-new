@@ -4,20 +4,43 @@ on:
   push:
     branches: [main]
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: recon-x2025/coheron-erp
+
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Deploy to Vultr
+        uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VULTR_HOST }}
           username: root
           key: ${{ secrets.VULTR_SSH_KEY }}
           script: |
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
             cd /root/CoheronERP
-            git pull origin main
-            docker compose build
-            docker compose up -d --force-recreate
+            docker compose -f docker-compose.prod.yml up -d
             docker image prune -f
-            echo "Deployment complete at $(date)"
