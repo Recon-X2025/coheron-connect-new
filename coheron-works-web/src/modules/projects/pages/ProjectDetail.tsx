@@ -122,10 +122,38 @@ export const ProjectDetail = () => {
           {activeTab === 'analytics' && <ProjectAnalytics projectId={project.id} />}
           {activeTab === 'wiki' && <ProjectWiki projectId={project.id} />}
           {activeTab === 'bugs' && <BugTracker projectId={project.id} />}
-          {activeTab === 'settings' && (
-            <div className="settings-placeholder">
+          {activeTab === 'settings' && project && (
+            <div className="project-settings">
               <h2>Project Settings</h2>
-              <p>Settings coming soon...</p>
+              <div className="settings-section">
+                <h3>General</h3>
+                <div className="settings-grid">
+                  <div className="setting-row">
+                    <label>Project Name</label>
+                    <input type="text" defaultValue={project.name} readOnly />
+                  </div>
+                  <div className="setting-row">
+                    <label>Key</label>
+                    <input type="text" defaultValue={project.key} readOnly />
+                  </div>
+                  <div className="setting-row">
+                    <label>Type</label>
+                    <span className={`status-badge`}>{project.project_type}</span>
+                  </div>
+                  <div className="setting-row">
+                    <label>Status</label>
+                    <span className={`status-badge status-${project.status}`}>{project.status}</span>
+                  </div>
+                  <div className="setting-row">
+                    <label>Created</label>
+                    <span>{new Date(project.created_at).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="settings-section">
+                <h3>Description</h3>
+                <p className="project-description">{project.description || 'No description set'}</p>
+              </div>
             </div>
           )}
         </div>

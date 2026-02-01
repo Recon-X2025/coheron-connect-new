@@ -1,0 +1,23 @@
+name: Deploy to Vultr
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VULTR_HOST }}
+          username: root
+          key: ${{ secrets.VULTR_SSH_KEY }}
+          script: |
+            cd /root/CoheronERP
+            git pull origin main
+            docker compose build
+            docker compose up -d --force-recreate
+            docker image prune -f
+            echo "Deployment complete at $(date)"

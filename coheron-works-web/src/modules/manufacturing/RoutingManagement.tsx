@@ -192,7 +192,7 @@ export const RoutingManagement = () => {
                         >
                           <Eye size={16} />
                         </button>
-                        <button className="action-btn" title="Edit" onClick={() => showToast('Routing edit form coming soon', 'info')}>
+                        <button className="action-btn" title="Edit" onClick={() => { setEditingRouting(routing); setShowCreateModal(true); }}>
                           <Edit size={16} />
                         </button>
                         <button
@@ -240,7 +240,7 @@ export const RoutingManagement = () => {
                     </td>
                     <td>
                       <div className="action-buttons">
-                        <button className="action-btn" title="Edit" onClick={() => showToast('Routing edit form coming soon', 'info')}>
+                        <button className="action-btn" title="Edit" onClick={() => showToast('Select a routing to edit work center details', 'info')}>
                           <Edit size={16} />
                         </button>
                         <button className="action-btn danger" title="Delete">

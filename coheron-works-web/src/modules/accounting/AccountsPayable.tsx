@@ -26,6 +26,8 @@ interface Bill {
 
 export const AccountsPayable = () => {
   const [bills, setBills] = useState<Bill[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [vendors, setVendors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'bills' | 'payments' | 'vendors'>('bills');
@@ -39,6 +41,8 @@ export const AccountsPayable = () => {
 
   useEffect(() => {
     loadBills();
+    loadPayments();
+    loadVendors();
   }, []);
 
   const loadBills = async () => {
@@ -47,9 +51,27 @@ export const AccountsPayable = () => {
       setBills(data || []);
     } catch (error) {
       console.error('Error loading bills:', error);
-      setBills([]); // Set empty array on error
+      setBills([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadPayments = async () => {
+    try {
+      const data = await accountsPayableService.getPayments() as any[];
+      setPayments(data || []);
+    } catch {
+      setPayments([]);
+    }
+  };
+
+  const loadVendors = async () => {
+    try {
+      const data = await accountsPayableService.getVendors() as any[];
+      setVendors(data || []);
+    } catch {
+      setVendors([]);
     }
   };
 
@@ -260,15 +282,90 @@ export const AccountsPayable = () => {
         )}
 
         {activeTab === 'payments' && (
-          <div className="ap-placeholder">
-            <p>Payment management coming soon...</p>
-          </div>
+          payments.length === 0 ? (
+            <EmptyState
+              icon={<DollarSign size={48} />}
+              title="No payments yet"
+              description="Record your first payment to track vendor disbursements"
+              actionLabel="New Payment"
+              onAction={() => setShowPaymentForm(true)}
+            />
+          ) : (
+            <div className="ap-table-container">
+              <table className="ap-table">
+                <thead>
+                  <tr>
+                    <th>Payment #</th>
+                    <th>Vendor</th>
+                    <th>Date</th>
+                    <th>Method</th>
+                    <th className="amount-col">Amount</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {payments.filter(p =>
+                    (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    (p.vendor_name || '').toLowerCase().includes(searchTerm.toLowerCase())
+                  ).map((pmt: any) => (
+                    <tr key={pmt.id || pmt._id}>
+                      <td className="bill-number"><DollarSign size={16} /> {pmt.name || pmt.reference || '-'}</td>
+                      <td>{pmt.vendor_name || pmt.partner_name || '-'}</td>
+                      <td>{pmt.date ? new Date(pmt.date).toLocaleDateString() : '-'}</td>
+                      <td>{pmt.payment_method || pmt.journal_name || '-'}</td>
+                      <td className="amount">{formatInLakhsCompact(pmt.amount || 0)}</td>
+                      <td>
+                        <span className={`payment-badge ${pmt.state || 'draft'}`}>
+                          {pmt.state === 'posted' ? <CheckCircle size={14} /> : <Clock size={14} />}
+                          {(pmt.state || 'draft').replace('_', ' ')}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
         )}
 
         {activeTab === 'vendors' && (
-          <div className="ap-placeholder">
-            <p>Vendor management coming soon...</p>
-          </div>
+          vendors.length === 0 ? (
+            <EmptyState
+              icon={<FileText size={48} />}
+              title="No vendors yet"
+              description="Add your first vendor to manage supplier relationships"
+              actionLabel="New Vendor"
+              onAction={() => setShowVendorForm(true)}
+            />
+          ) : (
+            <div className="ap-table-container">
+              <table className="ap-table">
+                <thead>
+                  <tr>
+                    <th>Vendor Name</th>
+                    <th>Code</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th className="amount-col">Outstanding</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {vendors.filter(v =>
+                    (v.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    (v.code || '').toLowerCase().includes(searchTerm.toLowerCase())
+                  ).map((vendor: any) => (
+                    <tr key={vendor.id || vendor._id}>
+                      <td className="bill-number"><FileText size={16} /> {vendor.name || '-'}</td>
+                      <td>{vendor.code || vendor.ref || '-'}</td>
+                      <td>{vendor.email || '-'}</td>
+                      <td>{vendor.phone || '-'}</td>
+                      <td className="amount">{formatInLakhsCompact(vendor.total_due || vendor.amount_residual || 0)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
         )}
 
         {/* View Bill Modal */}

@@ -251,10 +251,43 @@ export const PricingManagement = () => {
 
         {activeTab === 'promotions' && (
           <div className="pricing-content">
-            <div className="empty-state">
-              <Tag size={48} />
-              <h3>Promotions coming soon</h3>
-              <p>Promotional pricing management will be available here</p>
+            <div className="pricing-promotions">
+              <div className="promo-header">
+                <h3>Promotional Pricing</h3>
+                <Button icon={<Plus size={16} />} onClick={() => showToast('Create a pricing rule with type "Promotion" to set up promotional discounts', 'info')}>New Promotion</Button>
+              </div>
+              {pricingRules.filter(r => r.rule_type === 'promotional' || r.discount_value > 0).length === 0 ? (
+                <div className="empty-state">
+                  <Tag size={48} />
+                  <h3>No promotions yet</h3>
+                  <p>Create pricing rules with discounts to run promotional campaigns. Use the Rules tab to set up percentage or fixed-amount discounts on products or categories.</p>
+                </div>
+              ) : (
+                <div className="ap-table-container">
+                  <table className="ap-table">
+                    <thead>
+                      <tr>
+                        <th>Rule Name</th>
+                        <th>Discount</th>
+                        <th>Valid From</th>
+                        <th>Valid To</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pricingRules.filter(r => r.rule_type === 'promotional' || r.discount_value > 0).map(rule => (
+                        <tr key={rule.id || (rule as any)._id}>
+                          <td>{rule.name}</td>
+                          <td>{rule.discount_value}{rule.discount_type === 'percentage' ? '%' : ' fixed'}</td>
+                          <td>{(rule as any).date_start ? new Date((rule as any).date_start).toLocaleDateString() : 'Always'}</td>
+                          <td>{(rule as any).date_end ? new Date((rule as any).date_end).toLocaleDateString() : 'No end'}</td>
+                          <td><span className="payment-badge posted">Active</span></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -5,7 +5,6 @@ import { Card } from '../../components/Card';
 import { apiService } from '../../services/apiService';
 import { AppraisalForm } from './components/AppraisalForm';
 import { GoalForm } from './components/GoalForm';
-import { showToast } from '../../components/Toast';
 import './Appraisals.css';
 
 type AppraisalTab = 'overview' | 'appraisals' | 'goals' | 'feedback' | 'reports';
@@ -116,7 +115,7 @@ export const Appraisals = () => {
 
         <div className="appraisals-content">
           {activeTab === 'overview' && <OverviewTab appraisals={appraisals} getEmployeeName={getEmployeeName} />}
-          {activeTab === 'appraisals' && <AppraisalsTab appraisals={appraisals} getEmployeeName={getEmployeeName} />}
+          {activeTab === 'appraisals' && <AppraisalsTab appraisals={appraisals} getEmployeeName={getEmployeeName} onEdit={(a: any) => { setEditingAppraisal(a); setShowForm(true); }} />}
           {activeTab === 'goals' && <GoalsTab onAddGoal={() => setShowGoalForm(true)} />}
           {activeTab === 'feedback' && <FeedbackTab />}
           {activeTab === 'reports' && <ReportsTab />}
@@ -182,7 +181,7 @@ const OverviewTab = ({ appraisals, getEmployeeName }: { appraisals: any[]; getEm
   );
 };
 
-const AppraisalsTab = ({ appraisals, getEmployeeName }: { appraisals: any[]; getEmployeeName: (id: number) => string }) => {
+const AppraisalsTab = ({ appraisals, getEmployeeName, onEdit }: { appraisals: any[]; getEmployeeName: (id: number) => string; onEdit: (a: any) => void }) => {
   return (
     <div className="appraisals-grid">
       {appraisals.map(appraisal => (
@@ -213,8 +212,8 @@ const AppraisalsTab = ({ appraisals, getEmployeeName }: { appraisals: any[]; get
           </div>
 
           <div className="appraisal-actions">
-            <Button variant="secondary" size="sm" onClick={() => showToast('Appraisal detail view coming soon', 'info')}>View Details</Button>
-            <Button variant="secondary" size="sm" onClick={() => showToast('Appraisal edit form coming soon', 'info')}>Edit</Button>
+            <Button variant="secondary" size="sm" onClick={() => onEdit(appraisal)}>View Details</Button>
+            <Button variant="secondary" size="sm" onClick={() => onEdit(appraisal)}>Edit</Button>
           </div>
         </Card>
       ))}
