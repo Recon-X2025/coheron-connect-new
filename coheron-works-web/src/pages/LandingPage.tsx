@@ -9,23 +9,23 @@ import './LandingPage.css';
 /* ===== DATA ===== */
 
 const innerOrbitModules = [
-  { name: 'CRM', color: '#00C971' },
-  { name: 'Sales', color: '#1A6AFF' },
-  { name: 'Inventory', color: '#F59E0B' },
-  { name: 'Accounting', color: '#14B8A6' },
+  { name: 'CRM', color: '#03E1AC' },
+  { name: 'Sales', color: '#E85002' },
+  { name: 'Inventory', color: '#4169E1' },
+  { name: 'Accounting', color: '#D9C3AB' },
 ];
 
 const outerOrbitModules = [
-  { name: 'HR & People', color: '#A855F7' },
-  { name: 'Manufacturing', color: '#EF4444' },
-  { name: 'Marketing', color: '#EC4899' },
-  { name: 'Projects', color: '#8B5CF6' },
-  { name: 'Support', color: '#FF9F1A' },
-  { name: 'POS', color: '#06B6D4' },
-  { name: 'eCommerce', color: '#10B981' },
-  { name: 'E-Signature', color: '#004FFB' },
-  { name: 'AI Copilot', color: '#7C3AED' },
-  { name: 'Platform', color: '#FFFFFF' },
+  { name: 'HR & People', color: '#F16001' },
+  { name: 'Manufacturing', color: '#C10B01' },
+  { name: 'Marketing', color: '#03E1AC' },
+  { name: 'Projects', color: '#4169E1' },
+  { name: 'Support', color: '#E85002' },
+  { name: 'POS', color: '#D9C3AB' },
+  { name: 'eCommerce', color: '#013D68' },
+  { name: 'E-Signature', color: '#6B8DD6' },
+  { name: 'AI Copilot', color: '#F16001' },
+  { name: 'Platform', color: '#03E1AC' },
 ];
 
 const allModules = [...innerOrbitModules, ...outerOrbitModules];
@@ -278,7 +278,7 @@ export const LandingPage: React.FC = () => {
           {/* Desktop orbit */}
           <div className="lp-orbit-container">
             <div className="lp-orbit-core">
-              <LogoSVG size={32} color="#00C971" />
+              <LogoSVG size={32} color="#03E1AC" />
               <span className="lp-orbit-core-label">Core</span>
             </div>
 
@@ -288,7 +288,7 @@ export const LandingPage: React.FC = () => {
                 return (
                   <div key={mod.name} className="lp-orbit-node" style={{ left: pos.left, top: pos.top }}>
                     <div className="lp-orbit-node-dot" style={{ background: mod.color, color: mod.color }} />
-                    <div className="lp-orbit-node-tooltip">{mod.name}</div>
+                    <span className="lp-orbit-node-label" style={{ color: mod.color }}>{mod.name}</span>
                   </div>
                 );
               })}
@@ -300,7 +300,7 @@ export const LandingPage: React.FC = () => {
                 return (
                   <div key={mod.name} className="lp-orbit-node" style={{ left: pos.left, top: pos.top }}>
                     <div className="lp-orbit-node-dot" style={{ background: mod.color, color: mod.color }} />
-                    <div className="lp-orbit-node-tooltip">{mod.name}</div>
+                    <span className="lp-orbit-node-label" style={{ color: mod.color }}>{mod.name}</span>
                   </div>
                 );
               })}
@@ -420,7 +420,7 @@ export const LandingPage: React.FC = () => {
       <section className="lp-integrations" ref={intInView.ref}>
         <div className="lp-container">
           <div className="lp-integrations-header lp-reveal" ref={setRevealRef(3)}>
-            <Zap size={18} style={{ color: '#00C971', marginBottom: 12 }} />
+            <Zap size={18} style={{ color: '#03E1AC', marginBottom: 12 }} />
             <h2 className="lp-section-title">Connect Everything</h2>
             <p className="lp-section-desc">
               Pre-built integrations with the tools you already use.
@@ -451,7 +451,7 @@ export const LandingPage: React.FC = () => {
       <section className="lp-cta" ref={ctaInView.ref}>
         <div className="lp-cta-grid-fade" />
         <div className="lp-container lp-cta-inner">
-          <Sparkles size={24} style={{ color: '#00C971', marginBottom: 16, opacity: ctaInView.visible ? 1 : 0, transition: 'opacity 0.5s' }} />
+          <Sparkles size={24} style={{ color: '#03E1AC', marginBottom: 16, opacity: ctaInView.visible ? 1 : 0, transition: 'opacity 0.5s' }} />
           <h2 className="lp-cta-title" style={{ opacity: ctaInView.visible ? 1 : 0, transform: ctaInView.visible ? 'none' : 'translateY(20px)', transition: 'all 0.6s ease' }}>
             Ready to run your business from a single platform?
           </h2>
