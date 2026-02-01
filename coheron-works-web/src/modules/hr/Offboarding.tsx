@@ -37,9 +37,9 @@ export const Offboarding = () => {
         </div>
 
         <div className="offboarding-tabs">
-          {tabs.map((tab) => (
+          {tabs.map((tab, idx) => (
             <button
-              key={tab.id}
+              key={tab.id || (tab as any)._id || idx}
               className={`offboarding-tab ${activeTab === tab.id ? 'active' : ''}`}
               onClick={() => setActiveTab(tab.id)}
             >
@@ -85,8 +85,8 @@ const OverviewTab = ({ list }: { list: any[] }) => {
           </tr>
         </thead>
         <tbody>
-          {list.map((item) => (
-            <tr key={item.id}>
+          {list.map((item, idx) => (
+            <tr key={item.id || (item as any)._id || idx}>
               <td>{item.name}</td>
               <td>{item.department}</td>
               <td>{new Date(item.lastDate).toLocaleDateString()}</td>

@@ -101,9 +101,9 @@ export const Appraisals = () => {
         </div>
 
         <div className="appraisals-tabs">
-          {tabs.map((tab) => (
+          {tabs.map((tab, idx) => (
             <button
-              key={tab.id}
+              key={tab.id || (tab as any)._id || idx}
               className={`appraisal-tab ${activeTab === tab.id ? 'active' : ''}`}
               onClick={() => setActiveTab(tab.id)}
             >
@@ -157,8 +157,8 @@ const OverviewTab = ({ appraisals, getEmployeeName }: { appraisals: any[]; getEm
       <Card>
         <h3>Recent Appraisals</h3>
         <div className="recent-appraisals">
-          {appraisals.slice(0, 5).map((appraisal) => (
-            <div key={appraisal.id} className="appraisal-item">
+          {appraisals.slice(0, 5).map((appraisal, idx) => (
+            <div key={appraisal.id || (appraisal as any)._id || idx} className="appraisal-item">
               <div>
                 <h4>{getEmployeeName(appraisal.employee_id)}</h4>
                 <p>Manager: {getEmployeeName(appraisal.manager_id)}</p>
@@ -184,8 +184,8 @@ const OverviewTab = ({ appraisals, getEmployeeName }: { appraisals: any[]; getEm
 const AppraisalsTab = ({ appraisals, getEmployeeName, onEdit }: { appraisals: any[]; getEmployeeName: (id: number) => string; onEdit: (a: any) => void }) => {
   return (
     <div className="appraisals-grid">
-      {appraisals.map(appraisal => (
-        <Card key={appraisal.id} className="appraisal-card">
+      {appraisals.map((appraisal, idx) => (
+        <Card key={appraisal.id || (appraisal as any)._id || idx} className="appraisal-card">
           <div className="appraisal-header">
             <div>
               <h3>{getEmployeeName(appraisal.employee_id)}</h3>
@@ -232,8 +232,8 @@ const GoalsTab = ({ onAddGoal }: { onAddGoal: () => void }) => {
     <Card>
       <h3>Goals & OKRs</h3>
       <div className="goals-list">
-        {goals.map((goal) => (
-          <div key={goal.id} className="goal-item">
+        {goals.map((goal, idx) => (
+          <div key={goal.id || (goal as any)._id || idx} className="goal-item">
             <div className="goal-info">
               <h4>{goal.title}</h4>
               <p>{goal.employee}</p>

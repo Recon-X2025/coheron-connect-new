@@ -74,8 +74,8 @@ export const ComplianceReporting = () => {
       <div className="reports-section">
         <h3>Compliance Reports</h3>
         <div className="reports-grid">
-          {complianceReports.map((report) => (
-            <Card key={report.id} className="report-card">
+          {complianceReports.map((report, idx) => (
+            <Card key={report.id || (report as any)._id || idx} className="report-card">
               <div className="report-header">
                 <div className="report-icon">
                   <Shield size={24} />

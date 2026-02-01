@@ -111,8 +111,8 @@ export const HRModules = () => {
         </div>
 
         <div className="hr-modules-grid">
-          {sortedModules.map((module) => (
-            <Link key={module.id} to={module.path} className="hr-module-link">
+          {sortedModules.map((module, idx) => (
+            <Link key={module.id || (module as any)._id || idx} to={module.path} className="hr-module-link">
               <Card hover className="hr-module-card">
                 <div className="hr-module-icon" style={{ backgroundColor: `${module.color}20`, color: module.color }}>
                   {module.icon}

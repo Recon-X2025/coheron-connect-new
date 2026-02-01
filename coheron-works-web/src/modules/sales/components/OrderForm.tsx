@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
-import { saleOrderService, partnerService } from '../../../services/odooService';
+import { X, Plus, Trash2 } from 'lucide-react';
+import { saleOrderService, partnerService, productService } from '../../../services/odooService';
 import { showToast } from '../../../components/Toast';
-import type { SaleOrder, Partner } from '../../../types/odoo';
+import type { SaleOrder, Partner, Product } from '../../../types/odoo';
 import { useModalDismiss } from '../../../hooks/useModalDismiss';
 import './OrderForm.css';
 
@@ -12,10 +12,20 @@ interface OrderFormProps {
   onSave: () => void;
 }
 
+interface OrderLine {
+  product_id: number;
+  product_name: string;
+  quantity: number;
+  price_unit: number;
+  subtotal: number;
+}
+
 export const OrderForm = ({ order, onClose, onSave }: OrderFormProps) => {
   useModalDismiss(true, onClose);
   const [loading, setLoading] = useState(false);
   const [partners, setPartners] = useState<Partner[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [orderLines, setOrderLines] = useState<OrderLine[]>([]);
   const [formData, setFormData] = useState({
     partner_id: order?.partner_id || '',
     date_order: order?.date_order ? new Date(order.date_order).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
@@ -24,21 +34,59 @@ export const OrderForm = ({ order, onClose, onSave }: OrderFormProps) => {
 
   useEffect(() => {
     partnerService.getAll().then(setPartners);
+    productService.getAll().then(setProducts);
   }, []);
+
+  const handleAddLine = () => {
+    setOrderLines([...orderLines, { product_id: 0, product_name: '', quantity: 1, price_unit: 0, subtotal: 0 }]);
+  };
+
+  const handleRemoveLine = (index: number) => {
+    setOrderLines(orderLines.filter((_, i) => i !== index));
+  };
+
+  const handleLineChange = (index: number, field: string, value: any) => {
+    setOrderLines(prev => {
+      const newLines = [...prev];
+      const line = { ...newLines[index] };
+
+      if (field === 'product_id') {
+        const product = products.find(p => p.id === value);
+        line.product_id = value;
+        line.product_name = product?.name || '';
+        line.price_unit = product?.list_price || 0;
+        line.subtotal = line.quantity * line.price_unit;
+      } else if (field === 'quantity') {
+        line.quantity = parseFloat(value) || 0;
+        line.subtotal = line.quantity * line.price_unit;
+      } else if (field === 'price_unit') {
+        line.price_unit = parseFloat(value) || 0;
+        line.subtotal = line.quantity * line.price_unit;
+      }
+
+      newLines[index] = line;
+      return newLines;
+    });
+  };
+
+  const orderTotal = orderLines.reduce((sum, line) => sum + line.subtotal, 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const orderData: Partial<SaleOrder> = {
+      const orderData: Record<string, any> = {
         partner_id: parseInt(formData.partner_id as string),
         date_order: formData.date_order,
-        state: 'draft' as const,
+        state: 'draft',
+        order_line: orderLines
+          .filter(l => l.product_id > 0)
+          .map(l => ({ product_id: l.product_id, product_uom_qty: l.quantity, price_unit: l.price_unit })),
       };
-      
+
       if (formData.client_order_ref) {
-        (orderData as any).client_order_ref = formData.client_order_ref;
+        orderData.client_order_ref = formData.client_order_ref;
       }
 
       if (order) {
@@ -107,6 +155,82 @@ export const OrderForm = ({ order, onClose, onSave }: OrderFormProps) => {
                 />
               </div>
             </div>
+          </div>
+
+          <div className="form-section line-items-section">
+            <div className="line-items-header">
+              <h3>Line Items</h3>
+              <button type="button" className="btn-add-line" onClick={handleAddLine}>
+                <Plus size={16} />
+                Add Line
+              </button>
+            </div>
+
+            {orderLines.length > 0 ? (
+              <>
+                <table className="line-items-table">
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Quantity</th>
+                      <th>Unit Price</th>
+                      <th>Subtotal</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orderLines.map((line, index) => (
+                      <tr key={index}>
+                        <td>
+                          <select
+                            value={line.product_id}
+                            onChange={(e) => handleLineChange(index, 'product_id', parseInt(e.target.value))}
+                          >
+                            <option value={0}>Select product</option>
+                            {products.map((p, idx) => (
+                              <option key={p.id || idx} value={p.id}>{p.name}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={line.quantity}
+                            onChange={(e) => handleLineChange(index, 'quantity', e.target.value)}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={line.price_unit}
+                            onChange={(e) => handleLineChange(index, 'price_unit', e.target.value)}
+                          />
+                        </td>
+                        <td className="subtotal-cell">
+                          {'\u20B9'}{line.subtotal.toLocaleString()}
+                        </td>
+                        <td>
+                          <button type="button" className="btn-remove-line" onClick={() => handleRemoveLine(index)} title="Remove line">
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="line-items-total">
+                  <strong>Total: {'\u20B9'}{orderTotal.toLocaleString()}</strong>
+                </div>
+              </>
+            ) : (
+              <div className="empty-lines">
+                <p>No line items. Click "Add Line" to add products.</p>
+              </div>
+            )}
           </div>
 
           <div className="form-actions">

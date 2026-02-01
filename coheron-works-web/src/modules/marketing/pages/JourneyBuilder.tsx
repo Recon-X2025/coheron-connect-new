@@ -170,8 +170,8 @@ export const JourneyBuilder: React.FC = () => {
               </marker>
             </defs>
             {/* Nodes */}
-            {j.nodes.map(n => (
-              <g key={n.id} onClick={() => setSelectedNode(n)} style={{ cursor: 'pointer' }}>
+            {j.nodes.map((n, idx) => (
+              <g key={n.id || (n as any)._id || idx} onClick={() => setSelectedNode(n)} style={{ cursor: 'pointer' }}>
                 <rect x={n.position.x} y={n.position.y} width={160} height={48} rx={10} fill={`${nodeColor(n.type)}22`} stroke={selectedNode?.id === n.id ? '#00C971' : nodeColor(n.type)} strokeWidth={selectedNode?.id === n.id ? 2 : 1} />
                 <text x={n.position.x + 40} y={n.position.y + 29} fill="#fff" fontSize={13} fontFamily="system-ui">{NODE_PALETTE.find(p => p.type === n.type)?.label || n.type}</text>
                 <circle cx={n.position.x + 20} cy={n.position.y + 24} r={8} fill={nodeColor(n.type)} />
@@ -282,8 +282,8 @@ export const JourneyBuilder: React.FC = () => {
 
       {/* Journey List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {SAMPLE_JOURNEYS.map(j => (
-          <div key={j.id} onClick={() => openBuilder(j)} style={{ background: '#141414', border: '1px solid #222', borderRadius: 12, padding: '20px 24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', transition: 'border-color 0.2s' }}
+        {SAMPLE_JOURNEYS.map((j, idx) => (
+          <div key={j.id || (j as any)._id || idx} onClick={() => openBuilder(j)} style={{ background: '#141414', border: '1px solid #222', borderRadius: 12, padding: '20px 24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', transition: 'border-color 0.2s' }}
             onMouseEnter={e => (e.currentTarget.style.borderColor = '#00C971')} onMouseLeave={e => (e.currentTarget.style.borderColor = '#222')}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
               <GitBranch size={20} color="#00C971" />

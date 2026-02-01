@@ -225,11 +225,11 @@ export const Campaigns = () => {
           />
         ) : (
         <div className="campaigns-grid">
-          {filteredCampaigns.map((campaign) => {
+          {filteredCampaigns.map((campaign, idx) => {
             const roi = calculateROI(campaign);
             return (
               <div
-                key={campaign.id}
+                key={campaign.id || (campaign as any)._id || idx}
                 className="campaign-card"
                 onClick={() => setSelectedCampaign(campaign)}
               >

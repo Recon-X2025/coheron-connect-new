@@ -100,8 +100,8 @@ export const PayoutFinancial = () => {
             <Button icon={<Upload size={18} />}>Generate Bank File</Button>
           </div>
           <div className="bank-files-list">
-            {bankFiles.map((file) => (
-              <div key={file.id} className="bank-file-item">
+            {bankFiles.map((file, idx) => (
+              <div key={file.id || (file as any)._id || idx} className="bank-file-item">
                 <div className="file-info">
                   <FileText size={24} />
                   <div>

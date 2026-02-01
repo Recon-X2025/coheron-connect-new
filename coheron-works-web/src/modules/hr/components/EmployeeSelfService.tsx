@@ -91,8 +91,8 @@ export const EmployeeSelfService = () => {
               <div className="p-8">Loading payslips...</div>
             ) : payslips.length > 0 ? (
               <div className="payslips-list">
-                {payslips.map((payslip) => (
-                  <div key={payslip.id} className="payslip-item">
+                {payslips.map((payslip, idx) => (
+                  <div key={payslip.id || (payslip as any)._id || idx} className="payslip-item">
                     <div className="payslip-info">
                       <FileText size={20} />
                       <div>
@@ -152,8 +152,8 @@ export const EmployeeSelfService = () => {
               <div className="salary-structure-view">
                 <div className="earnings-section">
                   <h5>Earnings</h5>
-                  {salaryStructure.filter((s: any) => s.component_type === 'earning').map((item: any) => (
-                    <div key={item.id} className="structure-item">
+                  {salaryStructure.filter((s: any) => s.component_type === 'earning').map((item: any, idx: number) => (
+                    <div key={item.id || (item as any)._id || idx} className="structure-item">
                       <span>{item.component_name}</span>
                       <span>{formatInLakhsCompact(parseFloat(item.amount || 0))}</span>
                     </div>
@@ -161,8 +161,8 @@ export const EmployeeSelfService = () => {
                 </div>
                 <div className="deductions-section">
                   <h5>Deductions</h5>
-                  {salaryStructure.filter((s: any) => s.component_type === 'deduction').map((item: any) => (
-                    <div key={item.id} className="structure-item">
+                  {salaryStructure.filter((s: any) => s.component_type === 'deduction').map((item: any, idx: number) => (
+                    <div key={item.id || (item as any)._id || idx} className="structure-item">
                       <span>{item.component_name}</span>
                       <span>{formatInLakhsCompact(parseFloat(item.amount || 0))}</span>
                     </div>

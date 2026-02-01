@@ -103,8 +103,8 @@ export const GoalForm = ({ onClose, onSave, employeeId, initialData }: GoalFormP
               disabled={!!employeeId}
             >
               <option value="">Select Employee</option>
-              {employees.map((emp) => (
-                <option key={emp.id} value={emp.id}>
+              {employees.map((emp, idx) => (
+                <option key={emp.id || (emp as any)._id || idx} value={emp.id}>
                   {emp.name} ({emp.employee_id})
                 </option>
               ))}

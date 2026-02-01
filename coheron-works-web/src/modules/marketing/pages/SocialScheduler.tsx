@@ -83,8 +83,8 @@ export const SocialScheduler: React.FC = () => {
           <textarea value={newContent} onChange={e => setNewContent(e.target.value)} placeholder="What's on your mind?" rows={4}
             style={{ width: '100%', padding: 14, background: '#1a1a1a', border: '1px solid #333', borderRadius: 8, color: '#fff', fontSize: 14, resize: 'vertical', marginBottom: 16, boxSizing: 'border-box' }} />
           <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-            {PLATFORMS.map(p => (
-              <button key={p.id} onClick={() => togglePlatform(p.id)} style={{
+            {PLATFORMS.map((p, idx) => (
+              <button key={p.id || (p as any)._id || idx} onClick={() => togglePlatform(p.id)} style={{
                 padding: '8px 14px', borderRadius: 8, border: `1px solid ${selectedPlatforms.includes(p.id) ? p.color : '#333'}`,
                 background: selectedPlatforms.includes(p.id) ? `${p.color}22` : 'transparent', color: selectedPlatforms.includes(p.id) ? p.color : '#999',
                 cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6,
@@ -131,8 +131,8 @@ export const SocialScheduler: React.FC = () => {
               return (
                 <div key={day} style={{ background: '#141414', border: '1px solid #222', borderRadius: 8, minHeight: 80, padding: 8 }}>
                   <div style={{ fontSize: 13, color: day === 1 ? '#00C971' : '#999', marginBottom: 4 }}>{day}</div>
-                  {posts.map(p => (
-                    <div key={p.id} style={{ fontSize: 11, padding: '3px 6px', background: '#1a1a1a', borderRadius: 4, marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#ccc' }}>
+                  {posts.map((p, idx) => (
+                    <div key={p.id || (p as any)._id || idx} style={{ fontSize: 11, padding: '3px 6px', background: '#1a1a1a', borderRadius: 4, marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#ccc' }}>
                       {p.content.slice(0, 25)}...
                     </div>
                   ))}
@@ -146,8 +146,8 @@ export const SocialScheduler: React.FC = () => {
       {/* Queue */}
       {tab === 'queue' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {SAMPLE_POSTS.filter(p => p.status === 'scheduled').map(p => (
-            <div key={p.id} style={{ background: '#141414', border: '1px solid #222', borderRadius: 12, padding: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
+          {SAMPLE_POSTS.filter(p => p.status === 'scheduled').map((p, idx) => (
+            <div key={p.id || (p as any)._id || idx} style={{ background: '#141414', border: '1px solid #222', borderRadius: 12, padding: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
               <div style={{ width: 48, height: 48, borderRadius: 8, background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Clock size={20} color="#00C971" /></div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, marginBottom: 6 }}>{p.content}</div>
@@ -170,10 +170,10 @@ export const SocialScheduler: React.FC = () => {
       {/* Accounts */}
       {tab === 'accounts' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-          {ACCOUNTS.map(a => {
+          {ACCOUNTS.map((a, idx) => {
             const pf = PLATFORMS.find(p => p.id === a.platform);
             return (
-              <div key={a.id} style={{ background: '#141414', border: '1px solid #222', borderRadius: 12, padding: 20 }}>
+              <div key={a.id || (a as any)._id || idx} style={{ background: '#141414', border: '1px solid #222', borderRadius: 12, padding: 20 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                   <div style={{ width: 40, height: 40, borderRadius: 10, background: `${pf?.color || '#333'}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: pf?.color }}>{pf?.icon}</div>
                   <div>

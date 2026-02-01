@@ -200,8 +200,8 @@ export const MarketingDashboard: React.FC = () => {
             </div>
             <div className="marketing-recent-list">
               {activeCampaigns.length > 0 ? (
-                activeCampaigns.map((campaign) => (
-                  <div key={campaign.id} className="marketing-recent-item">
+                activeCampaigns.map((campaign, idx) => (
+                  <div key={campaign.id || (campaign as any)._id || idx} className="marketing-recent-item">
                     <div className="marketing-recent-item-info">
                       <h4>{campaign.name || 'Unnamed Campaign'}</h4>
                       <p>{campaign.campaign_type || 'Other'} Campaign</p>
@@ -234,8 +234,8 @@ export const MarketingDashboard: React.FC = () => {
             </div>
             <div className="marketing-recent-list">
               {recentCampaigns.length > 0 ? (
-                recentCampaigns.map((campaign) => (
-                  <div key={campaign.id} className="marketing-recent-item">
+                recentCampaigns.map((campaign, idx) => (
+                  <div key={campaign.id || (campaign as any)._id || idx} className="marketing-recent-item">
                     <div className="marketing-recent-item-info">
                       <h4>{campaign.name || 'Unnamed Campaign'}</h4>
                       <p>{campaign.campaign_type || 'Other'} Campaign</p>

@@ -185,9 +185,9 @@ export const BiometricIntegration = () => {
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 24, borderBottom: '1px solid #262626', paddingBottom: 0 }}>
-          {tabs.map(tab => (
+          {tabs.map((tab, idx) => (
             <button
-              key={tab.id}
+              key={tab.id || (tab as any)._id || idx}
               onClick={() => setActiveTab(tab.id)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px',

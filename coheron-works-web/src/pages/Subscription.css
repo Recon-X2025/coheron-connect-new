@@ -6,7 +6,7 @@
 
 .subscription-header {
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
 }
 
 .subscription-header h1 {
@@ -21,12 +21,23 @@
   color: #666;
 }
 
+.subscription-base-price {
+  margin: 0.5rem 0 0 0;
+  font-size: 1.25rem;
+  color: #875A7B;
+}
+
+.subscription-base-price strong {
+  font-size: 1.5rem;
+}
+
+/* Billing Toggle */
 .billing-toggle {
   display: flex;
   justify-content: center;
   gap: 0.5rem;
-  margin-bottom: 3rem;
-  background: var(--surface);
+  margin-bottom: 2.5rem;
+  background: var(--surface, #fff);
   padding: 0.5rem;
   border-radius: 8px;
   max-width: 400px;
@@ -45,17 +56,10 @@
   color: #666;
   cursor: pointer;
   transition: all 0.2s;
-  position: relative;
 }
 
-.billing-toggle button:hover {
-  background: #f5f5f5;
-}
-
-.billing-toggle button.active {
-  background: #875A7B;
-  color: white;
-}
+.billing-toggle button:hover { background: #f5f5f5; }
+.billing-toggle button.active { background: #875A7B; color: white; }
 
 .discount-badge {
   margin-left: 0.5rem;
@@ -67,114 +71,235 @@
   font-weight: 600;
 }
 
-.plans-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-  margin-bottom: 3rem;
+/* Sections */
+.sub-section {
   max-width: 1200px;
-  margin-left: auto;
-  margin-right: auto;
+  margin: 0 auto 2.5rem;
 }
 
-.plan-card {
-  padding: 2rem;
+.sub-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  color: #333;
+  margin: 0 0 1rem 0;
+}
+
+/* Core Chips */
+.core-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.core-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  background: #875A7B15;
+  color: #875A7B;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* Packages Grid */
+.packages-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.package-card {
+  padding: 1.25rem;
+  cursor: pointer;
+  text-align: center;
   position: relative;
-  transition: transform 0.2s, box-shadow 0.2s;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 
-.plan-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-}
-
-.plan-card.popular {
-  border: 2px solid #875A7B;
-}
+.package-card:hover { border-color: #875A7B40; }
+.package-card.selected { border-color: #875A7B; background: #875A7B08; }
+.package-card.popular { border-color: #875A7B; }
 
 .popular-badge {
   position: absolute;
   top: -12px;
   left: 50%;
   transform: translateX(-50%);
-  padding: 0.375rem 1rem;
+  padding: 0.25rem 0.75rem;
   background: #875A7B;
   color: white;
   border-radius: 20px;
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 600;
+  white-space: nowrap;
 }
 
-.plan-header {
-  text-align: center;
-  margin-bottom: 1.5rem;
+.package-card h3 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.125rem;
+  color: #333;
 }
 
-.plan-icon {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 1rem;
-  background: #f0f0f0;
+.package-users {
+  font-size: 0.8125rem;
+  color: #888;
+  margin-bottom: 0.75rem;
+}
+
+.package-price { margin-bottom: 0.25rem; }
+
+.package-price .price {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #333;
+}
+
+.package-price .interval {
+  font-size: 0.875rem;
+  color: #888;
+}
+
+.package-per-user {
+  font-size: 0.75rem;
+  color: #888;
+  margin-bottom: 0.25rem;
+}
+
+.package-savings {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  background: #10b981;
+  color: white;
+  border-radius: 8px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  margin-bottom: 0.375rem;
+}
+
+.package-storage {
+  font-size: 0.75rem;
+  color: #999;
+}
+
+/* Addons Grid */
+.addons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.75rem;
+}
+
+.addon-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+  background: white;
   border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.addon-card:hover { border-color: #875A7B40; }
+.addon-card.selected { border-color: #875A7B; background: #875A7B08; }
+
+.addon-check {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #875A7B;
 }
 
-.plan-header h2 {
+.addon-empty-check {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+}
+
+.addon-card.selected .addon-empty-check { display: none; }
+
+.addon-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.addon-info h4 {
   margin: 0;
-  font-size: 1.5rem;
-  color: #333;
-}
-
-.plan-user-limit {
-  margin: 0.5rem 0 0 0;
-  font-size: 0.875rem;
-  color: #666;
-  font-weight: 500;
-}
-
-.plan-pricing {
-  text-align: center;
-  margin-bottom: 2rem;
-  padding-bottom: 2rem;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.price {
-  font-size: 3rem;
-  font-weight: 700;
-  color: #333;
-}
-
-.interval {
-  font-size: 1.125rem;
-  color: #666;
-  margin-left: 0.25rem;
-}
-
-.plan-features {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 2rem 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.plan-features li {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
   font-size: 0.9375rem;
   color: #333;
 }
 
-.plan-features li svg {
-  color: #10b981;
+.addon-info p {
+  margin: 0.125rem 0 0 0;
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.addon-price {
   flex-shrink: 0;
-  margin-top: 0.125rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+}
+
+/* Summary */
+.sub-summary {
+  max-width: 600px;
+  margin: 0 auto 2.5rem;
+  padding: 2rem;
+}
+
+.sub-summary h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  color: #333;
+}
+
+.summary-rows {
+  margin-bottom: 1.5rem;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  font-size: 0.9375rem;
+  color: #555;
+}
+
+.summary-row.addon-row {
+  font-size: 0.875rem;
+  color: #777;
+}
+
+.summary-row.total-row {
+  border-top: 2px solid #333;
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: #333;
+}
+
+.summary-row.savings-row {
+  font-size: 0.875rem;
+  color: #10b981;
+  font-weight: 600;
 }
 
 .subscribe-btn {
@@ -185,6 +310,7 @@
   gap: 0.5rem;
 }
 
+/* Info Card */
 .subscription-info {
   max-width: 800px;
   margin: 0 auto;
@@ -215,4 +341,3 @@
   font-size: 0.9375rem;
   color: #666;
 }
-

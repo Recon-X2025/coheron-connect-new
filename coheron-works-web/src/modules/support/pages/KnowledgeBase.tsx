@@ -265,9 +265,9 @@ export const KnowledgeBase: React.FC = () => {
                 <p>No articles found</p>
               </div>
             ) : (
-              filteredArticles.map((article) => (
+              filteredArticles.map((article, idx) => (
                 <div
-                  key={article.id}
+                  key={article.id || (article as any)._id || idx}
                   className={`article-item ${selectedArticle?.id === article.id ? 'active' : ''}`}
                   onClick={() => handleArticleClick(article)}
                   style={{ cursor: 'pointer' }}
@@ -407,8 +407,8 @@ export const KnowledgeBase: React.FC = () => {
                 <div className="article-revisions">
                   <h3>Revision History</h3>
                   <div className="revisions-list">
-                    {selectedArticle.revisions.map((revision) => (
-                      <div key={revision.id} className="revision-item">
+                    {selectedArticle.revisions.map((revision, idx) => (
+                      <div key={revision.id || (revision as any)._id || idx} className="revision-item">
                         <div className="revision-header">
                           <span className="revision-number">v{revision.revision_number}</span>
                           <span className="revision-author">{revision.created_by_name || 'System'}</span>
@@ -508,8 +508,8 @@ export const KnowledgeBase: React.FC = () => {
                   style={{ width: '100%', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
                 >
                   <option value="all">No Category</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
+                  {categories.map((cat, idx) => (
+                    <option key={cat.id || (cat as any)._id || idx} value={cat.id}>
                       {cat.name}
                     </option>
                   ))}

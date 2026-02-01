@@ -91,8 +91,8 @@ export const EmployeeMasterData = () => {
             </tr>
           </thead>
           <tbody>
-            {employees.map((emp) => (
-              <tr key={emp.id}>
+            {employees.map((emp, idx) => (
+              <tr key={emp.id || (emp as any)._id || idx}>
                 <td>{emp.employeeId}</td>
                 <td>{emp.name}</td>
                 <td>{emp.department}</td>

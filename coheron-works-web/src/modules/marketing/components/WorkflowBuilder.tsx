@@ -189,11 +189,11 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
             <div className="section-header">
               <h3>Workflow Steps</h3>
               <div className="step-type-buttons">
-                {stepTypes.map((stepType) => {
+                {stepTypes.map((stepType, idx) => {
                   const Icon = stepType.icon;
                   return (
                     <button
-                      key={stepType.id}
+                      key={stepType.id || (stepType as any)._id || idx}
                       className="step-type-btn"
                       onClick={() => addStep(stepType.id as WorkflowStep['type'])}
                       title={stepType.description}
@@ -217,7 +217,7 @@ export const WorkflowBuilder: React.FC<WorkflowBuilderProps> = ({
                   const Icon = stepType?.icon || ArrowRight;
 
                   return (
-                    <div key={step.id} className="workflow-step">
+                    <div key={step.id || (step as any)._id || index} className="workflow-step">
                       <div className="step-header">
                         <div className="step-number">{index + 1}</div>
                         <Icon size={20} />

@@ -93,8 +93,8 @@ export const SalaryStructure = () => {
             onChange={(e) => setSelectedEmployee(Number(e.target.value))}
           >
             <option value="">Select Employee</option>
-            {employees.map((emp) => (
-              <option key={emp.id} value={emp.id}>
+            {employees.map((emp, idx) => (
+              <option key={emp.id || (emp as any)._id || idx} value={emp.id}>
                 {emp.name} ({emp.employee_id})
               </option>
             ))}
@@ -122,8 +122,8 @@ export const SalaryStructure = () => {
           </div>
           <div className="components-list">
             {earnings.length > 0 ? (
-              earnings.map((item: any) => (
-                <div key={item.id} className="component-item">
+              earnings.map((item: any, idx: number) => (
+                <div key={item.id || (item as any)._id || idx} className="component-item">
                   <div className="component-info">
                     <span className="component-name">{item.component_name}</span>
                     {item.calculation_type === 'percentage' && item.percentage && (
@@ -164,8 +164,8 @@ export const SalaryStructure = () => {
             <span className="total-amount">Total: {formatInLakhsCompact(totalDeductions)}</span>
           </div>
           <div className="components-list">
-            {deductions.map((item) => (
-              <div key={item.id} className="component-item">
+            {deductions.map((item, idx) => (
+              <div key={item.id || (item as any)._id || idx} className="component-item">
                 <div className="component-info">
                   <span className="component-name">{item.component}</span>
                   {item.type === 'percentage' && (

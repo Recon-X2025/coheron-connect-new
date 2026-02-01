@@ -68,9 +68,9 @@ export const Onboarding = () => {
         </div>
 
         <div className="onboarding-tabs">
-          {tabs.map((tab) => (
+          {tabs.map((tab, idx) => (
             <button
-              key={tab.id}
+              key={tab.id || (tab as any)._id || idx}
               className={`onboarding-tab ${activeTab === tab.id ? 'active' : ''}`}
               onClick={() => setActiveTab(tab.id)}
             >
@@ -116,8 +116,8 @@ const OverviewTab = ({ list }: { list: any[] }) => {
           </tr>
         </thead>
         <tbody>
-          {list.map((item) => (
-            <tr key={item.id}>
+          {list.map((item, idx) => (
+            <tr key={item.id || (item as any)._id || idx}>
               <td>{item.name}</td>
               <td>{item.department}</td>
               <td>{new Date(item.startDate).toLocaleDateString()}</td>
@@ -156,8 +156,8 @@ const TasksTab = () => {
     <Card>
       <h3>Onboarding Tasks</h3>
       <div className="tasks-list">
-        {tasks.map((task) => (
-          <div key={task.id} className="task-item">
+        {tasks.map((task, idx) => (
+          <div key={task.id || (task as any)._id || idx} className="task-item">
             <div className="task-info">
               <h4>{task.title}</h4>
               <p>{task.category} • Assigned to: {task.assignedTo}</p>
@@ -184,8 +184,8 @@ const DocumentsTab = () => {
     <Card>
       <h3>Required Documents</h3>
       <div className="documents-list">
-        {documents.map((doc) => (
-          <div key={doc.id} className="document-item">
+        {documents.map((doc, idx) => (
+          <div key={doc.id || (doc as any)._id || idx} className="document-item">
             <FileText size={24} />
             <div className="doc-info">
               <h4>{doc.name}</h4>
@@ -216,8 +216,8 @@ const ChecklistTab = () => {
     <Card>
       <h3>Onboarding Checklist</h3>
       <div className="checklist">
-        {checklist.map((item) => (
-          <div key={item.id} className="checklist-item">
+        {checklist.map((item, idx) => (
+          <div key={item.id || (item as any)._id || idx} className="checklist-item">
             <input type="checkbox" checked={item.completed} readOnly />
             <span className={item.completed ? 'completed' : ''}>{item.item}</span>
           </div>

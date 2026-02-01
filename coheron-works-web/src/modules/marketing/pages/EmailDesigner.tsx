@@ -183,8 +183,8 @@ export const EmailDesigner: React.FC = () => {
                 <Plus size={32} /><p>Click a block type on the left to add content</p>
               </div>
             )}
-            {template.blocks.map(block => (
-              <div key={block.id} onClick={() => setSelectedBlock(block)}
+            {template.blocks.map((block, idx) => (
+              <div key={block.id || (block as any)._id || idx} onClick={() => setSelectedBlock(block)}
                 style={{ position: 'relative', border: selectedBlock?.id === block.id ? '2px solid #00C971' : '2px solid transparent', borderRadius: 4, padding: 4, margin: '4px 0', cursor: 'pointer' }}>
                 {renderBlock(block)}
                 {selectedBlock?.id === block.id && (
@@ -300,8 +300,8 @@ export const EmailDesigner: React.FC = () => {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
-        {SAMPLE_TEMPLATES.map(t => (
-          <div key={t.id} onClick={() => { setTemplate(t); setView('editor'); }} style={{ background: '#141414', border: '1px solid #222', borderRadius: 12, padding: 20, cursor: 'pointer' }}
+        {SAMPLE_TEMPLATES.map((t, idx) => (
+          <div key={t.id || (t as any)._id || idx} onClick={() => { setTemplate(t); setView('editor'); }} style={{ background: '#141414', border: '1px solid #222', borderRadius: 12, padding: 20, cursor: 'pointer' }}
             onMouseEnter={e => (e.currentTarget.style.borderColor = '#00C971')} onMouseLeave={e => (e.currentTarget.style.borderColor = '#222')}>
             <div style={{ background: '#1a1a1a', height: 140, borderRadius: 8, marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Palette size={28} color="#555" /></div>
             <h3 style={{ margin: '0 0 4px', fontSize: 15 }}>{t.name}</h3>

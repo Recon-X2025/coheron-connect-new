@@ -158,8 +158,8 @@ export const PayrollProcessing = () => {
       <div className="runs-section">
         <h3>Payroll Runs History</h3>
         <div className="runs-list">
-          {payrollRuns.map((run) => (
-            <Card key={run.id} className="run-card">
+          {payrollRuns.map((run, idx) => (
+            <Card key={run.id || (run as any)._id || idx} className="run-card">
               <div className="run-header">
                 <div>
                   <h4>{run.period}</h4>

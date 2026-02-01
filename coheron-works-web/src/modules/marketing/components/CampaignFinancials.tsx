@@ -245,8 +245,8 @@ export const CampaignFinancials: React.FC<CampaignFinancialsProps> = ({
                 </tr>
               </thead>
               <tbody>
-                {financials.transactions.map((transaction) => (
-                  <tr key={transaction.id}>
+                {financials.transactions.map((transaction, idx) => (
+                  <tr key={transaction.id || (transaction as any)._id || idx}>
                     <td>{new Date(transaction.date).toLocaleDateString()}</td>
                     <td>
                       <span className={`transaction-type ${transaction.type}`}>

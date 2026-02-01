@@ -148,13 +148,13 @@ export const CampaignForm: React.FC<CampaignFormProps> = ({
         </div>
 
         <div className="campaign-form-steps">
-          {steps.map((stepItem) => {
+          {steps.map((stepItem, idx) => {
             const Icon = stepItem.icon;
             const stepIndex = steps.findIndex((s) => s.id === step);
             const currentIndex = steps.findIndex((s) => s.id === stepItem.id);
             return (
               <button
-                key={stepItem.id}
+                key={stepItem.id || (stepItem as any)._id || idx}
                 className={`form-step ${step === stepItem.id ? 'active' : ''} ${
                   currentIndex < stepIndex ? 'completed' : ''
                 }`}

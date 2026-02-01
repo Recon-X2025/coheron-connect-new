@@ -85,8 +85,8 @@ export const AppraisalForm = ({ employees, initialData, onClose, onSave }: Appra
                 onChange={(e) => setFormData({ ...formData, employee_id: e.target.value })}
               >
                 <option value="">Select Employee</option>
-                {employees.map(emp => (
-                  <option key={emp.id} value={emp.id}>{emp.name}</option>
+                {employees.map((emp, idx) => (
+                  <option key={emp.id || (emp as any)._id || idx} value={emp.id}>{emp.name}</option>
                 ))}
               </select>
             </div>
@@ -98,8 +98,8 @@ export const AppraisalForm = ({ employees, initialData, onClose, onSave }: Appra
                 onChange={(e) => setFormData({ ...formData, manager_id: e.target.value })}
               >
                 <option value="">Select Manager</option>
-                {employees.map(emp => (
-                  <option key={emp.id} value={emp.id}>{emp.name}</option>
+                {employees.map((emp, idx) => (
+                  <option key={emp.id || (emp as any)._id || idx} value={emp.id}>{emp.name}</option>
                 ))}
               </select>
             </div>

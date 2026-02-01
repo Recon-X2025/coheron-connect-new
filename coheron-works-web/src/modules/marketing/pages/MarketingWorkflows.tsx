@@ -279,10 +279,10 @@ export const MarketingWorkflows: React.FC = () => {
 
       {/* Workflow List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {SAMPLE_WORKFLOWS.map(wf => {
+        {SAMPLE_WORKFLOWS.map((wf, idx) => {
           const trigger = TRIGGER_LABELS[wf.trigger_type];
           return (
-            <div key={wf.id} onClick={() => openBuilder(wf)} style={{ background: '#141414', border: '1px solid #222', borderRadius: 12, padding: '20px 24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+            <div key={wf.id || (wf as any)._id || idx} onClick={() => openBuilder(wf)} style={{ background: '#141414', border: '1px solid #222', borderRadius: 12, padding: '20px 24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
               onMouseEnter={e => (e.currentTarget.style.borderColor = '#00C971')} onMouseLeave={e => (e.currentTarget.style.borderColor = '#222')}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 10, background: `${trigger.color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: trigger.color }}>{trigger.icon}</div>

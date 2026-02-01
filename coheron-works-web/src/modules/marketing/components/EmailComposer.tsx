@@ -163,8 +163,8 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
                   }
                 >
                   <option value="">Select a template...</option>
-                  {templates.map((template) => (
-                    <option key={template.id} value={template.id}>
+                  {templates.map((template, idx) => (
+                    <option key={template.id || (template as any)._id || idx} value={template.id}>
                       {template.name}
                     </option>
                   ))}

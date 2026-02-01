@@ -150,9 +150,9 @@ export const LeaveEncashment = () => {
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 24, borderBottom: '1px solid #262626' }}>
-          {tabs.map(tab => (
+          {tabs.map((tab, idx) => (
             <button
-              key={tab.id}
+              key={tab.id || (tab as any)._id || idx}
               onClick={() => setActiveTab(tab.id)}
               style={{
                 padding: '10px 16px', background: 'transparent', border: 'none',

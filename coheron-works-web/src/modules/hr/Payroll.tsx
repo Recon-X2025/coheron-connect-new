@@ -95,9 +95,9 @@ export const Payroll = () => {
         </div>
 
         <div className="payroll-tabs">
-          {tabs.map((tab) => (
+          {tabs.map((tab, idx) => (
             <button
-              key={tab.id}
+              key={tab.id || (tab as any)._id || idx}
               className={`payroll-tab ${activeTab === tab.id ? 'active' : ''}`}
               onClick={() => setActiveTab(tab.id)}
             >
@@ -196,8 +196,8 @@ const PayrollOverview = () => {
           <h3>Recent Payroll Runs</h3>
           <div className="recent-runs">
             {payslips.length > 0 ? (
-              payslips.map((payslip) => (
-                <div key={payslip.id} className="run-item">
+              payslips.map((payslip, idx) => (
+                <div key={payslip.id || (payslip as any)._id || idx} className="run-item">
                   <span className="run-period">
                     {new Date(payslip.date_from).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
                   </span>

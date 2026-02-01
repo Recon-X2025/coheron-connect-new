@@ -146,8 +146,8 @@ export const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({
             </div>
 
             <div className="form-fields-list">
-              {formFields.map((field) => (
-                <div key={field.id} className="form-field-item">
+              {formFields.map((field, idx) => (
+                <div key={field.id || (field as any)._id || idx} className="form-field-item">
                   <div className="field-controls">
                     <input
                       type="text"
@@ -207,8 +207,8 @@ export const LeadCaptureForm: React.FC<LeadCaptureFormProps> = ({
             <div className="preview-form">
               <h4>{formTitle}</h4>
               <p>{formDescription}</p>
-              {formFields.map((field) => (
-                <div key={field.id} className="preview-field">
+              {formFields.map((field, idx) => (
+                <div key={field.id || (field as any)._id || idx} className="preview-field">
                   <label>
                     {field.label}
                     {field.required && <span className="required">*</span>}

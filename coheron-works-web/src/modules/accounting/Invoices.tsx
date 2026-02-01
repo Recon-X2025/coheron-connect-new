@@ -10,6 +10,7 @@ import { showToast } from '../../components/Toast';
 import type { Invoice, Partner } from '../../types/odoo';
 import { confirmAction } from '../../components/ConfirmDialog';
 import { useModalDismiss } from '../../hooks/useModalDismiss';
+import { InvoiceWizard } from './components/InvoiceWizard';
 import './Invoices.css';
 
 export const Invoices = () => {
@@ -18,6 +19,7 @@ export const Invoices = () => {
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
     const [showViewModal, setShowViewModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
+    const [showInvoiceWizard, setShowInvoiceWizard] = useState<boolean>(false);
     const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
 
     const closeViewModal = useCallback(() => setShowViewModal(false), []);
@@ -186,9 +188,7 @@ export const Invoices = () => {
                         <Button variant="ghost" className="no-print" icon={<Printer size={16} />} onClick={() => window.print()}>Print</Button>
                         <Button
                             icon={<Plus size={20} />}
-                            onClick={() => {
-                                showToast('New Invoice functionality will be available soon', 'info');
-                            }}
+                            onClick={() => setShowInvoiceWizard(true)}
                         >
                             New Invoice
                         </Button>
@@ -421,6 +421,17 @@ export const Invoices = () => {
                             </div>
                         </div>
                     </div>
+                )}
+
+                {/* New Invoice Wizard */}
+                {showInvoiceWizard && (
+                    <InvoiceWizard
+                        onClose={() => setShowInvoiceWizard(false)}
+                        onSuccess={() => {
+                            setShowInvoiceWizard(false);
+                            loadData();
+                        }}
+                    />
                 )}
             </div>
         </div>

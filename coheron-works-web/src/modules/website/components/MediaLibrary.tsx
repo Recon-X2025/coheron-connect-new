@@ -47,9 +47,29 @@ export const MediaLibrary = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // In a real implementation, you would upload the file to a storage service
-    // and then create the media record via API
-    showToast('File upload functionality will be available soon', 'info');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/api/website/media/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        showToast(`Successfully uploaded "${file.name}"`, 'success');
+        await loadMedia();
+      } else {
+        const errorData = await response.json().catch(() => null);
+        showToast(errorData?.message || 'Failed to upload file', 'error');
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      showToast('Error uploading file. Please try again.', 'error');
+    }
+
+    // Reset the input so the same file can be re-selected
+    e.target.value = '';
   };
 
   const filteredMedia = media.filter((item) =>

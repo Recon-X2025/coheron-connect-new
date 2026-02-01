@@ -114,9 +114,9 @@ export const PayrollReports = () => {
       </div>
 
       <div className="reports-grid">
-        {reports.map((report) => (
+        {reports.map((report, idx) => (
           <div
-            key={report.id}
+            key={report.id || (report as any)._id || idx}
             className={`report-card-wrapper ${selectedReport === report.id ? 'selected' : ''}`}
             onClick={() => setSelectedReport(report.id)}
           >
@@ -156,8 +156,8 @@ export const PayrollReports = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {payslips.map((payslip) => (
-                    <tr key={payslip.id}>
+                  {payslips.map((payslip, idx) => (
+                    <tr key={payslip.id || (payslip as any)._id || idx}>
                       <td>{payslip.employee_name}</td>
                       <td>{new Date(payslip.date_from).toLocaleDateString()} - {new Date(payslip.date_to).toLocaleDateString()}</td>
                       <td>{formatInLakhsCompact(payslip.basic_wage || 0)}</td>

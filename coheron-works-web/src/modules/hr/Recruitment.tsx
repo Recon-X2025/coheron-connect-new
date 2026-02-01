@@ -156,8 +156,8 @@ export const Recruitment = () => {
                 </tr>
               </thead>
               <tbody>
-                {applicants.map((applicant) => (
-                  <tr key={applicant.id}>
+                {applicants.map((applicant, idx) => (
+                  <tr key={applicant.id || (applicant as any)._id || idx}>
                     <td>{applicant.partner_name}</td>
                     <td>{applicant.name}</td>
                     <td>{applicant.email_from}</td>
@@ -194,8 +194,8 @@ export const Recruitment = () => {
             </Button>
           </div>
           <div className="job-postings-grid">
-            {jobPostings.map((job) => (
-              <div key={job.id} className="job-posting-card">
+            {jobPostings.map((job, idx) => (
+              <div key={job.id || (job as any)._id || idx} className="job-posting-card">
                 <div className="job-header">
                   <Briefcase size={24} />
                   <span className={`status-badge ${job.status}`}>
