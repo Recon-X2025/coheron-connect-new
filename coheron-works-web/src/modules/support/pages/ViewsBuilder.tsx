@@ -1,5 +1,6 @@
-import React, { useState, useEffect, FC } from 'react';
-import { LayoutGrid, Plus, Trash2, Eye, Users, Globe, User, GripVertical, ArrowUpDown, Columns, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import type { FC } from 'react';
+import { LayoutGrid, Plus, Trash2, Users, Globe, User } from 'lucide-react';
 
 const API = '/api/support/views';
 const OPERATORS = ['is', 'is_not', 'contains', 'not_contains', 'greater_than', 'less_than'];

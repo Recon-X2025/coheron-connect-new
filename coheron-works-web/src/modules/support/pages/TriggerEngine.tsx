@@ -1,5 +1,5 @@
 import React, { useState, useEffect, FC } from 'react';
-import { Zap, Plus, Trash2, Play, ToggleLeft, ToggleRight, ChevronDown, ChevronUp, Clock, Filter, Activity, GripVertical, AlertTriangle, Copy } from 'lucide-react';
+import { Zap, Plus, Trash2, Play, ToggleLeft, ToggleRight, ChevronDown, ChevronUp, Filter, GripVertical } from 'lucide-react';
 
 const API = '/api/support/triggers';
 
