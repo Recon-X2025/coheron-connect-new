@@ -6,6 +6,9 @@ const RoutingManagement = lazy(() => import('./RoutingManagement'));
 const WorkOrders = lazy(() => import('./WorkOrders'));
 const QualityControl = lazy(() => import('./QualityControl'));
 const CostingAnalytics = lazy(() => import('./CostingAnalytics'));
+const ProcessManufacturing = lazy(() => import('./pages/ProcessManufacturing'));
+const ByProducts = lazy(() => import('./pages/ByProducts'));
+const KanbanProduction = lazy(() => import('./pages/KanbanProduction'));
 
 export const manufacturingRoutes = [
   { path: '/manufacturing/dashboard', element: <ManufacturingDashboard /> },
@@ -15,4 +18,7 @@ export const manufacturingRoutes = [
   { path: '/manufacturing/work-orders', element: <WorkOrders /> },
   { path: '/manufacturing/quality', element: <QualityControl /> },
   { path: '/manufacturing/costing', element: <CostingAnalytics /> },
+  { path: '/manufacturing/process', element: <ProcessManufacturing /> },
+  { path: '/manufacturing/byproducts', element: <ByProducts /> },
+  { path: '/manufacturing/kanban', element: <KanbanProduction /> },
 ];

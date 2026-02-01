@@ -10,7 +10,7 @@ export interface ModuleRoute {
 
 export const metadata = {
   name: 'crossmodule',
-  description: 'Cross-module shared services: payments, file storage, email/WhatsApp webhooks',
+  description: 'Cross-module shared services: payments, file storage, email/WhatsApp webhooks, PDF, import/export',
   dependencies: [],
 };
 
@@ -20,5 +20,7 @@ export function register(): ModuleRoute[] {
     { path: '/files', router: routes.files },
     { path: '/email-webhook', router: routes.emailWebhook, public: true },
     { path: '/whatsapp', router: routes.whatsappWebhook, public: true },
+    { path: '/pdf', router: routes.pdf },
+    { path: '/data', router: routes.importExport },
   ];
 }

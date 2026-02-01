@@ -6,6 +6,10 @@ const Opportunities = lazy(() => import('./Opportunities').then(m => ({ default:
 const Customers = lazy(() => import('./Customers').then(m => ({ default: m.Customers })));
 const TasksCalendar = lazy(() => import('./TasksCalendar').then(m => ({ default: m.TasksCalendar })));
 const AutomationEngine = lazy(() => import('./AutomationEngine').then(m => ({ default: m.AutomationEngine })));
+const AILeadScoring = lazy(() => import('./pages/AILeadScoring').then(m => ({ default: m.AILeadScoring })));
+const TerritoryManagement = lazy(() => import('./pages/TerritoryManagement').then(m => ({ default: m.TerritoryManagement })));
+const CPQ = lazy(() => import('./pages/CPQ').then(m => ({ default: m.CPQ })));
+const CRMForecasting = lazy(() => import('./pages/CRMForecasting').then(m => ({ default: m.CRMForecasting })));
 
 export const crmRoutes = [
   { path: '/crm/dashboard', element: <CRMDashboard /> },
@@ -15,4 +19,8 @@ export const crmRoutes = [
   { path: '/crm/customers', element: <Customers /> },
   { path: '/crm/tasks', element: <TasksCalendar /> },
   { path: '/crm/automation', element: <AutomationEngine /> },
+  { path: '/crm/ai-scoring', element: <AILeadScoring /> },
+  { path: '/crm/territories', element: <TerritoryManagement /> },
+  { path: '/crm/cpq', element: <CPQ /> },
+  { path: '/crm/forecasting', element: <CRMForecasting /> },
 ];

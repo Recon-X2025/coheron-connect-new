@@ -19,3 +19,6 @@ export { default as agileAnalytics } from './agileAnalytics.js';
 export { default as issueTypes } from './issueTypes.js';
 export { default as issueComments } from './issueComments.js';
 export { default as issueAttachments } from './issueAttachments.js';
+export { default as gantt } from './gantt.js';
+export { default as okrs } from './okrs.js';
+export { default as automationRules } from './automationRules.js';

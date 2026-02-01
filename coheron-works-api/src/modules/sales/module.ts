@@ -8,11 +8,18 @@ import {
   salesForecastingRoutes,
   salesTeamRoutes,
   salesAnalyticsRoutes,
+  quotationsRoutes,
+  subscriptionRoutes,
+  dropshipRoutes,
+  commissionsRoutes,
+  ecommerceConnectorRoutes,
+  creditLimitsRoutes,
+  blanketOrdersRoutes,
 } from './routes/index.js';
 
 export const metadata = {
   name: 'sales',
-  description: 'Sales module: orders, invoices, pricing, contracts, delivery, returns, forecasting, team, analytics',
+  description: 'Sales module: orders, invoices, pricing, contracts, delivery, returns, forecasting, team, analytics, quotations, subscriptions, dropship, commissions',
   version: '1.0.0',
 };
 
@@ -27,5 +34,12 @@ export function register() {
     { path: '/sales/forecasting', router: salesForecastingRoutes },
     { path: '/sales/team', router: salesTeamRoutes },
     { path: '/sales/analytics', router: salesAnalyticsRoutes },
+    { path: '/quotations', router: quotationsRoutes },
+    { path: '/sales/subscriptions', router: subscriptionRoutes },
+    { path: '/sales/dropship', router: dropshipRoutes },
+    { path: '/sales/commissions', router: commissionsRoutes },
+    { path: '/sales/ecommerce', router: ecommerceConnectorRoutes },
+    { path: '/sales/credit-limits', router: creditLimitsRoutes },
+    { path: '/sales/blanket-orders', router: blanketOrdersRoutes },
   ];
 }

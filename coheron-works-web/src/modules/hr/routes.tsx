@@ -11,6 +11,9 @@ const Attendance = lazy(() => import('./Attendance').then(m => ({ default: m.Att
 const LeaveManagement = lazy(() => import('./LeaveManagement').then(m => ({ default: m.LeaveManagement })));
 const Onboarding = lazy(() => import('./Onboarding').then(m => ({ default: m.Onboarding })));
 const Offboarding = lazy(() => import('./Offboarding').then(m => ({ default: m.Offboarding })));
+const CompensationPlanning = lazy(() => import('./pages/CompensationPlanning').then(m => ({ default: m.CompensationPlanning })));
+const SuccessionPlanning = lazy(() => import('./pages/SuccessionPlanning').then(m => ({ default: m.SuccessionPlanning })));
+const BenefitsAdmin = lazy(() => import('./pages/BenefitsAdmin').then(m => ({ default: m.BenefitsAdmin })));
 
 export const hrRoutes = [
   { path: '/hr', element: <HRDashboard /> },
@@ -25,4 +28,7 @@ export const hrRoutes = [
   { path: '/hr/leave', element: <LeaveManagement /> },
   { path: '/hr/onboarding', element: <Onboarding /> },
   { path: '/hr/offboarding', element: <Offboarding /> },
+  { path: '/hr/compensation', element: <CompensationPlanning /> },
+  { path: '/hr/succession', element: <SuccessionPlanning /> },
+  { path: '/hr/benefits', element: <BenefitsAdmin /> },
 ];

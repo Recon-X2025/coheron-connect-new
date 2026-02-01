@@ -9,3 +9,14 @@ export { default as accountingFinancialReports } from './accountingFinancialRepo
 export { default as tds } from './tds.js';
 export { default as gstReturns } from './gstReturns.js';
 export { default as eInvoice } from './eInvoice.js';
+export { default as bankReconciliation } from './bankReconciliation.js';
+export { default as reportBuilder } from './reportBuilder.js';
+export { default as bankFeeds } from './bankFeeds.js';
+export { default as currency } from './currency.js';
+export { default as costCenters } from './costCenters.js';
+export { default as currencyRevaluation } from './currencyRevaluation.js';
+export { default as assetMaintenance } from './assetMaintenance.js';
+export { default as budgeting } from './budgeting.js';
+export { default as consolidation } from './consolidation.js';
+export { default as revenueRecognition } from './revenueRecognition.js';
+export { default as deferredRevExp } from './deferredRevExp.js';

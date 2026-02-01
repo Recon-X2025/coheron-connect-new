@@ -8,6 +8,8 @@ const DeliveryTracking = lazy(() => import('./DeliveryTracking').then(m => ({ de
 const ReturnsManagement = lazy(() => import('./ReturnsManagement').then(m => ({ default: m.ReturnsManagement })));
 const SalesForecasting = lazy(() => import('./SalesForecasting').then(m => ({ default: m.SalesForecasting })));
 const SalesTeamPerformance = lazy(() => import('./SalesTeamPerformance').then(m => ({ default: m.SalesTeamPerformance })));
+const CreditLimits = lazy(() => import('./pages/CreditLimits').then(m => ({ default: m.CreditLimits })));
+const BlanketOrders = lazy(() => import('./pages/BlanketOrders').then(m => ({ default: m.BlanketOrders })));
 
 export const salesRoutes = [
   { path: '/sales/dashboard', element: <SalesDashboard /> },
@@ -19,4 +21,6 @@ export const salesRoutes = [
   { path: '/sales/returns', element: <ReturnsManagement /> },
   { path: '/sales/forecasting', element: <SalesForecasting /> },
   { path: '/sales/team', element: <SalesTeamPerformance /> },
+  { path: '/sales/credit-limits', element: <CreditLimits /> },
+  { path: '/sales/blanket-orders', element: <BlanketOrders /> },
 ];

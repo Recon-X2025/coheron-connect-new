@@ -10,7 +10,7 @@ export interface ModuleRoute {
 
 export const metadata = {
   name: 'support',
-  description: 'Support tickets, teams, SLA, knowledge base, ITSM, live chat',
+  description: 'Support tickets, teams, SLA, knowledge base, ITSM, live chat, customer portal, omnichannel, field service',
   dependencies: [],
 };
 
@@ -27,5 +27,13 @@ export function register(): ModuleRoute[] {
     { path: '/knowledge-base', router: routes.knowledgeBase },
     { path: '/itsm', router: routes.itsm },
     { path: '/live-chat', router: routes.liveChat },
+    { path: '/support/portal', router: routes.customerPortal, public: true },
+    { path: '/support/email-piping', router: routes.emailPiping },
+    { path: '/support/omnichannel', router: routes.omnichannel },
+    { path: '/support/field-service', router: routes.fieldService },
+    { path: '/support/ai-auto-response', router: routes.aiAutoResponse },
+    { path: '/support/forums', router: routes.forums },
+    { path: '/support/cmdb', router: routes.cmdb },
+    { path: '/support/sla-prediction', router: routes.slaPrediction },
   ];
 }

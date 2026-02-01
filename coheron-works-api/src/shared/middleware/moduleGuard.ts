@@ -23,6 +23,14 @@ async function getEnabledModules(tenantId: string): Promise<string[] | null> {
   return config.enabled_modules;
 }
 
+export function clearModuleCache(tenantId?: string): void {
+  if (tenantId) {
+    tenantConfigCache.delete(tenantId);
+  } else {
+    tenantConfigCache.clear();
+  }
+}
+
 export function requireModule(moduleName: string) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {

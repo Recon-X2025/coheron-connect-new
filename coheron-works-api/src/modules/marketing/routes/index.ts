@@ -1,2 +1,12 @@
 export { default as campaigns } from './campaigns.js';
 export { default as marketing } from './marketing.js';
+export { default as social } from './social.js';
+export { default as abTesting } from './abTesting.js';
+export { default as landingPages } from './landingPages.js';
+export { default as campaignAnalytics } from './campaignAnalytics.js';
+export { default as sms } from './sms.js';
+export { default as journeys } from './journeys.js';
+export { default as emailBuilder } from './emailBuilder.js';
+export { default as events } from './events.js';
+export { default as attribution } from './attribution.js';
+export { default as seo } from './seo.js';

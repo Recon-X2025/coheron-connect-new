@@ -9,6 +9,9 @@ const WarehouseOperations = lazy(() => import('./WarehouseOperations').then(m =>
 const StockReports = lazy(() => import('./StockReports').then(m => ({ default: m.StockReports })));
 const InventorySettings = lazy(() => import('./InventorySettings').then(m => ({ default: m.InventorySettings })));
 const PurchaseOrders = lazy(() => import('./PurchaseOrders').then(m => ({ default: m.PurchaseOrders })));
+const DemandPlanning = lazy(() => import('./pages/DemandPlanning'));
+const IntercompanyTransfers = lazy(() => import('./pages/IntercompanyTransfers'));
+const HazmatManagement = lazy(() => import('./pages/HazmatManagement'));
 
 export const inventoryRoutes = [
   { path: '/inventory', element: <Inventory /> },
@@ -21,4 +24,7 @@ export const inventoryRoutes = [
   { path: '/inventory/reports', element: <StockReports /> },
   { path: '/inventory/settings', element: <InventorySettings /> },
   { path: '/inventory/purchase-orders', element: <PurchaseOrders /> },
+  { path: '/inventory/demand-planning', element: <DemandPlanning /> },
+  { path: '/inventory/intercompany', element: <IntercompanyTransfers /> },
+  { path: '/inventory/hazmat', element: <HazmatManagement /> },
 ];

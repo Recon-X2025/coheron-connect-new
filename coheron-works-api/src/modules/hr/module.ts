@@ -10,7 +10,7 @@ export interface ModuleRoute {
 
 export const metadata = {
   name: 'hr',
-  description: 'Human Resources: employees, attendance, leave, payroll, appraisals, goals, courses, applicants, policies, tax compliance',
+  description: 'Human Resources: employees, attendance, leave, payroll, appraisals, goals, courses, applicants, policies, tax compliance, self-service, shifts, org chart, expenses, payroll localization, lifecycle',
   dependencies: [],
 };
 
@@ -25,6 +25,18 @@ export function register(): ModuleRoute[] {
     { path: '/courses', router: routes.courses },
     { path: '/applicants', router: routes.applicants },
     { path: '/policies', router: routes.policies },
-    { path: '/tax-compliance', router: routes.taxCompliance },
+    { path: '/hr/tax', router: routes.taxCompliance },
+    { path: '/hr/self-service', router: routes.selfService },
+    { path: '/hr/shifts', router: routes.shifts },
+    { path: '/hr/org-chart', router: routes.orgChart },
+    { path: '/hr/expenses', router: routes.expenses },
+    { path: '/hr/payroll-localization', router: routes.payrollLocalization },
+    { path: '/hr/lifecycle', router: routes.lifecycle },
+    { path: '/hr/biometric', router: routes.biometric },
+    { path: '/hr/full-final-settlement', router: routes.fullFinalSettlement },
+    { path: '/hr/leave-encashment', router: routes.leaveEncashment },
+    { path: '/hr/compensation', router: routes.compensation },
+    { path: '/hr/succession', router: routes.succession },
+    { path: '/hr/benefits', router: routes.benefits },
   ];
 }

@@ -10,7 +10,7 @@ export interface ModuleRoute {
 
 export const metadata = {
   name: 'accounting',
-  description: 'Chart of Accounts, Journal Entries, AP/AR, Bank, Fixed Assets, Tax, Financial Reports, TDS, GST, E-Invoice',
+  description: 'Chart of Accounts, Journal Entries, AP/AR, Bank, Fixed Assets, Tax, Financial Reports, TDS, GST, E-Invoice, Cost Centers',
   dependencies: [],
 };
 
@@ -23,9 +23,20 @@ export function register(): ModuleRoute[] {
     { path: '/accounting/bank', router: routes.accountingBankManagement },
     { path: '/accounting/fixed-assets', router: routes.accountingFixedAssets },
     { path: '/accounting/tax', router: routes.accountingTax },
-    { path: '/accounting/financial-reports', router: routes.accountingFinancialReports },
-    { path: '/tds', router: routes.tds },
-    { path: '/gst-returns', router: routes.gstReturns },
-    { path: '/e-invoice', router: routes.eInvoice },
+    { path: '/accounting/reports', router: routes.accountingFinancialReports },
+    { path: '/accounting/tds', router: routes.tds },
+    { path: '/accounting/gst-returns', router: routes.gstReturns },
+    { path: '/accounting/e-invoice', router: routes.eInvoice },
+    { path: '/accounting/bank-reconciliation', router: routes.bankReconciliation },
+    { path: '/accounting/report-builder', router: routes.reportBuilder },
+    { path: '/accounting/bank-feeds', router: routes.bankFeeds },
+    { path: '/accounting/currency', router: routes.currency },
+    { path: '/accounting/cost-centers', router: routes.costCenters },
+    { path: '/accounting/currency-revaluation', router: routes.currencyRevaluation },
+    { path: '/accounting/asset-maintenance', router: routes.assetMaintenance },
+    { path: '/accounting/budgeting', router: routes.budgeting },
+    { path: '/accounting/consolidation', router: routes.consolidation },
+    { path: '/accounting/revenue-recognition', router: routes.revenueRecognition },
+    { path: '/accounting/deferred', router: routes.deferredRevExp },
   ];
 }

@@ -5,7 +5,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
-import routes from './routes/index.js';
+import routes, { initializeRoutes } from './routes/index.js';
 import mongoose from 'mongoose';
 import { errorHandler } from './shared/middleware/asyncHandler.js';
 import { requestLogger } from './shared/middleware/requestLogger.js';
@@ -107,5 +107,10 @@ if (process.env.NODE_ENV === 'production') {
 app.use((req: express.Request, res: express.Response) => {
   res.status(404).json({ error: 'Route not found' });
 });
+
+export async function initApp(): Promise<typeof app> {
+  await initializeRoutes();
+  return app;
+}
 
 export default app;

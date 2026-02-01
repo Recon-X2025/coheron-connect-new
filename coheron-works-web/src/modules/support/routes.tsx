@@ -8,6 +8,9 @@ const SurveyManagement = lazy(() => import('./pages/SurveyManagement').then(m =>
 const ITSM = lazy(() => import('./pages/ITSM'));
 const AutomationBuilder = lazy(() => import('./pages/AutomationBuilder'));
 const CustomerPortal = lazy(() => import('./CustomerPortal').then(m => ({ default: m.CustomerPortal })));
+const CommunityForums = lazy(() => import('./pages/CommunityForums'));
+const CMDB = lazy(() => import('./pages/CMDB'));
+const SLAPrediction = lazy(() => import('./pages/SLAPrediction'));
 
 export const supportRoutes = [
   { path: '/support/dashboard', element: <SupportDashboard /> },
@@ -19,4 +22,7 @@ export const supportRoutes = [
   { path: '/support/itsm', element: <ITSM /> },
   { path: '/support/automation', element: <AutomationBuilder /> },
   { path: '/portal', element: <CustomerPortal /> },
+  { path: '/support/forums', element: <CommunityForums /> },
+  { path: '/support/cmdb', element: <CMDB /> },
+  { path: '/support/sla-prediction', element: <SLAPrediction /> },
 ];

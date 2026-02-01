@@ -10,7 +10,7 @@ export interface ModuleRoute {
 
 export const metadata = {
   name: 'projects',
-  description: 'Project management, agile, wiki, quality, resources, procurement, financials, risks, and issues',
+  description: 'Project management, agile, wiki, quality, resources, procurement, financials, risks, issues, and gantt',
   dependencies: [],
 };
 
@@ -37,5 +37,8 @@ export function register(): ModuleRoute[] {
     { path: '/issue-types', router: routes.issueTypes },
     { path: '/issue-comments', router: routes.issueComments },
     { path: '/issue-attachments', router: routes.issueAttachments },
+    { path: '/projects/gantt', router: routes.gantt },
+    { path: '/projects/okrs', router: routes.okrs },
+    { path: '/projects/automation-rules', router: routes.automationRules },
   ];
 }

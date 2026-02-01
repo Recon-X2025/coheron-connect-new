@@ -100,4 +100,98 @@ router.get('/resource-load', asyncHandler(async (req, res) => {
   res.json(result);
 }));
 
+// ── D14: Drag-Drop Gantt Endpoints ──────────────────────────────────
+
+router.get('/:projectId', asyncHandler(async (req, res) => {
+  const { projectId } = req.params;
+  const tasks = await ProjectTask.find({ project_id: projectId })
+    .populate('assignee_id', 'name').sort({ planned_start_date: 1 }).lean();
+  const milestones = await ProjectMilestone.find({ project_id: projectId }).lean();
+  const taskIds = tasks.map((t: any) => t._id);
+  const dependencies = await TaskDependency.find({ task_id: { $in: taskIds } }).lean();
+
+  const ganttTasks = tasks.map((t: any) => {
+    const progress = t.status === 'done' ? 100 : t.status === 'in_progress' ? 50 : t.status === 'in_review' ? 80 : 0;
+    return {
+      id: t._id, name: t.name,
+      start: t.planned_start_date || t.created_at,
+      end: t.planned_end_date || t.due_date || t.planned_start_date || t.created_at,
+      progress,
+      dependencies: dependencies.filter((d: any) => String(d.task_id) === String(t._id)).map((d: any) => String(d.depends_on_task_id)),
+      parent: t.parent_task_id || null,
+      assignee_name: (t.assignee_id as any)?.name || null,
+      milestone: false,
+      color: statusColorMap[t.status] || '#9e9e9e',
+      status: t.status,
+    };
+  });
+
+  const milestoneItems = milestones.map((m: any) => ({
+    id: m._id, name: m.name,
+    start: m.planned_start_date || m.planned_end_date,
+    end: m.planned_end_date || m.planned_start_date,
+    progress: m.status === 'completed' ? 100 : 0,
+    dependencies: [], parent: null, assignee_name: null, milestone: true, color: '#e91e63', status: m.status,
+  }));
+
+  const links = dependencies.map((d: any, idx: number) => ({
+    id: d._id || idx, source: String(d.depends_on_task_id), target: String(d.task_id), type: d.dependency_type || 'finish_to_start',
+  }));
+
+  res.json({ tasks: [...ganttTasks, ...milestoneItems], links });
+}));
+
+// Update task dates/progress from drag
+router.put('/:projectId/tasks/:taskId', asyncHandler(async (req, res) => {
+  const { taskId } = req.params;
+  const { start, end, progress } = req.body;
+  const update: any = {};
+  if (start !== undefined) update.planned_start_date = new Date(start);
+  if (end !== undefined) {
+    update.planned_end_date = new Date(end);
+    update.due_date = new Date(end);
+  }
+  if (progress !== undefined) {
+    if (progress >= 100) update.status = 'done';
+    else if (progress > 0) update.status = 'in_progress';
+  }
+  const task = await ProjectTask.findByIdAndUpdate(taskId, { $set: update }, { new: true }).lean();
+  if (!task) return res.status(404).json({ error: 'Task not found' });
+  res.json(task);
+}));
+
+// Update task dependencies
+router.put('/:projectId/tasks/:taskId/dependencies', asyncHandler(async (req, res) => {
+  const { taskId } = req.params;
+  const { dependencies } = req.body; // array of depends_on_task_id strings
+  // Remove existing dependencies for this task
+  await TaskDependency.deleteMany({ task_id: taskId });
+  // Create new ones
+  const docs = (dependencies || []).map((depId: string) => ({
+    task_id: taskId,
+    depends_on_task_id: depId,
+    dependency_type: 'finish_to_start',
+  }));
+  if (docs.length > 0) await TaskDependency.insertMany(docs);
+  const updated = await TaskDependency.find({ task_id: taskId }).lean();
+  res.json(updated);
+}));
+
+// Link/unlink a single dependency
+router.post('/:projectId/tasks/:taskId/link', asyncHandler(async (req, res) => {
+  const { taskId } = req.params;
+  const { target_task_id, action = 'link', dependency_type = 'finish_to_start' } = req.body;
+  if (!target_task_id) return res.status(400).json({ error: 'target_task_id is required' });
+
+  if (action === 'unlink') {
+    await TaskDependency.deleteOne({ task_id: taskId, depends_on_task_id: target_task_id });
+    return res.json({ message: 'Dependency removed' });
+  }
+  // Check for duplicate
+  const existing = await TaskDependency.findOne({ task_id: taskId, depends_on_task_id: target_task_id });
+  if (existing) return res.json(existing);
+  const dep = await TaskDependency.create({ task_id: taskId, depends_on_task_id: target_task_id, dependency_type });
+  res.status(201).json(dep);
+}));
+
 export default router;

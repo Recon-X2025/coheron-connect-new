@@ -5,3 +5,15 @@ export { default as manufacturingWorkOrders } from './manufacturingWorkOrders.js
 export { default as manufacturingQuality } from './manufacturingQuality.js';
 export { default as manufacturingCosting } from './manufacturingCosting.js';
 export { default as mrp } from './mrp.js';
+export { default as subcontracting } from './subcontracting.js';
+export { default as capacityPlanning } from './capacityPlanning.js';
+export { default as mps } from './mps.js';
+export { default as shopFloor } from './shopFloor.js';
+export { default as scheduling } from './scheduling.js';
+export { default as workInstructions } from './workInstructions.js';
+export { default as iot } from './iot.js';
+export { default as plm } from './plm.js';
+export { default as preventiveMaintenance } from './preventiveMaintenance.js';
+export { default as processManufacturing } from './processManufacturing.js';
+export { default as byproducts } from './byproducts.js';
+export { default as kanban } from './kanban.js';

@@ -18,5 +18,9 @@ export const metadata = {
 export function register(): ModuleRoute[] {
   return [
     { path: '/pos', router: routes.pos, middleware: [requireModule('pos')], },
+    { path: '/pos/tablet', router: routes.posTablet, middleware: [requireModule('pos')], },
+    { path: '/pos/loyalty', router: routes.loyalty, middleware: [requireModule('pos')] },
+    { path: '/pos/kitchen', router: routes.kitchenDisplay, middleware: [requireModule('pos')] },
+    { path: '/pos/stores', router: routes.multiStore, middleware: [requireModule('pos')] },
   ];
 }

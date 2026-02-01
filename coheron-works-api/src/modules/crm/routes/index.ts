@@ -4,3 +4,8 @@ export { default as pipelines } from './pipelines.js';
 export { default as crm } from './crm.js';
 export { default as crmRbac } from './crm-rbac.js';
 export { default as rfm } from './rfm.js';
+export { default as emailThreads } from './emailThreads.js';
+export { default as aiScoring } from './aiScoring.js';
+export { default as territories } from './territories.js';
+export { default as cpq } from './cpq.js';
+export { default as forecasting } from './forecasting.js';
