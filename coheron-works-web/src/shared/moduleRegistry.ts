@@ -1,5 +1,3 @@
-import { RouteObject } from 'react-router-dom';
-
 interface ModuleDefinition {
   name: string;
   loadRoutes: () => Promise<{ [key: string]: any }>;
