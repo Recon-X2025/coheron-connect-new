@@ -6,26 +6,6 @@ import './Pricing.css';
 
 const API = import.meta.env.VITE_API_URL || '';
 
-interface PricingPlan {
-  _id: string;
-  name: string;
-  slug: string;
-  description: string;
-  plan_type: 'tier' | 'industry' | 'addon';
-  tier_level: number;
-  industry?: string;
-  included_modules: string[];
-  max_users: number;
-  storage_gb: number;
-  features: string[];
-  base_price_monthly: number;
-  base_price_annual: number;
-  per_user_price: number;
-  is_featured: boolean;
-  cta_label: string;
-  cta_link: string;
-}
-
 interface ModulePrice {
   _id: string;
   module_name: string;
