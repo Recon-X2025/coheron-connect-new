@@ -100,9 +100,9 @@ export const LMS = () => {
         </div>
 
         <div className="lms-tabs">
-          {tabs.map((tab) => (
+          {tabs.map((tab, idx) => (
             <button
-              key={tab.id}
+              key={tab.id || (tab as any)._id || idx}
               className={`lms-tab ${activeTab === tab.id ? 'active' : ''}`}
               onClick={() => setActiveTab(tab.id)}
             >
@@ -127,8 +127,8 @@ export const LMS = () => {
                 </div>
               </div>
               <div className="courses-grid">
-                {filteredCourses.map(course => (
-                  <Card key={course.id} hover className="course-card">
+                {filteredCourses.map((course, idx) => (
+                  <Card key={course.id || (course as any)._id || idx} hover className="course-card">
                     <div className="course-image">
                       <PlayCircle size={48} className="play-icon" />
                     </div>
@@ -199,8 +199,8 @@ const EnrollmentsTab = () => {
           </tr>
         </thead>
         <tbody>
-          {enrollments.map((enrollment) => (
-            <tr key={enrollment.id}>
+          {enrollments.map((enrollment, idx) => (
+            <tr key={enrollment.id || (enrollment as any)._id || idx}>
               <td>{enrollment.employee}</td>
               <td>{enrollment.course}</td>
               <td>
@@ -286,8 +286,8 @@ const CertificationsTab = () => {
     <Card>
       <h3>Certifications</h3>
       <div className="certifications-list">
-        {certifications.map((cert) => (
-          <div key={cert.id} className="certification-item">
+        {certifications.map((cert, idx) => (
+          <div key={cert.id || (cert as any)._id || idx} className="certification-item">
             <Award size={24} />
             <div className="cert-info">
               <h4>{cert.employee}</h4>

@@ -299,8 +299,8 @@ export const SalesOrders = () => {
                     />
                 ) : viewMode === 'grid' ? (
                 <div className="orders-grid">
-                    {paginatedOrders.map(order => (
-                        <div key={order.id} className="order-card">
+                    {paginatedOrders.map((order, idx) => (
+                        <div key={order.id || (order as any)._id || idx} className="order-card">
                             <div className="order-header">
                                 <div>
                                     <h3>{order.name}</h3>
@@ -386,8 +386,8 @@ export const SalesOrders = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {paginatedOrders.map(order => (
-                                    <tr key={order.id}>
+                                {paginatedOrders.map((order, idx) => (
+                                    <tr key={order.id || (order as any)._id || idx}>
                                         <td>
                                             <input
                                                 type="checkbox"

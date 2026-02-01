@@ -156,8 +156,8 @@ export const ESignature = () => {
         </div>
 
         <div className="esignature-documents-grid">
-          {filteredDocuments.map((document) => (
-            <Card key={document.id} className="document-card" hover>
+          {filteredDocuments.map((document, idx) => (
+            <Card key={document.id || (document as any)._id || idx} className="document-card" hover>
               <div className="document-card-header">
                 <div className="document-icon">
                   <FileText size={24} />

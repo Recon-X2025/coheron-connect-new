@@ -148,7 +148,7 @@ export const GlobalSearch: React.FC = () => {
           <ul className="gsearch-results" role="listbox">
             {results.map((r, i) => (
               <li
-                key={r.id}
+                key={r.id || (r as any)._id || i}
                 className={`gsearch-result ${i === selectedIndex ? 'gsearch-result-active' : ''}`}
                 onClick={() => handleSelect(r)}
                 role="option"

@@ -37,11 +37,11 @@ export const Inventory = () => {
       </div>
 
       <div className="inventory-tabs">
-        {tabs.map((tab) => {
+        {tabs.map((tab, idx) => {
           const Icon = tab.icon;
           return (
             <button
-              key={tab.id}
+              key={tab.id || (tab as any)._id || idx}
               className={`inventory-tab ${activeTab === tab.id ? 'active' : ''}`}
               onClick={() => setActiveTab(tab.id)}
             >

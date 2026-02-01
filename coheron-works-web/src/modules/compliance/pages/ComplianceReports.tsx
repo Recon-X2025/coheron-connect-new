@@ -81,7 +81,7 @@ function ReportContent({ report }: { report: ReportData }) {
         <div className="report-section" key={key}>
           <h3>{formatKey(key)}</h3>
           <div className="report-grid">
-            {Object.entries(value).map(([k, v]) => renderValue(k, v))}
+            {Object.entries(value).map(([k, v]) => <React.Fragment key={k}>{renderValue(k, v)}</React.Fragment>)}
           </div>
         </div>
       );
@@ -105,7 +105,7 @@ function ReportContent({ report }: { report: ReportData }) {
 
   return (
     <div className="report-content">
-      {Object.entries(metrics).map(([key, value]) => renderValue(key, value))}
+      {Object.entries(metrics).map(([key, value]) => <React.Fragment key={key}>{renderValue(key, value)}</React.Fragment>)}
 
       <details className="report-raw">
         <summary>Raw JSON</summary>

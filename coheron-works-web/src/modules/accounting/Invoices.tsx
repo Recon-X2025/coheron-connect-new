@@ -252,8 +252,8 @@ export const Invoices = () => {
                                     </td>
                                 </tr>
                             ) : (
-                                paginatedInvoices.map((invoice) => (
-                                    <tr key={invoice.id}>
+                                paginatedInvoices.map((invoice, idx) => (
+                                    <tr key={invoice.id || (invoice as any)._id || idx}>
                                         <td className="invoice-number">
                                             <FileText size={16} />
                                             {invoice.name}

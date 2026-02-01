@@ -266,8 +266,8 @@ export const AccountingDashboard: React.FC = () => {
             </div>
             <div className="accounting-recent-list">
               {recentInvoices.length > 0 ? (
-                recentInvoices.map((invoice) => (
-                  <div key={invoice.id} className="accounting-recent-item">
+                recentInvoices.map((invoice, idx) => (
+                  <div key={invoice.id || (invoice as any)._id || idx} className="accounting-recent-item">
                     <div className="accounting-recent-item-info">
                       <h4>{invoice.name || invoice.display_name || `Invoice #${invoice.id}`}</h4>
                       <p>{invoice.partner_name || 'Unknown Customer'}</p>
@@ -300,8 +300,8 @@ export const AccountingDashboard: React.FC = () => {
             </div>
             <div className="accounting-recent-list">
               {recentBills.length > 0 ? (
-                recentBills.map((bill) => (
-                  <div key={bill.id} className="accounting-recent-item">
+                recentBills.map((bill, idx) => (
+                  <div key={bill.id || (bill as any)._id || idx} className="accounting-recent-item">
                     <div className="accounting-recent-item-info">
                       <h4>{bill.name || bill.display_name || `Bill #${bill.id}`}</h4>
                       <p>{bill.partner_name || bill.vendor_name || 'Unknown Vendor'}</p>

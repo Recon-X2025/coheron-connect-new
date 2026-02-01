@@ -171,8 +171,8 @@ export const RolesManagement: React.FC<RolesManagementProps> = ({ onRoleSelect }
       </div>
 
       <div className="roles-grid">
-        {filteredRoles.map(role => (
-          <Card key={role.id} className="role-card">
+        {filteredRoles.map((role, idx) => (
+          <Card key={role.id || (role as any)._id || idx} className="role-card">
             <div className="role-header">
               <div className="role-info">
                 <div className="role-badge" style={{ backgroundColor: getModuleColor(role.module) }}>
@@ -293,8 +293,8 @@ export const RolesManagement: React.FC<RolesManagementProps> = ({ onRoleSelect }
                 onChange={(e) => setFormData({ ...formData, parent_role_id: e.target.value ? parseInt(e.target.value) : undefined })}
               >
                 <option value="">None</option>
-                {roles.filter(r => r.module === formData.module && r.id !== editingRole?.id).map(r => (
-                  <option key={r.id} value={r.id}>{r.name} (Level {r.level})</option>
+                {roles.filter(r => r.module === formData.module && r.id !== editingRole?.id).map((r, idx) => (
+                  <option key={r.id || (r as any)._id || idx} value={r.id}>{r.name} (Level {r.level})</option>
                 ))}
               </select>
             </div>

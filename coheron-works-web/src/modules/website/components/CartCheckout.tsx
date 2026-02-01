@@ -229,10 +229,10 @@ export const CartCheckout = () => {
                       </td>
                     </tr>
                   ) : (
-                    carts.map((cart) => {
+                    carts.map((cart, idx) => {
                       const badge = getStateBadge(cart.state);
                       return (
-                        <tr key={cart.id}>
+                        <tr key={cart.id || (cart as any)._id || idx}>
                           <td>#{cart.id}</td>
                           <td>
                             {cart.customer_name || cart.customer_email || `Guest (${cart.session_id.substring(0, 8)})`}
@@ -296,8 +296,8 @@ export const CartCheckout = () => {
                     {checkoutConfig.payment_methods.length === 0 ? (
                       <p className="empty-message">No payment methods configured</p>
                     ) : (
-                      checkoutConfig.payment_methods.map((method) => (
-                        <div key={method.id} className="method-card">
+                      checkoutConfig.payment_methods.map((method, idx) => (
+                        <div key={method.id || (method as any)._id || idx} className="method-card">
                           <div className="method-header">
                             <input
                               type="checkbox"
@@ -347,8 +347,8 @@ export const CartCheckout = () => {
                     {checkoutConfig.shipping_methods.length === 0 ? (
                       <p className="empty-message">No shipping methods configured</p>
                     ) : (
-                      checkoutConfig.shipping_methods.map((method) => (
-                        <div key={method.id} className="method-card">
+                      checkoutConfig.shipping_methods.map((method, idx) => (
+                        <div key={method.id || (method as any)._id || idx} className="method-card">
                           <div className="method-header">
                             <input
                               type="checkbox"

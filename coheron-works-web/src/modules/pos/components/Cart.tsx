@@ -70,8 +70,8 @@ export const Cart: React.FC<CartProps> = ({
             <span>Add products to get started</span>
           </div>
         ) : (
-          cart.map((item) => (
-            <div key={item.product.id} className="cart-item">
+          cart.map((item, idx) => (
+            <div key={item.product.id || (item.product as any)._id || idx} className="cart-item">
               <div className="cart-item-info">
                 <h4>{item.product.name}</h4>
                 <div className="cart-item-price">

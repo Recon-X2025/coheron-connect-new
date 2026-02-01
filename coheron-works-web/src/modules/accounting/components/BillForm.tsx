@@ -99,8 +99,8 @@ export const BillForm = ({ onClose, onSave, initialData }: BillFormProps) => {
               required
             >
               <option value="">Select Vendor</option>
-              {vendors.map((vendor) => (
-                <option key={vendor.id} value={vendor.id}>
+              {vendors.map((vendor, idx) => (
+                <option key={vendor.id || (vendor as any)._id || idx} value={vendor.id}>
                   {vendor.name} ({vendor.code})
                 </option>
               ))}

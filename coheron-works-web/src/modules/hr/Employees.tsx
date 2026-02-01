@@ -224,9 +224,9 @@ export const Employees = () => {
 
         {viewMode === 'grid' ? (
           <div className="employees-grid">
-            {paginatedEmployees.map(employee => (
+            {paginatedEmployees.map((employee, idx) => (
               <div
-                key={employee.id}
+                key={employee.id || (employee as any)._id || idx}
                 className="employee-card"
                 onClick={() => {
                   setSelectedEmployee(employee);
@@ -304,9 +304,9 @@ export const Employees = () => {
                 </tr>
               </thead>
               <tbody>
-                {paginatedEmployees.map(employee => (
+                {paginatedEmployees.map((employee, idx) => (
                   <tr
-                    key={employee.id}
+                    key={employee.id || (employee as any)._id || idx}
                     onClick={() => {
                       setSelectedEmployee(employee);
                       setViewMode('detail');

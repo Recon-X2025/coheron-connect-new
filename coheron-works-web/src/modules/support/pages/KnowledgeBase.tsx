@@ -247,8 +247,8 @@ export const KnowledgeBase: React.FC = () => {
               <label>Category</label>
               <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
                 <option value="all">All Categories</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
+                {categories.map((cat, idx) => (
+                  <option key={cat.id || (cat as any)._id || idx} value={cat.id}>
                     {cat.name}
                   </option>
                 ))}

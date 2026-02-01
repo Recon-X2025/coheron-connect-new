@@ -269,12 +269,12 @@ export const TasksCalendar = () => {
                       </td>
                     </tr>
                   ) : (
-                    tasks.map((task) => {
+                    tasks.map((task, idx) => {
                       const priorityBadge = getPriorityBadge(task.priority);
                       const stateBadge = getStateBadge(task.state);
                       const PriorityIcon = priorityBadge.icon;
                       return (
-                        <tr key={task.id}>
+                        <tr key={task.id || (task as any)._id || idx}>
                           <td>
                             <div className="task-name">
                               <span className="task-icon">{getTaskTypeIcon(task.task_type)}</span>
@@ -343,11 +343,11 @@ export const TasksCalendar = () => {
                       <span className="task-count">{stateTasks.length}</span>
                     </div>
                     <div className="kanban-items">
-                      {stateTasks.map((task) => {
+                      {stateTasks.map((task, idx) => {
                         const priorityBadge = getPriorityBadge(task.priority);
                         const PriorityIcon = priorityBadge.icon;
                         return (
-                          <div key={task.id} className="kanban-card">
+                          <div key={task.id || (task as any)._id || idx} className="kanban-card">
                             <div className="kanban-card-header">
                               <span className="task-icon">{getTaskTypeIcon(task.task_type)}</span>
                               <span className={`priority-badge ${priorityBadge.class}`}>
@@ -542,8 +542,8 @@ const TaskForm = ({ task, users, onClose, onSuccess }: TaskFormProps) => {
                 onChange={(e) => setFormData({ ...formData, assigned_to_id: e.target.value })}
               >
                 <option value="">Unassigned</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
+                {users.map((user, idx) => (
+                  <option key={user.id || (user as any)._id || idx} value={user.id}>
                     {user.name || user.email}
                   </option>
                 ))}

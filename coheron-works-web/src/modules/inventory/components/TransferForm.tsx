@@ -118,8 +118,8 @@ export const TransferForm = ({ transfer, onClose, onSuccess }: TransferFormProps
                 required
               >
                 <option value="">Select Warehouse</option>
-                {warehouses.map((w) => (
-                  <option key={w.id} value={w.id}>
+                {warehouses.map((w, idx) => (
+                  <option key={w.id || (w as any)._id || idx} value={w.id}>
                     {w.name}
                   </option>
                 ))}
@@ -135,8 +135,8 @@ export const TransferForm = ({ transfer, onClose, onSuccess }: TransferFormProps
                 <option value="">Select Warehouse</option>
                 {warehouses
                   .filter(w => w.id !== parseInt(formData.from_warehouse_id || '0'))
-                  .map((w) => (
-                    <option key={w.id} value={w.id}>
+                  .map((w, idx) => (
+                    <option key={w.id || (w as any)._id || idx} value={w.id}>
                       {w.name}
                     </option>
                   ))}
@@ -205,8 +205,8 @@ export const TransferForm = ({ transfer, onClose, onSuccess }: TransferFormProps
                         required
                       >
                         <option value="">Select Product</option>
-                        {products.map((p) => (
-                          <option key={p.id} value={p.id}>
+                        {products.map((p, idx) => (
+                          <option key={p.id || (p as any)._id || idx} value={p.id}>
                             {p.name} ({p.default_code})
                           </option>
                         ))}

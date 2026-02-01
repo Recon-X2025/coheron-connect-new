@@ -83,9 +83,9 @@ export const SalesForecasting = () => {
 
         {activeTab === 'forecasts' && (
           <div className="forecasts-grid">
-            {forecasts.map((forecast) => (
+            {forecasts.map((forecast, idx) => (
               <div
-                key={forecast.id}
+                key={forecast.id || (forecast as any)._id || idx}
                 className="forecast-card"
                 onClick={() => setSelectedForecast(forecast)}
               >
@@ -126,10 +126,10 @@ export const SalesForecasting = () => {
 
         {activeTab === 'targets' && (
           <div className="targets-list">
-            {targets.map((target) => {
+            {targets.map((target, idx) => {
               const achievement = parseFloat(calculateAchievementPercentage(target) || '0');
               return (
-                <div key={target.id} className="target-card">
+                <div key={target.id || (target as any)._id || idx} className="target-card">
                   <div className="target-header">
                     <div>
                       <h3>{target.target_name}</h3>

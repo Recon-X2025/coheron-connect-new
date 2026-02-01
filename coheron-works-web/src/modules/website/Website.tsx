@@ -95,9 +95,9 @@ export const Website = () => {
       </div>
 
       <div className="website-tabs">
-        {tabs.map((tab) => (
+        {tabs.map((tab, idx) => (
           <button
-            key={tab.id}
+            key={tab.id || (tab as any)._id || idx}
             className={`website-tab ${activeTab === tab.id ? 'active' : ''}`}
             onClick={() => handleTabChange(tab.id)}
           >

@@ -397,8 +397,8 @@ export const ManufacturingOrders = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredOrders.map((order) => (
-                  <tr key={order.id} onClick={() => handleViewDetails(order)}>
+                {filteredOrders.map((order, idx) => (
+                  <tr key={order.id || (order as any)._id || idx} onClick={() => handleViewDetails(order)}>
                     <td><strong>{order.mo_number || order.name}</strong></td>
                     <td>{order.product_name || 'Unknown'}</td>
                     <td>{order.product_qty}</td>
@@ -468,9 +468,9 @@ export const ManufacturingOrders = () => {
                   <div className="kanban-cards">
                     {filteredOrders
                       .filter((order) => order.state === state)
-                      .map((order) => (
+                      .map((order, idx) => (
                         <div
-                          key={order.id}
+                          key={order.id || (order as any)._id || idx}
                           className="kanban-card"
                           onClick={() => handleViewDetails(order)}
                         >
@@ -704,8 +704,8 @@ export const ManufacturingOrders = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {selectedOrder.work_orders.map((wo) => (
-                            <tr key={wo.id}>
+                          {selectedOrder.work_orders.map((wo, idx) => (
+                            <tr key={wo.id || (wo as any)._id || idx}>
                               <td>{wo.name}</td>
                               <td>{wo.operation_name || '-'}</td>
                               <td>{wo.workcenter_name || '-'}</td>
@@ -739,8 +739,8 @@ export const ManufacturingOrders = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {selectedOrder.material_reservations.map((res) => (
-                            <tr key={res.id}>
+                          {selectedOrder.material_reservations.map((res, idx) => (
+                            <tr key={res.id || (res as any)._id || idx}>
                               <td>Product ID {res.product_id}</td>
                               <td>{res.product_uom_qty}</td>
                               <td>
@@ -767,8 +767,8 @@ export const ManufacturingOrders = () => {
                     {selectedOrder.quality_inspections &&
                     selectedOrder.quality_inspections.length > 0 ? (
                       <div className="inspections-list">
-                        {selectedOrder.quality_inspections.map((insp) => (
-                          <div key={insp.id} className="inspection-card">
+                        {selectedOrder.quality_inspections.map((insp, idx) => (
+                          <div key={insp.id || (insp as any)._id || idx} className="inspection-card">
                             <div className="inspection-header">
                               <span className="inspection-type">{insp.inspection_type}</span>
                               <span className="state-badge">{insp.state}</span>
@@ -812,8 +812,8 @@ export const ManufacturingOrders = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {selectedOrder.costing.map((cost) => (
-                            <tr key={cost.id}>
+                          {selectedOrder.costing.map((cost, idx) => (
+                            <tr key={cost.id || (cost as any)._id || idx}>
                               <td>{cost.cost_type}</td>
                               <td>${cost.standard_cost?.toFixed(2) || '0.00'}</td>
                               <td>${cost.actual_cost?.toFixed(2) || '0.00'}</td>
@@ -875,8 +875,8 @@ export const ManufacturingOrders = () => {
                       onChange={(e) => setFormData({ ...formData, product_id: e.target.value })}
                     >
                       <option value="">Select Product</option>
-                      {products.map((p) => (
-                        <option key={p.id} value={p.id}>
+                      {products.map((p, idx) => (
+                        <option key={p.id || (p as any)._id || idx} value={p.id}>
                           {p.name}
                         </option>
                       ))}
@@ -928,8 +928,8 @@ export const ManufacturingOrders = () => {
                       onChange={(e) => setFormData({ ...formData, bom_id: e.target.value })}
                     >
                       <option value="">Select BOM (Optional)</option>
-                      {boms.map((b) => (
-                        <option key={b.id} value={b.id}>
+                      {boms.map((b, idx) => (
+                        <option key={b.id || (b as any)._id || idx} value={b.id}>
                           {b.name} {b.code ? `(${b.code})` : ''}
                         </option>
                       ))}
@@ -942,8 +942,8 @@ export const ManufacturingOrders = () => {
                       onChange={(e) => setFormData({ ...formData, routing_id: e.target.value })}
                     >
                       <option value="">Select Routing (Optional)</option>
-                      {routings.map((r) => (
-                        <option key={r.id} value={r.id}>
+                      {routings.map((r, idx) => (
+                        <option key={r.id || (r as any)._id || idx} value={r.id}>
                           {r.name} {r.code ? `(${r.code})` : ''}
                         </option>
                       ))}

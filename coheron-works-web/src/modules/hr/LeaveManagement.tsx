@@ -136,9 +136,9 @@ export const LeaveManagement = () => {
         </div>
 
         <div className="leave-tabs">
-          {tabs.map((tab) => (
+          {tabs.map((tab, idx) => (
             <button
-              key={tab.id}
+              key={tab.id || (tab as any)._id || idx}
               className={`leave-tab ${activeTab === tab.id ? 'active' : ''}`}
               onClick={() => setActiveTab(tab.id)}
             >
@@ -189,8 +189,8 @@ const OverviewTab = ({ requests }: { requests: any[] }) => {
             </tr>
           </thead>
           <tbody>
-            {recentRequests.map((req) => (
-              <tr key={req.id}>
+            {recentRequests.map((req, idx) => (
+              <tr key={req.id || (req as any)._id || idx}>
                 <td>{req.employee_name || req.employee}</td>
                 <td>{req.leave_type || req.type}</td>
                 <td>{new Date(req.from_date || req.from).toLocaleDateString()}</td>
@@ -230,8 +230,8 @@ const RequestsTab = ({ requests }: { requests: any[] }) => {
         </select>
       </div>
       <div className="requests-list">
-        {filteredRequests.map((req) => (
-          <div key={req.id} className="request-card">
+        {filteredRequests.map((req, idx) => (
+          <div key={req.id || (req as any)._id || idx} className="request-card">
             <div className="request-info">
               <h4>{req.employee_name || req.employee}</h4>
               <p>{req.leave_type || req.type} • {req.days} day(s)</p>

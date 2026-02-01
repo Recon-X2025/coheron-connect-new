@@ -94,8 +94,8 @@ export const POSTerminals = () => {
             <Button onClick={() => setShowForm(true)}>Create First Terminal</Button>
           </div>
         ) : (
-          terminals.map((terminal) => (
-            <div key={terminal.id} className="terminal-card">
+          terminals.map((terminal, idx) => (
+            <div key={terminal.id || (terminal as any)._id || idx} className="terminal-card">
               <div className="terminal-card-header">
                 <div className="terminal-icon">
                   <Monitor size={32} />
@@ -251,8 +251,8 @@ const TerminalForm = ({ terminal, stores, onClose, onSave }: TerminalFormProps) 
               required
             >
               <option value="">Select Store</option>
-              {stores.map((store) => (
-                <option key={store.id} value={store.id}>
+              {stores.map((store, idx) => (
+                <option key={store.id || (store as any)._id || idx} value={store.id}>
                   {store.name}
                 </option>
               ))}

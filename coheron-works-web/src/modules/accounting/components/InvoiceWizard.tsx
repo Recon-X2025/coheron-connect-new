@@ -209,8 +209,8 @@ export const InvoiceWizard: React.FC<InvoiceWizardProps> = ({
                   disabled={loading}
                 >
                   <option value={0}>Select a customer</option>
-                  {partners.map((partner) => (
-                    <option key={partner.id} value={partner.id}>
+                  {partners.map((partner, idx) => (
+                    <option key={partner.id || (partner as any)._id || idx} value={partner.id}>
                       {partner.name}
                     </option>
                   ))}
@@ -278,8 +278,8 @@ export const InvoiceWizard: React.FC<InvoiceWizardProps> = ({
                         }
                       >
                         <option value={0}>Select product</option>
-                        {products.map((product) => (
-                          <option key={product.id} value={product.id}>
+                        {products.map((product, idx) => (
+                          <option key={product.id || (product as any)._id || idx} value={product.id}>
                             {product.name}
                           </option>
                         ))}

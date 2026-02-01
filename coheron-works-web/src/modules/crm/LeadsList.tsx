@@ -292,8 +292,8 @@ export const LeadsList = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {paginatedLeads.map(lead => (
-                                <tr key={lead.id}>
+                            {paginatedLeads.map((lead, idx) => (
+                                <tr key={lead.id || (lead as any)._id || idx}>
                                     <td>
                                         <input
                                             type="checkbox"

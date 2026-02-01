@@ -309,7 +309,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCollapseChange }) => {
                     </button>
                     {expanded && sidebarExpanded && (
                         <div className="nav-children">
-                            {item.children!.map(child => renderNavItem(child, true))}
+                            {item.children!.map(child => <React.Fragment key={child.path}>{renderNavItem(child, true)}</React.Fragment>)}
                         </div>
                     )}
                 </div>
@@ -360,11 +360,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCollapseChange }) => {
 
             <nav className="sidebar-nav" aria-label="Main navigation">
                 <div className="nav-main">
-                    {navigationItems.map(item => renderNavItem(item))}
+                    {navigationItems.map(item => <React.Fragment key={item.path}>{renderNavItem(item)}</React.Fragment>)}
                 </div>
 
                 <div className="nav-bottom">
-                    {bottomItems.map(item => renderNavItem(item))}
+                    {bottomItems.map(item => <React.Fragment key={item.path}>{renderNavItem(item)}</React.Fragment>)}
                 </div>
             </nav>
         </aside>

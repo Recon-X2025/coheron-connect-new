@@ -103,8 +103,8 @@ export const ContractForm = ({ onClose, onSave, type, initialData }: ContractFor
               required
             >
               <option value="">Select Customer</option>
-              {partners.map((partner) => (
-                <option key={partner.id} value={partner.id}>
+              {partners.map((partner, idx) => (
+                <option key={partner.id || (partner as any)._id || idx} value={partner.id}>
                   {partner.name}
                 </option>
               ))}

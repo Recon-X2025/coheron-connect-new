@@ -203,8 +203,8 @@ export const StockIssueForm = ({ issue, onClose, onSuccess }: StockIssueFormProp
                   required
                 >
                   <option value="">Select Warehouse</option>
-                  {warehouses.map((wh) => (
-                    <option key={wh.id} value={wh.id}>
+                  {warehouses.map((wh, idx) => (
+                    <option key={wh.id || (wh as any)._id || idx} value={wh.id}>
                       {wh.name}
                     </option>
                   ))}
@@ -240,8 +240,8 @@ export const StockIssueForm = ({ issue, onClose, onSuccess }: StockIssueFormProp
                   required
                 >
                   <option value="">Select Manufacturing Order</option>
-                  {manufacturingOrders.map((mo) => (
-                    <option key={mo.id} value={mo.id}>
+                  {manufacturingOrders.map((mo, idx) => (
+                    <option key={mo.id || (mo as any)._id || idx} value={mo.id}>
                       {mo.name || `MO-${mo.id}`}
                     </option>
                   ))}
@@ -260,8 +260,8 @@ export const StockIssueForm = ({ issue, onClose, onSuccess }: StockIssueFormProp
                   required
                 >
                   <option value="">Select Project</option>
-                  {projects.map((proj) => (
-                    <option key={proj.id} value={proj.id}>
+                  {projects.map((proj, idx) => (
+                    <option key={proj.id || (proj as any)._id || idx} value={proj.id}>
                       {proj.name || `Project-${proj.id}`}
                     </option>
                   ))}
@@ -280,8 +280,8 @@ export const StockIssueForm = ({ issue, onClose, onSuccess }: StockIssueFormProp
                   required
                 >
                   <option value="">Select Work Order</option>
-                  {workOrders.map((wo) => (
-                    <option key={wo.id} value={wo.id}>
+                  {workOrders.map((wo, idx) => (
+                    <option key={wo.id || (wo as any)._id || idx} value={wo.id}>
                       {wo.name || `WO-${wo.id}`}
                     </option>
                   ))}
@@ -345,8 +345,8 @@ export const StockIssueForm = ({ issue, onClose, onSuccess }: StockIssueFormProp
                           required
                         >
                           <option value="">Select Product</option>
-                          {products.map((prod) => (
-                            <option key={prod.id} value={prod.id}>
+                          {products.map((prod, idx) => (
+                            <option key={prod.id || (prod as any)._id || idx} value={prod.id}>
                               {prod.name || prod.code}
                             </option>
                           ))}
@@ -368,8 +368,8 @@ export const StockIssueForm = ({ issue, onClose, onSuccess }: StockIssueFormProp
                           onChange={(e) => handleLineChange(index, 'lot_id', e.target.value || undefined)}
                         >
                           <option value="">No Lot</option>
-                          {lots.filter(lot => lot.product_id === parseInt(line.product_id as any)).map((lot) => (
-                            <option key={lot.id} value={lot.id}>
+                          {lots.filter(lot => lot.product_id === parseInt(line.product_id as any)).map((lot, idx) => (
+                            <option key={lot.id || (lot as any)._id || idx} value={lot.id}>
                               {lot.name}
                             </option>
                           ))}

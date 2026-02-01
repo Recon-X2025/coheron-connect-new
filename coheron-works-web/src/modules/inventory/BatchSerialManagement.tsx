@@ -291,8 +291,8 @@ export const BatchSerialManagement = () => {
           onChange={(e) => setFilters({ ...filters, product_id: e.target.value })}
         >
           <option value="">All Products</option>
-          {products.map((prod) => (
-            <option key={prod.id} value={prod.id}>
+          {products.map((prod, idx) => (
+            <option key={prod.id || (prod as any)._id || idx} value={prod.id}>
               {prod.name || prod.code}
             </option>
           ))}
@@ -343,8 +343,8 @@ export const BatchSerialManagement = () => {
                           batch.product_name?.toLowerCase().includes(filters.search.toLowerCase())
                         : true
                     )
-                    .map((batch) => (
-                      <tr key={batch.id}>
+                    .map((batch, idx) => (
+                      <tr key={batch.id || (batch as any)._id || idx}>
                         <td>
                           <strong>{batch.name}</strong>
                           {batch.ref && <span className="batch-ref">({batch.ref})</span>}
@@ -438,10 +438,10 @@ export const BatchSerialManagement = () => {
                         : true
                     )
                     .filter((serial) => (filters.state ? serial.state === filters.state : true))
-                    .map((serial) => {
+                    .map((serial, idx) => {
                       const badge = getStateBadge(serial.state);
                       return (
-                        <tr key={serial.id}>
+                        <tr key={serial.id || (serial as any)._id || idx}>
                           <td>
                             <strong>{serial.name}</strong>
                           </td>
@@ -646,8 +646,8 @@ const BatchForm = ({ batch, products, onClose, onSuccess }: BatchFormProps) => {
               required
             >
               <option value="">Select Product</option>
-              {products.map((prod) => (
-                <option key={prod.id} value={prod.id}>
+              {products.map((prod, idx) => (
+                <option key={prod.id || (prod as any)._id || idx} value={prod.id}>
                   {prod.name || prod.code}
                 </option>
               ))}
@@ -812,8 +812,8 @@ const SerialDetailsModal = ({ serial, onClose }: SerialDetailsModalProps) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {serial.transaction_history.map((txn) => (
-                    <tr key={txn.id}>
+                  {serial.transaction_history.map((txn, idx) => (
+                    <tr key={txn.id || (txn as any)._id || idx}>
                       <td>{new Date(txn.date).toLocaleString()}</td>
                       <td>{txn.transaction_type}</td>
                       <td>{txn.reference || `#${txn.transaction_id}`}</td>

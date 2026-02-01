@@ -93,9 +93,9 @@ export const NotificationCenter: React.FC = () => {
                 <p>No notifications</p>
               </div>
             ) : (
-              notifications.map((notification) => (
+              notifications.map((notification, idx) => (
                 <div
-                  key={notification.id}
+                  key={notification.id || (notification as any)._id || idx}
                   className={`notification-item ${notification.type} ${!notification.read ? 'unread' : ''}`}
                   onClick={() => {
                     markAsRead(notification.id);

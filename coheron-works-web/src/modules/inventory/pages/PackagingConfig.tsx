@@ -140,7 +140,7 @@ export const PackagingConfig: React.FC = () => {
             <button onClick={() => deleteLevel(node._id)} style={{ ...iconBtnStyle, color: '#bb4444' }}><Trash2 size={14} /></button>
           </div>
         </div>
-        {node.children?.map(child => renderHierarchyNode(child, depth + 1))}
+        {node.children?.map(child => <React.Fragment key={child._id}>{renderHierarchyNode(child, depth + 1)}</React.Fragment>)}
       </div>
     );
   };
@@ -176,7 +176,7 @@ export const PackagingConfig: React.FC = () => {
         hierarchy.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 48, color: '#6e6e6e' }}>No packaging levels configured. Add your first level.</div>
         ) : (
-          <div>{hierarchy.map(node => renderHierarchyNode(node))}</div>
+          <div>{hierarchy.map(node => <React.Fragment key={node._id}>{renderHierarchyNode(node)}</React.Fragment>)}</div>
         )
       ) : (
         levels.length === 0 ? (

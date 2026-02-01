@@ -105,9 +105,9 @@ export const MediaLibrary = () => {
             <Button icon={<Upload size={18} />}>Upload Your First File</Button>
           </div>
         ) : (
-          filteredMedia.map((item) => (
+          filteredMedia.map((item, idx) => (
             <div
-              key={item.id}
+              key={item.id || (item as any)._id || idx}
               className={`media-item ${selectedMedia === item.id ? 'selected' : ''}`}
               onClick={() => setSelectedMedia(item.id)}
             >

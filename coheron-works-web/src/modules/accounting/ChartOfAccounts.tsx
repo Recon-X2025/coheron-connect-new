@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Trash2, ChevronRight, ChevronDown, X, BookOpen } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { chartOfAccountsService } from '../../services/accountingService';
@@ -120,13 +120,13 @@ export const ChartOfAccounts = () => {
   const getChildAccounts = (parentId: number) => 
     filteredAccounts.filter(a => a.parent_id === parentId);
 
-  const renderAccount = (account: Account, depth: number = 0) => {
+  const renderAccount = (account: Account, depth: number = 0, idx: number = 0) => {
     const hasChildren = (account.child_count || 0) > 0;
     const isExpanded = expandedAccounts.has(account.id);
     const children = getChildAccounts(account.id);
 
     return (
-      <div key={account.id}>
+      <div key={account.id || (account as any)._id || idx}>
         <div 
           className={`account-row ${selectedAccount?.id === account.id ? 'selected' : ''}`}
           style={{ paddingLeft: `${depth * 24 + 12}px` }}
@@ -184,7 +184,7 @@ export const ChartOfAccounts = () => {
         </div>
         {hasChildren && isExpanded && (
           <div className="account-children">
-            {children.map(child => renderAccount(child, depth + 1))}
+            {children.map((child, idx) => <React.Fragment key={child.id || (child as any)._id || idx}>{renderAccount(child, depth + 1, idx)}</React.Fragment>)}
           </div>
         )}
       </div>
@@ -238,7 +238,7 @@ export const ChartOfAccounts = () => {
                   onAction={() => setShowAccountForm(true)}
                 />
               ) : (
-                rootAccounts.map(account => renderAccount(account))
+                rootAccounts.map((account, idx) => <React.Fragment key={account.id || (account as any)._id || idx}>{renderAccount(account, 0, idx)}</React.Fragment>)
               )}
             </div>
           </div>

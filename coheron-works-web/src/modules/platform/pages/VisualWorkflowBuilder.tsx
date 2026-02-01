@@ -142,8 +142,8 @@ const VisualWorkflowBuilder: React.FC = () => {
         <button style={s.btnSec} onClick={() => setView('list')}><X size={16} /> Back</button>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
-        {templates.map(t => (
-          <div key={t.id} style={s.card}>
+        {templates.map((t, idx) => (
+          <div key={t.id || (t as any)._id || idx} style={s.card}>
             <h3 style={{ margin: '0 0 8px', fontSize: 18 }}>{t.name}</h3>
             <p style={{ color: '#888', fontSize: 14, margin: '0 0 12px' }}>{t.description}</p>
             <span style={s.badge(TYPE_BADGES[t.type]?.color || '#888')}>{TYPE_BADGES[t.type]?.label || t.type}</span>
@@ -227,19 +227,19 @@ const VisualWorkflowBuilder: React.FC = () => {
           onDrop={handleCanvasDrop} onDragOver={e => e.preventDefault()}>
           <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
             <defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#555" /></marker></defs>
-            {current.edges.map(edge => {
+            {current.edges.map((edge, eIdx) => {
               const src = current.nodes.find(n => n.id === edge.source);
               const tgt = current.nodes.find(n => n.id === edge.target);
               if (!src || !tgt) return null;
-              return <line key={edge.id} x1={src.position.x + 70} y1={src.position.y + 25} x2={tgt.position.x + 70} y2={tgt.position.y + 25} stroke="#555" strokeWidth={2} markerEnd="url(#arrowhead)" />;
+              return <line key={edge.id || (edge as any)._id || eIdx} x1={src.position.x + 70} y1={src.position.y + 25} x2={tgt.position.x + 70} y2={tgt.position.y + 25} stroke="#555" strokeWidth={2} markerEnd="url(#arrowhead)" />;
             })}
           </svg>
-          {current.nodes.map(node => {
+          {current.nodes.map((node, nIdx) => {
             const info = getNodeInfo(node.type);
             const Icon = info.icon;
             const isDecision = node.type === 'decision';
             return (
-              <div key={node.id} style={{
+              <div key={node.id || (node as any)._id || nIdx} style={{
                 position: 'absolute', left: node.position.x, top: node.position.y,
                 background: '#1a1a1a', border: `2px solid ${selectedNode?.id === node.id ? '#00C971' : info.color + '66'}`,
                 borderRadius: isDecision ? 4 : 10, padding: '10px 16px', cursor: 'pointer', minWidth: 120,

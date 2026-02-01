@@ -383,8 +383,8 @@ export const Opportunities = () => {
                 </tr>
               </thead>
               <tbody>
-                {paginatedOpportunities.map((opp) => (
-                  <tr key={opp.id}>
+                {paginatedOpportunities.map((opp, idx) => (
+                  <tr key={opp.id || (opp as any)._id || idx}>
                     <td>
                       <input
                         type="checkbox"
@@ -489,8 +489,8 @@ export const Opportunities = () => {
                     <div className="kanban-cards">
                       {filteredOpportunities
                         .filter((opportunity) => opportunity.stage === stage)
-                        .map((opportunity) => (
-                          <DraggableCard key={opportunity.id} opportunity={opportunity} />
+                        .map((opportunity, idx) => (
+                          <DraggableCard key={opportunity.id || (opportunity as any)._id || idx} opportunity={opportunity} />
                         ))}
                     </div>
                   </DroppableColumn>

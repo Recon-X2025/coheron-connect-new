@@ -59,8 +59,8 @@ export const ProjectAnalytics = ({ projectId }: ProjectAnalyticsProps) => {
             {velocity?.sprints && velocity.sprints.length > 0 && (
               <div className="velocity-list">
                 <h4>Recent Sprints</h4>
-                {velocity.sprints.slice(0, 5).map((sprint: any) => (
-                  <div key={sprint.id} className="velocity-item">
+                {velocity.sprints.slice(0, 5).map((sprint: any, idx: number) => (
+                  <div key={sprint.id || (sprint as any)._id || idx} className="velocity-item">
                     <span>{sprint.name}</span>
                     <span className="velocity-value">{sprint.velocity || 0} SP</span>
                   </div>

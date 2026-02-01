@@ -11,9 +11,9 @@ interface ProductGridProps {
 export const ProductGrid: React.FC<ProductGridProps> = ({ products, onProductClick }) => {
   return (
     <div className="product-grid">
-      {products.map((product) => (
+      {products.map((product, idx) => (
         <div
-          key={product.id}
+          key={product.id || (product as any)._id || idx}
           className="product-card"
           onClick={() => onProductClick(product)}
         >

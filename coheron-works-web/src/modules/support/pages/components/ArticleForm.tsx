@@ -134,8 +134,8 @@ export const ArticleForm = ({ article, onClose, onSave }: ArticleFormProps) => {
                 onChange={(e) => setFormData({ ...formData, category_id: e.target.value ? parseInt(e.target.value) : undefined })}
               >
                 <option value="">No Category</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
+                {categories.map((cat, idx) => (
+                  <option key={cat.id || (cat as any)._id || idx} value={cat.id}>
                     {cat.name}
                   </option>
                 ))}

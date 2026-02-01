@@ -111,8 +111,8 @@ export const CustomerPortal = () => {
                         </div>
                         {kbArticles.length > 0 && (
                             <div className="kb-results">
-                                {kbArticles.slice(0, 5).map((article) => (
-                                    <div key={article.id} className="kb-result-item">
+                                {kbArticles.slice(0, 5).map((article, idx) => (
+                                    <div key={article.id || (article as any)._id || idx} className="kb-result-item">
                                         <HelpCircle size={18} />
                                         <div>
                                             <h4>{article.title}</h4>
@@ -219,8 +219,8 @@ export const CustomerPortal = () => {
                                     </td>
                                 </tr>
                             ) : (
-                                tickets.map(ticket => (
-                                    <tr key={ticket.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                tickets.map((ticket, idx) => (
+                                    <tr key={ticket.id || (ticket as any)._id || idx} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                                         <td className="p-4 text-gray-500">#{ticket.ticket_number}</td>
                                         <td className="p-4 font-medium text-gray-900">{ticket.subject}</td>
                                         <td className="p-4 text-gray-500">{new Date(ticket.created_at).toLocaleDateString()}</td>

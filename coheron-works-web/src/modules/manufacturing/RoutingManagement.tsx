@@ -173,8 +173,8 @@ export const RoutingManagement = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredRoutings.map((routing) => (
-                  <tr key={routing.id}>
+                {filteredRoutings.map((routing, idx) => (
+                  <tr key={routing.id || (routing as any)._id || idx}>
                     <td><strong>{routing.code || '-'}</strong></td>
                     <td>{routing.name}</td>
                     <td>
@@ -225,8 +225,8 @@ export const RoutingManagement = () => {
                 </tr>
               </thead>
               <tbody>
-                {workCenters.map((wc) => (
-                  <tr key={wc.id}>
+                {workCenters.map((wc, idx) => (
+                  <tr key={wc.id || (wc as any)._id || idx}>
                     <td><strong>{wc.code || '-'}</strong></td>
                     <td>{wc.name}</td>
                     <td>{wc.workcenter_type || '-'}</td>
@@ -299,8 +299,8 @@ export const RoutingManagement = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {selectedRouting.operations.map((op) => (
-                          <tr key={op.id}>
+                        {selectedRouting.operations.map((op, idx) => (
+                          <tr key={op.id || (op as any)._id || idx}>
                             <td>{op.sequence}</td>
                             <td>{op.name}</td>
                             <td>{op.workcenter_name || '-'}</td>

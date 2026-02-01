@@ -179,11 +179,11 @@ export const AutomationFlows: React.FC = () => {
             <div style={{ position: 'absolute', left: 190, top: 20, background: '#1a2e1a', border: '2px solid #00C971', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 600, color: '#00C971' }}>
               <Zap size={12} style={{ marginRight: 4 }} />{triggerLabels[selected.trigger?.type] || 'Trigger'}
             </div>
-            {(selected.nodes || []).map((node: any) => {
+            {(selected.nodes || []).map((node: any, idx: number) => {
               const Icon = nodeTypeIcons[node.type] || Zap;
               const isSelected = selectedNode?.id === node.id;
               return (
-                <div key={node.id} onMouseDown={() => setDragging(node.id)} onClick={() => setSelectedNode(node)}
+                <div key={node.id || (node as any)._id || idx} onMouseDown={() => setDragging(node.id)} onClick={() => setSelectedNode(node)}
                   style={{ position: 'absolute', left: node.position.x, top: node.position.y, background: isSelected ? '#1a2a1a' : '#1a1a1a', border: `1px solid ${isSelected ? '#00C971' : '#333'}`, borderRadius: 8, padding: '10px 14px', minWidth: 120, cursor: 'grab', userSelect: 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

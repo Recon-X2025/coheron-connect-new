@@ -94,9 +94,9 @@ export const Attendance = () => {
         </div>
 
         <div className="attendance-tabs">
-          {tabs.map((tab) => (
+          {tabs.map((tab, idx) => (
             <button
-              key={tab.id}
+              key={tab.id || (tab as any)._id || idx}
               className={`attendance-tab ${activeTab === tab.id ? 'active' : ''}`}
               onClick={() => setActiveTab(tab.id)}
             >
@@ -186,8 +186,8 @@ const OverviewTab = ({ selectedDate, setSelectedDate, startDate, endDate }: { se
             </tr>
           </thead>
           <tbody>
-            {filteredData.map((emp) => (
-              <tr key={emp.id}>
+            {filteredData.map((emp, idx) => (
+              <tr key={emp.id || (emp as any)._id || idx}>
                 <td>{emp.employee_name || emp.name}</td>
                 <td>{emp.emp_id || emp.empId}</td>
                 <td>

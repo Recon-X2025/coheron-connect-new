@@ -120,9 +120,9 @@ export const ITSM: React.FC = () => {
 
     return (
       <div className="itsm-list">
-        {filtered.map((incident) => (
+        {filtered.map((incident, idx) => (
           <div
-            key={incident.id}
+            key={incident.id || (incident as any)._id || idx}
             onClick={() => setSelectedItem(incident)}
             style={{ cursor: 'pointer' }}
           >
@@ -198,9 +198,9 @@ export const ITSM: React.FC = () => {
 
     return (
       <div className="itsm-list">
-        {filtered.map((problem) => (
+        {filtered.map((problem, idx) => (
           <div
-            key={problem.id}
+            key={problem.id || (problem as any)._id || idx}
             onClick={() => setSelectedItem(problem)}
             style={{ cursor: 'pointer' }}
           >
@@ -278,9 +278,9 @@ export const ITSM: React.FC = () => {
 
     return (
       <div className="itsm-list">
-        {filtered.map((change) => (
+        {filtered.map((change, idx) => (
           <div
-            key={change.id}
+            key={change.id || (change as any)._id || idx}
             onClick={() => setSelectedItem(change)}
             style={{ cursor: 'pointer' }}
           >

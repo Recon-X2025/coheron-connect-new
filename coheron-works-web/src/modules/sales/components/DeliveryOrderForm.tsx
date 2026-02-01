@@ -103,8 +103,8 @@ export const DeliveryOrderForm = ({ onClose, onSave, initialData }: DeliveryOrde
               onChange={(e) => setFormData({ ...formData, sale_order_id: e.target.value })}
             >
               <option value="">Select Sale Order</option>
-              {saleOrders.map((order) => (
-                <option key={order.id} value={order.id}>
+              {saleOrders.map((order, idx) => (
+                <option key={order.id || (order as any)._id || idx} value={order.id}>
                   {order.name} - {order.partner_name}
                 </option>
               ))}
@@ -120,8 +120,8 @@ export const DeliveryOrderForm = ({ onClose, onSave, initialData }: DeliveryOrde
                 onChange={(e) => setFormData({ ...formData, warehouse_id: e.target.value })}
               >
                 <option value="">Select Warehouse</option>
-                {warehouses.map((warehouse) => (
-                  <option key={warehouse.id} value={warehouse.id}>
+                {warehouses.map((warehouse, idx) => (
+                  <option key={warehouse.id || (warehouse as any)._id || idx} value={warehouse.id}>
                     {warehouse.name}
                   </option>
                 ))}

@@ -81,8 +81,8 @@ export const BacklogView = ({ projectId }: BacklogViewProps) => {
             <Button icon={<Plus size={16} />} onClick={() => setShowIssueForm(true)}>Add Issue</Button>
           </div>
         ) : (
-          filteredItems.map((item: any) => (
-            <div key={item.id} className="backlog-item">
+          filteredItems.map((item: any, idx: number) => (
+            <div key={item.id || (item as any)._id || idx} className="backlog-item">
               <div className="backlog-item-main">
                 <div className="backlog-item-header">
                   <span className="issue-key">{item.key}</span>

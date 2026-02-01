@@ -100,11 +100,11 @@ export const ProjectDetail = () => {
 
         {/* Tabs */}
         <div className="project-tabs">
-          {tabs.map((tab) => {
+          {tabs.map((tab, idx) => {
             const Icon = tab.icon;
             return (
               <button
-                key={tab.id}
+                key={tab.id || (tab as any)._id || idx}
                 className={`project-tab ${activeTab === tab.id ? 'active' : ''}`}
                 onClick={() => setActiveTab(tab.id)}
               >

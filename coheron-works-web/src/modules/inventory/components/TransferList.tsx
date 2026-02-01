@@ -59,8 +59,8 @@ export const TransferList = ({ transfers, onRefresh }: TransferListProps) => {
             </tr>
           </thead>
           <tbody>
-            {transfers.map((transfer) => (
-              <tr key={transfer.id}>
+            {transfers.map((transfer, idx) => (
+              <tr key={transfer.id || (transfer as any)._id || idx}>
                 <td className="transfer-number">{transfer.transfer_number}</td>
                 <td>{new Date(transfer.transfer_date).toLocaleDateString()}</td>
                 <td>{transfer.from_warehouse_name}</td>

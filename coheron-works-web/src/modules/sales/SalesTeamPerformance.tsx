@@ -74,9 +74,9 @@ export const SalesTeamPerformance = () => {
 
         {activeTab === 'teams' && (
           <div className="teams-grid">
-            {teams.map((team) => (
+            {teams.map((team, idx) => (
               <div
-                key={team.id}
+                key={team.id || (team as any)._id || idx}
                 className="team-card"
                 onClick={() => setSelectedTeam(team)}
               >
@@ -139,8 +139,8 @@ export const SalesTeamPerformance = () => {
                     <div className="detail-section">
                       <h3>Team Members</h3>
                       <div className="members-list">
-                        {selectedTeam.team_members.map((member) => (
-                          <div key={member.id} className="member-item">
+                        {selectedTeam.team_members.map((member, idx) => (
+                          <div key={member.id || (member as any)._id || idx} className="member-item">
                             <span className="member-role">{member.role}</span>
                             <span className="member-id">User ID: {member.user_id}</span>
                           </div>

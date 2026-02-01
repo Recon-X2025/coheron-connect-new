@@ -171,8 +171,8 @@ export const ManufacturingDashboard: React.FC = () => {
             </div>
             <div className="manufacturing-recent-list">
               {activeOrders.length > 0 ? (
-                activeOrders.map((order) => (
-                  <div key={order.id} className="manufacturing-recent-item">
+                activeOrders.map((order, idx) => (
+                  <div key={order.id || (order as any)._id || idx} className="manufacturing-recent-item">
                     <div className="manufacturing-recent-item-info">
                       <h4>{order.name || order.display_name || `MO-${order.id}`}</h4>
                       <p>{order.product_name || 'Unknown Product'}</p>
@@ -201,8 +201,8 @@ export const ManufacturingDashboard: React.FC = () => {
             </div>
             <div className="manufacturing-recent-list">
               {recentOrders.length > 0 ? (
-                recentOrders.map((order) => (
-                  <div key={order.id} className="manufacturing-recent-item">
+                recentOrders.map((order, idx) => (
+                  <div key={order.id || (order as any)._id || idx} className="manufacturing-recent-item">
                     <div className="manufacturing-recent-item-info">
                       <h4>{order.name || order.display_name || `MO-${order.id}`}</h4>
                       <p>{order.product_name || 'Unknown Product'}</p>

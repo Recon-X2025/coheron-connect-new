@@ -132,9 +132,9 @@ export const ReturnsManagement = () => {
 
         {activeTab === 'rmas' && (
           <div className="rmas-list">
-            {filteredRMAs.map((rma) => (
+            {filteredRMAs.map((rma, idx) => (
               <div
-                key={rma.id}
+                key={rma.id || (rma as any)._id || idx}
                 className="rma-card"
                 onClick={() => setSelectedRMA(rma)}
               >
@@ -243,8 +243,8 @@ export const ReturnsManagement = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {selectedRMA.rma_lines.map((line) => (
-                            <tr key={line.id}>
+                          {selectedRMA.rma_lines.map((line, idx) => (
+                            <tr key={line.id || (line as any)._id || idx}>
                               <td>{line.product_name || `Product ${line.product_id}`}</td>
                               <td>{line.quantity_returned}</td>
                               <td>{line.condition}</td>

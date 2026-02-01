@@ -162,8 +162,8 @@ export const SupportTickets: React.FC = () => {
               <p className="empty-note">Create a new ticket to get support</p>
             </Card>
           ) : (
-            filteredTickets.map((ticket) => (
-              <Card key={ticket.id} className="ticket-card" hover>
+            filteredTickets.map((ticket, idx) => (
+              <Card key={ticket.id || (ticket as any)._id || idx} className="ticket-card" hover>
                 <div className="ticket-header">
                   <div className="ticket-title-section">
                     <h3>{ticket.subject}</h3>

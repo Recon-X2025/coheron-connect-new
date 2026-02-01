@@ -130,9 +130,9 @@ export const BulkActions: React.FC<BulkActionsProps> = ({
 
       {selectedIds.length > 0 && (
         <div className="bulk-actions-menu">
-          {actions.map((action) => (
+          {actions.map((action, idx) => (
             <button
-              key={action.id}
+              key={action.id || (action as any)._id || idx}
               className={`bulk-action-btn ${action.variant || 'default'}`}
               onClick={() => handleAction(action)}
               disabled={isProcessing}
@@ -155,9 +155,9 @@ export const BulkActions: React.FC<BulkActionsProps> = ({
 
               {showMenu && (
                 <div className="bulk-actions-dropdown-menu">
-                  {actions.slice(3).map((action) => (
+                  {actions.slice(3).map((action, idx) => (
                     <button
-                      key={action.id}
+                      key={action.id || (action as any)._id || idx}
                       className={`bulk-action-dropdown-item ${action.variant || 'default'}`}
                       onClick={() => handleAction(action)}
                       disabled={isProcessing}

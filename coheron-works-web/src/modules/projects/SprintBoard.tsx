@@ -73,9 +73,9 @@ export const SprintBoard = ({ projectId }: SprintBoardProps) => {
       {/* Sprint Selector */}
       <div className="sprint-selector">
         <div className="sprint-tabs">
-          {sprints.map(sprint => (
+          {sprints.map((sprint, idx) => (
             <button
-              key={sprint.id}
+              key={sprint.id || (sprint as any)._id || idx}
               className={`sprint-tab ${activeSprint?.id === sprint.id ? 'active' : ''}`}
               onClick={() => setActiveSprint(sprint)}
             >
@@ -120,8 +120,8 @@ export const SprintBoard = ({ projectId }: SprintBoardProps) => {
                 <span className="issue-count">{getIssuesByStatus(status).length}</span>
               </div>
               <div className="column-content">
-                {getIssuesByStatus(status).map(issue => (
-                  <div key={issue.id} className="issue-card">
+                {getIssuesByStatus(status).map((issue, idx) => (
+                  <div key={issue.id || (issue as any)._id || idx} className="issue-card">
                     <div className="issue-header">
                       <span className="issue-key">{issue.key}</span>
                       {issue.priority && (

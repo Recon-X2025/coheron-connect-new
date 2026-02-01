@@ -104,8 +104,8 @@ export const RMAForm = ({ onClose, onSave, initialData }: RMAFormProps) => {
               required
             >
               <option value="">Select Customer</option>
-              {partners.map((partner) => (
-                <option key={partner.id} value={partner.id}>
+              {partners.map((partner, idx) => (
+                <option key={partner.id || (partner as any)._id || idx} value={partner.id}>
                   {partner.name}
                 </option>
               ))}
@@ -122,8 +122,8 @@ export const RMAForm = ({ onClose, onSave, initialData }: RMAFormProps) => {
               <option value="">Select Sale Order</option>
               {saleOrders
                 .filter(order => !formData.partner_id || order.partner_id?.toString() === formData.partner_id)
-                .map((order) => (
-                  <option key={order.id} value={order.id}>
+                .map((order, idx) => (
+                  <option key={order.id || (order as any)._id || idx} value={order.id}>
                     {order.name} - {order.partner_name}
                   </option>
                 ))}

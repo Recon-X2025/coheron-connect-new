@@ -130,16 +130,16 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ columns, items, onItem
             onDragEnd={handleDragEnd}
         >
             <div className="kanban-board">
-                {columns.map(column => {
+                {columns.map((column, idx) => {
                     const columnItems = items.filter(item => item.stage === column.id);
 
                     return (
-                        <DroppableColumn key={column.id} id={column.id} column={column}>
+                        <DroppableColumn key={column.id || (column as any)._id || idx} id={column.id} column={column}>
                             <SortableContext items={columnItems.map(item => item.id)} strategy={verticalListSortingStrategy}>
                                 <div className="kanban-column-content">
                                     <span className="kanban-count">{columnItems.length}</span>
-                                    {columnItems.map(item => (
-                                        <SortableCard key={item.id} id={item.id}>
+                                    {columnItems.map((item, idx) => (
+                                        <SortableCard key={item.id || (item as any)._id || idx} id={item.id}>
                                             {renderCard(item)}
                                         </SortableCard>
                                     ))}

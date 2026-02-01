@@ -156,8 +156,8 @@ export const POSSessions = () => {
               onChange={(e) => setFilters({ ...filters, store_id: e.target.value })}
             >
               <option value="">All Stores</option>
-              {stores.map((store) => (
-                <option key={store.id} value={store.id}>
+              {stores.map((store, idx) => (
+                <option key={store.id || (store as any)._id || idx} value={store.id}>
                   {store.name}
                 </option>
               ))}
@@ -180,12 +180,12 @@ export const POSSessions = () => {
       </div>
 
       <div className="sessions-grid">
-        {sessions.map((session) => {
+        {sessions.map((session, idx) => {
           const badge = getStateBadge(session.state);
           const Icon = badge.icon;
           const difference = session.difference || 0;
           return (
-            <div key={session.id} className="session-card">
+            <div key={session.id || (session as any)._id || idx} className="session-card">
               <div className="session-card-header">
                 <div className="session-info">
                   <h3>{session.name}</h3>

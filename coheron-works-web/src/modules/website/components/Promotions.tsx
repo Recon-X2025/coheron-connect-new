@@ -95,8 +95,8 @@ export const Promotions = () => {
             <Button icon={<Plus size={18} />} onClick={handleNewPromotion}>Create Your First Promotion</Button>
           </div>
         ) : (
-          promotions.map((promo) => (
-            <div key={promo.id} className="promotion-card">
+          promotions.map((promo, idx) => (
+            <div key={promo.id || (promo as any)._id || idx} className="promotion-card">
               <div className="promotion-header">
                 <Tag size={24} />
                 <span className={`status-badge ${promo.is_active ? 'active' : 'inactive'}`}>

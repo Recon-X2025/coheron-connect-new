@@ -79,8 +79,8 @@ export const OrderForm = ({ order, onClose, onSave }: OrderFormProps) => {
                   required
                 >
                   <option value="">Select Customer</option>
-                  {partners.map((p) => (
-                    <option key={p.id} value={p.id}>
+                  {partners.map((p, idx) => (
+                    <option key={p.id || (p as any)._id || idx} value={p.id}>
                       {p.name}
                     </option>
                   ))}

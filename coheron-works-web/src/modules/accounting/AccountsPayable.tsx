@@ -225,8 +225,8 @@ export const AccountsPayable = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredBills.map(bill => (
-                  <tr key={bill.id}>
+                {filteredBills.map((bill, idx) => (
+                  <tr key={bill.id || (bill as any)._id || idx}>
                     <td className="bill-number">
                       <FileText size={16} />
                       {bill.name}

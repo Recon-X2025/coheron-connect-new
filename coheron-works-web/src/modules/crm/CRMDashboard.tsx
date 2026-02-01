@@ -264,8 +264,8 @@ export const CRMDashboard: React.FC = () => {
             </div>
             <div className="crm-recent-list">
               {recentLeads.length > 0 ? (
-                recentLeads.map((lead) => (
-                  <div key={lead.id} className="crm-recent-item">
+                recentLeads.map((lead, idx) => (
+                  <div key={lead.id || (lead as any)._id || idx} className="crm-recent-item">
                     <div className="crm-recent-item-info">
                       <h4>{lead.name || lead.contact_name || 'Unnamed Lead'}</h4>
                       <p>{lead.email || lead.email_address || 'No email'}</p>
@@ -291,8 +291,8 @@ export const CRMDashboard: React.FC = () => {
             </div>
             <div className="crm-recent-list">
               {recentOpportunities.length > 0 ? (
-                recentOpportunities.map((opp) => (
-                  <div key={opp.id} className="crm-recent-item">
+                recentOpportunities.map((opp, idx) => (
+                  <div key={opp.id || (opp as any)._id || idx} className="crm-recent-item">
                     <div className="crm-recent-item-info">
                       <h4>{opp.name || 'Unnamed Opportunity'}</h4>
                       <p>{formatInLakhsCompact(

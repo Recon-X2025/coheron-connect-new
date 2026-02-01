@@ -95,8 +95,8 @@ export const Customers = () => {
 
                 {/* Customer Grid */}
                 <div className="customers-grid">
-                    {paginatedPartners.map(partner => (
-                        <Card key={partner.id} className="customer-card">
+                    {paginatedPartners.map((partner, idx) => (
+                        <Card key={partner.id || (partner as any)._id || idx} className="customer-card">
                             <div className="customer-card-header">
                                 <div className="customer-avatar">
                                     {partner.type === 'company' ? (

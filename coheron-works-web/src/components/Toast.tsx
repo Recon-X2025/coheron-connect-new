@@ -154,8 +154,8 @@ export const ToastContainer = () => {
 
   return (
     <div className="toast-container" role="status" aria-live="polite">
-      {toasts.map((toast) => (
-        <ToastItem key={toast.id} toast={toast} onRemove={removeToast} />
+      {toasts.map((toast, idx) => (
+        <ToastItem key={toast.id || (toast as any)._id || idx} toast={toast} onRemove={removeToast} />
       ))}
     </div>
   );

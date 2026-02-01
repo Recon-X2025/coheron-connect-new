@@ -266,11 +266,11 @@ export const AgentWorkbench: React.FC = () => {
                 <p>No tickets found</p>
               </div>
             ) : (
-              filteredTickets.map((ticket) => {
+              filteredTickets.map((ticket, idx) => {
                 const slaStatus = getSlaStatus(ticket);
                 return (
                   <div
-                    key={ticket.id}
+                    key={ticket.id || (ticket as any)._id || idx}
                     className={`ticket-item ${selectedTicket?.id === ticket.id ? 'active' : ''}`}
                     onClick={() => handleTicketClick(ticket)}
                   >
@@ -368,9 +368,9 @@ export const AgentWorkbench: React.FC = () => {
 
                 {showCannedResponses && (
                   <div className="canned-responses-panel">
-                    {cannedResponses.map((response) => (
+                    {cannedResponses.map((response, idx) => (
                       <div
-                        key={response.id}
+                        key={response.id || (response as any)._id || idx}
                         className="canned-response-item"
                         onClick={() => handleUseCannedResponse(response)}
                       >
@@ -415,8 +415,8 @@ export const AgentWorkbench: React.FC = () => {
 
                 <div className="notes-list">
                   {selectedTicket.notes && selectedTicket.notes.length > 0 ? (
-                    selectedTicket.notes.map((note) => (
-                      <div key={note.id} className={`note-item note-${note.note_type}`}>
+                    selectedTicket.notes.map((note, idx) => (
+                      <div key={note.id || (note as any)._id || idx} className={`note-item note-${note.note_type}`}>
                         <div className="note-header">
                           <span className="note-author">{note.created_by_name || 'System'}</span>
                           <span className="note-type-badge">{note.note_type}</span>
@@ -437,8 +437,8 @@ export const AgentWorkbench: React.FC = () => {
                 <div className="ticket-history-section">
                   <h3>History</h3>
                   <div className="history-list">
-                    {selectedTicket.history.map((entry) => (
-                      <div key={entry.id} className="history-item">
+                    {selectedTicket.history.map((entry, idx) => (
+                      <div key={entry.id || (entry as any)._id || idx} className="history-item">
                         <span className="history-action">{entry.action}</span>
                         {entry.old_value && <span className="history-change">{entry.old_value} → {entry.new_value}</span>}
                         <span className="history-date">{new Date(entry.created_at).toLocaleString()}</span>

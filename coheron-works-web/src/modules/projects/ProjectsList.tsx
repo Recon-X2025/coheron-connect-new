@@ -57,8 +57,8 @@ export const ProjectsList = () => {
                 </div>
 
                 <div className="projects-grid">
-                    {filteredProjects.map(project => (
-                        <div key={project.id} className="project-card">
+                    {filteredProjects.map((project, idx) => (
+                        <div key={project.id || (project as any)._id || idx} className="project-card">
                             <div className="project-icon">
                                 <FolderKanban size={32} />
                             </div>

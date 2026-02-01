@@ -280,8 +280,8 @@ export const WorkOrders = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredWorkOrders.map((wo) => (
-                <tr key={wo.id} onClick={() => handleViewDetails(wo)}>
+              {filteredWorkOrders.map((wo, idx) => (
+                <tr key={wo.id || (wo as any)._id || idx} onClick={() => handleViewDetails(wo)}>
                   <td><strong>{wo.name}</strong></td>
                   <td>{wo.mo_name || wo.mo_number || '-'}</td>
                   <td>{wo.operation_name || '-'}</td>
@@ -418,8 +418,8 @@ export const WorkOrders = () => {
                   <div className="activities-section">
                     <h3>Operator Activities</h3>
                     <div className="activities-list">
-                      {selectedWO.activities.map((activity) => (
-                        <div key={activity.id} className="activity-item">
+                      {selectedWO.activities.map((activity, idx) => (
+                        <div key={activity.id || (activity as any)._id || idx} className="activity-item">
                           <div className="activity-header">
                             <span className="activity-type">{activity.activity_type}</span>
                             <span className="activity-time">

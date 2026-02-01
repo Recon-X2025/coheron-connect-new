@@ -57,11 +57,11 @@ export const StockMovements = () => {
   return (
     <div className="stock-movements-page">
       <div className="movements-tabs">
-        {tabs.map((tab) => {
+        {tabs.map((tab, idx) => {
           const Icon = tab.icon;
           return (
             <button
-              key={tab.id}
+              key={tab.id || (tab as any)._id || idx}
               className={`movement-tab ${activeTab === tab.id ? 'active' : ''}`}
               onClick={() => setActiveTab(tab.id)}
             >

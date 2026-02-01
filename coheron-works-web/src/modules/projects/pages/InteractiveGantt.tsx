@@ -271,7 +271,7 @@ export const InteractiveGantt: React.FC<{ projectId?: string }> = ({ projectId }
   // ── Render dependency arrows ──────────────────────────────────────
 
   const renderLinks = () => {
-    return links.map(link => {
+    return links.map((link, lIdx) => {
       const srcIdx = tasks.findIndex(t => t.id === link.source);
       const tgtIdx = tasks.findIndex(t => t.id === link.target);
       if (srcIdx < 0 || tgtIdx < 0) return null;
@@ -283,7 +283,7 @@ export const InteractiveGantt: React.FC<{ projectId?: string }> = ({ projectId }
       const y2 = taskY(tgtIdx) + ROW_HEIGHT / 2 - 2;
       const midX = x1 + 12;
       const path = `M${x1},${y1} L${midX},${y1} L${midX},${y2} L${x2},${y2}`;
-      return <g key={link.id}>
+      return <g key={link.id || (link as any)._id || lIdx}>
         <path d={path} fill="none" stroke="#939393" strokeWidth={1.2} markerEnd="url(#arrowhead)" />
       </g>;
     });
@@ -304,14 +304,14 @@ export const InteractiveGantt: React.FC<{ projectId?: string }> = ({ projectId }
         // Diamond marker
         const cx = x + w / 2;
         const cy = y + barH / 2;
-        return <g key={task.id}>
+        return <g key={task.id || (task as any)._id || idx}>
           <polygon points={`${cx},${cy - 10} ${cx + 10},${cy} ${cx},${cy + 10} ${cx - 10},${cy}`}
             fill="#e91e63" stroke="#fff" strokeWidth={0.5} />
           <text x={cx + 14} y={cy + 4} fill="#fff" fontSize={11}>{task.name}</text>
         </g>;
       }
 
-      return <g key={task.id}>
+      return <g key={task.id || (task as any)._id || idx}>
         {/* Bar background */}
         <rect x={x} y={y} width={w} height={barH} rx={4} fill={barColor} opacity={0.3}
           style={{ cursor: 'grab' }}
@@ -388,7 +388,7 @@ export const InteractiveGantt: React.FC<{ projectId?: string }> = ({ projectId }
             Task Name
           </div>
           {tasks.map((t, _idx) => (
-            <div key={t.id} style={{ height: ROW_HEIGHT, borderBottom: '1px solid #1a1a1a', padding: '0 12px', display: 'flex', alignItems: 'center', fontSize: 12, gap: 6 }}>
+            <div key={t.id || (t as any)._id || _idx} style={{ height: ROW_HEIGHT, borderBottom: '1px solid #1a1a1a', padding: '0 12px', display: 'flex', alignItems: 'center', fontSize: 12, gap: 6 }}>
               {t.milestone ? <Diamond size={12} color="#e91e63" /> : <div style={{ width: 8, height: 8, borderRadius: 2, background: t.color, flexShrink: 0 }} />}
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</span>
             </div>

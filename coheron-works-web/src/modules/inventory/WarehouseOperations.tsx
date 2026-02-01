@@ -324,10 +324,10 @@ export const WarehouseOperations = () => {
                     </td>
                   </tr>
                 ) : (
-                  putawayTasks.map((task) => {
+                  putawayTasks.map((task, idx) => {
                     const badge = getStateBadge(task.state);
                     return (
-                      <tr key={task.id}>
+                      <tr key={task.id || (task as any)._id || idx}>
                         <td>{task.grn_number || `#${task.grn_id}`}</td>
                         <td>{task.product_name || task.product_code}</td>
                         <td>{task.quantity}</td>
@@ -393,10 +393,10 @@ export const WarehouseOperations = () => {
                     </td>
                   </tr>
                 ) : (
-                  pickingTasks.map((task) => {
+                  pickingTasks.map((task, idx) => {
                     const badge = getStateBadge(task.state);
                     return (
-                      <tr key={task.id}>
+                      <tr key={task.id || (task as any)._id || idx}>
                         <td>{task.order_number || `#${task.order_id}`}</td>
                         <td>{task.product_name || task.product_code}</td>
                         <td>{task.quantity}</td>
@@ -462,10 +462,10 @@ export const WarehouseOperations = () => {
                     </td>
                   </tr>
                 ) : (
-                  packingTasks.map((task) => {
+                  packingTasks.map((task, idx) => {
                     const badge = getStateBadge(task.state);
                     return (
-                      <tr key={task.id}>
+                      <tr key={task.id || (task as any)._id || idx}>
                         <td>{task.order_number || `#${task.order_id}`}</td>
                         <td>{task.items.length} items</td>
                         <td>{task.carton_type || '-'}</td>
@@ -510,10 +510,10 @@ export const WarehouseOperations = () => {
                     </td>
                   </tr>
                 ) : (
-                  cycleCounts.map((count) => {
+                  cycleCounts.map((count, idx) => {
                     const badge = getStateBadge(count.state);
                     return (
-                      <tr key={count.id}>
+                      <tr key={count.id || (count as any)._id || idx}>
                         <td>{count.count_number}</td>
                         <td>{count.warehouse_name}</td>
                         <td>{count.count_type}</td>

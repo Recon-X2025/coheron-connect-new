@@ -263,8 +263,8 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
             <p>No activities yet. Add one to get started!</p>
           </div>
         ) : (
-          activities.map((activity) => (
-            <div key={activity.id} className="activity-item">
+          activities.map((activity, idx) => (
+            <div key={activity.id || (activity as any)._id || idx} className="activity-item">
               <div className="activity-icon" data-type={activity.type}>
                 {getActivityIcon(activity.type)}
               </div>

@@ -77,9 +77,9 @@ export const ProjectWiki = ({ projectId }: ProjectWikiProps) => {
             <span>Spaces</span>
           </div>
           <div className="spaces-list">
-            {spaces.map(space => (
+            {spaces.map((space, idx) => (
               <button
-                key={space.id}
+                key={space.id || (space as any)._id || idx}
                 className={`space-item ${selectedSpace?.id === space.id ? 'active' : ''}`}
                 onClick={() => setSelectedSpace(space)}
               >
@@ -135,8 +135,8 @@ export const ProjectWiki = ({ projectId }: ProjectWikiProps) => {
                     }}>Create Page</Button>
                   </div>
                 ) : (
-                  pages.map(page => (
-                    <div key={page.id} className="page-item">
+                  pages.map((page, idx) => (
+                    <div key={page.id || (page as any)._id || idx} className="page-item">
                       <FileText size={20} />
                       <div className="page-info">
                         <h4>{page.title}</h4>

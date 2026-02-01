@@ -172,8 +172,8 @@ export const SupportDashboard: React.FC = () => {
             </div>
             <div className="support-recent-list">
               {openTickets.length > 0 ? (
-                openTickets.map((ticket) => (
-                  <div key={ticket.id} className="support-recent-item">
+                openTickets.map((ticket, idx) => (
+                  <div key={ticket.id || (ticket as any)._id || idx} className="support-recent-item">
                     <div className="support-recent-item-info">
                       <h4>{ticket.subject || `Ticket #${ticket.id}`}</h4>
                       <p>{ticket.customer_name || ticket.partner_name || 'Unknown Customer'}</p>
@@ -204,8 +204,8 @@ export const SupportDashboard: React.FC = () => {
             </div>
             <div className="support-recent-list">
               {recentTickets.length > 0 ? (
-                recentTickets.map((ticket) => (
-                  <div key={ticket.id} className="support-recent-item">
+                recentTickets.map((ticket, idx) => (
+                  <div key={ticket.id || (ticket as any)._id || idx} className="support-recent-item">
                     <div className="support-recent-item-info">
                       <h4>{ticket.subject || `Ticket #${ticket.id}`}</h4>
                       <p>{ticket.customer_name || ticket.partner_name || 'Unknown Customer'}</p>

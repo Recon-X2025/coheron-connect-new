@@ -202,9 +202,9 @@ export const AutomationBuilder: React.FC = () => {
                 <p>No automation rules found</p>
               </div>
             ) : (
-              rules.map((rule) => (
+              rules.map((rule, idx) => (
                 <div
-                  key={rule.id}
+                  key={rule.id || (rule as any)._id || idx}
                   onClick={() => handleRuleClick(rule)}
                   style={{ cursor: 'pointer' }}
                 >

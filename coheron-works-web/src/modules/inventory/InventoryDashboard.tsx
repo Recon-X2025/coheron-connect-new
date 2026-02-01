@@ -202,8 +202,8 @@ export const InventoryDashboard = () => {
                 <span className="alert-count">{reorderSuggestions.length}</span>
               </div>
               <div className="alert-items">
-                {reorderSuggestions.slice(0, 5).map((suggestion) => (
-                  <div key={suggestion.id} className="alert-item">
+                {reorderSuggestions.slice(0, 5).map((suggestion, idx) => (
+                  <div key={suggestion.id || (suggestion as any)._id || idx} className="alert-item">
                     <span className="item-name">{suggestion.product_name}</span>
                     <span className="item-suggestion">Suggested: {suggestion.suggested_qty.toFixed(2)}</span>
                   </div>

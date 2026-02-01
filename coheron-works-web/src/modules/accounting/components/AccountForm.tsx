@@ -159,8 +159,8 @@ export const AccountForm = ({ onClose, onSave, initialData }: AccountFormProps) 
               <option value="">None (Top Level)</option>
               {accounts
                 .filter((acc) => !acc.deprecated && (!initialData || acc.id !== initialData.id))
-                .map((account) => (
-                  <option key={account.id} value={account.id}>
+                .map((account, idx) => (
+                  <option key={account.id || (account as any)._id || idx} value={account.id}>
                     {account.code} - {account.name}
                   </option>
                 ))}

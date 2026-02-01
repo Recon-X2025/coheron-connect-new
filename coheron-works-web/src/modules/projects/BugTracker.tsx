@@ -94,8 +94,8 @@ export const BugTracker = ({ projectId }: BugTrackerProps) => {
               <p>No open bugs! Great job!</p>
             </div>
           ) : (
-            openBugs.map(bug => (
-              <div key={bug.id} className="bug-item open">
+            openBugs.map((bug, idx) => (
+              <div key={bug.id || (bug as any)._id || idx} className="bug-item open">
                 <div className="bug-main">
                   <div className="bug-header-item">
                     <span className="bug-key">{bug.key}</span>
@@ -133,8 +133,8 @@ export const BugTracker = ({ projectId }: BugTrackerProps) => {
               <p>No resolved bugs yet</p>
             </div>
           ) : (
-            resolvedBugs.map(bug => (
-              <div key={bug.id} className="bug-item resolved">
+            resolvedBugs.map((bug, idx) => (
+              <div key={bug.id || (bug as any)._id || idx} className="bug-item resolved">
                 <div className="bug-main">
                   <div className="bug-header-item">
                     <span className="bug-key">{bug.key}</span>

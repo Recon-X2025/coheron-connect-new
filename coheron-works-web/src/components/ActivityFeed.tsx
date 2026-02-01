@@ -67,10 +67,10 @@ export const ActivityFeed: React.FC<ActivityFeedProps> = ({ activities }) => {
   return (
     <div className="activity-feed">
       <ul className="activity-feed-list">
-        {displayed.map((item) => {
+        {displayed.map((item, idx) => {
           const { icon, color } = config(item.action);
           return (
-            <li key={item.id} className="activity-feed-item">
+            <li key={item.id || (item as any)._id || idx} className="activity-feed-item">
               <span className="activity-feed-icon" style={{ backgroundColor: `${color}18`, color }}>
                 {icon}
               </span>

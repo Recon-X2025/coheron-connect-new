@@ -210,10 +210,10 @@ export const JournalEntries = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredEntries.map(entry => {
+              {filteredEntries.map((entry, idx) => {
                 const badge = getStateBadge(entry.state);
                 return (
-                  <tr key={entry.id}>
+                  <tr key={entry.id || (entry as any)._id || idx}>
                     <td className="entry-number">
                       <FileText size={16} />
                       {entry.name}
@@ -328,8 +328,8 @@ export const JournalEntries = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {selectedEntry.lines.map(line => (
-                          <tr key={line.id}>
+                        {selectedEntry.lines.map((line, idx) => (
+                          <tr key={line.id || (line as any)._id || idx}>
                             <td>{line.account_name} ({line.account_code})</td>
                             <td>{line.debit > 0 ? formatInLakhsCompact(line.debit) : '-'}</td>
                             <td>{line.credit > 0 ? formatInLakhsCompact(line.credit) : '-'}</td>

@@ -125,9 +125,9 @@ export const PricingManagement = () => {
             </div>
 
             <div className="price-lists-grid">
-              {filteredPriceLists.map((list) => (
+              {filteredPriceLists.map((list, idx) => (
                 <div
-                  key={list.id}
+                  key={list.id || (list as any)._id || idx}
                   className="price-list-card"
                   onClick={() => setSelectedPriceList(list)}
                 >
@@ -190,8 +190,8 @@ export const PricingManagement = () => {
         {activeTab === 'rules' && (
           <div className="pricing-content">
             <div className="rules-list">
-              {pricingRules.map((rule) => (
-                <div key={rule.id} className="rule-card">
+              {pricingRules.map((rule, idx) => (
+                <div key={rule.id || (rule as any)._id || idx} className="rule-card">
                   <div className="rule-header">
                     <div>
                       <h3>{rule.name}</h3>
@@ -334,8 +334,8 @@ export const PricingManagement = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {selectedPriceList.products.map((product) => (
-                          <tr key={product.id}>
+                        {selectedPriceList.products.map((product, idx) => (
+                          <tr key={product.id || (product as any)._id || idx}>
                             <td>{product.product_name || `Product ${product.product_id}`}</td>
                             <td>{product.min_quantity}</td>
                             <td>{formatInLakhsCompact(product.price)}</td>

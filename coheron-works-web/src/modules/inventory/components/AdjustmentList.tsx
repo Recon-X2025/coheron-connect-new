@@ -64,8 +64,8 @@ export const AdjustmentList = ({ adjustments, onRefresh }: AdjustmentListProps) 
             </tr>
           </thead>
           <tbody>
-            {adjustments.map((adjustment) => (
-              <tr key={adjustment.id}>
+            {adjustments.map((adjustment, idx) => (
+              <tr key={adjustment.id || (adjustment as any)._id || idx}>
                 <td className="adjustment-number">{adjustment.adjustment_number}</td>
                 <td>{new Date(adjustment.adjustment_date).toLocaleDateString()}</td>
                 <td>{adjustment.warehouse_name}</td>

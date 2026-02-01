@@ -199,8 +199,8 @@ export const QualityControl = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredInspections.map((insp) => (
-                  <tr key={insp.id} onClick={() => handleViewDetails(insp)}>
+                {filteredInspections.map((insp, idx) => (
+                  <tr key={insp.id || (insp as any)._id || idx} onClick={() => handleViewDetails(insp)}>
                     <td><strong>{insp.mo_number || insp.mo_name || '-'}</strong></td>
                     <td>
                       <span className="type-badge">{insp.inspection_type}</span>
@@ -264,8 +264,8 @@ export const QualityControl = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredNCRs.map((ncr) => (
-                  <tr key={ncr.id}>
+                {filteredNCRs.map((ncr, idx) => (
+                  <tr key={ncr.id || (ncr as any)._id || idx}>
                     <td><strong>{ncr.ncr_number}</strong></td>
                     <td>{ncr.mo_number || ncr.mo_name || '-'}</td>
                     <td>{ncr.product_name || '-'}</td>
@@ -321,8 +321,8 @@ export const QualityControl = () => {
                 </tr>
               </thead>
               <tbody>
-                {reworkOrders.map((rw) => (
-                  <tr key={rw.id}>
+                {reworkOrders.map((rw, idx) => (
+                  <tr key={rw.id || (rw as any)._id || idx}>
                     <td><strong>{rw.name}</strong></td>
                     <td>{rw.mo_number || rw.mo_name || '-'}</td>
                     <td>{rw.ncr_number || '-'}</td>
@@ -425,8 +425,8 @@ export const QualityControl = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {selectedInspection.checklist.map((item) => (
-                          <tr key={item.id}>
+                        {selectedInspection.checklist.map((item, idx) => (
+                          <tr key={item.id || (item as any)._id || idx}>
                             <td>{item.checklist_item}</td>
                             <td>{item.specification || '-'}</td>
                             <td>{item.actual_value || '-'}</td>

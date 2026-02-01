@@ -177,8 +177,8 @@ export const POSDashboard: React.FC = () => {
             </div>
             <div className="pos-recent-list">
               {recentSessions.length > 0 ? (
-                recentSessions.map((session) => (
-                  <div key={session.id} className="pos-recent-item">
+                recentSessions.map((session, idx) => (
+                  <div key={session.id || (session as any)._id || idx} className="pos-recent-item">
                     <div className="pos-recent-item-info">
                       <h4>{session.name || session.session_name || `Session #${session.id}`}</h4>
                       <p>{session.partner_name || 'Walk-in Customer'}</p>

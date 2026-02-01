@@ -21,9 +21,9 @@ export const SiteSettings = () => {
 
       <div className="site-settings-layout">
         <div className="settings-sidebar">
-          {sections.map((section) => (
+          {sections.map((section, idx) => (
             <button
-              key={section.id}
+              key={section.id || (section as any)._id || idx}
               className={`settings-section-btn ${activeSection === section.id ? 'active' : ''}`}
               onClick={() => setActiveSection(section.id)}
             >

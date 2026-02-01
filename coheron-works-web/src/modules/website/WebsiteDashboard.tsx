@@ -167,8 +167,8 @@ export const WebsiteDashboard: React.FC = () => {
             </div>
             <div className="website-recent-list">
               {recentPages.length > 0 ? (
-                recentPages.map((page) => (
-                  <div key={page.id} className="website-recent-item">
+                recentPages.map((page, idx) => (
+                  <div key={page.id || (page as any)._id || idx} className="website-recent-item">
                     <div className="website-recent-item-info">
                       <h4>{page.name || page.title || `Page #${page.id}`}</h4>
                       <p>{page.url || page.slug || 'No URL'}</p>

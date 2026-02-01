@@ -182,8 +182,8 @@ export const Quotations = () => {
         )}
 
         <div className="quotations-grid">
-          {paginatedQuotations.map((quote) => (
-            <div key={quote.id} className="quotation-card">
+          {paginatedQuotations.map((quote, idx) => (
+            <div key={quote.id || (quote as any)._id || idx} className="quotation-card">
               <div className="quotation-header">
                 <div>
                   <h3>{quote.name}</h3>
@@ -269,8 +269,8 @@ export const Quotations = () => {
               <div className="modal-body">
                 <div className="versions-list">
                   {quoteVersions.length > 0 ? (
-                    quoteVersions.map((version: any) => (
-                      <div key={version.id} className="version-item">
+                    quoteVersions.map((version: any, idx: number) => (
+                      <div key={version.id || (version as any)._id || idx} className="version-item">
                         <div className="version-header">
                           <span className="version-number">Version {version.version_number}</span>
                           <span className="version-date">

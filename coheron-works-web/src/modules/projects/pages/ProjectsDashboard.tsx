@@ -201,8 +201,8 @@ export const ProjectsDashboard: React.FC = () => {
             </div>
             <div className="projects-recent-list">
               {activeProjects.length > 0 ? (
-                activeProjects.map((project) => (
-                  <div key={project.id} className="projects-recent-item">
+                activeProjects.map((project, idx) => (
+                  <div key={project.id || (project as any)._id || idx} className="projects-recent-item">
                     <div className="projects-recent-item-info">
                       <h4>{project.name || `Project #${project.id}`}</h4>
                       <p>{project.project_type || 'Standard'} Project</p>
@@ -237,8 +237,8 @@ export const ProjectsDashboard: React.FC = () => {
             </div>
             <div className="projects-recent-list">
               {recentProjects.length > 0 ? (
-                recentProjects.map((project) => (
-                  <div key={project.id} className="projects-recent-item">
+                recentProjects.map((project, idx) => (
+                  <div key={project.id || (project as any)._id || idx} className="projects-recent-item">
                     <div className="projects-recent-item-info">
                       <h4>{project.name || `Project #${project.id}`}</h4>
                       <p>{project.project_type || 'Standard'} Project</p>

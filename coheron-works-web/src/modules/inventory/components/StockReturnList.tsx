@@ -220,10 +220,10 @@ export const StockReturnList = ({ onRefresh }: StockReturnListProps) => {
                 </td>
               </tr>
             ) : (
-              returns.map((return_transaction) => {
+              returns.map((return_transaction, idx) => {
                 const badge = getStateBadge(return_transaction.state);
                 return (
-                  <tr key={return_transaction.id}>
+                  <tr key={return_transaction.id || (return_transaction as any)._id || idx}>
                     <td>{return_transaction.return_number}</td>
                     <td>{getReturnTypeLabel(return_transaction.return_type)}</td>
                     <td>{return_transaction.original_transaction_ref || `#${return_transaction.original_transaction_id}`}</td>

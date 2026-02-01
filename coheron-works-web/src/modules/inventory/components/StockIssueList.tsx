@@ -203,10 +203,10 @@ export const StockIssueList = ({ onRefresh }: StockIssueListProps) => {
                 </td>
               </tr>
             ) : (
-              issues.map((issue) => {
+              issues.map((issue, idx) => {
                 const badge = getStateBadge(issue.state);
                 return (
-                  <tr key={issue.id}>
+                  <tr key={issue.id || (issue as any)._id || idx}>
                     <td>{issue.issue_number}</td>
                     <td>{getIssueTypeLabel(issue.issue_type)}</td>
                     <td>{issue.from_warehouse_name}</td>

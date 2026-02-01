@@ -235,9 +235,9 @@ export const AdvancedFilter: React.FC<AdvancedFilterProps> = ({
             <div className="saved-filters">
               <h4>Saved Filters</h4>
               <div className="saved-filters-list">
-                {savedFilters.map((filter) => (
+                {savedFilters.map((filter, idx) => (
                   <button
-                    key={filter.id}
+                    key={filter.id || (filter as any)._id || idx}
                     className="saved-filter-item"
                     onClick={() => loadFilter(filter)}
                   >

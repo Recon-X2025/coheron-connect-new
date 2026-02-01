@@ -116,8 +116,8 @@ export const Pages = ({ onNewPage }: PagesProps) => {
           </div>
         ) : (
           <div className="pages-grid">
-            {filteredPages.map((page) => (
-              <div key={page.id} className="page-card">
+            {filteredPages.map((page, idx) => (
+              <div key={page.id || (page as any)._id || idx} className="page-card">
                 <div className="page-header">
                   <Globe size={24} />
                   <span className={`status-badge ${page.is_published ? 'published' : 'draft'}`}>

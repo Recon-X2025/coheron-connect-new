@@ -129,8 +129,8 @@ export const SerialForm = ({ serial, onClose, onSave }: SerialFormProps) => {
               onChange={(e) => handleProductChange(parseInt(e.target.value))}
             >
               <option value={0}>Select Product</option>
-              {products.map((product) => (
-                <option key={product.id} value={product.id}>
+              {products.map((product, idx) => (
+                <option key={product.id || (product as any)._id || idx} value={product.id}>
                   {product.name} ({product.default_code})
                 </option>
               ))}
@@ -147,8 +147,8 @@ export const SerialForm = ({ serial, onClose, onSave }: SerialFormProps) => {
                 onChange={(e) => setFormData({ ...formData, lot_id: e.target.value ? parseInt(e.target.value) : undefined })}
               >
                 <option value="">No Batch</option>
-                {lots.map((lot) => (
-                  <option key={lot.id} value={lot.id}>
+                {lots.map((lot, idx) => (
+                  <option key={lot.id || (lot as any)._id || idx} value={lot.id}>
                     {lot.name}
                   </option>
                 ))}

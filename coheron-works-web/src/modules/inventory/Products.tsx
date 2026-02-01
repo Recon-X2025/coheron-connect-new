@@ -161,11 +161,11 @@ export const Products = () => {
                 </div>
 
                 <div className="products-grid">
-                    {paginatedProducts.map(product => {
+                    {paginatedProducts.map((product, idx) => {
                         const stock = getStockInfo(product.id);
                         const isLowStock = stock.available_qty < (product as any).reorder_point || 0;
                         return (
-                            <div key={product.id} className="product-card">
+                            <div key={product.id || (product as any)._id || idx} className="product-card">
                                 <div className="product-card-header">
                                     <div className="product-icon">
                                         <Package size={32} />
@@ -342,8 +342,8 @@ export const Products = () => {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {stockDetails.map((stock) => (
-                                                    <tr key={stock.id}>
+                                                {stockDetails.map((stock, idx) => (
+                                                    <tr key={stock.id || (stock as any)._id || idx}>
                                                         <td>{stock.warehouse_name || 'N/A'}</td>
                                                         <td>{stock.location_name}</td>
                                                         <td>{stock.quantity.toFixed(2)}</td>

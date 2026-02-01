@@ -356,7 +356,7 @@ export const WorkflowDesigner: React.FC = () => {
               </marker>
             </defs>
             {/* Edges */}
-            {current.edges.map(edge => {
+            {current.edges.map((edge, eIdx) => {
               const src = current.nodes.find(n => n.id === edge.source);
               const tgt = current.nodes.find(n => n.id === edge.target);
               if (!src || !tgt) return null;
@@ -365,7 +365,7 @@ export const WorkflowDesigner: React.FC = () => {
               const x2 = tgt.position.x;
               const y2 = tgt.position.y + NODE_H / 2;
               const midX = (x1 + x2) / 2;
-              return <path key={edge.id} d={`M${x1},${y1} C${midX},${y1} ${midX},${y2} ${x2},${y2}`}
+              return <path key={edge.id || (edge as any)._id || eIdx} d={`M${x1},${y1} C${midX},${y1} ${midX},${y2} ${x2},${y2}`}
                 fill="none" stroke="#939393" strokeWidth={1.5} markerEnd="url(#wf-arrow)" style={{ pointerEvents: 'auto' }} />;
             })}
             {/* Connecting line */}
@@ -379,11 +379,11 @@ export const WorkflowDesigner: React.FC = () => {
           </svg>
 
           {/* Nodes */}
-          {current.nodes.map(node => {
+          {current.nodes.map((node, nIdx) => {
             const color = nodeColor(node.type);
             const isSelected = selectedNode?.id === node.id;
             return (
-              <div key={node.id}
+              <div key={node.id || (node as any)._id || nIdx}
                 style={{
                   position: 'absolute', left: node.position.x, top: node.position.y,
                   width: NODE_W, height: NODE_H,

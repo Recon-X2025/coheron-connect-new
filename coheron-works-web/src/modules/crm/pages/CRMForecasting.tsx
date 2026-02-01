@@ -131,8 +131,8 @@ export const CRMForecasting: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {(accuracy.results || []).map((r: any) => (
-                <tr key={r.id} style={{ borderBottom: '1px solid #1f2937' }}>
+              {(accuracy.results || []).map((r: any, idx: number) => (
+                <tr key={r.id || (r as any)._id || idx} style={{ borderBottom: '1px solid #1f2937' }}>
                   <td style={{ padding: '12px 16px', fontWeight: 600 }}>{r.forecast_name}</td>
                   <td style={{ padding: '12px 16px', color: '#60a5fa' }}>${(r.forecasted || 0).toLocaleString()}</td>
                   <td style={{ padding: '12px 16px', color: '#22c55e' }}>${(r.actual || 0).toLocaleString()}</td>

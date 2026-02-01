@@ -93,8 +93,8 @@ export const ProductForm = ({ onClose, onSave, initialData }: ProductFormProps) 
               required
             >
               <option value="">Select Product</option>
-              {products.map((product) => (
-                <option key={product.id} value={product.id}>
+              {products.map((product, idx) => (
+                <option key={product.id || (product as any)._id || idx} value={product.id}>
                   {product.name} ({product.default_code})
                 </option>
               ))}

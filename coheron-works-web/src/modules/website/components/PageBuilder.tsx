@@ -119,9 +119,9 @@ export const PageBuilder = () => {
               </div>
             </div>
           ) : (
-            blocks.map((block) => (
+            blocks.map((block, idx) => (
               <div
-                key={block.id}
+                key={block.id || (block as any)._id || idx}
                 className={`page-block ${selectedBlock === block.id ? 'selected' : ''}`}
                 onClick={() => setSelectedBlock(block.id)}
               >

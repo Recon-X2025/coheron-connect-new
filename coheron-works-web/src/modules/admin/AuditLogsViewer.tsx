@@ -272,8 +272,8 @@ export const AuditLogsViewer: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {paginated.map(log => (
-              <tr key={log.id} onClick={() => setSelectedLog(log)}>
+            {paginated.map((log, idx) => (
+              <tr key={log.id || (log as any)._id || idx} onClick={() => setSelectedLog(log)}>
                 <td data-label="Timestamp" className="audit-timestamp">
                   {new Date(log.timestamp).toLocaleString()}
                 </td>

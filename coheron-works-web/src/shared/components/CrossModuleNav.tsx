@@ -110,9 +110,9 @@ export const CrossModuleNav: React.FC<CrossModuleNavProps> = ({
         <div className="related-records">
           <h4 className="related-title">Related Records</h4>
           <div className="related-list">
-            {relatedRecords.map((record) => (
+            {relatedRecords.map((record, idx) => (
               <Link
-                key={`${record.model}-${record.id}`}
+                key={`${record.model}-${record.id || (record as any)._id || idx}`}
                 to={getModuleRoute(record.model, record.id)}
                 className="related-item"
               >

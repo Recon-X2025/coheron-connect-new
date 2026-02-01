@@ -124,8 +124,8 @@ export const DeliveryTracking: React.FC<DeliveryTrackingProps> = ({ order }) => 
     <div className="delivery-tracking">
       <h4>Delivery Tracking</h4>
       <div className="delivery-list">
-        {deliveries.map((delivery) => (
-          <div key={delivery.id} className="delivery-item">
+        {deliveries.map((delivery, idx) => (
+          <div key={delivery.id || (delivery as any)._id || idx} className="delivery-item">
             <div className="delivery-header">
               <div className="delivery-info">
                 {getStateIcon(delivery.state)}

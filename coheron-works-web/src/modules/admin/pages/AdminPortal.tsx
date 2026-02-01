@@ -170,8 +170,8 @@ export const AdminPortal: React.FC = () => {
               <h3>Recent Users</h3>
               {users.length > 0 ? (
                 <ul className="user-list">
-                  {users.map((user) => (
-                    <li key={user.id}>
+                  {users.map((user, idx) => (
+                    <li key={user.id || (user as any)._id || idx}>
                       <span className="user-name">{user.name}</span>
                       <span className="user-email">{user.email}</span>
                     </li>

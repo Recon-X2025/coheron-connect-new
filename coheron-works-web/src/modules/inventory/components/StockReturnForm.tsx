@@ -237,8 +237,8 @@ export const StockReturnForm = ({ return_transaction, onClose, onSuccess }: Stoc
                   required
                 >
                   <option value="">Select Transaction</option>
-                  {originalTransactions.map((txn) => (
-                    <option key={txn.id} value={txn.id}>
+                  {originalTransactions.map((txn, idx) => (
+                    <option key={txn.id || (txn as any)._id || idx} value={txn.id}>
                       {txn.name || txn.grn_number || txn.transfer_number || txn.issue_number || `#${txn.id}`}
                     </option>
                   ))}
@@ -257,8 +257,8 @@ export const StockReturnForm = ({ return_transaction, onClose, onSuccess }: Stoc
                   required
                 >
                   <option value="">Select Warehouse</option>
-                  {warehouses.map((wh) => (
-                    <option key={wh.id} value={wh.id}>
+                  {warehouses.map((wh, idx) => (
+                    <option key={wh.id || (wh as any)._id || idx} value={wh.id}>
                       {wh.name}
                     </option>
                   ))}
@@ -335,8 +335,8 @@ export const StockReturnForm = ({ return_transaction, onClose, onSuccess }: Stoc
                           required
                         >
                           <option value="">Select Product</option>
-                          {products.map((prod) => (
-                            <option key={prod.id} value={prod.id}>
+                          {products.map((prod, idx) => (
+                            <option key={prod.id || (prod as any)._id || idx} value={prod.id}>
                               {prod.name || prod.code}
                             </option>
                           ))}
@@ -358,8 +358,8 @@ export const StockReturnForm = ({ return_transaction, onClose, onSuccess }: Stoc
                           onChange={(e) => handleLineChange(index, 'lot_id', e.target.value || undefined)}
                         >
                           <option value="">No Lot</option>
-                          {lots.filter(lot => lot.product_id === parseInt(line.product_id as any)).map((lot) => (
-                            <option key={lot.id} value={lot.id}>
+                          {lots.filter(lot => lot.product_id === parseInt(line.product_id as any)).map((lot, idx) => (
+                            <option key={lot.id || (lot as any)._id || idx} value={lot.id}>
                               {lot.name}
                             </option>
                           ))}

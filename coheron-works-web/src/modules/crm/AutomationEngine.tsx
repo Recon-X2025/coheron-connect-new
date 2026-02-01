@@ -188,11 +188,11 @@ export const AutomationEngine = () => {
                   wf.description?.toLowerCase().includes(filters.search.toLowerCase())
                 : true
             )
-            .map((workflow) => {
+            .map((workflow, idx) => {
               const badge = getStateBadge(workflow.state);
               const Icon = badge.icon;
               return (
-                <div key={workflow.id} className="workflow-card">
+                <div key={workflow.id || (workflow as any)._id || idx} className="workflow-card">
                   <div className="workflow-card-header">
                     <div className="workflow-icon">
                       <Zap size={24} />
@@ -421,10 +421,10 @@ const WorkflowForm = ({ workflow, onClose, onSave }: WorkflowFormProps) => {
               {actions.length === 0 ? (
                 <p className="empty-message">No actions configured. Add an action to execute when trigger fires.</p>
               ) : (
-                actions.map((action, index) => (
-                  <div key={action.id} className="action-item">
+                actions.map((action, idx) => (
+                  <div key={action.id || (action as any)._id || idx} className="action-item">
                     <div className="action-header">
-                      <span className="action-order">{index + 1}</span>
+                      <span className="action-order">{idx + 1}</span>
                       <select
                         value={action.type}
                         onChange={(e) => handleActionChange(action.id, 'type', e.target.value)}

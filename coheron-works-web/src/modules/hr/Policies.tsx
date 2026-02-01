@@ -48,8 +48,8 @@ export const Policies = () => {
                 </div>
 
                 <div className="grid gap-4">
-                    {filteredPolicies.map(policy => (
-                        <div key={policy.id} className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
+                    {filteredPolicies.map((policy, idx) => (
+                        <div key={policy.id || (policy as any)._id || idx} className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
                             <div className="flex items-start gap-4">
                                 <div className="p-3 bg-blue-50 rounded-lg text-blue-600">
                                     <Book size={24} />

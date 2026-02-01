@@ -108,8 +108,8 @@ export const QualityInspectionForm = ({ onClose, onSave, initialData }: QualityI
                 onChange={(e) => setFormData({ ...formData, mo_id: e.target.value })}
               >
                 <option value="">Select MO</option>
-                {manufacturingOrders.map((mo) => (
-                  <option key={mo.id} value={mo.id}>
+                {manufacturingOrders.map((mo, idx) => (
+                  <option key={mo.id || (mo as any)._id || idx} value={mo.id}>
                     {mo.name} ({mo.product_name})
                   </option>
                 ))}

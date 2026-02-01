@@ -231,9 +231,9 @@ export const SurveyManagement: React.FC = () => {
                 <p>No surveys found</p>
               </div>
             ) : (
-              filteredSurveys.map((survey) => (
+              filteredSurveys.map((survey, idx) => (
                 <div
-                  key={survey.id}
+                  key={survey.id || (survey as any)._id || idx}
                   className={`survey-item ${selectedSurvey?.id === survey.id ? 'active' : ''}`}
                   onClick={() => handleSurveyClick(survey)}
                 >
@@ -333,8 +333,8 @@ export const SurveyManagement: React.FC = () => {
                 <h3>Responses ({responses.length})</h3>
                 {responses.length > 0 ? (
                   <div className="responses-list">
-                    {responses.map((response) => (
-                      <Card key={response.id} className="response-item">
+                    {responses.map((response, idx) => (
+                      <Card key={response.id || (response as any)._id || idx} className="response-item">
                         <div className="response-header">
                           <div>
                             {response.partner_id && (

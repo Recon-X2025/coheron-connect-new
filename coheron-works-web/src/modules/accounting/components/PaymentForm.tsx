@@ -107,8 +107,8 @@ export const PaymentForm = ({ onClose, onSave, initialData }: PaymentFormProps) 
               required
             >
               <option value="">Select Vendor</option>
-              {vendors.map((vendor) => (
-                <option key={vendor.id} value={vendor.id}>
+              {vendors.map((vendor, idx) => (
+                <option key={vendor.id || (vendor as any)._id || idx} value={vendor.id}>
                   {vendor.name} ({vendor.code})
                 </option>
               ))}
@@ -125,8 +125,8 @@ export const PaymentForm = ({ onClose, onSave, initialData }: PaymentFormProps) 
               <option value="">Select Bill</option>
               {bills
                 .filter(bill => !formData.vendor_id || bill.vendor_id?.toString() === formData.vendor_id)
-                .map((bill) => (
-                  <option key={bill.id} value={bill.id}>
+                .map((bill, idx) => (
+                  <option key={bill.id || (bill as any)._id || idx} value={bill.id}>
                     {bill.name} - {bill.amount_total}
                   </option>
                 ))}

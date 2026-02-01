@@ -61,8 +61,8 @@ export const FinancialReports = () => {
             </tr>
           </thead>
           <tbody>
-            {reportData.map((row: any) => (
-              <tr key={row.id}>
+            {reportData.map((row: any, idx: number) => (
+              <tr key={row.id || row._id || idx}>
                 <td className="account-code">{row.code}</td>
                 <td>{row.name}</td>
                 <td>{row.account_type}</td>

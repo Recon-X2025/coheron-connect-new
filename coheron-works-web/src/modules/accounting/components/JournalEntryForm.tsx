@@ -175,8 +175,8 @@ export const JournalEntryForm = ({ onClose, onSave, initialData }: JournalEntryF
                 required
               >
                 <option value="">Select Journal</option>
-                {journals.map((journal) => (
-                  <option key={journal.id} value={journal.id}>
+                {journals.map((journal, idx) => (
+                  <option key={journal.id || (journal as any)._id || idx} value={journal.id}>
                     {journal.name} ({journal.code})
                   </option>
                 ))}
@@ -236,8 +236,8 @@ export const JournalEntryForm = ({ onClose, onSave, initialData }: JournalEntryF
                           required
                         >
                           <option value="">Select Account</option>
-                          {accounts.map((account) => (
-                            <option key={account.id} value={account.id}>
+                          {accounts.map((account, idx) => (
+                            <option key={account.id || (account as any)._id || idx} value={account.id}>
                               {account.code} - {account.name}
                             </option>
                           ))}
@@ -257,8 +257,8 @@ export const JournalEntryForm = ({ onClose, onSave, initialData }: JournalEntryF
                           onChange={(e) => updateLine(index, 'partner_id', e.target.value)}
                         >
                           <option value="">None</option>
-                          {partners.map((partner) => (
-                            <option key={partner.id} value={partner.id}>
+                          {partners.map((partner, idx) => (
+                            <option key={partner.id || (partner as any)._id || idx} value={partner.id}>
                               {partner.name}
                             </option>
                           ))}

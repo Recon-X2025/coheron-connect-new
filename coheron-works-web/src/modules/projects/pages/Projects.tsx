@@ -145,9 +145,9 @@ export const Projects = () => {
           </div>
         ) : (
           <div className="projects-grid">
-            {filteredProjects.map((project) => (
+            {filteredProjects.map((project, idx) => (
             <div
-              key={project.id}
+              key={project.id || (project as any)._id || idx}
               onClick={() => handleProjectClick(project.id)}
               style={{ cursor: 'pointer' }}
             >

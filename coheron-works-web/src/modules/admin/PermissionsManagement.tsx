@@ -136,8 +136,8 @@ export const PermissionsManagement: React.FC = () => {
           <Card key={group} className="permission-group">
             <h3 className="group-title">{group}</h3>
             <div className="permissions-grid">
-              {perms.map(perm => (
-                <div key={perm.id} className="permission-item">
+              {perms.map((perm, idx) => (
+                <div key={perm.id || (perm as any)._id || idx} className="permission-item">
                   <div className="permission-header">
                     <div>
                       <h4>{perm.name}</h4>

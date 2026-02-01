@@ -135,9 +135,9 @@ export const ContractsManagement = () => {
 
         {activeTab === 'contracts' && (
           <div className="contracts-grid">
-            {filteredContracts.map((contract) => (
+            {filteredContracts.map((contract, idx) => (
               <div
-                key={contract.id}
+                key={contract.id || (contract as any)._id || idx}
                 className="contract-card"
                 onClick={() => setSelectedContract(contract)}
               >
@@ -199,8 +199,8 @@ export const ContractsManagement = () => {
 
         {activeTab === 'subscriptions' && (
           <div className="subscriptions-list">
-            {filteredSubscriptions.map((subscription) => (
-              <div key={subscription.id} className="subscription-card">
+            {filteredSubscriptions.map((subscription, idx) => (
+              <div key={subscription.id || (subscription as any)._id || idx} className="subscription-card">
                 <div className="subscription-header">
                   <div>
                     <h3>{subscription.subscription_number}</h3>
@@ -297,8 +297,8 @@ export const ContractsManagement = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {selectedContract.contract_lines.map((line) => (
-                            <tr key={line.id}>
+                          {selectedContract.contract_lines.map((line, idx) => (
+                            <tr key={line.id || (line as any)._id || idx}>
                               <td>{line.product_name}</td>
                               <td>{line.quantity}</td>
                               <td>{formatInLakhsCompact(line.unit_price)}</td>
@@ -314,8 +314,8 @@ export const ContractsManagement = () => {
                     <div className="detail-section">
                       <h3>Service Level Agreements</h3>
                       <div className="slas-list">
-                        {selectedContract.slas.map((sla) => (
-                          <div key={sla.id} className="sla-item">
+                        {selectedContract.slas.map((sla, idx) => (
+                          <div key={sla.id || (sla as any)._id || idx} className="sla-item">
                             <div className="sla-header">
                               <h4>{sla.name}</h4>
                               <span className="sla-type">{sla.sla_type}</span>

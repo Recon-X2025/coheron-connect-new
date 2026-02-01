@@ -122,8 +122,8 @@ export const StockReports = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {stockLedger.map((entry) => (
-                      <tr key={entry.id}>
+                    {stockLedger.map((entry, idx) => (
+                      <tr key={entry.id || (entry as any)._id || idx}>
                         <td>{new Date(entry.transaction_date).toLocaleDateString()}</td>
                         <td>{entry.product_name}</td>
                         <td>{entry.location_name}</td>
@@ -154,8 +154,8 @@ export const StockReports = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {reorderSuggestions.map((suggestion) => (
-                      <tr key={suggestion.id}>
+                    {reorderSuggestions.map((suggestion, idx) => (
+                      <tr key={suggestion.id || (suggestion as any)._id || idx}>
                         <td>{suggestion.product_name}</td>
                         <td>{suggestion.warehouse_name}</td>
                         <td>

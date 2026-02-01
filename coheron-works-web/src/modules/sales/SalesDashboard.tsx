@@ -226,7 +226,7 @@ export const SalesDashboard = () => {
             {dashboard.top_products.length > 0 ? (
               <div className="top-list">
                 {dashboard.top_products.slice(0, 10).map((product, index) => (
-                  <div key={product.id} className="top-item">
+                  <div key={product.id || (product as any)._id || index} className="top-item">
                     <div className="item-rank">{index + 1}</div>
                     <div className="item-info">
                       <div className="item-name">{product.name}</div>
@@ -252,7 +252,7 @@ export const SalesDashboard = () => {
             {dashboard.top_customers.length > 0 ? (
               <div className="top-list">
                 {dashboard.top_customers.slice(0, 10).map((customer, index) => (
-                  <div key={customer.id} className="top-item">
+                  <div key={customer.id || (customer as any)._id || index} className="top-item">
                     <div className="item-rank">{index + 1}</div>
                     <div className="item-info">
                       <div className="item-name">{customer.name}</div>

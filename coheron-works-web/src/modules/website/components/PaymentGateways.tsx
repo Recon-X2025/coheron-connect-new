@@ -157,8 +157,8 @@ export const PaymentGateways = () => {
       </div>
 
       <div className="gateways-grid">
-        {gateways.map((gateway) => (
-          <div key={gateway.id} className="gateway-card">
+        {gateways.map((gateway, idx) => (
+          <div key={gateway.id || (gateway as any)._id || idx} className="gateway-card">
             <div className="gateway-card-header">
               <div className="gateway-icon">
                 {getGatewayIcon()}

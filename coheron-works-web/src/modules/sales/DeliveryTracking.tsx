@@ -102,9 +102,9 @@ export const DeliveryTracking = () => {
         </div>
 
         <div className="deliveries-list">
-          {filteredDeliveries.map((delivery) => (
+          {filteredDeliveries.map((delivery, idx) => (
             <div
-              key={delivery.id}
+              key={delivery.id || (delivery as any)._id || idx}
               className="delivery-card"
               onClick={() => setSelectedDelivery(delivery)}
             >
@@ -203,8 +203,8 @@ export const DeliveryTracking = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {selectedDelivery.delivery_lines.map((line) => (
-                            <tr key={line.id}>
+                          {selectedDelivery.delivery_lines.map((line, idx) => (
+                            <tr key={line.id || (line as any)._id || idx}>
                               <td>{line.product_name || `Product ${line.product_id}`}</td>
                               <td>{line.quantity_ordered}</td>
                               <td>{line.quantity_delivered}</td>
@@ -220,8 +220,8 @@ export const DeliveryTracking = () => {
                     <div className="detail-section">
                       <h3>Tracking History</h3>
                       <div className="tracking-timeline">
-                        {selectedDelivery.tracking.map((event) => (
-                          <div key={event.id} className="tracking-event">
+                        {selectedDelivery.tracking.map((event, idx) => (
+                          <div key={event.id || (event as any)._id || idx} className="tracking-event">
                             <div className="event-dot" />
                             <div className="event-content">
                               <div className="event-header">

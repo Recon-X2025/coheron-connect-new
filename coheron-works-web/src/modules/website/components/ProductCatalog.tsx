@@ -105,8 +105,8 @@ export const ProductCatalog = () => {
                 </td>
               </tr>
             ) : (
-              filteredProducts.map((product) => (
-                <tr key={product.id}>
+              filteredProducts.map((product, idx) => (
+                <tr key={product.id || (product as any)._id || idx}>
                   <td>
                     <div className="product-info">
                       <strong>{product.product_name}</strong>

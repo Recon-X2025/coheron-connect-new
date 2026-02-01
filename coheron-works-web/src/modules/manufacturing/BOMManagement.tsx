@@ -183,8 +183,8 @@ export const BOMManagement = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredBOMs.map((bom) => (
-                <tr key={bom.id}>
+              {filteredBOMs.map((bom, idx) => (
+                <tr key={bom.id || (bom as any)._id || idx}>
                   <td><strong>{bom.code || '-'}</strong></td>
                   <td>{bom.name}</td>
                   <td>{bom.product_name || 'Unknown'}</td>
@@ -288,8 +288,8 @@ export const BOMManagement = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {selectedBOM.lines.map((line) => (
-                          <tr key={line.id}>
+                        {selectedBOM.lines.map((line, idx) => (
+                          <tr key={line.id || (line as any)._id || idx}>
                             <td>{line.sequence || '-'}</td>
                             <td>
                               {line.product_name || `Product ID ${line.product_id}`}
@@ -362,8 +362,8 @@ export const BOMManagement = () => {
                       onChange={(e) => setBomFormData({ ...bomFormData, product_id: e.target.value })}
                     >
                       <option value="">Select Product</option>
-                      {products.map((p) => (
-                        <option key={p.id} value={p.id}>
+                      {products.map((p, idx) => (
+                        <option key={p.id || (p as any)._id || idx} value={p.id}>
                           {p.name}
                         </option>
                       ))}

@@ -128,9 +128,9 @@ export const UserRoleAssignments: React.FC = () => {
             />
           </div>
           <div className="users-scroll">
-            {filteredUsers.map(user => (
+            {filteredUsers.map((user, idx) => (
               <div
-                key={user.id}
+                key={user.id || (user as any)._id || idx}
                 onClick={() => setSelectedUser(user)}
                 style={{ cursor: 'pointer' }}
               >
@@ -169,10 +169,10 @@ export const UserRoleAssignments: React.FC = () => {
 
               <div className="roles-list">
                 {getUserRoles(selectedUser.id).length > 0 ? (
-                  getUserRoles(selectedUser.id).map(role => {
+                  getUserRoles(selectedUser.id).map((role, idx) => {
                     const userRole = userRoles[selectedUser.id]?.roles.find(r => r.id === role.id);
                     return (
-                      <Card key={role.id} className="assigned-role-card">
+                      <Card key={role.id || (role as any)._id || idx} className="assigned-role-card">
                         <div className="role-header">
                           <div>
                             <h4>{role.name}</h4>
@@ -239,8 +239,8 @@ export const UserRoleAssignments: React.FC = () => {
                 <option value="">Select a role</option>
                 {roles
                   .filter(r => r.is_active && !getUserRoles(selectedUser.id).some(ur => ur.id === r.id))
-                  .map(role => (
-                    <option key={role.id} value={role.id}>
+                  .map((role, idx) => (
+                    <option key={role.id || (role as any)._id || idx} value={role.id}>
                       {role.name} ({role.module} - Level {role.level})
                     </option>
                   ))}

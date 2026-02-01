@@ -65,8 +65,8 @@ export const GRNList = ({ grns, onRefresh }: GRNListProps) => {
             </tr>
           </thead>
           <tbody>
-            {grns.map((grn) => (
-              <tr key={grn.id}>
+            {grns.map((grn, idx) => (
+              <tr key={grn.id || (grn as any)._id || idx}>
                 <td className="grn-number">{grn.grn_number}</td>
                 <td>{new Date(grn.grn_date).toLocaleDateString()}</td>
                 <td>{grn.partner_name}</td>

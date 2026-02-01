@@ -140,8 +140,8 @@ export const LeadForm = ({ lead, onClose, onSave }: LeadFormProps) => {
               onChange={(e) => setFormData({ ...formData, partner_id: parseInt(e.target.value) || 0 })}
             >
               <option value={0}>Select Contact/Company</option>
-              {partners.map((partner) => (
-                <option key={partner.id} value={partner.id}>
+              {partners.map((partner, idx) => (
+                <option key={partner.id || (partner as any)._id || idx} value={partner.id}>
                   {partner.name}
                 </option>
               ))}

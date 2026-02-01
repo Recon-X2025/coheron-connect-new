@@ -188,9 +188,9 @@ export const LiveChatWidget: React.FC<LiveChatWidgetProps> = ({
                 <p>Welcome! How can we help you today?</p>
               </div>
             ) : (
-              messages.map((message) => (
+              messages.map((message, idx) => (
                 <div
-                  key={message.id}
+                  key={message.id || (message as any)._id || idx}
                   className={`chat-message chat-message-${message.message_type}`}
                 >
                   <div className="message-avatar">

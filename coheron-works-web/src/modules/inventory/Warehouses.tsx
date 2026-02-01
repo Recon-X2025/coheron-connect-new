@@ -173,8 +173,8 @@ export const Warehouses = () => {
       </div>
 
       <div className="warehouses-grid">
-        {filteredWarehouses.map((warehouse) => (
-          <div key={warehouse.id} className="warehouse-card">
+        {filteredWarehouses.map((warehouse, idx) => (
+          <div key={warehouse.id || (warehouse as any)._id || idx} className="warehouse-card">
             <div className="warehouse-card-header">
               <div className="warehouse-icon">
                 <Warehouse size={24} />
