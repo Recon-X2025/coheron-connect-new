@@ -48,7 +48,7 @@ export const Pages = ({ onNewPage }: PagesProps) => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const pagesData = await apiService.get<WebsitePage[]>('/website/pages');
+      const pagesData = await apiService.get<WebsitePage>('/website/pages');
       setPages(pagesData);
     } finally {
       setLoading(false);

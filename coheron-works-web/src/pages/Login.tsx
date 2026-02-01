@@ -37,7 +37,7 @@ export const Login: React.FC = () => {
                 await authService.login({
                     username: form.values.username,
                     password: form.values.password,
-                    database: database || undefined,
+                    ...(database ? { database } as any : {}),
                 });
                 navigate('/dashboard');
             }

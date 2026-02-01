@@ -127,20 +127,6 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
     }
   };
 
-  const getActivityTypeId = (type: Activity['type']): number => {
-    // This would map to actual Odoo activity type IDs
-    // For now, return a default
-    const typeMap: Record<Activity['type'], number> = {
-      call: 1,
-      email: 2,
-      meeting: 3,
-      note: 4,
-      task: 5,
-      log: 4,
-    };
-    return typeMap[type] || 4;
-  };
-
   const getActivityIcon = (type: Activity['type']) => {
     switch (type) {
       case 'call':

@@ -74,13 +74,8 @@ export const Opportunities = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const domain: any[] = [
-        ['type', '=', 'opportunity'],
-        ...filterDomain,
-      ];
-
       const [oppsData, partnersData] = await Promise.all([
-        apiService.get('/leads', { type: 'opportunity' }),
+        apiService.get<Opportunity>('/leads', { type: 'opportunity' }),
         apiService.get('/partners'),
       ]);
 

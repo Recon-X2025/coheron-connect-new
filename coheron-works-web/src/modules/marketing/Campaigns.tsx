@@ -47,7 +47,7 @@ export const Campaigns = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const campaignsData = await apiService.get<Campaign[]>('/campaigns');
+      const campaignsData = await apiService.get<Campaign>('/campaigns');
 
       setCampaigns(campaignsData);
     } catch (error) {

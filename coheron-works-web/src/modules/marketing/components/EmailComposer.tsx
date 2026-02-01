@@ -42,7 +42,7 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
 
   const loadTemplates = async () => {
     try {
-      const templateData = await apiService.get<EmailTemplate[]>('/email/templates');
+      const templateData = await apiService.get<EmailTemplate>('/email/templates');
       setTemplates(templateData);
     } catch (error) {
       console.error('Failed to load templates:', error);
