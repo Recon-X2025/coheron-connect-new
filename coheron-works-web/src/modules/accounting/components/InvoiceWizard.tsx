@@ -1,37 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { X, FileText, Plus, Trash2 } from 'lucide-react';
-import { odooService } from '../../../services/odooService';
+import { apiService } from '../../../services/apiService';
 import { LoadingSpinner } from '../../../components/LoadingSpinner';
-import type { Invoice, Partner, Product, SaleOrder } from '../../../types/odoo';
 import './InvoiceWizard.css';
 
 interface InvoiceWizardProps {
   onClose: () => void;
   onSuccess: () => void;
-  saleOrderId?: number;
+  saleOrderId?: string;
 }
 
 interface InvoiceLine {
-  product_id: number;
+  product_id: string;
   product_name: string;
   quantity: number;
   price_unit: number;
   price_subtotal: number;
 }
 
+interface PartnerItem { _id?: string; id?: string | number; name: string }
+interface ProductItem { _id?: string; id?: string | number; name: string; list_price?: number; default_code?: string }
+
 export const InvoiceWizard: React.FC<InvoiceWizardProps> = ({
   onClose,
   onSuccess,
-  saleOrderId,
+  saleOrderId: _saleOrderId,
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState(1);
-  const [partners, setPartners] = useState<Partner[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [partners, setPartners] = useState<PartnerItem[]>([]);
+  const [products, setProducts] = useState<ProductItem[]>([]);
 
   const [formData, setFormData] = useState({
-    partner_id: 0,
+    partner_id: '',
+    partner_name: '',
     invoice_date: new Date().toISOString().split('T')[0],
     due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     move_type: 'out_invoice' as 'out_invoice' | 'in_invoice',
@@ -42,37 +45,16 @@ export const InvoiceWizard: React.FC<InvoiceWizardProps> = ({
     loadInitialData();
   }, []);
 
+  const getId = (item: any): string => String(item._id || item.id || '');
+
   const loadInitialData = async () => {
     try {
       const [partnersData, productsData] = await Promise.all([
-        odooService.search<Partner>('res.partner', [], ['id', 'name']),
-        odooService.search<Product>('product.product', [], ['id', 'name', 'list_price']),
+        apiService.get<PartnerItem>('/partners'),
+        apiService.get<ProductItem>('/products'),
       ]);
-
       setPartners(partnersData);
       setProducts(productsData);
-
-      if (saleOrderId) {
-        const orders = await odooService.search<SaleOrder>(
-          'sale.order',
-          [['id', '=', saleOrderId]],
-          ['id', 'name', 'partner_id', 'order_line']
-        );
-        if (orders.length > 0) {
-          const order = orders[0];
-          setFormData((prev) => ({
-            ...prev,
-            partner_id: order.partner_id,
-            invoice_line_ids: order.order_line.map((line: any) => ({
-              product_id: line.product_id,
-              product_name: productsData.find((p) => p.id === line.product_id)?.name || '',
-              quantity: line.product_uom_qty,
-              price_unit: line.price_unit,
-              price_subtotal: line.price_subtotal,
-            })),
-          }));
-        }
-      }
     } catch (err) {
       console.error('Failed to load initial data:', err);
     }
@@ -83,13 +65,7 @@ export const InvoiceWizard: React.FC<InvoiceWizardProps> = ({
       ...prev,
       invoice_line_ids: [
         ...prev.invoice_line_ids,
-        {
-          product_id: 0,
-          product_name: '',
-          quantity: 1,
-          price_unit: 0,
-          price_subtotal: 0,
-        },
+        { product_id: '', product_name: '', quantity: 1, price_unit: 0, price_subtotal: 0 },
       ],
     }));
   };
@@ -107,13 +83,13 @@ export const InvoiceWizard: React.FC<InvoiceWizardProps> = ({
       const line = { ...newLines[index] };
 
       if (field === 'product_id') {
-        const product = products.find((p) => p.id === value);
-        line.product_id = value;
+        const product = products.find((p) => getId(p) === String(value));
+        line.product_id = String(value);
         line.product_name = product?.name || '';
         line.price_unit = product?.list_price || 0;
         line.price_subtotal = line.quantity * line.price_unit;
       } else if (field === 'quantity' || field === 'price_unit') {
-        line[field] = parseFloat(value) || 0;
+        (line as any)[field] = parseFloat(value) || 0;
         line.price_subtotal = line.quantity * line.price_unit;
       }
 
@@ -137,22 +113,32 @@ export const InvoiceWizard: React.FC<InvoiceWizardProps> = ({
     setError(null);
 
     try {
-      // Create invoice
-      await odooService.create<Invoice>('account.move', {
+      const partner = partners.find(p => getId(p) === formData.partner_id);
+      const amount_total = formData.invoice_line_ids.reduce((s, l) => s + l.price_subtotal, 0);
+
+      await apiService.create('/invoices', {
         partner_id: formData.partner_id,
+        partner_name: partner?.name || '',
         invoice_date: formData.invoice_date,
+        due_date: formData.due_date,
         move_type: formData.move_type,
+        amount_total,
+        amount_residual: amount_total,
+        state: 'draft',
+        payment_state: 'not_paid',
         invoice_line_ids: formData.invoice_line_ids.map((line) => ({
           product_id: line.product_id,
+          product_name: line.product_name,
           quantity: line.quantity,
           price_unit: line.price_unit,
+          price_subtotal: line.price_subtotal,
         })),
-      } as any);
+      });
 
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Failed to create invoice');
+      setError(err?.userMessage || err?.message || 'Failed to create invoice');
       console.error('Invoice creation error:', err);
     } finally {
       setLoading(false);
@@ -205,12 +191,12 @@ export const InvoiceWizard: React.FC<InvoiceWizardProps> = ({
                 <label>Customer *</label>
                 <select
                   value={formData.partner_id}
-                  onChange={(e) => setFormData({ ...formData, partner_id: parseInt(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, partner_id: e.target.value })}
                   disabled={loading}
                 >
-                  <option value={0}>Select a customer</option>
+                  <option value="">Select a customer</option>
                   {partners.map((partner, idx) => (
-                    <option key={partner.id || (partner as any)._id || idx} value={partner.id}>
+                    <option key={getId(partner) || idx} value={getId(partner)}>
                       {partner.name}
                     </option>
                   ))}
@@ -274,12 +260,12 @@ export const InvoiceWizard: React.FC<InvoiceWizardProps> = ({
                       <select
                         value={line.product_id}
                         onChange={(e) =>
-                          handleLineChange(index, 'product_id', parseInt(e.target.value))
+                          handleLineChange(index, 'product_id', e.target.value)
                         }
                       >
-                        <option value={0}>Select product</option>
+                        <option value="">Select product</option>
                         {products.map((product, idx) => (
-                          <option key={product.id || (product as any)._id || idx} value={product.id}>
+                          <option key={getId(product) || idx} value={getId(product)}>
                             {product.name}
                           </option>
                         ))}
@@ -314,7 +300,7 @@ export const InvoiceWizard: React.FC<InvoiceWizardProps> = ({
 
                     <div className="line-field">
                       <label>Subtotal</label>
-                      <input type="text" value={`₹${line.price_subtotal.toLocaleString()}`} readOnly />
+                      <input type="text" value={`₹${line.price_subtotal.toLocaleString('en-IN')}`} readOnly />
                     </div>
 
                     <button
@@ -335,7 +321,7 @@ export const InvoiceWizard: React.FC<InvoiceWizardProps> = ({
               </div>
 
               <div className="invoice-total">
-                <strong>Total: ₹{totalAmount.toLocaleString()}</strong>
+                <strong>Total: ₹{totalAmount.toLocaleString('en-IN')}</strong>
               </div>
             </div>
           )}
@@ -346,7 +332,7 @@ export const InvoiceWizard: React.FC<InvoiceWizardProps> = ({
               <div className="review-section">
                 <div className="review-item">
                   <strong>Customer:</strong>
-                  <span>{partners.find((p) => p.id === formData.partner_id)?.name || 'N/A'}</span>
+                  <span>{partners.find((p) => getId(p) === formData.partner_id)?.name || 'N/A'}</span>
                 </div>
                 <div className="review-item">
                   <strong>Invoice Date:</strong>
@@ -357,8 +343,12 @@ export const InvoiceWizard: React.FC<InvoiceWizardProps> = ({
                   <span>{new Date(formData.due_date).toLocaleDateString()}</span>
                 </div>
                 <div className="review-item">
+                  <strong>Lines:</strong>
+                  <span>{formData.invoice_line_ids.length} item(s)</span>
+                </div>
+                <div className="review-item">
                   <strong>Total Amount:</strong>
-                  <span>₹{totalAmount.toLocaleString()}</span>
+                  <span>₹{totalAmount.toLocaleString('en-IN')}</span>
                 </div>
               </div>
             </div>
@@ -407,4 +397,3 @@ export const InvoiceWizard: React.FC<InvoiceWizardProps> = ({
 };
 
 export default InvoiceWizard;
-
