@@ -10,3 +10,5 @@ export { default as studio } from './studio.js';
 export { default as extensions } from './extensions.js';
 export { default as messaging } from './messaging.js';
 export { default as complianceFramework } from './complianceFramework.js';
+export { default as pricingPlans } from './pricingPlans.js';
+export { default as modulePrices } from './modulePrices.js';

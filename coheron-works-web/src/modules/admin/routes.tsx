@@ -5,6 +5,7 @@ const PermissionsManagement = lazy(() => import('./PermissionsManagement').then(
 const UserRoleAssignments = lazy(() => import('./UserRoleAssignments').then(m => ({ default: m.UserRoleAssignments })));
 const AuditLogsViewer = lazy(() => import('./AuditLogsViewer').then(m => ({ default: m.AuditLogsViewer })));
 const DataImport = lazy(() => import('./DataImport').then(m => ({ default: m.DataImport })));
+const PlanManager = lazy(() => import('./pages/PlanManager').then(m => ({ default: m.PlanManager })));
 
 export const adminRoutes = [
   { path: '/admin', element: <AdminPortal /> },
@@ -13,4 +14,5 @@ export const adminRoutes = [
   { path: '/admin/users', element: <UserRoleAssignments /> },
   { path: '/admin/audit', element: <AuditLogsViewer /> },
   { path: '/admin/import', element: <DataImport /> },
+  { path: '/admin/plan-manager', element: <PlanManager /> },
 ];

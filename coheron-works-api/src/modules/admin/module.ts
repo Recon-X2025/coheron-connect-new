@@ -28,5 +28,7 @@ export function register(): ModuleRoute[] {
     { path: '/admin/extensions', router: routes.extensions },
     { path: '/admin/messaging', router: routes.messaging },
     { path: '/compliance-framework', router: routes.complianceFramework },
+    { path: '/pricing-plans', router: routes.pricingPlans },
+    { path: '/module-prices', router: routes.modulePrices },
   ];
 }
