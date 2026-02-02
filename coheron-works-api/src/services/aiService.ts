@@ -98,8 +98,17 @@ export class AIService {
       case 'summarize':
         result = await AIService.summarizeModule(tenantId, module, context?.date_range);
         break;
-      default:
-        result = { response_text: 'I understood your query about ' + module + '. Here is what I found.', response_data: { module, intent: intent.type }, query_type: 'natural_language' };
+      default: {
+        // Delegate to LLM-based NL query engine if available
+        try {
+          const { NLQueryEngine } = await import('./ai/NLQueryEngine.js');
+          const nlResult = await NLQueryEngine.executeNLQuery(tenantId, userId, queryText);
+          result = { response_text: nlResult.explanation, response_data: nlResult.data, query_type: nlResult.query_type };
+        } catch {
+          result = { response_text: 'I understood your query about ' + module + '. Here is what I found.', response_data: { module, intent: intent.type }, query_type: 'natural_language' };
+        }
+        break;
+      }
     }
 
     const elapsed = Date.now() - start;

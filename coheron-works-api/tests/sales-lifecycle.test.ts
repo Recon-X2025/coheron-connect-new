@@ -21,6 +21,18 @@ describe('Sales Lifecycle', () => {
     salesService = new SalesLifecycleService();
     paymentService = new PaymentRecordingService();
 
+    // Create a partner document for credit limit checks
+    const db = mongoose.connection.db;
+    if (db) {
+      await db.collection('partners').insertOne({
+        _id: partnerId,
+        tenant_id: tenantId,
+        name: 'Test Partner',
+        credit_limit: 0,
+        current_credit_used: 0,
+      });
+    }
+
     // Create all document sequences needed for the lifecycle
     await DocumentSequence.create([
       { tenant_id: tenantId, document_type: 'quotation', prefix: 'QTN-', current_number: 0, padding: 5, is_active: true },
@@ -39,7 +51,7 @@ describe('Sales Lifecycle', () => {
       lines: [
         { product_id: productId, quantity: 2, unit_price: 500 },
       ],
-      amount_total: 1000,
+      grand_total: 1000,
       state: 'draft',
     });
   }

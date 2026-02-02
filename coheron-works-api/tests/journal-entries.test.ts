@@ -1,16 +1,20 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import request from 'supertest';
 import mongoose from 'mongoose';
-import { app } from './helpers.js';
+import { app, getAuthToken } from './helpers.js';
 import AccountJournal from '../src/models/AccountJournal.js';
 
 describe('Journal Entries API', () => {
+  let token: string;
   let journalId: string;
   const accountId1 = new mongoose.Types.ObjectId().toString();
   const accountId2 = new mongoose.Types.ObjectId().toString();
 
+  beforeAll(async () => {
+    token = await getAuthToken('journal-test@coheron.com', 'Test@Pass123!');
+  });
+
   beforeEach(async () => {
-    // Create a journal needed for journal entries
     const journal = await AccountJournal.create({
       name: 'General Journal',
       code: 'GEN',
@@ -47,6 +51,7 @@ describe('Journal Entries API', () => {
     it('should create a balanced journal entry in draft state', async () => {
       const res = await request(app)
         .post('/api/accounting/journal-entries')
+        .set('Authorization', `Bearer ${token}`)
         .send(balancedEntry());
 
       expect(res.status).toBe(201);
@@ -57,9 +62,9 @@ describe('Journal Entries API', () => {
     });
 
     it('should create an unbalanced entry (validation only on post)', async () => {
-      // Creating an unbalanced entry is allowed; balance check happens at posting time
       const res = await request(app)
         .post('/api/accounting/journal-entries')
+        .set('Authorization', `Bearer ${token}`)
         .send(unbalancedEntry());
 
       expect(res.status).toBe(201);
@@ -71,11 +76,13 @@ describe('Journal Entries API', () => {
     it('should post a balanced journal entry', async () => {
       const created = await request(app)
         .post('/api/accounting/journal-entries')
+        .set('Authorization', `Bearer ${token}`)
         .send(balancedEntry());
       expect(created.status).toBe(201);
 
       const res = await request(app)
         .post(`/api/accounting/journal-entries/${created.body._id}/post`)
+        .set('Authorization', `Bearer ${token}`)
         .send({});
 
       expect(res.status).toBe(200);
@@ -85,11 +92,13 @@ describe('Journal Entries API', () => {
     it('should reject posting an unbalanced entry', async () => {
       const created = await request(app)
         .post('/api/accounting/journal-entries')
+        .set('Authorization', `Bearer ${token}`)
         .send(unbalancedEntry());
       expect(created.status).toBe(201);
 
       const res = await request(app)
         .post(`/api/accounting/journal-entries/${created.body._id}/post`)
+        .set('Authorization', `Bearer ${token}`)
         .send({});
 
       expect(res.status).toBe(400);
@@ -101,19 +110,20 @@ describe('Journal Entries API', () => {
     it('should reject posting an already-posted entry', async () => {
       const created = await request(app)
         .post('/api/accounting/journal-entries')
+        .set('Authorization', `Bearer ${token}`)
         .send(balancedEntry());
       expect(created.status).toBe(201);
 
-      // Post it first time
       const posted = await request(app)
         .post(`/api/accounting/journal-entries/${created.body._id}/post`)
+        .set('Authorization', `Bearer ${token}`)
         .send({});
       expect(posted.status).toBe(200);
       expect(posted.body.state).toBe('posted');
 
-      // Attempt to post again
       const res = await request(app)
         .post(`/api/accounting/journal-entries/${created.body._id}/post`)
+        .set('Authorization', `Bearer ${token}`)
         .send({});
 
       expect(res.status).toBe(400);
@@ -125,14 +135,17 @@ describe('Journal Entries API', () => {
     it('should reject modifying a posted entry', async () => {
       const created = await request(app)
         .post('/api/accounting/journal-entries')
+        .set('Authorization', `Bearer ${token}`)
         .send(balancedEntry());
 
       await request(app)
         .post(`/api/accounting/journal-entries/${created.body._id}/post`)
+        .set('Authorization', `Bearer ${token}`)
         .send({});
 
       const res = await request(app)
         .put(`/api/accounting/journal-entries/${created.body._id}`)
+        .set('Authorization', `Bearer ${token}`)
         .send({ ref: 'Modified ref' });
 
       expect(res.status).toBe(400);
@@ -144,14 +157,17 @@ describe('Journal Entries API', () => {
     it('should reject deleting a posted entry', async () => {
       const created = await request(app)
         .post('/api/accounting/journal-entries')
+        .set('Authorization', `Bearer ${token}`)
         .send(balancedEntry());
 
       await request(app)
         .post(`/api/accounting/journal-entries/${created.body._id}/post`)
+        .set('Authorization', `Bearer ${token}`)
         .send({});
 
       const res = await request(app)
-        .delete(`/api/accounting/journal-entries/${created.body._id}`);
+        .delete(`/api/accounting/journal-entries/${created.body._id}`)
+        .set('Authorization', `Bearer ${token}`);
 
       expect(res.status).toBe(400);
       expect(res.body.error).toBe('Cannot delete posted entry');
@@ -160,10 +176,12 @@ describe('Journal Entries API', () => {
     it('should allow deleting a draft entry', async () => {
       const created = await request(app)
         .post('/api/accounting/journal-entries')
+        .set('Authorization', `Bearer ${token}`)
         .send(balancedEntry());
 
       const res = await request(app)
-        .delete(`/api/accounting/journal-entries/${created.body._id}`);
+        .delete(`/api/accounting/journal-entries/${created.body._id}`)
+        .set('Authorization', `Bearer ${token}`);
 
       expect(res.status).toBe(200);
     });

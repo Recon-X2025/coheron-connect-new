@@ -5,7 +5,7 @@ import AccountJournal from '../../../models/AccountJournal.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 import { validate } from '../../../shared/middleware/validate.js';
-import { checkRecordAccess } from '../../../shared/middleware/permissions.js';
+import { authenticate, checkRecordAccess } from '../../../shared/middleware/permissions.js';
 import { objectIdParam } from '../../../shared/schemas/common.js';
 import { createJournalEntrySchema, updateJournalEntrySchema } from '../schemas.js';
 
@@ -59,7 +59,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get journal entry by ID with lines
-router.get('/:id', checkRecordAccess('journal_entries'), asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, checkRecordAccess('journal_entries'), asyncHandler(async (req, res) => {
   const move = await AccountMove.findOne({ _id: req.params.id, ...req.recordFilter })
     .populate('journal_id', 'name code')
     .populate('partner_id', 'name')
@@ -189,7 +189,7 @@ router.post('/', validate({ body: createJournalEntrySchema }), asyncHandler(asyn
 }));
 
 // Update journal entry
-router.put('/:id', validate({ params: objectIdParam, body: updateJournalEntrySchema }), checkRecordAccess('journal_entries'), asyncHandler(async (req, res) => {
+router.put('/:id', validate({ params: objectIdParam, body: updateJournalEntrySchema }), authenticate, checkRecordAccess('journal_entries'), asyncHandler(async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
@@ -326,7 +326,7 @@ router.post('/:id/cancel', validate({ params: objectIdParam }), asyncHandler(asy
 }));
 
 // Delete journal entry
-router.delete('/:id', checkRecordAccess('journal_entries'), asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, checkRecordAccess('journal_entries'), asyncHandler(async (req, res) => {
   const move = await AccountMove.findOne({ _id: req.params.id, ...req.recordFilter });
 
   if (!move) {

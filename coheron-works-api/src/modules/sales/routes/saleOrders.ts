@@ -4,13 +4,14 @@ import express from 'express';
 import { SaleOrder } from '../../../models/SaleOrder.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
-import { triggerWorkflows } from '../../../shared/middleware/workflowTrigger.js';
 import salesLifecycleService from '../../../services/salesLifecycleService.js';
 import paymentRecordingService from '../../../services/paymentRecordingService.js';
 import { validate } from '../../../shared/middleware/validate.js';
-import { checkRecordAccess } from '../../../shared/middleware/permissions.js';
+import { authenticate, checkRecordAccess } from '../../../shared/middleware/permissions.js';
 import { objectIdParam } from '../../../shared/schemas/common.js';
 import { createSaleOrderSchema, updateSaleOrderSchema } from '../schemas.js';
+import { eventBus } from '../../../orchestration/EventBus.js';
+import { SALEORDER_CREATED, SALEORDER_CONFIRMED, SALEORDER_CANCELLED } from '../../../orchestration/events.js';
 
 const router = express.Router();
 
@@ -79,7 +80,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get sale order by ID
-router.get('/:id', checkRecordAccess('sale_orders'), asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, checkRecordAccess('sale_orders'), asyncHandler(async (req, res) => {
   const order = await SaleOrder.findOne({ _id: req.params.id, ...req.recordFilter }).lean();
 
   if (!order) {
@@ -114,11 +115,18 @@ router.post('/', validate({ body: createSaleOrderSchema }), asyncHandler(async (
     order_line: lines,
   });
 
+  eventBus.publish(SALEORDER_CREATED, (req as any).user?.tenant_id?.toString() || '', {
+    order_id: order._id.toString(),
+    partner_id: order.partner_id?.toString(),
+    amount_total: order.amount_total,
+    order_name: order.name,
+  }, { user_id: (req as any).user?._id?.toString(), source: 'saleOrders-route' });
+
   res.status(201).json(order);
 }));
 
 // Update sale order
-router.put('/:id', validate({ params: objectIdParam, body: updateSaleOrderSchema }), checkRecordAccess('sale_orders'), asyncHandler(async (req, res) => {
+router.put('/:id', validate({ params: objectIdParam, body: updateSaleOrderSchema }), authenticate, checkRecordAccess('sale_orders'), asyncHandler(async (req, res) => {
   const { state, amount_total } = req.body;
 
   const updateData: any = {};
@@ -132,16 +140,24 @@ router.put('/:id', validate({ params: objectIdParam, body: updateSaleOrderSchema
     return res.status(404).json({ error: 'Sale order not found' });
   }
 
-  // Trigger workflows on status change
+  // Publish event on status change (workflow bridge handles workflow triggering)
   if (state && state !== (oldOrder as any)?.state) {
-    triggerWorkflows('on_update', 'SaleOrder', req.params.id);
+    const eventType = state === 'sale' ? SALEORDER_CONFIRMED : state === 'cancel' ? SALEORDER_CANCELLED : null;
+    if (eventType) {
+      eventBus.publish(eventType, (req as any).user?.tenant_id?.toString() || '', {
+        order_id: req.params.id,
+        partner_id: order.partner_id?.toString(),
+        amount_total: order.amount_total,
+        order_name: order.name,
+      }, { user_id: (req as any).user?._id?.toString(), source: 'saleOrders-route' });
+    }
   }
 
   res.json(order);
 }));
 
 // Delete sale order
-router.delete('/:id', checkRecordAccess('sale_orders'), asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, checkRecordAccess('sale_orders'), asyncHandler(async (req, res) => {
   const order = await SaleOrder.findOneAndDelete({ _id: req.params.id, ...req.recordFilter });
 
   if (!order) {

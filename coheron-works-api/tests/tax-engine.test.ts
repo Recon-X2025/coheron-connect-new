@@ -10,12 +10,9 @@ describe('Tax Engine Service', () => {
   beforeEach(async () => {
     taxEngine = new TaxEngineService();
 
-    // Insert tax rules using raw MongoDB to include the `rates` subdocument
-    // that the TaxEngineService reads (rule.rates.cgst, rule.rates.igst, etc.)
-    const collection = mongoose.connection.collection('taxrules');
-    await collection.insertMany([
+    // Insert tax rules using the Mongoose model (flat rate fields)
+    await TaxRule.create([
       {
-        _id: new mongoose.Types.ObjectId(),
         tenant_id: tenantId,
         name: 'GST 18%',
         tax_type: 'gst',
@@ -23,10 +20,12 @@ describe('Tax Engine Service', () => {
         state_code: '',
         hsn_code_pattern: '',
         is_active: true,
-        rates: { cgst: 9, sgst: 9, igst: 18, cess: 0 },
+        cgst_rate: 9,
+        sgst_rate: 9,
+        igst_rate: 18,
+        cess_rate: 0,
       },
       {
-        _id: new mongoose.Types.ObjectId(),
         tenant_id: tenantId,
         name: 'GST 12% Electronics',
         tax_type: 'gst',
@@ -34,10 +33,12 @@ describe('Tax Engine Service', () => {
         state_code: '',
         hsn_code_pattern: '8471*',
         is_active: true,
-        rates: { cgst: 6, sgst: 6, igst: 12, cess: 0 },
+        cgst_rate: 6,
+        sgst_rate: 6,
+        igst_rate: 12,
+        cess_rate: 0,
       },
       {
-        _id: new mongoose.Types.ObjectId(),
         tenant_id: tenantId,
         name: 'GST 28% with Cess',
         tax_type: 'gst',
@@ -45,7 +46,10 @@ describe('Tax Engine Service', () => {
         state_code: '',
         hsn_code_pattern: '8703*',
         is_active: true,
-        rates: { cgst: 14, sgst: 14, igst: 28, cess: 15 },
+        cgst_rate: 14,
+        sgst_rate: 14,
+        igst_rate: 28,
+        cess_rate: 15,
       },
     ]);
   });

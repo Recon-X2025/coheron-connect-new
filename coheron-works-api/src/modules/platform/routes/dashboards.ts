@@ -1,5 +1,5 @@
 import express from 'express';
-import { Dashboard } from '../../../models/Dashboard.js';
+import Dashboard from '../../../models/Dashboard.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 

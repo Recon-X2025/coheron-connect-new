@@ -34,5 +34,10 @@ export function register(): ModuleRoute[] {
     { path: '/platform/api-builder', router: routes.apiBuilder },
     { path: '/platform/webhooks', router: routes.webhookManager },
     { path: '/platform/developer', router: routes.developerPortal },
+    { path: '/platform/orchestration', router: routes.orchestration },
+    { path: '/offline-sync', router: routes.offlineSync },
+    { path: '/scheduled-reports', router: routes.scheduledReports },
+    { path: '/platform/api-keys', router: routes.apiKeys },
+    { path: '/platform/marketplace-backend', router: routes.marketplaceBackend },
   ];
 }

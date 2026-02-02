@@ -3,7 +3,7 @@ import Product from '../../../shared/models/Product.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 import { validate } from '../../../shared/middleware/validate.js';
-import { checkRecordAccess } from '../../../shared/middleware/permissions.js';
+import { authenticate, checkRecordAccess } from '../../../shared/middleware/permissions.js';
 import { objectIdParam } from '../../../shared/schemas/common.js';
 import { createProductSchema, updateProductSchema, addSupplierSchema } from '../schemas.js';
 
@@ -50,7 +50,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get product by ID
-router.get('/:id', checkRecordAccess('products'), asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, checkRecordAccess('products'), asyncHandler(async (req, res) => {
   const product = await Product.findOne({ _id: req.params.id, ...req.recordFilter }).lean();
   if (!product) return res.status(404).json({ error: 'Product not found' });
   res.json(product);
@@ -94,7 +94,7 @@ router.post('/', validate({ body: createProductSchema }), asyncHandler(async (re
 }));
 
 // Update product
-router.put('/:id', validate({ params: objectIdParam, body: updateProductSchema }), checkRecordAccess('products'), asyncHandler(async (req, res) => {
+router.put('/:id', validate({ params: objectIdParam, body: updateProductSchema }), authenticate, checkRecordAccess('products'), asyncHandler(async (req, res) => {
   const { name, default_code, list_price, standard_price, qty_available, type, categ_id, image_url } = req.body;
   const product = await Product.findOneAndUpdate(
     { _id: req.params.id, ...req.recordFilter },
@@ -106,7 +106,7 @@ router.put('/:id', validate({ params: objectIdParam, body: updateProductSchema }
 }));
 
 // Delete product
-router.delete('/:id', checkRecordAccess('products'), asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, checkRecordAccess('products'), asyncHandler(async (req, res) => {
   const product = await Product.findOneAndDelete({ _id: req.params.id, ...req.recordFilter });
   if (!product) return res.status(404).json({ error: 'Product not found' });
   res.json({ message: 'Product deleted successfully' });

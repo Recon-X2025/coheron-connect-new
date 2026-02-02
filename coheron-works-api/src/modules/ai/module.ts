@@ -19,5 +19,6 @@ export function register(): ModuleRoute[] {
     { path: '/ai/copilot', router: routes.copilot },
     { path: '/ai/chatbot', router: routes.chatbot },
     { path: '/ai/config', router: routes.config },
+    { path: '/ai', router: routes.aiEndpoints },
   ];
 }

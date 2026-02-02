@@ -20,6 +20,8 @@ import InventorySettings from '../../../models/InventorySettings.js';
 import Product from '../../../shared/models/Product.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
+import { eventBus } from '../../../orchestration/EventBus.js';
+import { STOCK_ADJUSTED } from '../../../orchestration/events.js';
 
 const router = express.Router();
 
@@ -601,6 +603,12 @@ router.post('/adjustments', asyncHandler(async (req, res) => {
     total_value: totalValue, notes, state: 'draft',
     lines: adjustmentLines,
   });
+
+  eventBus.publish(STOCK_ADJUSTED, (req as any).user?.tenant_id?.toString() || '', {
+    adjustment_id: adjustment._id.toString(),
+    warehouse_id,
+    product_ids: adjustmentLines.map((l: any) => l.product_id?.toString()),
+  }, { user_id: (req as any).user?._id?.toString(), source: 'inventory-route' });
 
   res.status(201).json(adjustment);
 }));

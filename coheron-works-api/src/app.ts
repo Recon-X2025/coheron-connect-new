@@ -112,6 +112,27 @@ app.use((req: express.Request, res: express.Response) => {
 
 export async function initApp(): Promise<typeof app> {
   await initializeRoutes();
+
+  // Register orchestration event handlers and sagas
+  const { registerAllHandlers } = await import('./orchestration/handlers/index.js');
+  const { registerOrderToDeliverySaga } = await import('./orchestration/sagas/orderToDeliverySaga.js');
+  const { registerProcureToPaySaga } = await import('./orchestration/sagas/procureToPaySaga.js');
+  const { registerOrderToCashSaga, registerMakeToStockSaga, registerHireToRetireSaga, registerIssueToResolutionSaga } = await import('./orchestration/sagas/templates/index.js');
+  registerAllHandlers();
+  registerOrderToDeliverySaga();
+  registerProcureToPaySaga();
+  registerOrderToCashSaga();
+  registerMakeToStockSaga();
+  registerHireToRetireSaga();
+  registerIssueToResolutionSaga();
+
+  // Recover stuck sagas after registration
+  const { recoverStuckSagas } = await import('./orchestration/SagaRecovery.js');
+  const { default: recoveryLogger } = await import('./shared/utils/logger.js');
+  recoverStuckSagas().catch((err) => {
+    recoveryLogger.error({ err }, 'Saga recovery on startup failed');
+  });
+
   return app;
 }
 

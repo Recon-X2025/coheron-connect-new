@@ -14,6 +14,18 @@ describe('Payments', () => {
   beforeEach(async () => {
     paymentService = new PaymentRecordingService();
 
+    // Create a partner document for credit limit operations
+    const db = mongoose.connection.db;
+    if (db) {
+      await db.collection('partners').insertOne({
+        _id: partnerId,
+        tenant_id: tenantId,
+        name: 'Test Partner',
+        credit_limit: 0,
+        current_credit_used: 0,
+      });
+    }
+
     // Create document sequences needed by PaymentRecordingService
     await DocumentSequence.create([
       {

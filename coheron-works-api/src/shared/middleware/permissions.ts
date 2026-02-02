@@ -23,6 +23,35 @@ declare global {
   }
 }
 
+export async function authenticate(req: Request, res: Response, next: NextFunction) {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ error: 'No token provided' });
+
+    const decoded = jwt.verify(token, getJwtSecret()) as any;
+
+    if (decoded.jti) {
+      const blacklisted = await TokenBlacklist.exists({ jti: decoded.jti });
+      if (blacklisted) return res.status(401).json({ error: 'Token has been revoked' });
+    }
+
+    if (decoded.iat && decoded.userId) {
+      const user = await User.findById(decoded.userId).select('password_changed_at').lean();
+      if (user?.password_changed_at) {
+        const changedAt = Math.floor(new Date(user.password_changed_at).getTime() / 1000);
+        if (decoded.iat < changedAt) return res.status(401).json({ error: 'Token issued before password change' });
+      }
+    }
+
+    req.user = { userId: decoded.userId, uid: decoded.uid, email: decoded.email, tenant_id: decoded.tenant_id };
+    next();
+  } catch (error: any) {
+    if (error.name === 'JsonWebTokenError') return res.status(401).json({ error: 'Invalid token' });
+    logger.error({ err: error }, 'Authentication error');
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 export function requirePermission(permissionCode: string) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {

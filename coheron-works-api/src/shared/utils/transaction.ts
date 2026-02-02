@@ -5,7 +5,10 @@ export async function withTransaction<T>(
 ): Promise<T> {
   const session = await mongoose.startSession();
   try {
-    session.startTransaction();
+    session.startTransaction({
+      readConcern: { level: 'local' },
+      writeConcern: { w: 'majority' },
+    });
     const result = await fn(session);
     await session.commitTransaction();
     return result;

@@ -16,3 +16,8 @@ export { default as visualWorkflows } from './visualWorkflows.js';
 export { default as apiBuilder } from './apiBuilder.js';
 export { default as webhookManager } from './webhookManager.js';
 export { default as developerPortal } from './developerPortal.js';
+export { default as orchestration } from './orchestration.js';
+export { default as offlineSync } from './offlineSync.js';
+export { default as scheduledReports } from './scheduledReports.js';
+export { default as apiKeys } from './apiKeys.js';
+export { default as marketplaceBackend } from './marketplaceBackend.js';

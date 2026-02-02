@@ -63,7 +63,9 @@ const InvoiceSchema = new Schema({
   subtotal: { type: Number, default: 0 },
 
   // --- Payments ---
+  amount_paid: { type: Number, default: 0 },
   payments: [{
+    payment_number: { type: String },
     date: { type: Date },
     amount: { type: Number },
     method: { type: String },

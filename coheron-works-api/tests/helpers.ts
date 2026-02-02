@@ -6,7 +6,7 @@ export { app };
 export async function registerUser(data = {
   name: 'Test User',
   email: 'test@coheron.com',
-  password: 'password123',
+  password: 'Test@Pass123!',
 }) {
   const res = await request(app)
     .post('/api/auth/register')
@@ -14,7 +14,7 @@ export async function registerUser(data = {
   return res;
 }
 
-export async function getAuthToken(email = 'test@coheron.com', password = 'password123') {
+export async function getAuthToken(email = 'test@coheron.com', password = 'Test@Pass123!') {
   // Register first, then login
   await registerUser({ name: 'Test User', email, password });
   const res = await request(app)

@@ -8,20 +8,29 @@ const schemaOptions = {
 
 const orderLineSchema = new Schema({
   product_id: { type: Schema.Types.ObjectId, ref: 'Product' },
+  description: { type: String, default: '' },
+  hsn_code: { type: String, default: '' },
   product_uom_qty: { type: Number, default: 0 },
   price_unit: { type: Number, default: 0 },
   price_subtotal: { type: Number, default: 0 },
 });
 
 const saleOrderSchema = new Schema({
+  tenant_id: { type: Schema.Types.ObjectId, index: true },
   name: { type: String, unique: true },
   partner_id: { type: Schema.Types.ObjectId, ref: 'Partner' },
+  quotation_id: { type: Schema.Types.ObjectId, ref: 'Quotation' },
   date_order: { type: Date, default: Date.now },
   amount_total: { type: Number, default: 0 },
+  currency: { type: String, default: 'INR' },
   state: { type: String, default: 'draft' },
+  confirmation_date: { type: Date, default: null },
   user_id: { type: Schema.Types.ObjectId, ref: 'User' },
   opportunity_id: { type: Schema.Types.ObjectId, ref: 'Lead' },
   order_line: [orderLineSchema],
+  delivery_status: { type: String, default: 'pending' },
+  invoice_status: { type: String, default: 'not_invoiced' },
+  payment_status: { type: String, default: 'unpaid' },
 }, schemaOptions);
 
 saleOrderSchema.index({ partner_id: 1 });

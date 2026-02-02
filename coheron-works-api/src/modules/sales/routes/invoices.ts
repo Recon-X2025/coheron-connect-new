@@ -8,6 +8,8 @@ import { redisConnection } from '../../../jobs/connection.js';
 import { validate } from '../../../shared/middleware/validate.js';
 import { objectIdParam } from '../../../shared/schemas/common.js';
 import { createInvoiceSchema, updateInvoiceSchema, sendInvoiceSchema } from '../schemas.js';
+import { eventBus } from '../../../orchestration/EventBus.js';
+import { INVOICE_CREATED, INVOICE_CANCELLED } from '../../../orchestration/events.js';
 
 const emailQueue = new Queue('email', { connection: redisConnection });
 
@@ -93,6 +95,14 @@ router.post('/', validate({ body: createInvoiceSchema }), asyncHandler(async (re
 
   const invoice = await Invoice.create(invoiceData);
 
+  eventBus.publish(INVOICE_CREATED, (req as any).user?.tenant_id?.toString() || '', {
+    invoice_id: invoice._id.toString(),
+    partner_id: invoice.partner_id?.toString(),
+    amount_total: invoice.amount_total,
+    tax_amount: 0,
+    invoice_name: invoice.name,
+  }, { user_id: (req as any).user?._id?.toString(), source: 'invoices-route' });
+
   res.status(201).json(invoice);
 }));
 
@@ -150,6 +160,11 @@ router.delete('/:id', asyncHandler(async (req, res) => {
   if (!invoice) {
     return res.status(404).json({ error: 'Invoice not found' });
   }
+
+  eventBus.publish(INVOICE_CANCELLED, (req as any).user?.tenant_id?.toString() || '', {
+    invoice_id: req.params.id,
+    invoice_name: invoice.name,
+  }, { user_id: (req as any).user?._id?.toString(), source: 'invoices-route' });
 
   res.json({ message: 'Invoice deleted successfully' });
 }));

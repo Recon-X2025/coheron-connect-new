@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import request from 'supertest';
-import { app } from './helpers.js';
+import { app, getAuthToken } from './helpers.js';
 
 describe('Sale Orders API', () => {
+  let token: string;
   const sampleOrder = {
     name: 'SO-001',
     partner_id: '507f1f77bcf86cd799439011',
@@ -12,10 +13,15 @@ describe('Sale Orders API', () => {
     ],
   };
 
+  beforeAll(async () => {
+    token = await getAuthToken('saleorders-test@coheron.com', 'Test@Pass123!');
+  });
+
   describe('POST /api/sale-orders', () => {
     it('should create a sale order with calculated total', async () => {
       const res = await request(app)
         .post('/api/sale-orders')
+        .set('Authorization', `Bearer ${token}`)
         .send(sampleOrder);
       expect(res.status).toBe(201);
       expect(res.body.name).toBe('SO-001');
@@ -26,20 +32,20 @@ describe('Sale Orders API', () => {
 
   describe('GET /api/sale-orders', () => {
     it('should return paginated sale orders', async () => {
-      await request(app).post('/api/sale-orders').send(sampleOrder);
-      await request(app).post('/api/sale-orders').send({ ...sampleOrder, name: 'SO-002' });
+      await request(app).post('/api/sale-orders').set('Authorization', `Bearer ${token}`).send(sampleOrder);
+      await request(app).post('/api/sale-orders').set('Authorization', `Bearer ${token}`).send({ ...sampleOrder, name: 'SO-002' });
 
-      const res = await request(app).get('/api/sale-orders');
+      const res = await request(app).get('/api/sale-orders').set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(200);
       expect(res.body.data).toHaveLength(2);
       expect(res.body.pagination.total).toBe(2);
     });
 
     it('should filter by search', async () => {
-      await request(app).post('/api/sale-orders').send(sampleOrder);
-      await request(app).post('/api/sale-orders').send({ ...sampleOrder, name: 'PO-001' });
+      await request(app).post('/api/sale-orders').set('Authorization', `Bearer ${token}`).send(sampleOrder);
+      await request(app).post('/api/sale-orders').set('Authorization', `Bearer ${token}`).send({ ...sampleOrder, name: 'PO-001' });
 
-      const res = await request(app).get('/api/sale-orders?search=SO');
+      const res = await request(app).get('/api/sale-orders?search=SO').set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(200);
       expect(res.body.data).toHaveLength(1);
     });
@@ -47,14 +53,14 @@ describe('Sale Orders API', () => {
 
   describe('GET /api/sale-orders/:id', () => {
     it('should return a sale order by ID', async () => {
-      const created = await request(app).post('/api/sale-orders').send(sampleOrder);
-      const res = await request(app).get(`/api/sale-orders/${created.body._id}`);
+      const created = await request(app).post('/api/sale-orders').set('Authorization', `Bearer ${token}`).send(sampleOrder);
+      const res = await request(app).get(`/api/sale-orders/${created.body._id}`).set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(200);
       expect(res.body.name).toBe('SO-001');
     });
 
     it('should return 404 for non-existent order', async () => {
-      const res = await request(app).get('/api/sale-orders/507f1f77bcf86cd799439011');
+      const res = await request(app).get('/api/sale-orders/507f1f77bcf86cd799439011').set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(404);
     });
   });

@@ -24,7 +24,7 @@ describe('Auth API', () => {
       await registerUser();
       const res = await request(app)
         .post('/api/auth/login')
-        .send({ email: 'test@coheron.com', password: 'password123' });
+        .send({ email: 'test@coheron.com', password: 'Test@Pass123!' });
       expect(res.status).toBe(200);
       expect(res.body.token).toBeDefined();
       expect(res.body.user.email).toBe('test@coheron.com');
@@ -33,7 +33,7 @@ describe('Auth API', () => {
     it('should return 401 for invalid email', async () => {
       const res = await request(app)
         .post('/api/auth/login')
-        .send({ email: 'nonexistent@test.com', password: 'password123' });
+        .send({ email: 'nonexistent@test.com', password: 'Test@Pass123!' });
       expect(res.status).toBe(401);
       expect(res.body.error).toBe('Invalid credentials');
     });
@@ -42,7 +42,7 @@ describe('Auth API', () => {
       await registerUser();
       const res = await request(app)
         .post('/api/auth/login')
-        .send({ email: 'test@coheron.com', password: 'wrongpassword' });
+        .send({ email: 'test@coheron.com', password: 'Wrong@Pass999!' });
       expect(res.status).toBe(401);
       expect(res.body.error).toBe('Invalid credentials');
     });

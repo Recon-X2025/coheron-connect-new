@@ -58,8 +58,8 @@ export class TaxEngineService {
       country_code: country,
       is_active: true,
       $and: [
-        { $or: [{ valid_from: { $exists: false } }, { valid_from: { $lte: now } }] },
-        { $or: [{ valid_to: { $exists: false } }, { valid_to: { $gte: now } }] },
+        { $or: [{ valid_from: null }, { valid_from: { $exists: false } }, { valid_from: { $lte: now } }] },
+        { $or: [{ valid_until: null }, { valid_until: { $exists: false } }, { valid_until: { $gte: now } }] },
       ],
     });
 
@@ -105,7 +105,10 @@ export class TaxEngineService {
     for (const rule of rules) {
       let score = 0;
       
-      if (rule.hsn_code_pattern && hsnCode) {
+      if (rule.hsn_code_pattern) {
+        if (!hsnCode) {
+          continue; // Rule requires HSN but line has none — skip
+        }
         if (hsnCode.startsWith(rule.hsn_code_pattern.replace('*', ''))) {
           score += 10;
         } else {
@@ -153,21 +156,21 @@ export class TaxEngineService {
     if (rule.tax_type === 'gst') {
       const isSameState = sellerState && buyerState && sellerState === buyerState;
       if (isSameState) {
-        breakdown.cgst_rate = rule.rates?.cgst || 0;
-        breakdown.sgst_rate = rule.rates?.sgst || 0;
+        breakdown.cgst_rate = rule.rates?.cgst ?? rule.cgst_rate ?? 0;
+        breakdown.sgst_rate = rule.rates?.sgst ?? rule.sgst_rate ?? 0;
         breakdown.cgst_amount = this.round(amount * breakdown.cgst_rate / 100);
         breakdown.sgst_amount = this.round(amount * breakdown.sgst_rate / 100);
       } else {
-        breakdown.igst_rate = rule.rates?.igst || 0;
+        breakdown.igst_rate = rule.rates?.igst ?? rule.igst_rate ?? 0;
         breakdown.igst_amount = this.round(amount * breakdown.igst_rate / 100);
       }
-      breakdown.cess_rate = rule.rates?.cess || 0;
+      breakdown.cess_rate = rule.rates?.cess ?? rule.cess_rate ?? 0;
       breakdown.cess_amount = this.round(amount * breakdown.cess_rate / 100);
     } else if (rule.tax_type === 'vat') {
-      breakdown.vat_rate = rule.rates?.vat || 0;
+      breakdown.vat_rate = rule.rates?.vat ?? rule.vat_rate ?? 0;
       breakdown.vat_amount = this.round(amount * breakdown.vat_rate / 100);
     } else if (rule.tax_type === 'sales_tax') {
-      breakdown.vat_rate = rule.rates?.vat || 0;
+      breakdown.vat_rate = rule.rates?.vat ?? rule.vat_rate ?? 0;
       breakdown.vat_amount = this.round(amount * breakdown.vat_rate / 100);
     }
 

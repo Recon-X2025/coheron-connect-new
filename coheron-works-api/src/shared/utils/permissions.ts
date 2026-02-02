@@ -142,7 +142,10 @@ export async function getUserRecordAccessLevel(
   }).lean();
 
   if (rolePerms.length === 0) {
-    return 'own'; // Default to most restrictive
+    // If no RBAC roles are configured for this user, grant full access
+    // (RBAC restrictions only apply when explicitly configured)
+    if (activeRoleIds.length === 0) return 'all';
+    return 'own';
   }
 
   // Return the highest access level across all roles
