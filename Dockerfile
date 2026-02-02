@@ -7,7 +7,7 @@ WORKDIR /app/web
 COPY coheron-works-web/package*.json ./
 RUN npm ci --production=false
 COPY coheron-works-web/ ./
-RUN npm run build
+RUN NODE_OPTIONS="--max-old-space-size=1024" npm run build
 
 # Stage 2: Build API
 FROM node:20-alpine AS api-build
