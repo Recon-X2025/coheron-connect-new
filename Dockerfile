@@ -15,7 +15,7 @@ WORKDIR /app/api
 COPY coheron-works-api/package*.json ./
 RUN npm ci --production=false
 COPY coheron-works-api/ ./
-RUN NODE_OPTIONS="--max-old-space-size=1024" npm run build
+RUN NODE_OPTIONS="--max-old-space-size=4096" npm run build
 
 # Stage 3: Production image
 FROM node:20-alpine AS production

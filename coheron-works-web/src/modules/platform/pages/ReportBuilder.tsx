@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Download, Plus, Trash2, Eye } from 'lucide-react';
+import { FileText, Download } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
@@ -70,7 +70,6 @@ export const ReportBuilder: React.FC = () => {
   const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [format, setFormat] = useState<'csv' | 'xlsx' | 'pdf'>('xlsx');
-  const [preview, setPreview] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(false);
   const token = localStorage.getItem('authToken') || '';
 

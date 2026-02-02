@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, FileText, Send, CheckCircle, XCircle, Clock, Eye, Download } from 'lucide-react';
+import { Plus, FileText, Send, CheckCircle, XCircle, Clock, Eye, Download, X } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { LoadingSpinner } from '../../components/LoadingSpinner';

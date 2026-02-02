@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Download, Send, CheckCircle } from 'lucide-react';
+import { FileText, Download } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 

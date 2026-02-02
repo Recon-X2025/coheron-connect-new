@@ -74,7 +74,7 @@ export const PageBuilder = () => {
         },
       };
       if (pageId) {
-        await apiService.update(`/website/pages/${pageId}`, pageData);
+        await apiService.update('/website/pages', pageId, pageData);
       } else {
         await apiService.create('/website/pages/save', pageData);
       }

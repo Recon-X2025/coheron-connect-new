@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Truck, Loader2, CheckCircle, Clock } from 'lucide-react';
+import { Truck, Loader2, Clock } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 

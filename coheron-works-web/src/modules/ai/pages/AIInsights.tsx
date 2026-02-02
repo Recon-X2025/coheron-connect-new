@@ -4,7 +4,6 @@ import {
   AlertTriangle,
   Lightbulb,
   RefreshCw,
-  ChevronDown,
   ThumbsUp,
   ThumbsDown,
   X,
@@ -13,8 +12,6 @@ import {
   Zap,
   ArrowUpRight,
   ArrowDownRight,
-  Minus,
-  Filter,
   Sparkles,
 } from 'lucide-react';
 import { apiService } from '../../../services/apiService';
@@ -63,7 +60,6 @@ interface Recommendation {
 const page: React.CSSProperties = { padding: 32, background: '#0a0a0a', minHeight: '100vh', color: '#fff' };
 const card: React.CSSProperties = { background: '#141414', border: '1px solid #222', borderRadius: 12, padding: 24 };
 const grid2: React.CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 };
-const grid3: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 };
 const badge = (color: string): React.CSSProperties => ({
   display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px',
   borderRadius: 20, fontSize: 11, fontWeight: 600, background: `${color}18`, color,
