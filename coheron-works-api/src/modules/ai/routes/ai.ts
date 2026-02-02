@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { NLQueryEngine } from '../../../services/ai/NLQueryEngine.js';
 import { DocumentIntelligence } from '../../../services/ai/DocumentIntelligence.js';
 import { PredictiveAnalytics } from '../../../services/ai/PredictiveAnalytics.js';
@@ -8,12 +9,13 @@ import { AIService } from '../../../services/aiService.js';
 import multer from 'multer';
 
 const router = Router();
+router.use(authenticate);
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 // POST /ai/query - Natural language query
 router.post('/query', asyncHandler(async (req, res) => {
-  const tenantId = (req as any).tenantId || req.body.tenant_id;
-  const userId = (req as any).userId || req.body.user_id;
+  const tenantId = (req as any).user?.tenant_id || req.body.tenant_id;
+  const userId = (req as any).user?.userId || req.body.user_id;
   const { query, context } = req.body;
 
   if (!query) return res.status(400).json({ error: 'query is required' });
@@ -25,26 +27,34 @@ router.post('/query', asyncHandler(async (req, res) => {
 
 // POST /ai/document-extract - OCR + extraction
 router.post('/document-extract', upload.single('file'), asyncHandler(async (req, res) => {
-  const tenantId = (req as any).tenantId || req.body.tenant_id;
+  const tenantId = (req as any).user?.tenant_id || req.body.tenant_id;
 
   if (!req.file && !req.body.text) {
     return res.status(400).json({ error: 'Upload a file or provide text in body' });
   }
 
-  let result;
-  if (req.file) {
-    result = await DocumentIntelligence.extractFromImage(req.file.buffer, tenantId);
-  } else {
-    const structured = await DocumentIntelligence.extractFromText(req.body.text, tenantId);
-    result = { extracted_text: req.body.text, structured_data: structured, confidence: 100 };
+  try {
+    let result;
+    if (req.file) {
+      result = await DocumentIntelligence.extractFromImage(req.file.buffer, tenantId);
+    } else {
+      const structured = await DocumentIntelligence.extractFromText(req.body.text, tenantId);
+      result = { extracted_text: req.body.text, structured_data: structured, confidence: 100 };
+    }
+    res.json(result);
+  } catch (err: any) {
+    const message = err?.message || 'Document extraction failed';
+    res.status(500).json({
+      error: message.includes('worker') || message.includes('Tesseract')
+        ? 'OCR engine failed to process this file. Ensure the image is clear and try again.'
+        : message,
+    });
   }
-
-  res.json(result);
 }));
 
 // GET /ai/insights - Get AI insights for tenant
 router.get('/insights', asyncHandler(async (req, res) => {
-  const tenantId = (req as any).tenantId || (req.query.tenant_id as string);
+  const tenantId = (req as any).user?.tenant_id || (req.query.tenant_id as string);
   if (!tenantId) return res.status(400).json({ error: 'tenant_id is required' });
 
   const { module } = req.query;
@@ -67,7 +77,7 @@ router.get('/insights', asyncHandler(async (req, res) => {
 
 // POST /ai/suggest-automation
 router.post('/suggest-automation', asyncHandler(async (req, res) => {
-  const tenantId = (req as any).tenantId || req.body.tenant_id;
+  const tenantId = (req as any).user?.tenant_id || req.body.tenant_id;
   if (!tenantId) return res.status(400).json({ error: 'tenant_id is required' });
 
   const suggestions = await SmartAutomation.suggestRules(tenantId);

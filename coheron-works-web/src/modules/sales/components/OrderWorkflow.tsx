@@ -108,12 +108,18 @@ export const OrderWorkflow: React.FC<OrderWorkflowProps> = ({ order, onStateChan
           values = { state: newState };
       }
 
+      const orderId = order._id || order.id;
+      if (!orderId) {
+        setError('Order ID not found');
+        return;
+      }
+
       if (method) {
         // Call the workflow method via state update
-        await apiService.update('/sale-orders', order.id, { state: newState });
+        await apiService.update('/sale-orders', orderId, { state: newState });
       } else {
         // Direct state update
-        await apiService.update('/sale-orders', order.id, values);
+        await apiService.update('/sale-orders', orderId, values);
       }
 
       onStateChange();

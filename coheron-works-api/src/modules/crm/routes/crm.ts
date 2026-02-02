@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import { CrmTask, CalendarEvent, CrmAutomationWorkflow } from '../../../models/CrmTask.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
@@ -342,9 +343,105 @@ router.delete('/automation/workflows/:id', asyncHandler(async (req, res) => {
 router.post('/automation/workflows/:id/execute', asyncHandler(async (req, res) => {
   const { record_id, record_model } = req.body;
 
-  // TODO: Implement actual workflow execution logic
-  // This is a placeholder
-  res.json({ message: 'Workflow executed successfully', workflow_id: req.params.id });
+  if (!record_id || !record_model) {
+    return res.status(400).json({ error: 'record_id and record_model are required' });
+  }
+
+  // Load workflow and verify it's active
+  const workflow: any = await CrmAutomationWorkflow.findById(req.params.id).lean();
+  if (!workflow) {
+    return res.status(404).json({ error: 'Workflow not found' });
+  }
+  if (!workflow.is_active) {
+    return res.status(400).json({ error: 'Workflow is not active' });
+  }
+
+  // Load the target record
+  const Model = mongoose.models[record_model];
+  if (!Model) {
+    return res.status(400).json({ error: `Unknown model: ${record_model}` });
+  }
+
+  const record: any = await Model.findById(record_id).lean();
+  if (!record) {
+    return res.status(404).json({ error: 'Record not found' });
+  }
+
+  // Evaluate conditions
+  const conditions: any[] = Array.isArray(workflow.conditions) ? workflow.conditions : [];
+  const conditionsPassed = conditions.every((condition: any) => {
+    const fieldValue = record[condition.field];
+    const targetValue = condition.value;
+
+    switch (condition.operator) {
+      case 'equals':
+        return String(fieldValue) === String(targetValue);
+      case 'not_equals':
+        return String(fieldValue) !== String(targetValue);
+      case 'contains':
+        return String(fieldValue ?? '').includes(String(targetValue));
+      case 'greater_than':
+        return Number(fieldValue) > Number(targetValue);
+      case 'less_than':
+        return Number(fieldValue) < Number(targetValue);
+      default:
+        return false;
+    }
+  });
+
+  if (!conditionsPassed) {
+    return res.json({
+      message: 'Workflow conditions not met',
+      workflow_id: req.params.id,
+      executed: false,
+    });
+  }
+
+  // Execute actions
+  const actions: any[] = Array.isArray(workflow.actions) ? workflow.actions : [];
+  const results: any[] = [];
+
+  for (const action of actions) {
+    switch (action.type) {
+      case 'update_field': {
+        await Model.findByIdAndUpdate(record_id, {
+          [action.field]: action.value,
+        });
+        results.push({ type: 'update_field', field: action.field, status: 'done' });
+        break;
+      }
+      case 'create_task': {
+        const task = await CrmTask.create({
+          name: action.task_name || `Task from workflow: ${workflow.name}`,
+          description: action.task_description || '',
+          task_type: action.task_type || 'task',
+          priority: action.priority || 'medium',
+          state: 'pending',
+          assigned_to_id: action.assigned_to_id || null,
+          related_model: record_model,
+          related_id: record_id,
+          due_date: action.due_date || null,
+        });
+        results.push({ type: 'create_task', task_id: task._id, status: 'done' });
+        break;
+      }
+      case 'send_notification': {
+        const message = action.message || `Workflow "${workflow.name}" triggered for ${record_model} ${record_id}`;
+        console.log(`[CRM Notification] ${message}`);
+        results.push({ type: 'send_notification', message, status: 'done' });
+        break;
+      }
+      default:
+        results.push({ type: action.type, status: 'unknown_action' });
+    }
+  }
+
+  res.json({
+    message: 'Workflow executed successfully',
+    workflow_id: req.params.id,
+    executed: true,
+    results,
+  });
 }));
 
 export default router;

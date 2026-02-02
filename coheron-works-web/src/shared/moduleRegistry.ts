@@ -19,6 +19,7 @@ const modules: ModuleDefinition[] = [
   { name: 'esignature', loadRoutes: () => import('../modules/esignature/routes') },
   { name: 'compliance', loadRoutes: () => import('../modules/compliance/routes') },
   { name: 'platform', loadRoutes: () => import('../modules/platform/routes') },
+  { name: 'ai', loadRoutes: () => import('../modules/ai/routes') },
 ];
 
 export interface AppRoute {

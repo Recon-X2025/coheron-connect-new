@@ -40,6 +40,8 @@ import {
     ArrowLeft,
     Barcode,
     ArrowUp,
+    Sparkles,
+    MessageSquare,
 } from 'lucide-react';
 import './Sidebar.css';
 
@@ -200,6 +202,17 @@ const getNavigationItems = (): NavItem[] => [
             label: 'E-Signature',
             path: '/esignature',
             icon: <PenTool size={20} />,
+        },
+        {
+            label: 'AI',
+            path: '/ai',
+            icon: <Sparkles size={20} />,
+            children: [
+                { label: 'Dashboard', path: '/ai', icon: <LayoutDashboard size={18} /> },
+                { label: 'Chat', path: '/ai/chat', icon: <MessageSquare size={18} /> },
+                { label: 'Documents', path: '/ai/documents', icon: <FileText size={18} /> },
+                { label: 'Insights', path: '/ai/insights', icon: <BarChart3 size={18} /> },
+            ],
         },
         {
             label: 'Admin Portal',

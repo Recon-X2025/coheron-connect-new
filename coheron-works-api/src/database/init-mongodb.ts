@@ -53,7 +53,7 @@ async function initMongoDB() {
         enabled_modules: [
           'crm', 'sales', 'inventory', 'manufacturing', 'accounting',
           'hr', 'projects', 'support', 'marketing', 'pos', 'website',
-          'esignature', 'platform',
+          'esignature', 'platform', 'ai', 'admin', 'compliance',
         ],
         is_active: true,
       },

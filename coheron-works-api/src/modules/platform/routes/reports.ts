@@ -1,7 +1,14 @@
 import express from 'express';
 import { Report } from '../../../models/Report.js';
+import { ReportOutput } from '../../../models/ReportOutput.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
+
+const CONTENT_TYPES: Record<string, string> = {
+  pdf: 'application/pdf',
+  csv: 'text/csv',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+};
 
 const router = express.Router();
 
@@ -34,6 +41,24 @@ router.put('/:id', asyncHandler(async (req, res) => {
   const report = await Report.findByIdAndUpdate(req.params.id, req.body, { new: true });
   if (!report) return res.status(404).json({ error: 'Report not found' });
   res.json(report);
+}));
+
+// Download generated report output by report_id
+router.get('/:id/download', asyncHandler(async (req, res) => {
+  const reportOutput: any = await ReportOutput.findOne({ report_id: req.params.id }).lean();
+  if (!reportOutput) {
+    return res.status(404).json({ error: 'Report output not found' });
+  }
+
+  const fileBuffer = Buffer.from(reportOutput.buffer, 'base64');
+  const contentType = CONTENT_TYPES[reportOutput.format] || 'application/octet-stream';
+  const extension = reportOutput.format || 'bin';
+  const filename = `${reportOutput.name || 'report'}.${extension}`;
+
+  res.setHeader('Content-Type', contentType);
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.setHeader('Content-Length', fileBuffer.length);
+  res.send(fileBuffer);
 }));
 
 router.delete('/:id', asyncHandler(async (req, res) => {

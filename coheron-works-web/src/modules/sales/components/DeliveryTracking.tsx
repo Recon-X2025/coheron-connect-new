@@ -24,13 +24,14 @@ export const DeliveryTracking: React.FC<DeliveryTrackingProps> = ({ order }) => 
 
   useEffect(() => {
     loadDeliveries();
-  }, [order.id]);
+  }, [order._id || order.id]);
 
   const loadDeliveries = async () => {
+    const orderId = order._id || order.id;
     try {
       setLoading(true);
       // Fetch deliveries from API
-      const pickingData = await apiService.get<any[]>(`/sales-delivery?sale_id=${order.id}`);
+      const pickingData = await apiService.get<any[]>(`/sales-delivery?sale_id=${orderId}`);
 
       // Transform to our Delivery format
       const transformed = pickingData.map((pick: any) => ({

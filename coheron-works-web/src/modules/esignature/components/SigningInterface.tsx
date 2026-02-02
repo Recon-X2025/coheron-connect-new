@@ -29,6 +29,9 @@ export const SigningInterface = ({
   const [accessCode, setAccessCode] = useState('');
   const [signing, setSigning] = useState(false);
   const [error, setError] = useState('');
+  const [signerName, setSignerName] = useState('');
+  const [signerTitle, setSignerTitle] = useState('');
+  const [signDate, setSignDate] = useState(new Date().toISOString().split('T')[0]);
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -134,6 +137,10 @@ export const SigningInterface = ({
   const handleSign = async () => {
     setError('');
 
+    if (!signerName.trim()) {
+      setError('Please enter your full name');
+      return;
+    }
     if (signatureType === 'draw' && !hasSignature) {
       setError('Please draw your signature');
       return;
@@ -156,7 +163,11 @@ export const SigningInterface = ({
         signature_data: signatureData,
         signature_type: signatureType,
         access_code: accessCode || undefined,
-        fields: [], // TODO: Add field values if needed
+        fields: [
+          { name: 'signer_name', value: signerName },
+          { name: 'signer_title', value: signerTitle },
+          { name: 'sign_date', value: signDate },
+        ],
       });
 
       onSignComplete();
@@ -270,6 +281,35 @@ export const SigningInterface = ({
             )}
           </div>
 
+          <div className="signer-fields">
+            <div className="field-group">
+              <label>Full Name</label>
+              <input
+                type="text"
+                value={signerName}
+                onChange={(e) => setSignerName(e.target.value)}
+                placeholder="Enter your full name"
+              />
+            </div>
+            <div className="field-group">
+              <label>Title</label>
+              <input
+                type="text"
+                value={signerTitle}
+                onChange={(e) => setSignerTitle(e.target.value)}
+                placeholder="Enter your title"
+              />
+            </div>
+            <div className="field-group">
+              <label>Date</label>
+              <input
+                type="date"
+                value={signDate}
+                onChange={(e) => setSignDate(e.target.value)}
+              />
+            </div>
+          </div>
+
           <div className="access-code-section">
             <label>Access Code (if required)</label>
             <input
@@ -289,7 +329,7 @@ export const SigningInterface = ({
           <Button variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSign} disabled={signing || !hasSignature}>
+          <Button onClick={handleSign} disabled={signing || !hasSignature || !signerName.trim()}>
             {signing ? 'Signing...' : 'Sign Document'}
           </Button>
         </div>

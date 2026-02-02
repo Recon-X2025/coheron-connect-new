@@ -46,7 +46,7 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
     req.user = { userId: decoded.userId, uid: decoded.uid, email: decoded.email, tenant_id: decoded.tenant_id };
     next();
   } catch (error: any) {
-    if (error.name === 'JsonWebTokenError') return res.status(401).json({ error: 'Invalid token' });
+    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') return res.status(401).json({ error: error.name === 'TokenExpiredError' ? 'Token expired' : 'Invalid token' });
     logger.error({ err: error }, 'Authentication error');
     return res.status(500).json({ error: 'Internal server error' });
   }
@@ -97,7 +97,7 @@ export function requirePermission(permissionCode: string) {
       req.user = { userId: decoded.userId, uid: decoded.uid, email: decoded.email, tenant_id: decoded.tenant_id, permissions: userPermissions };
       next();
     } catch (error: any) {
-      if (error.name === 'JsonWebTokenError') return res.status(401).json({ error: 'Invalid token' });
+      if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') return res.status(401).json({ error: error.name === 'TokenExpiredError' ? 'Token expired' : 'Invalid token' });
       logger.error({ err: error }, 'Permission check error');
       return res.status(500).json({ error: 'Internal server error' });
     }
@@ -150,7 +150,7 @@ export function requireAnyPermission(permissionCodes: string[]) {
       req.user = { userId: decoded.userId, uid: decoded.uid, email: decoded.email, tenant_id: decoded.tenant_id, permissions: userPermissions };
       next();
     } catch (error: any) {
-      if (error.name === 'JsonWebTokenError') return res.status(401).json({ error: 'Invalid token' });
+      if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') return res.status(401).json({ error: error.name === 'TokenExpiredError' ? 'Token expired' : 'Invalid token' });
       logger.error({ err: error }, 'Permission check error');
       return res.status(500).json({ error: 'Internal server error' });
     }
@@ -193,7 +193,7 @@ export function requireRole(roleCode: string) {
       req.user = { userId: decoded.userId, uid: decoded.uid, email: decoded.email, tenant_id: decoded.tenant_id, roles: userRoles };
       next();
     } catch (error: any) {
-      if (error.name === 'JsonWebTokenError') return res.status(401).json({ error: 'Invalid token' });
+      if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') return res.status(401).json({ error: error.name === 'TokenExpiredError' ? 'Token expired' : 'Invalid token' });
       logger.error({ err: error }, 'Role check error');
       return res.status(500).json({ error: 'Internal server error' });
     }

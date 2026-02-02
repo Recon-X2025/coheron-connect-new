@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { Save, Eye, X } from 'lucide-react';
 import { Button } from '../../../components/Button';
 import { showToast } from '../../../components/Toast';
@@ -12,9 +13,24 @@ interface Block {
 }
 
 export const PageBuilder = () => {
+  const { pageId } = useParams<{ pageId: string }>();
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [selectedBlock, setSelectedBlock] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
+
+  useEffect(() => {
+    if (pageId) {
+      apiService.get(`/website/pages/${pageId}`).then((data: any) => {
+        const page = Array.isArray(data) ? data[0] : data;
+        if (page?.blocks) {
+          setBlocks(page.blocks);
+        }
+      }).catch((err) => {
+        console.error('Failed to load page:', err);
+        showToast('Failed to load page', 'error');
+      });
+    }
+  }, [pageId]);
 
   const blockTypes = [
     { type: 'text', label: 'Text', icon: '📝' },
@@ -57,8 +73,11 @@ export const PageBuilder = () => {
           saved_at: new Date().toISOString(),
         },
       };
-      // TODO: Get page ID from route or state
-      await apiService.create('/website/pages/save', pageData);
+      if (pageId) {
+        await apiService.update(`/website/pages/${pageId}`, pageData);
+      } else {
+        await apiService.create('/website/pages/save', pageData);
+      }
       showToast('Page saved successfully', 'success');
     } catch (error: any) {
       console.error('Failed to save page:', error);

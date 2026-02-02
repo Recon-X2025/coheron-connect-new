@@ -1,4 +1,3 @@
-import Tesseract from 'tesseract.js';
 import { llmGateway } from './LLMGateway.js';
 import logger from '../../shared/utils/logger.js';
 
@@ -26,15 +25,80 @@ Extract the following fields if present:
 Respond ONLY with a JSON object containing the extracted fields. Use null for fields not found.`;
 
 export class DocumentIntelligence {
+  private static isPDF(buffer: Buffer): boolean {
+    return buffer.length >= 4 && buffer[0] === 0x25 && buffer[1] === 0x50 && buffer[2] === 0x44 && buffer[3] === 0x46;
+  }
+
+  private static isValidImage(buffer: Buffer): boolean {
+    if (buffer.length < 4) return false;
+    // PNG
+    if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) return true;
+    // JPEG
+    if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) return true;
+    // BMP
+    if (buffer[0] === 0x42 && buffer[1] === 0x4D) return true;
+    // TIFF
+    if ((buffer[0] === 0x49 && buffer[1] === 0x49) || (buffer[0] === 0x4D && buffer[1] === 0x4D)) return true;
+    // WebP
+    if (buffer.length >= 12 && buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 &&
+        buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) return true;
+    return false;
+  }
+
+  private static async extractTextFromPDF(buffer: Buffer): Promise<{ text: string; confidence: number }> {
+    const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+    const doc = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
+    let text = '';
+    for (let i = 1; i <= doc.numPages; i++) {
+      const page = await doc.getPage(i);
+      const content = await page.getTextContent();
+      text += (content.items as any[]).map((item: any) => item.str).join(' ') + '\n';
+    }
+    doc.destroy();
+    return { text: text.trim(), confidence: text.trim() ? 85 : 0 };
+  }
+
   static async extractFromImage(imageBuffer: Buffer, tenantId?: string): Promise<{ extracted_text: string; structured_data: any; confidence: number }> {
-    logger.info('Starting OCR extraction');
+    logger.info('Starting document extraction');
 
-    const ocrResult = await Tesseract.recognize(imageBuffer, 'eng', {
-      logger: (m: any) => { if (m.status === 'recognizing text') logger.debug({ progress: m.progress }, 'OCR progress'); },
-    });
+    let extractedText: string;
+    let confidence: number;
 
-    const extractedText = ocrResult.data.text;
-    const confidence = ocrResult.data.confidence;
+    if (DocumentIntelligence.isPDF(imageBuffer)) {
+      // Handle PDF: extract text directly
+      logger.info('Detected PDF, using pdf-parse');
+      const pdfResult = await DocumentIntelligence.extractTextFromPDF(imageBuffer);
+      extractedText = pdfResult.text;
+      confidence = pdfResult.confidence;
+    } else if (DocumentIntelligence.isValidImage(imageBuffer)) {
+      // Handle image: OCR with Tesseract
+      logger.info('Detected image, using Tesseract OCR');
+      const Tesseract = await import('tesseract.js');
+      const recognize = Tesseract.default?.recognize || Tesseract.recognize;
+
+      const ocrResult = await new Promise<any>((resolve, reject) => {
+        const errorHandler = (err: Error) => {
+          process.removeListener('uncaughtException', errorHandler);
+          reject(new Error('OCR engine failed to process this image. Ensure the file is a clear, valid image.'));
+        };
+        process.on('uncaughtException', errorHandler);
+
+        recognize(imageBuffer, 'eng')
+          .then((result: any) => {
+            process.removeListener('uncaughtException', errorHandler);
+            resolve(result);
+          })
+          .catch((err: any) => {
+            process.removeListener('uncaughtException', errorHandler);
+            reject(err);
+          });
+      });
+
+      extractedText = ocrResult.data.text;
+      confidence = ocrResult.data.confidence;
+    } else {
+      throw new Error('Unsupported file format. Please upload a PNG, JPEG, TIFF, BMP, or PDF file.');
+    }
 
     if (!extractedText.trim()) {
       return { extracted_text: '', structured_data: null, confidence: 0 };

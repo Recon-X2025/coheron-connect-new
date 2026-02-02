@@ -89,7 +89,7 @@ export const OrderForm = ({ order, onClose, onSave }: OrderFormProps) => {
       }
 
       if (order) {
-        await apiService.update('/sale-orders', order.id, orderData);
+        await apiService.update('/sale-orders', order._id || order.id, orderData);
         showToast('Order updated successfully', 'success');
       } else {
         await apiService.create('/sale-orders', orderData);

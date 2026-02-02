@@ -1,7 +1,10 @@
 import { Worker, Job } from 'bullmq';
+import { randomUUID } from 'crypto';
 import { redisConnection } from '../connection.js';
 import logger from '../../shared/utils/logger.js';
 import { ReportGenerationService } from '../../services/reportGenerationService.js';
+import { ReportOutput } from '../../models/ReportOutput.js';
+import { getIO } from '../../socket/index.js';
 
 export interface ReportJobData {
   reportId: string;
@@ -45,8 +48,38 @@ export function startReportWorker() {
 
       logger.info({ reportId, format, size: buffer.length }, 'Report generated');
 
-      // TODO: Store to S3 or notify via Socket.IO / email to recipients
-      // For now just log completion
+      // Store generated report to database
+      const storedReportId = randomUUID();
+      await ReportOutput.create({
+        report_id: storedReportId,
+        name: reportConfig.title,
+        format,
+        buffer: buffer.toString('base64'),
+        org_id: tenantId,
+        created_by: userId,
+        metadata: {
+          module: reportConfig.module,
+          collection: reportConfig.collection,
+          filters: job.data.filters,
+          size: buffer.length,
+        },
+      });
+
+      logger.info({ reportId, storedReportId, format }, 'Report stored to database');
+
+      // Notify via Socket.IO if available
+      try {
+        const io = getIO();
+        io.to(`user:${userId}`).emit('report:ready', {
+          report_id: storedReportId,
+          name: reportConfig.title,
+          format,
+          timestamp: new Date().toISOString(),
+        });
+      } catch (err) {
+        logger.warn({ err }, 'Failed to emit report:ready (Socket.IO may not be initialized)');
+      }
+
       if (scheduled && recipients?.length) {
         logger.info({ recipients, reportId }, 'Scheduled report ready for email delivery');
       }

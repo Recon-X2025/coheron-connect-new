@@ -917,9 +917,54 @@ router.post('/stock-issues/:id/approve', asyncHandler(async (req, res) => {
 
 // Issue stock (execute)
 router.post('/stock-issues/:id/issue', asyncHandler(async (req, res) => {
-  await StockIssue.findByIdAndUpdate(req.params.id, { state: 'issued' });
-  // TODO: Update stock quantities (reduce from warehouse)
-  res.json({ message: 'Stock issued successfully' });
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const issue = await StockIssue.findById(req.params.id).session(session);
+    if (!issue) {
+      await session.abortTransaction();
+      return res.status(404).json({ error: 'Stock issue not found' });
+    }
+
+    // Find the stock location for this warehouse
+    const location = await StockLocation.findOne({
+      warehouse_id: issue.from_warehouse_id,
+      usage: 'internal',
+    }).session(session);
+
+    if (!location) {
+      await session.abortTransaction();
+      return res.status(400).json({ error: 'No internal stock location found for warehouse' });
+    }
+
+    for (const line of issue.lines) {
+      const quant = await StockQuant.findOne({
+        product_id: line.product_id,
+        location_id: location._id,
+      }).session(session);
+
+      if (!quant || quant.quantity < line.quantity) {
+        await session.abortTransaction();
+        return res.status(400).json({
+          error: `Insufficient stock for product ${line.product_id}. Available: ${quant?.quantity ?? 0}, Requested: ${line.quantity}`,
+        });
+      }
+
+      quant.quantity -= line.quantity;
+      await quant.save({ session });
+    }
+
+    issue.state = 'issued';
+    await issue.save({ session });
+
+    await session.commitTransaction();
+    res.json({ message: 'Stock issued successfully' });
+  } catch (error: any) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
+  }
 }));
 
 // Delete stock issue

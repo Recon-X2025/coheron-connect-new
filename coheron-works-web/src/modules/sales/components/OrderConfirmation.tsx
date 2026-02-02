@@ -37,15 +37,16 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({
     setError(null);
 
     try {
+      const orderId = order._id || order.id;
       // Update order with confirmation data
-      await apiService.update('/sale-orders', order.id, {
+      await apiService.update('/sale-orders', orderId, {
         payment_term_id: data.paymentTerms,
         commitment_date: data.deliveryDate,
         note: data.notes,
       });
 
       // Confirm the order (transition to 'sale' state)
-      await apiService.update('/sale-orders', order.id, { state: 'sale' });
+      await apiService.update('/sale-orders', orderId, { state: 'sale' });
 
       onSuccess();
       onClose();

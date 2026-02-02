@@ -33,6 +33,8 @@ export const ESignature = () => {
   const [selectedDocument, setSelectedDocument] = useState<ESignDocument | null>(null);
   const [showSigningInterface, setShowSigningInterface] = useState(false);
   const [signerInfo, setSignerInfo] = useState<{ signerId: number; signerEmail: string } | null>(null);
+  const [showDocumentViewer, setShowDocumentViewer] = useState(false);
+  const [documentDetails, setDocumentDetails] = useState<any>(null);
 
   useEffect(() => {
     loadDocuments();
@@ -250,6 +252,52 @@ export const ESignature = () => {
         />
       )}
 
+      {showDocumentViewer && documentDetails && (
+        <div className="modal-overlay" onClick={() => setShowDocumentViewer(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{documentDetails.document_name}</h2>
+              <button className="close-btn" onClick={() => setShowDocumentViewer(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="document-info">
+                <p><strong>Type:</strong> {documentDetails.document_type}</p>
+                <p><strong>Status:</strong> {documentDetails.status?.replace('_', ' ')}</p>
+                <p><strong>Created:</strong> {new Date(documentDetails.created_at).toLocaleDateString()}</p>
+                {documentDetails.expires_at && (
+                  <p><strong>Expires:</strong> {new Date(documentDetails.expires_at).toLocaleDateString()}</p>
+                )}
+              </div>
+              {documentDetails.signers && documentDetails.signers.length > 0 && (
+                <div className="signer-list">
+                  <h3>Signers</h3>
+                  {documentDetails.signers.map((signer: any, idx: number) => (
+                    <div key={signer.id || idx} className="signer-item">
+                      <span>{signer.signer_name || signer.signer_email}</span>
+                      <span className="status-badge" style={{ color: signer.status === 'signed' ? 'var(--success)' : 'var(--text-muted)' }}>
+                        {signer.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {documentDetails.file_path && (
+                <div style={{ marginTop: '1rem' }}>
+                  <a href={documentDetails.file_path} target="_blank" rel="noopener noreferrer" className="action-btn">
+                    <Eye size={16} /> View Document File
+                  </a>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <Button variant="secondary" onClick={() => setShowDocumentViewer(false)}>Close</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showSigningInterface && signerInfo && selectedDocument && (
         <SigningInterface
           documentId={selectedDocument.id}
@@ -280,7 +328,9 @@ export const ESignature = () => {
       } else {
         setSelectedDocument(doc);
       }
-      // TODO: Open document viewer modal
+      const docData = Array.isArray(doc) ? doc[0] : doc;
+      setDocumentDetails(docData);
+      setShowDocumentViewer(true);
     } catch (error) {
       console.error('Error loading document:', error);
     }

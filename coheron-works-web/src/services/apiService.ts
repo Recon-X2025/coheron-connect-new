@@ -45,8 +45,13 @@ class ApiService {
           const data = error.response.data;
           
           if (status === 401) {
-            localStorage.removeItem('authToken');
-            window.location.href = '/login';
+            // Don't redirect if already on login page or if this was the login request itself
+            const isLoginRequest = error.config?.url?.includes('/auth/login') || error.config?.url?.includes('/auth/register');
+            const isOnLoginPage = window.location.pathname === '/login' || window.location.pathname === '/signup';
+            if (!isLoginRequest && !isOnLoginPage) {
+              localStorage.removeItem('authToken');
+              window.location.href = '/login';
+            }
             error.userMessage = 'Session expired. Please login again.';
           } else if (status === 404) {
             error.userMessage = data?.error || 'Resource not found.';

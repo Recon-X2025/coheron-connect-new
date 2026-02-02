@@ -5,6 +5,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
+import { doubleCsrf } from 'csrf-csrf';
 import routes, { initializeRoutes } from './routes/index.js';
 import mongoose from 'mongoose';
 import { errorHandler } from './shared/middleware/asyncHandler.js';
@@ -81,7 +82,40 @@ const authLimiter = rateLimit({
 });
 app.use('/api/auth', authLimiter);
 
-// TODO: Add CSRF protection (requires csrf-csrf package)
+// CSRF protection (double-submit cookie pattern)
+if (process.env.NODE_ENV === 'production') {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const { doubleCsrfProtection, generateCsrfToken } = doubleCsrf({
+    getSecret: () => process.env.CSRF_SECRET || 'coheron-csrf-default-secret',
+    cookieName: isProduction ? '__Host-psifi.x-csrf-token' : 'x-csrf-token',
+    cookieOptions: {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+      secure: isProduction,
+    },
+    getSessionIdentifier: (req: express.Request) => req.ip || 'unknown',
+    getCsrfTokenFromRequest: (req: express.Request) => req.headers['x-csrf-token'] as string,
+  });
+
+  // Endpoint to obtain a CSRF token
+  app.get('/api/csrf-token', (req, res) => {
+    const token = generateCsrfToken(req, res);
+    res.json({ token });
+  });
+
+  // Apply CSRF protection, skipping safe methods
+  app.use((req, res, next) => {
+    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+      return next();
+    }
+    try {
+      doubleCsrfProtection(req, res, next);
+    } catch {
+      res.status(403).json({ error: 'Invalid CSRF token. Fetch one from GET /api/csrf-token first.' });
+    }
+  });
+}
 
 // Audit trail for API mutations
 app.use(auditTrailMiddleware());

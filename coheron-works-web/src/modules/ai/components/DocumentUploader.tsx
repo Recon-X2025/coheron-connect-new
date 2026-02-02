@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Upload, FileText, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
-
-const API_BASE = import.meta.env.VITE_API_URL || '';
+import { apiService } from '../../../services/apiService';
 
 const sCard: React.CSSProperties = { background: '#141414', border: '1px solid #222', borderRadius: 12, padding: 24 };
 const sBtn: React.CSSProperties = { background: '#00C971', color: '#000', border: 'none', borderRadius: 8, padding: '10px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 14 };
@@ -21,7 +20,6 @@ export const DocumentUploader: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState('');
-  const token = localStorage.getItem('authToken') || '';
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -42,16 +40,13 @@ export const DocumentUploader: React.FC = () => {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await fetch(`${API_BASE}/api/ai/document-extract`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
+      const axios = apiService.getAxiosInstance();
+      const res = await axios.post('/ai/document-extract', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Extraction failed');
-      setResult(data);
+      setResult(res.data);
     } catch (err: any) {
-      setError(err.message);
+      setError(err?.response?.data?.error || err?.message || 'Extraction failed');
     }
     setLoading(false);
   };

@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 import AccountVendor from '../../../models/AccountVendor.js';
 import AccountBill from '../../../models/AccountBill.js';
 import AccountPayment from '../../../models/AccountPayment.js';
+import AccountMove from '../../../models/AccountMove.js';
+import AccountJournal from '../../../models/AccountJournal.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
@@ -250,7 +252,60 @@ router.post('/bills/:id/post', asyncHandler(async (req, res) => {
       return res.status(400).json({ error: 'Bill is not in draft state' });
     }
 
-    // TODO: Create journal entry and move lines
+    // Find the purchase journal
+    const purchaseJournal = await AccountJournal.findOne({ type: 'purchase' }).session(session);
+    if (!purchaseJournal) {
+      await session.abortTransaction();
+      return res.status(400).json({ error: 'Purchase journal not found' });
+    }
+
+    const moveDate = bill.invoice_date || new Date();
+    const dateStr = moveDate.toISOString().slice(0, 10).replace(/-/g, '');
+    const moveName = `BILL/${dateStr}/${Date.now().toString().slice(-6)}`;
+
+    // Build debit lines from bill lines (expense accounts)
+    const debitLines = bill.lines.map((line: any) => ({
+      account_id: line.account_id,
+      partner_id: bill.vendor_id,
+      name: line.name || bill.name,
+      debit: line.price_subtotal,
+      credit: 0,
+      balance: line.price_subtotal,
+      date: moveDate,
+      product_id: line.product_id || null,
+      cost_center_id: line.cost_center_id || null,
+      project_id: line.project_id || null,
+    }));
+
+    // Credit line for AP total
+    const apAccount = purchaseJournal.default_account_id;
+    debitLines.push({
+      account_id: apAccount,
+      partner_id: bill.vendor_id,
+      name: bill.name,
+      debit: 0,
+      credit: bill.amount_total,
+      balance: -bill.amount_total,
+      date: moveDate,
+      product_id: null,
+      cost_center_id: null,
+      project_id: null,
+    });
+
+    const move = await AccountMove.create([{
+      name: moveName,
+      journal_id: purchaseJournal._id,
+      date: moveDate,
+      ref: bill.reference || bill.name,
+      move_type: 'in_invoice',
+      partner_id: bill.vendor_id,
+      amount_total: bill.amount_total,
+      state: 'posted',
+      posted_at: new Date(),
+      lines: debitLines,
+    }], { session });
+
+    bill.move_id = move[0]._id;
     bill.state = 'posted';
     await bill.save({ session });
 

@@ -1,5 +1,6 @@
 import express from 'express';
 import mongoose from 'mongoose';
+import PosOrder from '../../../models/PosOrder.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 
 const router = express.Router();
@@ -69,8 +70,29 @@ router.post('/quick-sale', asyncHandler(async (req, res) => {
     created_by: req.user?.userId,
   };
 
-  // TODO: Save to POS transactions collection
-  res.status(201).json({ success: true, transaction });
+  const order_number = `POS-${Date.now()}`;
+  const order = await PosOrder.create({
+    name: order_number,
+    order_number,
+    partner_id: customer_id || undefined,
+    amount_total: total,
+    amount_paid: payment_amount || total,
+    payment_method: payment_method || 'cash',
+    payment_status: 'paid',
+    state: 'done',
+    user_id: req.user?.userId,
+    cashier_id: req.user?.userId,
+    paid_at: new Date(),
+    lines: items.map((item: any) => ({
+      product_id: item.product_id,
+      product_name: item.name,
+      qty: item.quantity,
+      price_unit: item.price,
+      discount: item.discount || 0,
+    })),
+  });
+
+  res.status(201).json({ success: true, transaction: order });
 }));
 
 // Offline sync - get data needed for offline operation
