@@ -35,28 +35,35 @@ CoheronERP/
 
 ## Pricing & Packages
 
-### Tiered Plans
+**₹1,500/user/month** — 5 core modules included in every plan (CRM, Sales, Accounting, Support, HR). Annual billing gets 2 months free.
 
-| Plan | Modules | Price | Users |
-|------|---------|-------|-------|
-| Starter | CRM, Sales, Support | ₹2,999/mo | Up to 5 |
-| Business | CRM, Sales, Support, Inventory, Accounting, HR, Projects | ₹7,999/mo | Up to 25 |
-| Enterprise | All 14 modules | ₹14,999/mo | Unlimited |
+### Team Packages
 
-### Industry Bundles
+| Package | Users | Monthly | Per User | Savings | Storage |
+|---------|-------|---------|----------|---------|---------|
+| Solo | 1 | ₹1,500 | ₹1,500 | — | 2 GB |
+| Team | 5 | ₹7,500 | ₹1,500 | — | 15 GB |
+| Growth | 15 | ₹20,000 | ₹1,333 | 11% off | 50 GB |
+| Business | 30 | ₹37,500 | ₹1,250 | 17% off | 120 GB |
+| Scale | 50 | ₹55,000 | ₹1,100 | 27% off | 250 GB |
+| Enterprise | 100 | ₹1,00,000 | ₹1,000 | 33% off | 600 GB |
 
-| Bundle | Price/mo |
-|--------|----------|
-| Retail & eCommerce | ₹9,999 |
-| Manufacturing | ₹11,999 |
-| Professional Services | ₹8,999 |
-| Healthcare | ₹10,999 |
-| Education | ₹6,999 |
-| Hospitality | ₹9,999 |
+### Add-On Modules
 
-### À La Carte
+Extend with optional modules at a flat monthly fee:
 
-Individual modules available from ₹699–₹2,499/user/month with an interactive module picker on the pricing page.
+| Module | Category | Price/mo |
+|--------|----------|----------|
+| Inventory | Core | ₹3,999 |
+| Projects | Advanced | ₹2,999 |
+| Marketing | Advanced | ₹2,999 |
+| POS | Advanced | ₹2,499 |
+| Compliance | Advanced | ₹2,499 |
+| E-Signature | Core | ₹1,499 |
+| eCommerce | Premium | ₹3,999 |
+| Manufacturing | Premium | ₹5,999 |
+| AI Assistant | Premium | ₹4,999 |
+| Platform Pro | Premium | ₹3,999 |
 
 ## Tech Stack
 
