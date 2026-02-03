@@ -9,6 +9,7 @@ interface LiveChatWidgetProps {
   visitorName?: string;
   visitorEmail?: string;
   onTicketCreated?: (ticketId: number) => void;
+  openRef?: React.MutableRefObject<(() => void) | null>;
 }
 
 export const LiveChatWidget: React.FC<LiveChatWidgetProps> = ({
@@ -16,8 +17,15 @@ export const LiveChatWidget: React.FC<LiveChatWidgetProps> = ({
   visitorName,
   visitorEmail,
   onTicketCreated,
+  openRef,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    if (openRef) {
+      openRef.current = () => setIsOpen(true);
+    }
+  }, [openRef]);
   const [isMinimized, setIsMinimized] = useState(false);
   const [session, setSession] = useState<ChatSession | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
