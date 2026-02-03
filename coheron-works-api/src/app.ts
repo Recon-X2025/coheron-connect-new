@@ -104,9 +104,13 @@ if (process.env.NODE_ENV === 'production') {
     res.json({ token });
   });
 
-  // Apply CSRF protection, skipping safe methods
+  // Apply CSRF protection, skipping safe methods and public portal routes
   app.use((req, res, next) => {
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+      return next();
+    }
+    // Skip CSRF for public portal endpoints (uses its own JWT auth)
+    if (req.path.startsWith('/api/support/portal/')) {
       return next();
     }
     try {

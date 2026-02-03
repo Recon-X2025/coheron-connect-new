@@ -1,18 +1,46 @@
 import { useState, useEffect, useRef } from 'react';
 import { MessageSquare, Plus, Search, LifeBuoy, BookOpen, HelpCircle, X, Inbox, Loader2 } from 'lucide-react';
 import { Button } from '../../components/Button';
-import { supportDeskService, type SupportTicket, type KBArticle } from '../../services/supportDeskService';
 import { LiveChatWidget } from '../../components/LiveChatWidget';
 import './CustomerPortal.css';
 
+const PORTAL_API = import.meta.env.PROD ? '/api/support/portal' : 'http://localhost:3000/api/support/portal';
+
+interface PortalTicket {
+    _id: string;
+    ticket_number?: string;
+    subject: string;
+    status: string;
+    priority: string;
+    created_at: string;
+}
+
+interface PortalKBArticle {
+    _id: string;
+    title: string;
+    slug?: string;
+    category?: string;
+    excerpt?: string;
+    created_at: string;
+}
+
+const portalFetch = async (path: string, options?: RequestInit) => {
+    const token = localStorage.getItem('portalToken');
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const res = await fetch(`${PORTAL_API}${path}`, { ...options, headers: { ...headers, ...options?.headers } });
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    return res.json();
+};
+
 export const CustomerPortal = () => {
-    const [tickets, setTickets] = useState<SupportTicket[]>([]);
-    const [kbArticles, setKbArticles] = useState<KBArticle[]>([]);
+    const [tickets, setTickets] = useState<PortalTicket[]>([]);
+    const [kbArticles, setKbArticles] = useState<PortalKBArticle[]>([]);
     const [loading, setLoading] = useState(true);
     const [showCreateTicket, setShowCreateTicket] = useState(false);
     const [showKB, setShowKB] = useState(false);
     const [kbSearchTerm, setKbSearchTerm] = useState('');
-    const [newTicket, setNewTicket] = useState({ subject: '', description: '', priority: 'medium' as const });
+    const [newTicket, setNewTicket] = useState({ subject: '', description: '', priority: 'medium' });
     const chatOpenRef = useRef<(() => void) | null>(null);
 
     useEffect(() => { loadTickets(); }, []);
@@ -24,10 +52,11 @@ export const CustomerPortal = () => {
     const loadTickets = async () => {
         try {
             setLoading(true);
-            const data = await supportDeskService.getTickets();
-            setTickets(data);
-        } catch (error) {
-            console.error('Error loading tickets:', error);
+            const data = await portalFetch('/tickets');
+            setTickets(Array.isArray(data) ? data : []);
+        } catch {
+            // Not logged in or no tickets — show empty state
+            setTickets([]);
         } finally {
             setLoading(false);
         }
@@ -35,16 +64,19 @@ export const CustomerPortal = () => {
 
     const searchKB = async () => {
         try {
-            const data = await supportDeskService.getKBArticles({ search: kbSearchTerm, status: 'published', is_public: true });
-            setKbArticles(data);
-        } catch (error) {
-            console.error('Error searching KB:', error);
+            const data = await portalFetch(`/knowledge-base?q=${encodeURIComponent(kbSearchTerm)}`);
+            setKbArticles(Array.isArray(data) ? data : []);
+        } catch {
+            setKbArticles([]);
         }
     };
 
     const handleCreateTicket = async () => {
         try {
-            await supportDeskService.createTicket(newTicket);
+            await portalFetch('/tickets', {
+                method: 'POST',
+                body: JSON.stringify(newTicket),
+            });
             setShowCreateTicket(false);
             setNewTicket({ subject: '', description: '', priority: 'medium' });
             loadTickets();
@@ -70,8 +102,8 @@ export const CustomerPortal = () => {
                     Support Portal
                 </div>
                 <div className="portal-nav-user">
-                    <span>Logged in as John Doe</span>
-                    <Button size="sm" variant="secondary">Log Out</Button>
+                    <span>Welcome</span>
+                    <Button size="sm" variant="secondary">Log In</Button>
                 </div>
             </nav>
 
@@ -136,11 +168,11 @@ export const CustomerPortal = () => {
                         {kbArticles.length > 0 && (
                             <div className="portal-kb-results">
                                 {kbArticles.slice(0, 5).map((article, idx) => (
-                                    <div key={article.id || (article as any)._id || idx} className="portal-kb-item">
+                                    <div key={article._id || idx} className="portal-kb-item">
                                         <HelpCircle size={18} />
                                         <div>
                                             <h4>{article.title}</h4>
-                                            {article.summary && <p>{article.summary}</p>}
+                                            {article.excerpt && <p>{article.excerpt}</p>}
                                         </div>
                                     </div>
                                 ))}
@@ -178,7 +210,7 @@ export const CustomerPortal = () => {
                             <label>Priority</label>
                             <select
                                 value={newTicket.priority}
-                                onChange={(e) => setNewTicket({ ...newTicket, priority: e.target.value as any })}
+                                onChange={(e) => setNewTicket({ ...newTicket, priority: e.target.value })}
                             >
                                 <option value="low">Low</option>
                                 <option value="medium">Medium</option>
@@ -231,8 +263,8 @@ export const CustomerPortal = () => {
                                 </thead>
                                 <tbody>
                                     {tickets.map((ticket, idx) => (
-                                        <tr key={ticket.id || (ticket as any)._id || idx}>
-                                            <td className="portal-ticket-id">#{ticket.ticket_number}</td>
+                                        <tr key={ticket._id || idx}>
+                                            <td className="portal-ticket-id">#{ticket.ticket_number || ticket._id.slice(-6)}</td>
                                             <td className="portal-ticket-subject">{ticket.subject}</td>
                                             <td className="portal-ticket-date">{new Date(ticket.created_at).toLocaleDateString()}</td>
                                             <td style={{ textAlign: 'center' }}>

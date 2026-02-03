@@ -1,7 +1,9 @@
 import express from 'express';
+import crypto from 'crypto';
 import SupportPortalUser from '../../../models/SupportPortalUser.js';
 import { SupportTicket } from '../../../models/SupportTicket.js';
 import { KbArticle } from '../../../models/KbArticle.js';
+import { ChatSession, ChatMessage } from '../../../models/ChatMessage.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -90,6 +92,43 @@ router.get('/knowledge-base', asyncHandler(async (req, res) => {
   if (q) filter.$text = { $search: q as string };
   const articles = await KbArticle.find(filter).select('title slug category excerpt created_at').limit(20);
   res.json(articles);
+}));
+
+// ── Public Live Chat endpoints ──
+
+// POST /chat/sessions - Create a chat session (public, no auth required)
+router.post('/chat/sessions', asyncHandler(async (req, res) => {
+  const { visitor_name, visitor_email, channel } = req.body;
+  const session = new ChatSession({
+    session_id: crypto.randomUUID(),
+    visitor_name: visitor_name || 'Visitor',
+    visitor_email,
+    channel: channel || 'web',
+    status: 'waiting',
+  });
+  await session.save();
+  res.status(201).json(session);
+}));
+
+// GET /chat/sessions/:sessionId - Get chat session with messages
+router.get('/chat/sessions/:sessionId', asyncHandler(async (req, res) => {
+  const session = await ChatSession.findOne({ session_id: req.params.sessionId });
+  if (!session) return res.status(404).json({ error: 'Session not found' });
+  const messages = await ChatMessage.find({ session_id: req.params.sessionId }).sort({ created_at: 1 });
+  res.json({ ...session.toJSON(), messages });
+}));
+
+// POST /chat/sessions/:sessionId/messages - Send a message (public)
+router.post('/chat/sessions/:sessionId/messages', asyncHandler(async (req, res) => {
+  const session = await ChatSession.findOne({ session_id: req.params.sessionId });
+  if (!session) return res.status(404).json({ error: 'Session not found' });
+  const message = new ChatMessage({
+    session_id: req.params.sessionId,
+    content: req.body.content,
+    message_type: req.body.message_type || 'user',
+  });
+  await message.save();
+  res.status(201).json(message);
 }));
 
 export default router;

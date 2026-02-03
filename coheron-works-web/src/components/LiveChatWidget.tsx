@@ -1,31 +1,50 @@
 import { useState, useEffect, useRef } from 'react';
 import { MessageSquare, X, Send, Minimize2, Maximize2, User, Bot } from 'lucide-react';
 import { Button } from './Button';
-import { supportDeskService, type ChatSession, type ChatMessage } from '../services/supportDeskService';
 import './LiveChatWidget.css';
 
+const PORTAL_API = import.meta.env.PROD ? '/api/support/portal' : 'http://localhost:3000/api/support/portal';
+
+interface ChatSession {
+  session_id: string;
+  visitor_name: string;
+  assigned_agent_id?: string;
+  status: string;
+  messages?: ChatMessage[];
+}
+
+interface ChatMessage {
+  _id?: string;
+  id?: number;
+  session_id: string;
+  message_type: string;
+  content: string;
+  is_read?: boolean;
+  created_at: string;
+}
+
 interface LiveChatWidgetProps {
-  sessionId?: string;
   visitorName?: string;
   visitorEmail?: string;
   onTicketCreated?: (ticketId: number) => void;
   openRef?: React.MutableRefObject<(() => void) | null>;
 }
 
+const chatFetch = async (path: string, options?: RequestInit) => {
+  const res = await fetch(`${PORTAL_API}${path}`, {
+    ...options,
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+  });
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  return res.json();
+};
+
 export const LiveChatWidget: React.FC<LiveChatWidgetProps> = ({
-  sessionId: initialSessionId,
   visitorName,
   visitorEmail,
-  onTicketCreated,
   openRef,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-
-  useEffect(() => {
-    if (openRef) {
-      openRef.current = () => setIsOpen(true);
-    }
-  }, [openRef]);
   const [isMinimized, setIsMinimized] = useState(false);
   const [session, setSession] = useState<ChatSession | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -36,6 +55,12 @@ export const LiveChatWidget: React.FC<LiveChatWidgetProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    if (openRef) {
+      openRef.current = () => setIsOpen(true);
+    }
+  }, [openRef]);
+
+  useEffect(() => {
     if (isOpen && !session) {
       initializeSession();
     }
@@ -44,8 +69,7 @@ export const LiveChatWidget: React.FC<LiveChatWidgetProps> = ({
   useEffect(() => {
     if (session) {
       loadMessages();
-      // Poll for new messages every 2 seconds
-      const interval = setInterval(loadMessages, 2000);
+      const interval = setInterval(loadMessages, 3000);
       return () => clearInterval(interval);
     }
   }, [session]);
@@ -57,18 +81,14 @@ export const LiveChatWidget: React.FC<LiveChatWidgetProps> = ({
   const initializeSession = async () => {
     try {
       setLoading(true);
-      let chatSession: ChatSession;
-
-      if (initialSessionId) {
-        chatSession = await supportDeskService.getChatSession(initialSessionId);
-      } else {
-        chatSession = await supportDeskService.createChatSession({
-          visitor_name: visitorName,
+      const chatSession = await chatFetch('/chat/sessions', {
+        method: 'POST',
+        body: JSON.stringify({
+          visitor_name: visitorName || 'Visitor',
           visitor_email: visitorEmail,
           channel: 'web',
-        });
-      }
-
+        }),
+      });
       setSession(chatSession);
       setWaitingForAgent(!chatSession.assigned_agent_id);
     } catch (error) {
@@ -80,11 +100,10 @@ export const LiveChatWidget: React.FC<LiveChatWidgetProps> = ({
 
   const loadMessages = async () => {
     if (!session) return;
-
     try {
-      const updatedSession = await supportDeskService.getChatSession(session.session_id);
-      setMessages(updatedSession.messages || []);
-      setWaitingForAgent(!updatedSession.assigned_agent_id && updatedSession.status === 'waiting');
+      const data = await chatFetch(`/chat/sessions/${session.session_id}`);
+      setMessages(data.messages || []);
+      setWaitingForAgent(!data.assigned_agent_id && data.status === 'waiting');
     } catch (error) {
       console.error('Error loading messages:', error);
     }
@@ -92,13 +111,11 @@ export const LiveChatWidget: React.FC<LiveChatWidgetProps> = ({
 
   const sendMessage = async () => {
     if (!session || !newMessage.trim()) return;
-
     try {
-      const message = await supportDeskService.sendChatMessage(session.session_id, {
-        content: newMessage,
-        message_type: 'user',
+      const message = await chatFetch(`/chat/sessions/${session.session_id}/messages`, {
+        method: 'POST',
+        body: JSON.stringify({ content: newMessage, message_type: 'user' }),
       });
-
       setMessages([...messages, message]);
       setNewMessage('');
       inputRef.current?.focus();
@@ -111,35 +128,6 @@ export const LiveChatWidget: React.FC<LiveChatWidgetProps> = ({
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
-    }
-  };
-
-  const createTicketFromChat = async () => {
-    if (!session) return;
-
-    try {
-      const ticket = await supportDeskService.createTicketFromChat(session.session_id, {
-        subject: `Chat: ${visitorName || 'Visitor'}`,
-        description: messages.map((m) => `${m.message_type}: ${m.content}`).join('\n'),
-      });
-
-      if (onTicketCreated) {
-        onTicketCreated(ticket.id);
-      }
-
-      // Add system message
-      const systemMessage: ChatMessage = {
-        id: Date.now(),
-        session_id: session.session_id,
-        message_type: 'system',
-        content: `Ticket #${ticket.ticket_number} has been created from this chat.`,
-        is_read: false,
-        created_at: new Date().toISOString(),
-      };
-
-      setMessages([...messages, systemMessage]);
-    } catch (error) {
-      console.error('Error creating ticket:', error);
     }
   };
 
@@ -198,7 +186,7 @@ export const LiveChatWidget: React.FC<LiveChatWidgetProps> = ({
             ) : (
               messages.map((message, idx) => (
                 <div
-                  key={message.id || (message as any)._id || idx}
+                  key={message._id || message.id || idx}
                   className={`chat-message chat-message-${message.message_type}`}
                 >
                   <div className="message-avatar">
@@ -225,15 +213,6 @@ export const LiveChatWidget: React.FC<LiveChatWidgetProps> = ({
             <div ref={messagesEndRef} />
           </div>
 
-          {waitingForAgent && messages.length > 0 && (
-            <div className="chat-waiting-notice">
-              <p>An agent will be with you shortly. In the meantime, you can create a ticket.</p>
-              <Button size="sm" onClick={createTicketFromChat}>
-                Create Ticket
-              </Button>
-            </div>
-          )}
-
           <div className="chat-input-area">
             <input
               ref={inputRef}
@@ -242,13 +221,13 @@ export const LiveChatWidget: React.FC<LiveChatWidgetProps> = ({
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Type your message..."
-              disabled={!session || waitingForAgent}
+              disabled={!session}
             />
             <Button
               size="sm"
               icon={<Send size={16} />}
               onClick={sendMessage}
-              disabled={!newMessage.trim() || !session || waitingForAgent}
+              disabled={!newMessage.trim() || !session}
             >
               Send
             </Button>
@@ -258,4 +237,3 @@ export const LiveChatWidget: React.FC<LiveChatWidgetProps> = ({
     </div>
   );
 };
-
