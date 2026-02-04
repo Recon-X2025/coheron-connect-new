@@ -2,13 +2,14 @@ import express from 'express';
 import { ConsignmentAgreement } from '../models/ConsignmentAgreement.js';
 import { ConsignmentStock } from '../models/ConsignmentStock.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // ==================== Agreements ====================
 
 // GET /agreements
-router.get('/agreements', asyncHandler(async (req: any, res) => {
+router.get('/agreements', authenticate, asyncHandler(async (req: any, res) => {
   const { status, type, partner_id, page = 1, limit = 20 } = req.query;
   const filter: any = { tenant_id: req.user.tenant_id };
   if (status) filter.status = status;
@@ -31,7 +32,7 @@ router.get('/agreements', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /agreements
-router.post('/agreements', asyncHandler(async (req: any, res) => {
+router.post('/agreements', authenticate, asyncHandler(async (req: any, res) => {
   const count = await ConsignmentAgreement.countDocuments({ tenant_id: req.user.tenant_id });
   const agreement_number = `CA-${String(count + 1).padStart(5, '0')}`;
 
@@ -45,7 +46,7 @@ router.post('/agreements', asyncHandler(async (req: any, res) => {
 }));
 
 // GET /agreements/:id
-router.get('/agreements/:id', asyncHandler(async (req: any, res) => {
+router.get('/agreements/:id', authenticate, asyncHandler(async (req: any, res) => {
   const agreement = await ConsignmentAgreement.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id })
     .populate('partner_id', 'name email')
     .populate('warehouse_id', 'name')
@@ -56,7 +57,7 @@ router.get('/agreements/:id', asyncHandler(async (req: any, res) => {
 }));
 
 // PUT /agreements/:id
-router.put('/agreements/:id', asyncHandler(async (req: any, res) => {
+router.put('/agreements/:id', authenticate, asyncHandler(async (req: any, res) => {
   const agreement = await ConsignmentAgreement.findOneAndUpdate(
     { _id: req.params.id, tenant_id: req.user.tenant_id },
     req.body,
@@ -67,7 +68,7 @@ router.put('/agreements/:id', asyncHandler(async (req: any, res) => {
 }));
 
 // DELETE /agreements/:id
-router.delete('/agreements/:id', asyncHandler(async (req: any, res) => {
+router.delete('/agreements/:id', authenticate, asyncHandler(async (req: any, res) => {
   const agreement = await ConsignmentAgreement.findOneAndDelete({
     _id: req.params.id,
     tenant_id: req.user.tenant_id,
@@ -78,7 +79,7 @@ router.delete('/agreements/:id', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /agreements/:id/activate
-router.post('/agreements/:id/activate', asyncHandler(async (req: any, res) => {
+router.post('/agreements/:id/activate', authenticate, asyncHandler(async (req: any, res) => {
   const agreement = await ConsignmentAgreement.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!agreement) return res.status(404).json({ error: 'Agreement not found' });
   if (agreement.status !== 'draft') return res.status(400).json({ error: 'Only draft agreements can be activated' });
@@ -111,7 +112,7 @@ router.post('/agreements/:id/activate', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /agreements/:id/terminate
-router.post('/agreements/:id/terminate', asyncHandler(async (req: any, res) => {
+router.post('/agreements/:id/terminate', authenticate, asyncHandler(async (req: any, res) => {
   const agreement = await ConsignmentAgreement.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!agreement) return res.status(404).json({ error: 'Agreement not found' });
   if (agreement.status !== 'active') return res.status(400).json({ error: 'Only active agreements can be terminated' });
@@ -124,7 +125,7 @@ router.post('/agreements/:id/terminate', asyncHandler(async (req: any, res) => {
 // ==================== Stock ====================
 
 // GET /stock
-router.get('/stock', asyncHandler(async (req: any, res) => {
+router.get('/stock', authenticate, asyncHandler(async (req: any, res) => {
   const { agreement_id, product_id, warehouse_id } = req.query;
   const filter: any = { tenant_id: req.user.tenant_id };
   if (agreement_id) filter.agreement_id = agreement_id;
@@ -141,7 +142,7 @@ router.get('/stock', asyncHandler(async (req: any, res) => {
 }));
 
 // PUT /stock/:id
-router.put('/stock/:id', asyncHandler(async (req: any, res) => {
+router.put('/stock/:id', authenticate, asyncHandler(async (req: any, res) => {
   const stock = await ConsignmentStock.findOneAndUpdate(
     { _id: req.params.id, tenant_id: req.user.tenant_id },
     req.body,
@@ -152,7 +153,7 @@ router.put('/stock/:id', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /stock/:id/reconcile
-router.post('/stock/:id/reconcile', asyncHandler(async (req: any, res) => {
+router.post('/stock/:id/reconcile', authenticate, asyncHandler(async (req: any, res) => {
   const stock = await ConsignmentStock.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!stock) return res.status(404).json({ error: 'Stock record not found' });
 
@@ -166,7 +167,7 @@ router.post('/stock/:id/reconcile', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /agreements/:id/settle - settlement
-router.post('/agreements/:id/settle', asyncHandler(async (req: any, res) => {
+router.post('/agreements/:id/settle', authenticate, asyncHandler(async (req: any, res) => {
   const agreement = await ConsignmentAgreement.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id })
     .populate('items.product_id', 'name sku')
     .lean();

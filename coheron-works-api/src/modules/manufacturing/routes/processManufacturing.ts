@@ -2,12 +2,13 @@ import express from 'express';
 import { Formula } from '../models/Formula.js';
 import { BatchRecord } from '../models/BatchRecord.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // ==================== Formulas ====================
 
-router.get('/formulas', asyncHandler(async (req: any, res) => {
+router.get('/formulas', authenticate, asyncHandler(async (req: any, res) => {
   const { status, page = 1, limit = 20 } = req.query;
   const filter: any = { tenant_id: req.user.tenant_id };
   if (status) filter.status = status;
@@ -20,21 +21,21 @@ router.get('/formulas', asyncHandler(async (req: any, res) => {
   res.json({ data, total, page: Number(page), limit: Number(limit) });
 }));
 
-router.post('/formulas', asyncHandler(async (req: any, res) => {
+router.post('/formulas', authenticate, asyncHandler(async (req: any, res) => {
   const count = await Formula.countDocuments({ tenant_id: req.user.tenant_id });
   const formula_number = `FRM-${String(count + 1).padStart(5, '0')}`;
   const formula = await Formula.create({ ...req.body, tenant_id: req.user.tenant_id, formula_number });
   res.status(201).json(formula);
 }));
 
-router.get('/formulas/:id', asyncHandler(async (req: any, res) => {
+router.get('/formulas/:id', authenticate, asyncHandler(async (req: any, res) => {
   const formula = await Formula.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id })
     .populate('output_product_id', 'name sku').populate('ingredients.product_id', 'name sku').lean();
   if (!formula) return res.status(404).json({ error: 'Formula not found' });
   res.json(formula);
 }));
 
-router.put('/formulas/:id', asyncHandler(async (req: any, res) => {
+router.put('/formulas/:id', authenticate, asyncHandler(async (req: any, res) => {
   const formula = await Formula.findOneAndUpdate(
     { _id: req.params.id, tenant_id: req.user.tenant_id }, req.body, { new: true }
   );
@@ -42,7 +43,7 @@ router.put('/formulas/:id', asyncHandler(async (req: any, res) => {
   res.json(formula);
 }));
 
-router.delete('/formulas/:id', asyncHandler(async (req: any, res) => {
+router.delete('/formulas/:id', authenticate, asyncHandler(async (req: any, res) => {
   const formula = await Formula.findOneAndDelete({ _id: req.params.id, tenant_id: req.user.tenant_id, status: 'draft' });
   if (!formula) return res.status(404).json({ error: 'Formula not found or cannot be deleted' });
   res.json({ message: 'Formula deleted' });
@@ -50,7 +51,7 @@ router.delete('/formulas/:id', asyncHandler(async (req: any, res) => {
 
 // ==================== Batch Records ====================
 
-router.get('/batches', asyncHandler(async (req: any, res) => {
+router.get('/batches', authenticate, asyncHandler(async (req: any, res) => {
   const { status, formula_id, page = 1, limit = 20 } = req.query;
   const filter: any = { tenant_id: req.user.tenant_id };
   if (status) filter.status = status;
@@ -64,21 +65,21 @@ router.get('/batches', asyncHandler(async (req: any, res) => {
   res.json({ data, total, page: Number(page), limit: Number(limit) });
 }));
 
-router.post('/batches', asyncHandler(async (req: any, res) => {
+router.post('/batches', authenticate, asyncHandler(async (req: any, res) => {
   const count = await BatchRecord.countDocuments({ tenant_id: req.user.tenant_id });
   const batch_number = `BRD-${String(count + 1).padStart(5, '0')}`;
   const batch = await BatchRecord.create({ ...req.body, tenant_id: req.user.tenant_id, batch_number, operator_id: req.user._id });
   res.status(201).json(batch);
 }));
 
-router.get('/batches/:id', asyncHandler(async (req: any, res) => {
+router.get('/batches/:id', authenticate, asyncHandler(async (req: any, res) => {
   const batch = await BatchRecord.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id })
     .populate('formula_id', 'name formula_number quality_parameters').lean();
   if (!batch) return res.status(404).json({ error: 'Batch not found' });
   res.json(batch);
 }));
 
-router.put('/batches/:id', asyncHandler(async (req: any, res) => {
+router.put('/batches/:id', authenticate, asyncHandler(async (req: any, res) => {
   const batch = await BatchRecord.findOneAndUpdate(
     { _id: req.params.id, tenant_id: req.user.tenant_id }, req.body, { new: true }
   );
@@ -86,14 +87,14 @@ router.put('/batches/:id', asyncHandler(async (req: any, res) => {
   res.json(batch);
 }));
 
-router.delete('/batches/:id', asyncHandler(async (req: any, res) => {
+router.delete('/batches/:id', authenticate, asyncHandler(async (req: any, res) => {
   const batch = await BatchRecord.findOneAndDelete({ _id: req.params.id, tenant_id: req.user.tenant_id, status: 'planned' });
   if (!batch) return res.status(404).json({ error: 'Batch not found or cannot be deleted' });
   res.json({ message: 'Batch deleted' });
 }));
 
 // POST /batches/:id/start
-router.post('/batches/:id/start', asyncHandler(async (req: any, res) => {
+router.post('/batches/:id/start', authenticate, asyncHandler(async (req: any, res) => {
   const batch = await BatchRecord.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!batch) return res.status(404).json({ error: 'Batch not found' });
   if (batch.status !== 'planned') return res.status(400).json({ error: 'Batch must be in planned status' });
@@ -104,7 +105,7 @@ router.post('/batches/:id/start', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /batches/:id/complete
-router.post('/batches/:id/complete', asyncHandler(async (req: any, res) => {
+router.post('/batches/:id/complete', authenticate, asyncHandler(async (req: any, res) => {
   const batch = await BatchRecord.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!batch) return res.status(404).json({ error: 'Batch not found' });
   if (batch.status !== 'in_progress') return res.status(400).json({ error: 'Batch must be in progress' });
@@ -121,7 +122,7 @@ router.post('/batches/:id/complete', asyncHandler(async (req: any, res) => {
 }));
 
 // GET /batches/:id/quality
-router.get('/batches/:id/quality', asyncHandler(async (req: any, res) => {
+router.get('/batches/:id/quality', authenticate, asyncHandler(async (req: any, res) => {
   const batch = await BatchRecord.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id })
     .populate('formula_id', 'quality_parameters').lean();
   if (!batch) return res.status(404).json({ error: 'Batch not found' });
@@ -129,7 +130,7 @@ router.get('/batches/:id/quality', asyncHandler(async (req: any, res) => {
 }));
 
 // GET /yield-analysis
-router.get('/yield-analysis', asyncHandler(async (req: any, res) => {
+router.get('/yield-analysis', authenticate, asyncHandler(async (req: any, res) => {
   const batches = await BatchRecord.find({
     tenant_id: req.user.tenant_id,
     status: 'completed',

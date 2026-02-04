@@ -2,11 +2,12 @@ import express from 'express';
 import { DemandForecast } from '../models/DemandForecast.js';
 import { DemandPlanningRun } from '../models/DemandPlanningRun.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // GET /forecasts
-router.get('/forecasts', asyncHandler(async (req: any, res) => {
+router.get('/forecasts', authenticate, asyncHandler(async (req: any, res) => {
   const { product_id, warehouse_id, method, planning_run_id, page = 1, limit = 20 } = req.query;
   const filter: any = { tenant_id: req.user.tenant_id };
   if (product_id) filter.product_id = product_id;
@@ -28,7 +29,7 @@ router.get('/forecasts', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /forecasts
-router.post('/forecasts', asyncHandler(async (req: any, res) => {
+router.post('/forecasts', authenticate, asyncHandler(async (req: any, res) => {
   const forecast = await DemandForecast.create({
     ...req.body,
     tenant_id: req.user.tenant_id,
@@ -37,7 +38,7 @@ router.post('/forecasts', asyncHandler(async (req: any, res) => {
 }));
 
 // GET /runs
-router.get('/runs', asyncHandler(async (req: any, res) => {
+router.get('/runs', authenticate, asyncHandler(async (req: any, res) => {
   const { status, page = 1, limit = 20 } = req.query;
   const filter: any = { tenant_id: req.user.tenant_id };
   if (status) filter.status = status;
@@ -51,7 +52,7 @@ router.get('/runs', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /runs - trigger a planning run
-router.post('/runs', asyncHandler(async (req: any, res) => {
+router.post('/runs', authenticate, asyncHandler(async (req: any, res) => {
   const run = await DemandPlanningRun.create({
     ...req.body,
     tenant_id: req.user.tenant_id,
@@ -74,7 +75,7 @@ router.post('/runs', asyncHandler(async (req: any, res) => {
 }));
 
 // GET /accuracy
-router.get('/accuracy', asyncHandler(async (req: any, res) => {
+router.get('/accuracy', authenticate, asyncHandler(async (req: any, res) => {
   const forecasts = await DemandForecast.find({
     tenant_id: req.user.tenant_id,
     actual_quantity: { $gt: 0 },
@@ -94,7 +95,7 @@ router.get('/accuracy', asyncHandler(async (req: any, res) => {
 }));
 
 // GET /products/:productId/forecast
-router.get('/products/:productId/forecast', asyncHandler(async (req: any, res) => {
+router.get('/products/:productId/forecast', authenticate, asyncHandler(async (req: any, res) => {
   const forecasts = await DemandForecast.find({
     tenant_id: req.user.tenant_id,
     product_id: req.params.productId,

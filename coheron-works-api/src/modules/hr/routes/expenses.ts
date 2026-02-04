@@ -4,11 +4,12 @@ import ExpenseReport from '../../../models/ExpenseReport.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 import documentNumberingService from '../../../services/documentNumberingService.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // GET / - List expenses
-router.get('/', asyncHandler(async (req: any, res) => {
+router.get('/', authenticate, asyncHandler(async (req: any, res) => {
   const pagination = getPaginationParams(req.query);
   const filter: any = { tenant_id: req.user.tenant_id };
   if (req.query.employee_id) filter.employee_id = req.query.employee_id;
@@ -24,21 +25,21 @@ router.get('/', asyncHandler(async (req: any, res) => {
 }));
 
 // POST / - Create expense
-router.post('/', asyncHandler(async (req: any, res) => {
+router.post('/', authenticate, asyncHandler(async (req: any, res) => {
   const expenseNumber = await documentNumberingService.getNextNumber(req.user.tenant_id, 'expense');
   const expense = await Expense.create({ ...req.body, tenant_id: req.user.tenant_id, expense_number: expenseNumber });
   res.status(201).json(expense);
 }));
 
 // GET /:id
-router.get('/:id', asyncHandler(async (req: any, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req: any, res) => {
   const expense = await Expense.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id }).populate('employee_id');
   if (!expense) return res.status(404).json({ error: 'Not found' });
   res.json(expense);
 }));
 
 // PUT /:id - Update (draft only)
-router.put('/:id', asyncHandler(async (req: any, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req: any, res) => {
   const expense = await Expense.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!expense) return res.status(404).json({ error: 'Not found' });
   if ((expense as any).status !== 'draft') return res.status(400).json({ error: 'Can only edit draft expenses' });
@@ -48,7 +49,7 @@ router.put('/:id', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /:id/submit
-router.post('/:id/submit', asyncHandler(async (req: any, res) => {
+router.post('/:id/submit', authenticate, asyncHandler(async (req: any, res) => {
   const expense: any = await Expense.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!expense) return res.status(404).json({ error: 'Not found' });
   if (expense.status !== 'draft') return res.status(400).json({ error: 'Only draft expenses can be submitted' });
@@ -58,7 +59,7 @@ router.post('/:id/submit', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /:id/approve
-router.post('/:id/approve', asyncHandler(async (req: any, res) => {
+router.post('/:id/approve', authenticate, asyncHandler(async (req: any, res) => {
   const expense: any = await Expense.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!expense) return res.status(404).json({ error: 'Not found' });
   if (expense.status !== 'submitted') return res.status(400).json({ error: 'Only submitted expenses can be approved' });
@@ -70,7 +71,7 @@ router.post('/:id/approve', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /:id/reject
-router.post('/:id/reject', asyncHandler(async (req: any, res) => {
+router.post('/:id/reject', authenticate, asyncHandler(async (req: any, res) => {
   const expense: any = await Expense.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!expense) return res.status(404).json({ error: 'Not found' });
   if (expense.status !== 'submitted') return res.status(400).json({ error: 'Only submitted expenses can be rejected' });
@@ -81,7 +82,7 @@ router.post('/:id/reject', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /:id/reimburse
-router.post('/:id/reimburse', asyncHandler(async (req: any, res) => {
+router.post('/:id/reimburse', authenticate, asyncHandler(async (req: any, res) => {
   const expense: any = await Expense.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!expense) return res.status(404).json({ error: 'Not found' });
   if (expense.status !== 'approved') return res.status(400).json({ error: 'Only approved expenses can be reimbursed' });
@@ -93,7 +94,7 @@ router.post('/:id/reimburse', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /reports - Create expense report
-router.post('/reports', asyncHandler(async (req: any, res) => {
+router.post('/reports', authenticate, asyncHandler(async (req: any, res) => {
   const reportNumber = await documentNumberingService.getNextNumber(req.user.tenant_id, 'expense_report');
   const expenses = await Expense.find({ _id: { "": req.body.expense_ids }, tenant_id: req.user.tenant_id });
   const totalAmount = expenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
@@ -104,7 +105,7 @@ router.post('/reports', asyncHandler(async (req: any, res) => {
 }));
 
 // GET /reports
-router.get('/reports', asyncHandler(async (req: any, res) => {
+router.get('/reports', authenticate, asyncHandler(async (req: any, res) => {
   const pagination = getPaginationParams(req.query);
   const filter: any = { tenant_id: req.user.tenant_id };
   if (req.query.status) filter.status = req.query.status;
@@ -114,14 +115,14 @@ router.get('/reports', asyncHandler(async (req: any, res) => {
 }));
 
 // GET /reports/:id
-router.get('/reports/:id', asyncHandler(async (req: any, res) => {
+router.get('/reports/:id', authenticate, asyncHandler(async (req: any, res) => {
   const report = await ExpenseReport.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id }).populate('expense_ids').populate('employee_id');
   if (!report) return res.status(404).json({ error: 'Not found' });
   res.json(report);
 }));
 
 // POST /reports/:id/submit
-router.post('/reports/:id/submit', asyncHandler(async (req: any, res) => {
+router.post('/reports/:id/submit', authenticate, asyncHandler(async (req: any, res) => {
   const report: any = await ExpenseReport.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!report) return res.status(404).json({ error: 'Not found' });
   if (report.status !== 'draft') return res.status(400).json({ error: 'Only draft reports can be submitted' });
@@ -132,7 +133,7 @@ router.post('/reports/:id/submit', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /reports/:id/approve
-router.post('/reports/:id/approve', asyncHandler(async (req: any, res) => {
+router.post('/reports/:id/approve', authenticate, asyncHandler(async (req: any, res) => {
   const report: any = await ExpenseReport.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!report) return res.status(404).json({ error: 'Not found' });
   if (report.status !== 'submitted') return res.status(400).json({ error: 'Only submitted reports can be approved' });

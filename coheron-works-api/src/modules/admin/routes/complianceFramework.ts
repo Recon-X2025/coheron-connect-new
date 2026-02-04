@@ -3,11 +3,12 @@ import { ComplianceControl } from '../../../models/ComplianceControl.js';
 import { ComplianceAudit } from '../../../models/ComplianceAudit.js';
 import { complianceFrameworks } from '../../../data/complianceFrameworks.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // GET /controls
-router.get('/controls', asyncHandler(async (req: any, res) => {
+router.get('/controls', authenticate, asyncHandler(async (req: any, res) => {
   const filter: any = { tenant_id: req.user.tenant_id };
   if (req.query.framework) filter.framework = req.query.framework;
   if (req.query.status) filter.status = req.query.status;
@@ -16,13 +17,13 @@ router.get('/controls', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /controls
-router.post('/controls', asyncHandler(async (req: any, res) => {
+router.post('/controls', authenticate, asyncHandler(async (req: any, res) => {
   const control = await ComplianceControl.create({ ...req.body, tenant_id: req.user.tenant_id });
   res.status(201).json(control);
 }));
 
 // PUT /controls/:id
-router.put('/controls/:id', asyncHandler(async (req: any, res) => {
+router.put('/controls/:id', authenticate, asyncHandler(async (req: any, res) => {
   const control = await ComplianceControl.findOneAndUpdate(
     { _id: req.params.id, tenant_id: req.user.tenant_id },
     req.body,
@@ -33,7 +34,7 @@ router.put('/controls/:id', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /controls/seed
-router.post('/controls/seed', asyncHandler(async (req: any, res) => {
+router.post('/controls/seed', authenticate, asyncHandler(async (req: any, res) => {
   const { framework } = req.body;
   const templates = complianceFrameworks[framework as string];
   if (!templates) return res.status(400).json({ error: 'Unknown framework' });
@@ -43,7 +44,7 @@ router.post('/controls/seed', asyncHandler(async (req: any, res) => {
 }));
 
 // GET /audits
-router.get('/audits', asyncHandler(async (req: any, res) => {
+router.get('/audits', authenticate, asyncHandler(async (req: any, res) => {
   const filter: any = { tenant_id: req.user.tenant_id };
   if (req.query.framework) filter.framework = req.query.framework;
   if (req.query.status) filter.status = req.query.status;
@@ -52,20 +53,20 @@ router.get('/audits', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /audits
-router.post('/audits', asyncHandler(async (req: any, res) => {
+router.post('/audits', authenticate, asyncHandler(async (req: any, res) => {
   const audit = await ComplianceAudit.create({ ...req.body, tenant_id: req.user.tenant_id, created_by: req.user._id });
   res.status(201).json(audit);
 }));
 
 // GET /audits/:id
-router.get('/audits/:id', asyncHandler(async (req: any, res) => {
+router.get('/audits/:id', authenticate, asyncHandler(async (req: any, res) => {
   const audit = await ComplianceAudit.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id }).lean();
   if (!audit) return res.status(404).json({ error: 'Audit not found' });
   res.json(audit);
 }));
 
 // PUT /audits/:id
-router.put('/audits/:id', asyncHandler(async (req: any, res) => {
+router.put('/audits/:id', authenticate, asyncHandler(async (req: any, res) => {
   const audit = await ComplianceAudit.findOneAndUpdate(
     { _id: req.params.id, tenant_id: req.user.tenant_id },
     req.body, { new: true }
@@ -75,7 +76,7 @@ router.put('/audits/:id', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /audits/:id/findings
-router.post('/audits/:id/findings', asyncHandler(async (req: any, res) => {
+router.post('/audits/:id/findings', authenticate, asyncHandler(async (req: any, res) => {
   const audit = await ComplianceAudit.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!audit) return res.status(404).json({ error: 'Audit not found' });
   audit.findings.push(req.body);
@@ -84,7 +85,7 @@ router.post('/audits/:id/findings', asyncHandler(async (req: any, res) => {
 }));
 
 // PUT /audits/:id/findings/:findingIndex/remediate
-router.put('/audits/:id/findings/:findingIndex/remediate', asyncHandler(async (req: any, res) => {
+router.put('/audits/:id/findings/:findingIndex/remediate', authenticate, asyncHandler(async (req: any, res) => {
   const audit = await ComplianceAudit.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!audit) return res.status(404).json({ error: 'Audit not found' });
   const idx = parseInt(req.params.findingIndex, 10);
@@ -96,7 +97,7 @@ router.put('/audits/:id/findings/:findingIndex/remediate', asyncHandler(async (r
 }));
 
 // GET /dashboard
-router.get('/dashboard', asyncHandler(async (req: any, res) => {
+router.get('/dashboard', authenticate, asyncHandler(async (req: any, res) => {
   const tid = req.user.tenant_id;
   const controls = await ComplianceControl.find({ tenant_id: tid }).lean();
   const byFramework: any = {};
@@ -116,7 +117,7 @@ router.get('/dashboard', asyncHandler(async (req: any, res) => {
 }));
 
 // GET /readiness/:framework
-router.get('/readiness/:framework', asyncHandler(async (req: any, res) => {
+router.get('/readiness/:framework', authenticate, asyncHandler(async (req: any, res) => {
   const controls = await ComplianceControl.find({ tenant_id: req.user.tenant_id, framework: req.params.framework }).lean();
   const total = controls.length;
   const implemented = controls.filter((c: any) => ['implemented', 'verified'].includes(c.status)).length;

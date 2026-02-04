@@ -2,11 +2,12 @@ import express from 'express';
 import { PickWave } from '../models/PickWave.js';
 import { PickList } from '../models/PickList.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // GET / - list waves with pagination, filter by status/warehouse
-router.get('/', asyncHandler(async (req: any, res) => {
+router.get('/', authenticate, asyncHandler(async (req: any, res) => {
   const { status, warehouse_id, pick_type, page = 1, limit = 20 } = req.query;
   const filter: any = { tenant_id: req.user.tenant_id };
   if (status) filter.status = status;
@@ -29,7 +30,7 @@ router.get('/', asyncHandler(async (req: any, res) => {
 }));
 
 // POST / - create wave from selected orders
-router.post('/', asyncHandler(async (req: any, res) => {
+router.post('/', authenticate, asyncHandler(async (req: any, res) => {
   const count = await PickWave.countDocuments({ tenant_id: req.user.tenant_id });
   const wave_number = `WV-${String(count + 1).padStart(5, '0')}`;
 
@@ -43,7 +44,7 @@ router.post('/', asyncHandler(async (req: any, res) => {
 }));
 
 // GET /:id - get wave with pick lists
-router.get('/:id', asyncHandler(async (req: any, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req: any, res) => {
   const wave = await PickWave.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id })
     .populate('warehouse_id', 'name')
     .populate('orders')
@@ -59,7 +60,7 @@ router.get('/:id', asyncHandler(async (req: any, res) => {
 }));
 
 // PUT /:id - update wave
-router.put('/:id', asyncHandler(async (req: any, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req: any, res) => {
   const wave = await PickWave.findOneAndUpdate(
     { _id: req.params.id, tenant_id: req.user.tenant_id },
     req.body,
@@ -70,7 +71,7 @@ router.put('/:id', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /:id/release - release wave, generate pick lists
-router.post('/:id/release', asyncHandler(async (req: any, res) => {
+router.post('/:id/release', authenticate, asyncHandler(async (req: any, res) => {
   const wave = await PickWave.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!wave) return res.status(404).json({ error: 'Wave not found' });
   if (wave.status !== 'draft') return res.status(400).json({ error: 'Wave must be in draft status to release' });
@@ -104,7 +105,7 @@ router.post('/:id/release', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /:id/start - start picking
-router.post('/:id/start', asyncHandler(async (req: any, res) => {
+router.post('/:id/start', authenticate, asyncHandler(async (req: any, res) => {
   const wave = await PickWave.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!wave) return res.status(404).json({ error: 'Wave not found' });
   if (wave.status !== 'released') return res.status(400).json({ error: 'Wave must be released to start' });
@@ -123,7 +124,7 @@ router.post('/:id/start', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /:id/complete - complete wave
-router.post('/:id/complete', asyncHandler(async (req: any, res) => {
+router.post('/:id/complete', authenticate, asyncHandler(async (req: any, res) => {
   const wave = await PickWave.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!wave) return res.status(404).json({ error: 'Wave not found' });
   if (wave.status !== 'in_progress') return res.status(400).json({ error: 'Wave must be in progress to complete' });
@@ -136,7 +137,7 @@ router.post('/:id/complete', asyncHandler(async (req: any, res) => {
 }));
 
 // GET /pick-lists - list pick lists
-router.get('/pick-lists/list', asyncHandler(async (req: any, res) => {
+router.get('/pick-lists/list', authenticate, asyncHandler(async (req: any, res) => {
   const { status, wave_id, warehouse_id, page = 1, limit = 20 } = req.query;
   const filter: any = { tenant_id: req.user.tenant_id };
   if (status) filter.status = status;
@@ -160,7 +161,7 @@ router.get('/pick-lists/list', asyncHandler(async (req: any, res) => {
 }));
 
 // GET /pick-lists/:id - get pick list details
-router.get('/pick-lists/:id', asyncHandler(async (req: any, res) => {
+router.get('/pick-lists/:id', authenticate, asyncHandler(async (req: any, res) => {
   const pickList = await PickList.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id })
     .populate('warehouse_id', 'name')
     .populate('wave_id', 'wave_number')
@@ -172,7 +173,7 @@ router.get('/pick-lists/:id', asyncHandler(async (req: any, res) => {
 }));
 
 // PUT /pick-lists/:id/items/:idx - update pick item (mark picked)
-router.put('/pick-lists/:id/items/:idx', asyncHandler(async (req: any, res) => {
+router.put('/pick-lists/:id/items/:idx', authenticate, asyncHandler(async (req: any, res) => {
   const pickList = await PickList.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!pickList) return res.status(404).json({ error: 'Pick list not found' });
 

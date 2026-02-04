@@ -3,13 +3,14 @@ import CostCenter from '../../../models/CostCenter.js';
 import CostAllocationRule from '../../../models/CostAllocationRule.js';
 import CostAllocationEntry from '../../../models/CostAllocationEntry.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = Router();
 
 // ── Cost Centers ──
 
 // GET / - List cost centers (tree structure)
-router.get('/', asyncHandler(async (req: any, res) => {
+router.get('/', authenticate, asyncHandler(async (req: any, res) => {
   const centers = await CostCenter.find({ tenant_id: req.user.tenant_id })
     .populate('manager_id', 'name')
     .sort({ code: 1 })
@@ -33,13 +34,13 @@ router.get('/', asyncHandler(async (req: any, res) => {
 }));
 
 // POST / - Create cost center
-router.post('/', asyncHandler(async (req: any, res) => {
+router.post('/', authenticate, asyncHandler(async (req: any, res) => {
   const center = await CostCenter.create({ ...req.body, tenant_id: req.user.tenant_id });
   res.status(201).json(center);
 }));
 
 // GET /:id - Get with budget vs actual
-router.get('/:id', asyncHandler(async (req: any, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req: any, res) => {
   const center = await CostCenter.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id })
     .populate('manager_id', 'name')
     .populate('parent_id', 'name code');
@@ -50,7 +51,7 @@ router.get('/:id', asyncHandler(async (req: any, res) => {
 }));
 
 // PUT /:id - Update
-router.put('/:id', asyncHandler(async (req: any, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req: any, res) => {
   const center = await CostCenter.findOneAndUpdate(
     { _id: req.params.id, tenant_id: req.user.tenant_id },
     req.body,
@@ -61,7 +62,7 @@ router.put('/:id', asyncHandler(async (req: any, res) => {
 }));
 
 // DELETE /:id - Delete (if no allocations)
-router.delete('/:id', asyncHandler(async (req: any, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req: any, res) => {
   const hasAllocations = await CostAllocationEntry.exists({
     tenant_id: req.user.tenant_id,
     '$or': [{ source_cost_center_id: req.params.id }, { 'entries.target_cost_center_id': req.params.id }],
@@ -77,7 +78,7 @@ router.delete('/:id', asyncHandler(async (req: any, res) => {
 }));
 
 // GET /:id/report - P&L report for cost center (date range)
-router.get('/:id/report', asyncHandler(async (req: any, res) => {
+router.get('/:id/report', authenticate, asyncHandler(async (req: any, res) => {
   const { start_date, end_date } = req.query;
   const entries = await CostAllocationEntry.find({
     tenant_id: req.user.tenant_id,
@@ -106,7 +107,7 @@ router.get('/:id/report', asyncHandler(async (req: any, res) => {
 // ── Allocation Rules ──
 
 // GET /allocation-rules - List allocation rules
-router.get('/allocation-rules', asyncHandler(async (req: any, res) => {
+router.get('/allocation-rules', authenticate, asyncHandler(async (req: any, res) => {
   const rules = await CostAllocationRule.find({ tenant_id: req.user.tenant_id })
     .populate('source_cost_center_id', 'name code')
     .sort({ name: 1 });
@@ -114,13 +115,13 @@ router.get('/allocation-rules', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /allocation-rules - Create rule
-router.post('/allocation-rules', asyncHandler(async (req: any, res) => {
+router.post('/allocation-rules', authenticate, asyncHandler(async (req: any, res) => {
   const rule = await CostAllocationRule.create({ ...req.body, tenant_id: req.user.tenant_id });
   res.status(201).json(rule);
 }));
 
 // PUT /allocation-rules/:id - Update rule
-router.put('/allocation-rules/:id', asyncHandler(async (req: any, res) => {
+router.put('/allocation-rules/:id', authenticate, asyncHandler(async (req: any, res) => {
   const rule = await CostAllocationRule.findOneAndUpdate(
     { _id: req.params.id, tenant_id: req.user.tenant_id },
     req.body,
@@ -131,7 +132,7 @@ router.put('/allocation-rules/:id', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /allocation-rules/:id/run - Execute allocation
-router.post('/allocation-rules/:id/run', asyncHandler(async (req: any, res) => {
+router.post('/allocation-rules/:id/run', authenticate, asyncHandler(async (req: any, res) => {
   const rule = await CostAllocationRule.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!rule) return res.status(404).json({ error: 'Allocation rule not found' });
 
@@ -175,7 +176,7 @@ router.post('/allocation-rules/:id/run', asyncHandler(async (req: any, res) => {
 }));
 
 // GET /allocation-entries - List allocation history
-router.get('/allocation-entries', asyncHandler(async (req: any, res) => {
+router.get('/allocation-entries', authenticate, asyncHandler(async (req: any, res) => {
   const { rule_id, status } = req.query;
   const filter: any = { tenant_id: req.user.tenant_id };
   if (rule_id) filter.rule_id = rule_id;

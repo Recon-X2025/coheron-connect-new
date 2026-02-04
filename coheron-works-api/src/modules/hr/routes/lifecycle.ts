@@ -2,11 +2,12 @@ import express from 'express';
 import { EmployeeLifecycleEvent } from '../../../models/EmployeeLifecycleEvent.js';
 import { OnboardingTemplate } from '../../../models/OnboardingTemplate.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // GET /events
-router.get('/events', asyncHandler(async (req: any, res) => {
+router.get('/events', authenticate, asyncHandler(async (req: any, res) => {
   const filter: any = { tenant_id: req.user.tenant_id };
   if (req.query.employee_id) filter.employee_id = req.query.employee_id;
   if (req.query.event_type) filter.event_type = req.query.event_type;
@@ -15,20 +16,20 @@ router.get('/events', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /events
-router.post('/events', asyncHandler(async (req: any, res) => {
+router.post('/events', authenticate, asyncHandler(async (req: any, res) => {
   const event = await EmployeeLifecycleEvent.create({ ...req.body, tenant_id: req.user.tenant_id, created_by: req.user._id });
   res.status(201).json(event);
 }));
 
 // GET /events/:id
-router.get('/events/:id', asyncHandler(async (req: any, res) => {
+router.get('/events/:id', authenticate, asyncHandler(async (req: any, res) => {
   const event = await EmployeeLifecycleEvent.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id }).lean();
   if (!event) return res.status(404).json({ error: 'Event not found' });
   res.json(event);
 }));
 
 // PUT /events/:id
-router.put('/events/:id', asyncHandler(async (req: any, res) => {
+router.put('/events/:id', authenticate, asyncHandler(async (req: any, res) => {
   const event = await EmployeeLifecycleEvent.findOneAndUpdate(
     { _id: req.params.id, tenant_id: req.user.tenant_id },
     req.body, { new: true }
@@ -38,7 +39,7 @@ router.put('/events/:id', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /events/:id/approve
-router.post('/events/:id/approve', asyncHandler(async (req: any, res) => {
+router.post('/events/:id/approve', authenticate, asyncHandler(async (req: any, res) => {
   const event = await EmployeeLifecycleEvent.findOneAndUpdate(
     { _id: req.params.id, tenant_id: req.user.tenant_id, status: 'pending' },
     { status: 'approved', approved_by: req.user._id, approved_at: new Date() },
@@ -49,7 +50,7 @@ router.post('/events/:id/approve', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /events/:id/complete
-router.post('/events/:id/complete', asyncHandler(async (req: any, res) => {
+router.post('/events/:id/complete', authenticate, asyncHandler(async (req: any, res) => {
   const event = await EmployeeLifecycleEvent.findOneAndUpdate(
     { _id: req.params.id, tenant_id: req.user.tenant_id },
     { status: 'completed' },
@@ -60,19 +61,19 @@ router.post('/events/:id/complete', asyncHandler(async (req: any, res) => {
 }));
 
 // GET /onboarding-templates
-router.get('/onboarding-templates', asyncHandler(async (req: any, res) => {
+router.get('/onboarding-templates', authenticate, asyncHandler(async (req: any, res) => {
   const templates = await OnboardingTemplate.find({ tenant_id: req.user.tenant_id }).lean();
   res.json(templates);
 }));
 
 // POST /onboarding-templates
-router.post('/onboarding-templates', asyncHandler(async (req: any, res) => {
+router.post('/onboarding-templates', authenticate, asyncHandler(async (req: any, res) => {
   const template = await OnboardingTemplate.create({ ...req.body, tenant_id: req.user.tenant_id });
   res.status(201).json(template);
 }));
 
 // POST /onboard/:employeeId
-router.post('/onboard/:employeeId', asyncHandler(async (req: any, res) => {
+router.post('/onboard/:employeeId', authenticate, asyncHandler(async (req: any, res) => {
   const { template_id } = req.body;
   const template = template_id ? await OnboardingTemplate.findById(template_id).lean() : null;
   const checklist = template ? (template as any).checklist.map((c: any) => ({ item: c.item, completed: false })) : [];
@@ -90,7 +91,7 @@ router.post('/onboard/:employeeId', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /offboard/:employeeId
-router.post('/offboard/:employeeId', asyncHandler(async (req: any, res) => {
+router.post('/offboard/:employeeId', authenticate, asyncHandler(async (req: any, res) => {
   const checklist = [
     { item: 'Collect company assets', completed: false },
     { item: 'Revoke system access', completed: false },

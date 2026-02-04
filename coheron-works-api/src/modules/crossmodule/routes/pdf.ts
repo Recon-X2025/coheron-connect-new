@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import pdfService from '../../../services/pdfService.js';
 import { renderInvoice } from '../../../services/pdfTemplates/invoiceTemplate.js';
 import { renderQuotation } from '../../../services/pdfTemplates/quotationTemplate.js';
@@ -16,7 +17,7 @@ function getCompanyOptions(req: any) {
   return { companyName: req.user?.company_name || 'Company', companyAddress: '', companyGST: '', companyPhone: '', companyEmail: '' };
 }
 
-router.get('/invoice/:id', asyncHandler(async (req: any, res) => {
+router.get('/invoice/:id', authenticate, asyncHandler(async (req: any, res) => {
   const invoice = await Invoice.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id }).populate('partner_id');
   if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
   const inv: any = invoice.toObject();
@@ -36,7 +37,7 @@ router.get('/invoice/:id', asyncHandler(async (req: any, res) => {
   res.send(buffer);
 }));
 
-router.get('/quotation/:id', asyncHandler(async (req: any, res) => {
+router.get('/quotation/:id', authenticate, asyncHandler(async (req: any, res) => {
   const quotation = await Quotation.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id }).populate('partner_id');
   if (!quotation) return res.status(404).json({ error: 'Quotation not found' });
   const q: any = quotation.toObject();
@@ -56,7 +57,7 @@ router.get('/quotation/:id', asyncHandler(async (req: any, res) => {
   res.send(buffer);
 }));
 
-router.get('/purchase-order/:id', asyncHandler(async (req: any, res) => {
+router.get('/purchase-order/:id', authenticate, asyncHandler(async (req: any, res) => {
   const po = await PurchaseOrder.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id }).populate('vendor_id');
   if (!po) return res.status(404).json({ error: 'PO not found' });
   const p: any = po.toObject();

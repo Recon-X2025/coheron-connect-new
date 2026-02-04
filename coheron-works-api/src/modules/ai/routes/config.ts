@@ -1,19 +1,20 @@
 import express from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import AIAddonConfig from '../../../models/AIAddonConfig.js';
 import { LLMClient } from '../../../shared/ai/llmClient.js';
 
 const router = express.Router();
 
 // GET / - Get AI addon config
-router.get("/", asyncHandler(async (req: any, res) => {
+router.get("/", authenticate, asyncHandler(async (req: any, res) => {
   const config = await AIAddonConfig.findOne({ tenant_id: req.user.tenant_id });
   if (!config) return res.json({ success: true, data: null });
   res.json({ success: true, data: config });
 }));
 
 // PUT / - Update config
-router.put("/", asyncHandler(async (req: any, res) => {
+router.put("/", authenticate, asyncHandler(async (req: any, res) => {
   const { provider, api_key, model_name, base_url, max_tokens_per_request, monthly_token_limit, is_enabled, features_enabled } = req.body;
   const update: any = {};
   if (provider !== undefined) update.provider = provider;
@@ -29,14 +30,14 @@ router.put("/", asyncHandler(async (req: any, res) => {
 }));
 
 // GET /usage
-router.get("/usage", asyncHandler(async (req: any, res) => {
+router.get("/usage", authenticate, asyncHandler(async (req: any, res) => {
   const config = await AIAddonConfig.findOne({ tenant_id: req.user.tenant_id });
   if (!config) return res.status(404).json({ error: "AI not configured" });
   res.json({ success: true, data: { tokens_used: config.tokens_used_this_month, token_limit: config.monthly_token_limit, billing_cycle_start: config.billing_cycle_start, usage_pct: Math.round((config.tokens_used_this_month / config.monthly_token_limit) * 100) } });
 }));
 
 // POST /test
-router.post("/test", asyncHandler(async (req: any, res) => {
+router.post("/test", authenticate, asyncHandler(async (req: any, res) => {
   const config = await AIAddonConfig.findOne({ tenant_id: req.user.tenant_id });
   if (!config) return res.status(404).json({ error: "AI not configured" });
   try {

@@ -1,11 +1,12 @@
 import express from 'express';
 import { PackagingLevel } from '../models/PackagingLevel.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // GET / - list packaging levels
-router.get('/', asyncHandler(async (req: any, res) => {
+router.get('/', authenticate, asyncHandler(async (req: any, res) => {
   const levels = await PackagingLevel.find({ tenant_id: req.user.tenant_id })
     .populate('parent_level_id', 'name level')
     .sort({ level: 1 })
@@ -14,7 +15,7 @@ router.get('/', asyncHandler(async (req: any, res) => {
 }));
 
 // POST / - create packaging level
-router.post('/', asyncHandler(async (req: any, res) => {
+router.post('/', authenticate, asyncHandler(async (req: any, res) => {
   const level = await PackagingLevel.create({
     ...req.body,
     tenant_id: req.user.tenant_id,
@@ -23,7 +24,7 @@ router.post('/', asyncHandler(async (req: any, res) => {
 }));
 
 // GET /hierarchy - get full hierarchy tree
-router.get('/hierarchy', asyncHandler(async (req: any, res) => {
+router.get('/hierarchy', authenticate, asyncHandler(async (req: any, res) => {
   const levels = await PackagingLevel.find({ tenant_id: req.user.tenant_id })
     .sort({ level: 1 })
     .lean();
@@ -54,7 +55,7 @@ router.get('/hierarchy', asyncHandler(async (req: any, res) => {
 }));
 
 // GET /:id
-router.get('/:id', asyncHandler(async (req: any, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req: any, res) => {
   const level = await PackagingLevel.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id })
     .populate('parent_level_id', 'name level')
     .lean();
@@ -63,7 +64,7 @@ router.get('/:id', asyncHandler(async (req: any, res) => {
 }));
 
 // PUT /:id
-router.put('/:id', asyncHandler(async (req: any, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req: any, res) => {
   const level = await PackagingLevel.findOneAndUpdate(
     { _id: req.params.id, tenant_id: req.user.tenant_id },
     req.body,
@@ -74,7 +75,7 @@ router.put('/:id', asyncHandler(async (req: any, res) => {
 }));
 
 // DELETE /:id
-router.delete('/:id', asyncHandler(async (req: any, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req: any, res) => {
   // Check if any children reference this level
   const children = await PackagingLevel.countDocuments({
     tenant_id: req.user.tenant_id,

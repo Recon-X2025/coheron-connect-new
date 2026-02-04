@@ -1,12 +1,13 @@
 import express from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { requireAIAddon } from '../../../shared/middleware/aiAddon.js';
 import { getLLMClient } from '../../../shared/ai/llmClient.js';
 import AIQuery from '../../../models/AIQuery.js';
 
 const router = express.Router();
 
-router.post("/chat", requireAIAddon("copilot_chat"), asyncHandler(async (req: any, res) => {
+router.post("/chat", authenticate, requireAIAddon("copilot_chat"), asyncHandler(async (req: any, res) => {
   const { message, context } = req.body;
   if (!message) return res.status(400).json({ error: "message is required" });
   const client = await getLLMClient(String(req.user.tenant_id));
@@ -18,7 +19,7 @@ router.post("/chat", requireAIAddon("copilot_chat"), asyncHandler(async (req: an
   res.json({ success: true, data: { response: result.content, tokens_used: result.tokens_used } });
 }));
 
-router.post("/sales/qualify-lead", requireAIAddon("sales_qualification"), asyncHandler(async (req: any, res) => {
+router.post("/sales/qualify-lead", authenticate, requireAIAddon("sales_qualification"), asyncHandler(async (req: any, res) => {
   const { lead_id, lead_data } = req.body;
   if (!lead_id) return res.status(400).json({ error: "lead_id is required" });
   const client = await getLLMClient(String(req.user.tenant_id));
@@ -27,7 +28,7 @@ router.post("/sales/qualify-lead", requireAIAddon("sales_qualification"), asyncH
   res.json({ success: true, data: { lead_id, analysis: JSON.parse(result.content), tokens_used: result.tokens_used } });
 }));
 
-router.post("/sales/deal-risk", requireAIAddon("deal_risk_detection"), asyncHandler(async (req: any, res) => {
+router.post("/sales/deal-risk", authenticate, requireAIAddon("deal_risk_detection"), asyncHandler(async (req: any, res) => {
   const { deal_id, deal_data, activity_history } = req.body;
   if (!deal_id) return res.status(400).json({ error: "deal_id is required" });
   const client = await getLLMClient(String(req.user.tenant_id));
@@ -36,7 +37,7 @@ router.post("/sales/deal-risk", requireAIAddon("deal_risk_detection"), asyncHand
   res.json({ success: true, data: { deal_id, analysis: JSON.parse(result.content), tokens_used: result.tokens_used } });
 }));
 
-router.post("/sales/predict-score", requireAIAddon("predictive_scoring"), asyncHandler(async (req: any, res) => {
+router.post("/sales/predict-score", authenticate, requireAIAddon("predictive_scoring"), asyncHandler(async (req: any, res) => {
   const { lead_id, lead_data, historical_leads } = req.body;
   if (!lead_id) return res.status(400).json({ error: "lead_id is required" });
   const client = await getLLMClient(String(req.user.tenant_id));
@@ -45,7 +46,7 @@ router.post("/sales/predict-score", requireAIAddon("predictive_scoring"), asyncH
   res.json({ success: true, data: { lead_id, prediction: JSON.parse(result.content), tokens_used: result.tokens_used } });
 }));
 
-router.post("/accounting/parse-invoice", requireAIAddon("document_parsing"), asyncHandler(async (req: any, res) => {
+router.post("/accounting/parse-invoice", authenticate, requireAIAddon("document_parsing"), asyncHandler(async (req: any, res) => {
   const { text_content } = req.body;
   if (!text_content) return res.status(400).json({ error: "text_content is required" });
   const client = await getLLMClient(String(req.user.tenant_id));
@@ -53,7 +54,7 @@ router.post("/accounting/parse-invoice", requireAIAddon("document_parsing"), asy
   res.json({ success: true, data: { parsed: JSON.parse(result.content), tokens_used: result.tokens_used } });
 }));
 
-router.post("/accounting/bookkeeping-suggest", requireAIAddon("bookkeeping_agent"), asyncHandler(async (req: any, res) => {
+router.post("/accounting/bookkeeping-suggest", authenticate, requireAIAddon("bookkeeping_agent"), asyncHandler(async (req: any, res) => {
   const { transaction_description, amount } = req.body;
   if (!transaction_description) return res.status(400).json({ error: "transaction_description is required" });
   const client = await getLLMClient(String(req.user.tenant_id));
@@ -61,14 +62,14 @@ router.post("/accounting/bookkeeping-suggest", requireAIAddon("bookkeeping_agent
   res.json({ success: true, data: { suggestion: JSON.parse(result.content), tokens_used: result.tokens_used } });
 }));
 
-router.post("/accounting/cashflow-forecast", requireAIAddon("cashflow_forecast"), asyncHandler(async (req: any, res) => {
+router.post("/accounting/cashflow-forecast", authenticate, requireAIAddon("cashflow_forecast"), asyncHandler(async (req: any, res) => {
   const { recent_transactions, forecast_days } = req.body;
   const client = await getLLMClient(String(req.user.tenant_id));
   const result = await client.chat([{ role: "system", content: "You are a financial analyst. Forecast cash flow. Respond in JSON: { forecast: [{period, projected_inflow, projected_outflow, net_cashflow, cumulative}], summary, risks, recommendations }" }, { role: "user", content: "Based on recent 90 days of transactions: " + JSON.stringify((recent_transactions || []).slice(0, 100)) + " Forecast next " + (forecast_days || 90) + " days." }], { json_mode: true });
   res.json({ success: true, data: { forecast: JSON.parse(result.content), tokens_used: result.tokens_used } });
 }));
 
-router.post("/hr/parse-cv", requireAIAddon("cv_parsing"), asyncHandler(async (req: any, res) => {
+router.post("/hr/parse-cv", authenticate, requireAIAddon("cv_parsing"), asyncHandler(async (req: any, res) => {
   const { cv_text } = req.body;
   if (!cv_text) return res.status(400).json({ error: "cv_text is required" });
   const client = await getLLMClient(String(req.user.tenant_id));
@@ -76,7 +77,7 @@ router.post("/hr/parse-cv", requireAIAddon("cv_parsing"), asyncHandler(async (re
   res.json({ success: true, data: { parsed: JSON.parse(result.content), tokens_used: result.tokens_used } });
 }));
 
-router.post("/hr/match-candidates", requireAIAddon("cv_parsing"), asyncHandler(async (req: any, res) => {
+router.post("/hr/match-candidates", authenticate, requireAIAddon("cv_parsing"), asyncHandler(async (req: any, res) => {
   const { job_description, candidates } = req.body;
   if (!job_description || !candidates) return res.status(400).json({ error: "job_description and candidates are required" });
   const client = await getLLMClient(String(req.user.tenant_id));
@@ -84,7 +85,7 @@ router.post("/hr/match-candidates", requireAIAddon("cv_parsing"), asyncHandler(a
   res.json({ success: true, data: { rankings: JSON.parse(result.content), tokens_used: result.tokens_used } });
 }));
 
-router.post("/projects/status-report", requireAIAddon("status_reports"), asyncHandler(async (req: any, res) => {
+router.post("/projects/status-report", authenticate, requireAIAddon("status_reports"), asyncHandler(async (req: any, res) => {
   const { project_id, project_data } = req.body;
   if (!project_id) return res.status(400).json({ error: "project_id is required" });
   const client = await getLLMClient(String(req.user.tenant_id));
@@ -92,7 +93,7 @@ router.post("/projects/status-report", requireAIAddon("status_reports"), asyncHa
   res.json({ success: true, data: { project_id, report: JSON.parse(result.content), tokens_used: result.tokens_used } });
 }));
 
-router.post("/projects/risk-assessment", requireAIAddon("status_reports"), asyncHandler(async (req: any, res) => {
+router.post("/projects/risk-assessment", authenticate, requireAIAddon("status_reports"), asyncHandler(async (req: any, res) => {
   const { project_id, project_data } = req.body;
   if (!project_id) return res.status(400).json({ error: "project_id is required" });
   const client = await getLLMClient(String(req.user.tenant_id));
@@ -100,7 +101,7 @@ router.post("/projects/risk-assessment", requireAIAddon("status_reports"), async
   res.json({ success: true, data: { project_id, assessment: JSON.parse(result.content), tokens_used: result.tokens_used } });
 }));
 
-router.post("/marketing/generate-content", requireAIAddon("marketing_agents"), asyncHandler(async (req: any, res) => {
+router.post("/marketing/generate-content", authenticate, requireAIAddon("marketing_agents"), asyncHandler(async (req: any, res) => {
   const { type, topic, tone, audience } = req.body;
   if (!type || !topic) return res.status(400).json({ error: "type and topic are required" });
   const client = await getLLMClient(String(req.user.tenant_id));
@@ -108,7 +109,7 @@ router.post("/marketing/generate-content", requireAIAddon("marketing_agents"), a
   res.json({ success: true, data: { content: JSON.parse(result.content), tokens_used: result.tokens_used } });
 }));
 
-router.post("/marketing/lookalike", requireAIAddon("lookalike_lists"), asyncHandler(async (req: any, res) => {
+router.post("/marketing/lookalike", authenticate, requireAIAddon("lookalike_lists"), asyncHandler(async (req: any, res) => {
   const { source_partners, all_partners } = req.body;
   if (!source_partners) return res.status(400).json({ error: "source_partners required" });
   const client = await getLLMClient(String(req.user.tenant_id));
@@ -116,7 +117,7 @@ router.post("/marketing/lookalike", requireAIAddon("lookalike_lists"), asyncHand
   res.json({ success: true, data: { analysis: JSON.parse(result.content), tokens_used: result.tokens_used } });
 }));
 
-router.post("/marketing/negative-score", requireAIAddon("negative_scoring"), asyncHandler(async (req: any, res) => {
+router.post("/marketing/negative-score", authenticate, requireAIAddon("negative_scoring"), asyncHandler(async (req: any, res) => {
   const { lead_id, lead_data, engagement_history } = req.body;
   if (!lead_id) return res.status(400).json({ error: "lead_id is required" });
   const client = await getLLMClient(String(req.user.tenant_id));

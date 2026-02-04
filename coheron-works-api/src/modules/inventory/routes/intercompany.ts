@@ -1,11 +1,12 @@
 import express from 'express';
 import { IntercompanyTransfer } from '../models/IntercompanyTransfer.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // GET /
-router.get('/', asyncHandler(async (req: any, res) => {
+router.get('/', authenticate, asyncHandler(async (req: any, res) => {
   const { status, source_entity, destination_entity, page = 1, limit = 20 } = req.query;
   const filter: any = { tenant_id: req.user.tenant_id };
   if (status) filter.status = status;
@@ -21,7 +22,7 @@ router.get('/', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /
-router.post('/', asyncHandler(async (req: any, res) => {
+router.post('/', authenticate, asyncHandler(async (req: any, res) => {
   const count = await IntercompanyTransfer.countDocuments({ tenant_id: req.user.tenant_id });
   const transfer_number = `ICT-${String(count + 1).padStart(5, '0')}`;
   const totalValue = (req.body.lines || []).reduce((s: number, l: any) => s + (l.total_cost || 0), 0);
@@ -37,14 +38,14 @@ router.post('/', asyncHandler(async (req: any, res) => {
 }));
 
 // GET /:id
-router.get('/:id', asyncHandler(async (req: any, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req: any, res) => {
   const transfer = await IntercompanyTransfer.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id }).lean();
   if (!transfer) return res.status(404).json({ error: 'Transfer not found' });
   res.json(transfer);
 }));
 
 // PUT /:id
-router.put('/:id', asyncHandler(async (req: any, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req: any, res) => {
   const transfer = await IntercompanyTransfer.findOneAndUpdate(
     { _id: req.params.id, tenant_id: req.user.tenant_id },
     req.body,
@@ -55,7 +56,7 @@ router.put('/:id', asyncHandler(async (req: any, res) => {
 }));
 
 // DELETE /:id
-router.delete('/:id', asyncHandler(async (req: any, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req: any, res) => {
   const transfer = await IntercompanyTransfer.findOneAndDelete({
     _id: req.params.id, tenant_id: req.user.tenant_id, status: 'draft',
   });
@@ -64,7 +65,7 @@ router.delete('/:id', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /:id/approve
-router.post('/:id/approve', asyncHandler(async (req: any, res) => {
+router.post('/:id/approve', authenticate, asyncHandler(async (req: any, res) => {
   const transfer = await IntercompanyTransfer.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!transfer) return res.status(404).json({ error: 'Transfer not found' });
   if (transfer.status !== 'pending_approval') return res.status(400).json({ error: 'Transfer must be pending approval' });
@@ -75,7 +76,7 @@ router.post('/:id/approve', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /:id/ship
-router.post('/:id/ship', asyncHandler(async (req: any, res) => {
+router.post('/:id/ship', authenticate, asyncHandler(async (req: any, res) => {
   const transfer = await IntercompanyTransfer.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!transfer) return res.status(404).json({ error: 'Transfer not found' });
   if (transfer.status !== 'approved') return res.status(400).json({ error: 'Transfer must be approved before shipping' });
@@ -86,7 +87,7 @@ router.post('/:id/ship', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /:id/receive
-router.post('/:id/receive', asyncHandler(async (req: any, res) => {
+router.post('/:id/receive', authenticate, asyncHandler(async (req: any, res) => {
   const transfer = await IntercompanyTransfer.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!transfer) return res.status(404).json({ error: 'Transfer not found' });
   if (transfer.status !== 'in_transit') return res.status(400).json({ error: 'Transfer must be in transit' });
@@ -97,7 +98,7 @@ router.post('/:id/receive', asyncHandler(async (req: any, res) => {
 }));
 
 // GET /in-transit
-router.get('/in-transit', asyncHandler(async (req: any, res) => {
+router.get('/in-transit', authenticate, asyncHandler(async (req: any, res) => {
   const transfers = await IntercompanyTransfer.find({
     tenant_id: req.user.tenant_id,
     status: 'in_transit',

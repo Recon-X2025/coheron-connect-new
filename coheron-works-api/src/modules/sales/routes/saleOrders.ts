@@ -60,7 +60,7 @@ const router = express.Router();
  *       201:
  *         description: Sale order created
  */
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { state, search } = req.query;
   const filter: any = {};
 
@@ -91,7 +91,7 @@ router.get('/:id', authenticate, checkRecordAccess('sale_orders'), asyncHandler(
 }));
 
 // Create sale order
-router.post('/', validate({ body: createSaleOrderSchema }), asyncHandler(async (req, res) => {
+router.post('/', authenticate, validate({ body: createSaleOrderSchema }), asyncHandler(async (req, res) => {
   const { name, partner_id, date_order, user_id, order_line } = req.body;
 
   const amount_total = order_line?.reduce(
@@ -168,25 +168,25 @@ router.delete('/:id', authenticate, checkRecordAccess('sale_orders'), asyncHandl
 }));
 
 // Confirm sale order
-router.post('/:id/confirm', validate({ params: objectIdParam }), asyncHandler(async (req: any, res) => {
+router.post('/:id/confirm', authenticate, validate({ params: objectIdParam }), asyncHandler(async (req: any, res) => {
   const order = await salesLifecycleService.confirmSaleOrder(req.user.tenant_id.toString(), req.params.id);
   res.json(order);
 }));
 
 // Create invoice from sale order
-router.post('/:id/create-invoice', validate({ params: objectIdParam }), asyncHandler(async (req: any, res) => {
+router.post('/:id/create-invoice', authenticate, validate({ params: objectIdParam }), asyncHandler(async (req: any, res) => {
   const invoice = await salesLifecycleService.createInvoiceFromOrder(req.user.tenant_id.toString(), req.params.id, req.user._id.toString());
   res.status(201).json(invoice);
 }));
 
 // Cancel sale order
-router.post('/:id/cancel', validate({ params: objectIdParam }), asyncHandler(async (req: any, res) => {
+router.post('/:id/cancel', authenticate, validate({ params: objectIdParam }), asyncHandler(async (req: any, res) => {
   const order = await salesLifecycleService.cancelSaleOrder(req.user.tenant_id.toString(), req.params.id);
   res.json(order);
 }));
 
 // POST /:id/create-project
-router.post('/:id/create-project', asyncHandler(async (req: any, res) => {
+router.post('/:id/create-project', authenticate, asyncHandler(async (req: any, res) => {
   const order = await SaleOrder.findOne({ _id: req.params.id }).lean() as any;
   if (!order) return res.status(404).json({ error: 'Sale order not found' });
   if (order.state !== 'confirmed' && order.state !== 'sale') {

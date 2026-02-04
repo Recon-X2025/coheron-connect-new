@@ -2,11 +2,12 @@ import { Router } from 'express';
 import CurrencyRevaluation from '../../../models/CurrencyRevaluation.js';
 import ExchangeRate from '../../../models/ExchangeRate.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = Router();
 
 // POST /run - Run revaluation
-router.post('/run', asyncHandler(async (req: any, res) => {
+router.post('/run', authenticate, asyncHandler(async (req: any, res) => {
   const { revaluation_date, base_currency, accounts } = req.body;
   // accounts: array of { account_id, account_name, currency, original_amount, original_rate }
 
@@ -59,21 +60,21 @@ router.post('/run', asyncHandler(async (req: any, res) => {
 }));
 
 // GET / - List revaluations
-router.get('/', asyncHandler(async (req: any, res) => {
+router.get('/', authenticate, asyncHandler(async (req: any, res) => {
   const revaluations = await CurrencyRevaluation.find({ tenant_id: req.user.tenant_id })
     .sort({ revaluation_date: -1 });
   res.json({ data: revaluations });
 }));
 
 // GET /:id - Get revaluation detail
-router.get('/:id', asyncHandler(async (req: any, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req: any, res) => {
   const reval = await CurrencyRevaluation.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!reval) return res.status(404).json({ error: 'Revaluation not found' });
   res.json({ data: reval });
 }));
 
 // POST /:id/post - Post revaluation journal entry
-router.post('/:id/post', asyncHandler(async (req: any, res) => {
+router.post('/:id/post', authenticate, asyncHandler(async (req: any, res) => {
   const reval = await CurrencyRevaluation.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!reval) return res.status(404).json({ error: 'Revaluation not found' });
   if ((reval as any).status === 'posted') return res.status(400).json({ error: 'Already posted' });

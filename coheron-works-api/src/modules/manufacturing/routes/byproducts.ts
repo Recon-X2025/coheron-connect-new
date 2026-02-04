@@ -1,11 +1,12 @@
 import express from 'express';
 import { ByProduct } from '../models/ByProduct.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // GET /
-router.get('/', asyncHandler(async (req: any, res) => {
+router.get('/', authenticate, asyncHandler(async (req: any, res) => {
   const { type, status, product_id, page = 1, limit = 20 } = req.query;
   const filter: any = { tenant_id: req.user.tenant_id };
   if (type) filter.type = type;
@@ -21,13 +22,13 @@ router.get('/', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /
-router.post('/', asyncHandler(async (req: any, res) => {
+router.post('/', authenticate, asyncHandler(async (req: any, res) => {
   const bp = await ByProduct.create({ ...req.body, tenant_id: req.user.tenant_id });
   res.status(201).json(bp);
 }));
 
 // GET /:id
-router.get('/:id', asyncHandler(async (req: any, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req: any, res) => {
   const bp = await ByProduct.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id })
     .populate('product_id', 'name sku').populate('manufacturing_order_id', 'order_number').lean();
   if (!bp) return res.status(404).json({ error: 'By-product not found' });
@@ -35,7 +36,7 @@ router.get('/:id', asyncHandler(async (req: any, res) => {
 }));
 
 // PUT /:id
-router.put('/:id', asyncHandler(async (req: any, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req: any, res) => {
   const bp = await ByProduct.findOneAndUpdate(
     { _id: req.params.id, tenant_id: req.user.tenant_id }, req.body, { new: true }
   );
@@ -44,14 +45,14 @@ router.put('/:id', asyncHandler(async (req: any, res) => {
 }));
 
 // DELETE /:id
-router.delete('/:id', asyncHandler(async (req: any, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req: any, res) => {
   const bp = await ByProduct.findOneAndDelete({ _id: req.params.id, tenant_id: req.user.tenant_id, status: 'planned' });
   if (!bp) return res.status(404).json({ error: 'By-product not found or cannot be deleted' });
   res.json({ message: 'By-product deleted' });
 }));
 
 // GET /by-order/:orderId
-router.get('/by-order/:orderId', asyncHandler(async (req: any, res) => {
+router.get('/by-order/:orderId', authenticate, asyncHandler(async (req: any, res) => {
   const bps = await ByProduct.find({
     tenant_id: req.user.tenant_id,
     manufacturing_order_id: req.params.orderId,
@@ -60,7 +61,7 @@ router.get('/by-order/:orderId', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /:id/receive
-router.post('/:id/receive', asyncHandler(async (req: any, res) => {
+router.post('/:id/receive', authenticate, asyncHandler(async (req: any, res) => {
   const bp = await ByProduct.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!bp) return res.status(404).json({ error: 'By-product not found' });
   if (bp.status !== 'produced') return res.status(400).json({ error: 'By-product must be in produced status' });
@@ -71,7 +72,7 @@ router.post('/:id/receive', asyncHandler(async (req: any, res) => {
 }));
 
 // GET /cost-analysis
-router.get('/cost-analysis', asyncHandler(async (req: any, res) => {
+router.get('/cost-analysis', authenticate, asyncHandler(async (req: any, res) => {
   const bps = await ByProduct.find({ tenant_id: req.user.tenant_id }).populate('product_id', 'name sku').lean();
 
   const byType: Record<string, number> = { byproduct: 0, coproduct: 0 };

@@ -3,10 +3,11 @@ import IoTDevice from '../../../models/IoTDevice.js';
 import IoTReading from '../../../models/IoTReading.js';
 import IoTAlert from '../../../models/IoTAlert.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = Router();
 
-router.get('/devices', asyncHandler(async (req: any, res) => {
+router.get('/devices', authenticate, asyncHandler(async (req: any, res) => {
   const { status, work_center_id, device_type } = req.query;
   const filter: any = { tenant_id: req.user.tenant_id };
   if (status) filter.status = status;
@@ -16,12 +17,12 @@ router.get('/devices', asyncHandler(async (req: any, res) => {
   res.json({ data: devices });
 }));
 
-router.post('/devices', asyncHandler(async (req: any, res) => {
+router.post('/devices', authenticate, asyncHandler(async (req: any, res) => {
   const device = await IoTDevice.create({ ...req.body, tenant_id: req.user.tenant_id });
   res.status(201).json(device);
 }));
 
-router.get('/devices/:id', asyncHandler(async (req: any, res) => {
+router.get('/devices/:id', authenticate, asyncHandler(async (req: any, res) => {
   const device = await IoTDevice.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id }).populate('work_center_id', 'name code');
   if (!device) return res.status(404).json({ error: 'Device not found' });
   const latestReadings = await IoTReading.find({ device_id: device._id, tenant_id: req.user.tenant_id }).sort({ timestamp: -1 }).limit(10).lean();
@@ -29,13 +30,13 @@ router.get('/devices/:id', asyncHandler(async (req: any, res) => {
   res.json({ data: device, latest_readings: latestReadings, recent_alerts: recentAlerts });
 }));
 
-router.put('/devices/:id', asyncHandler(async (req: any, res) => {
+router.put('/devices/:id', authenticate, asyncHandler(async (req: any, res) => {
   const device = await IoTDevice.findOneAndUpdate({ _id: req.params.id, tenant_id: req.user.tenant_id }, req.body, { new: true, runValidators: true });
   if (!device) return res.status(404).json({ error: 'Device not found' });
   res.json(device);
 }));
 
-router.delete('/devices/:id', asyncHandler(async (req: any, res) => {
+router.delete('/devices/:id', authenticate, asyncHandler(async (req: any, res) => {
   const device = await IoTDevice.findOneAndDelete({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!device) return res.status(404).json({ error: 'Device not found' });
   await IoTReading.deleteMany({ device_id: device._id });
@@ -43,7 +44,7 @@ router.delete('/devices/:id', asyncHandler(async (req: any, res) => {
   res.json({ message: 'Device removed' });
 }));
 
-router.post('/devices/:id/readings', asyncHandler(async (req: any, res) => {
+router.post('/devices/:id/readings', authenticate, asyncHandler(async (req: any, res) => {
   const device = await IoTDevice.findOne({ _id: req.params.id, tenant_id: req.user.tenant_id });
   if (!device) return res.status(404).json({ error: 'Device not found' });
   const { metrics, timestamp } = req.body;
@@ -77,7 +78,7 @@ router.post('/devices/:id/readings', asyncHandler(async (req: any, res) => {
   res.status(201).json(reading);
 }));
 
-router.get('/devices/:id/readings', asyncHandler(async (req: any, res) => {
+router.get('/devices/:id/readings', authenticate, asyncHandler(async (req: any, res) => {
   const { start, end, limit: lim } = req.query;
   const filter: any = { tenant_id: req.user.tenant_id, device_id: req.params.id };
   if (start || end) {
@@ -89,7 +90,7 @@ router.get('/devices/:id/readings', asyncHandler(async (req: any, res) => {
   res.json({ data: readings });
 }));
 
-router.get('/devices/:id/analytics', asyncHandler(async (req: any, res) => {
+router.get('/devices/:id/analytics', authenticate, asyncHandler(async (req: any, res) => {
   const { start, end, metric, interval } = req.query;
   const matchStage: any = { tenant_id: req.user.tenant_id, device_id: req.params.id };
   if (start || end) {
@@ -107,7 +108,7 @@ router.get('/devices/:id/analytics', asyncHandler(async (req: any, res) => {
   res.json({ data: { metric: metricName, count: values.length, avg: Math.round(avg * 100) / 100, min: Math.min(...values), max: Math.max(...values), interval: interval || 'all' } });
 }));
 
-router.get('/alerts', asyncHandler(async (req: any, res) => {
+router.get('/alerts', authenticate, asyncHandler(async (req: any, res) => {
   const { severity, is_acknowledged, device_id } = req.query;
   const filter: any = { tenant_id: req.user.tenant_id };
   if (severity) filter.severity = severity;
@@ -117,7 +118,7 @@ router.get('/alerts', asyncHandler(async (req: any, res) => {
   res.json({ data: alerts });
 }));
 
-router.post('/alerts/:id/acknowledge', asyncHandler(async (req: any, res) => {
+router.post('/alerts/:id/acknowledge', authenticate, asyncHandler(async (req: any, res) => {
   const alert = await IoTAlert.findOneAndUpdate(
     { _id: req.params.id, tenant_id: req.user.tenant_id },
     { is_acknowledged: true, acknowledged_by: req.user._id, acknowledged_at: new Date() },
@@ -126,7 +127,7 @@ router.post('/alerts/:id/acknowledge', asyncHandler(async (req: any, res) => {
   res.json(alert);
 }));
 
-router.get('/dashboard', asyncHandler(async (req: any, res) => {
+router.get('/dashboard', authenticate, asyncHandler(async (req: any, res) => {
   const tf = { tenant_id: req.user.tenant_id };
   const [total, online, offline, errorCount] = await Promise.all([
     IoTDevice.countDocuments({ ...tf, is_active: true }),
