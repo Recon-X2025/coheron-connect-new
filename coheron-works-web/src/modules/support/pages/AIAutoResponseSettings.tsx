@@ -3,7 +3,7 @@ import {
   Bot, ToggleLeft, ToggleRight, Sliders, MessageSquare, Send, AlertCircle, CheckCircle,
 } from 'lucide-react';
 
-const TOKEN = localStorage.getItem('token') || '';
+const TOKEN = localStorage.getItem('authToken') || '';
 const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` };
 
 interface Config {

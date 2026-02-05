@@ -37,7 +37,7 @@ interface Settlement {
 const API_BASE = '/api/hr/full-final-settlement';
 const getHeaders = () => ({
   'Content-Type': 'application/json',
-  Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+  Authorization: `Bearer ${localStorage.getItem('authToken') || ''}`,
 });
 
 export const FullFinalSettlement = () => {

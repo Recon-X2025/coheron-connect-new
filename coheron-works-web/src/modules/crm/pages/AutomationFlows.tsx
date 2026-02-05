@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Zap, Plus, Play, Pause, TestTube, Trash2, ArrowRight, Clock, GitBranch, Mail, UserPlus, Edit3, LayoutGrid, ChevronRight, X } from 'lucide-react';
 
 const API = '/api/crm/automation-flows';
-const getToken = () => localStorage.getItem('token') || '';
+const getToken = () => localStorage.getItem('authToken') || '';
 const apiFetch = async (path: string, opts?: RequestInit) => {
   const res = await fetch(`${API}${path}`, { ...opts, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}`, ...(opts?.headers || {}) } });
   if (!res.ok) throw new Error(`API ${res.status}`);

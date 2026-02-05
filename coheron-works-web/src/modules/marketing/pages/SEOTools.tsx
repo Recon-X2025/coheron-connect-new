@@ -6,7 +6,7 @@ interface Keyword { _id: string; keyword: string; search_volume: number; difficu
 interface Dashboard { keywords: { total: number; ranking: number; top_10: number; top_3: number }; avg_seo_score: number; recent_audits: Audit[]; }
 
 const API = '/api/marketing/seo';
-const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token') || ''}` });
+const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` });
 
 export const SEOTools = () => {
   const [tab, setTab] = useState<'dashboard' | 'audits' | 'keywords'>('dashboard');

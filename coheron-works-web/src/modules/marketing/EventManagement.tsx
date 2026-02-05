@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 
 const API_BASE = '/api/marketing/events';
-const getToken = () => localStorage.getItem('token') || '';
+const getToken = () => localStorage.getItem('authToken') || '';
 const apiFetch = async (path: string, options?: RequestInit) => {
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,

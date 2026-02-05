@@ -29,7 +29,7 @@ interface BiometricPunch {
 const API_BASE = '/api/hr/biometric';
 const getHeaders = () => ({
   'Content-Type': 'application/json',
-  Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+  Authorization: `Bearer ${localStorage.getItem('authToken') || ''}`,
 });
 
 export const BiometricIntegration = () => {

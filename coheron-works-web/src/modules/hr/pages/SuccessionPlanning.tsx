@@ -7,7 +7,7 @@ interface RiskItem { plan_id: string; position_title: string; department: string
 interface BenchStrength { total_positions: number; positions_with_ready_candidates: number; bench_strength_pct: number; total_candidates: number; avg_candidates_per_position: number; }
 
 const API = '/api/hr/succession';
-const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token') || ''}` });
+const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` });
 
 export const SuccessionPlanning = () => {
   const [tab, setTab] = useState<'plans' | 'candidates' | 'risk' | 'bench'>('plans');

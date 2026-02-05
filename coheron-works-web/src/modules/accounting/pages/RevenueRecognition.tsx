@@ -3,7 +3,7 @@ import {
   TrendingUp, Plus, X, Search, Calendar, FileText, CheckCircle, Trash2,
 } from 'lucide-react';
 
-const TOKEN = localStorage.getItem('token') || '';
+const TOKEN = localStorage.getItem('authToken') || '';
 const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` };
 
 interface Obligation { description: string; standalone_price: number; allocated_price: number; recognition_method: string; progress_measure: string; is_satisfied: boolean; }

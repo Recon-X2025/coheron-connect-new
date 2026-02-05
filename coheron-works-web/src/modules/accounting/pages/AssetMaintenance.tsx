@@ -4,7 +4,7 @@ import {
   X, Search,
 } from 'lucide-react';
 
-const TOKEN = localStorage.getItem('token') || '';
+const TOKEN = localStorage.getItem('authToken') || '';
 const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` };
 
 interface MaintenanceSchedule {

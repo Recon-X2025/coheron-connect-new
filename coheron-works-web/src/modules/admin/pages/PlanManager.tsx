@@ -59,7 +59,7 @@ export const PlanManager: React.FC = () => {
   const [editing, setEditing] = useState<Partial<PricingPlan> | null>(null);
   const [editModule, setEditModule] = useState<ModulePrice | null>(null);
 
-  const token = localStorage.getItem('token') || '';
+  const token = localStorage.getItem('authToken') || '';
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 
   const loadPlans = useCallback(async () => {

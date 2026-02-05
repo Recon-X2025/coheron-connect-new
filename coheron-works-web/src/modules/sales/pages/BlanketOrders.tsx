@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { FileText, Plus, Calendar, Package, Clock } from 'lucide-react';
 
 const API_BASE = '/api/sales/blanket-orders';
-const getToken = () => localStorage.getItem('token') || '';
+const getToken = () => localStorage.getItem('authToken') || '';
 const apiFetch = async (path: string, options?: RequestInit) => {
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}`, ...(options?.headers || {}) } });
   if (!res.ok) throw new Error(`API error: ${res.status}`);

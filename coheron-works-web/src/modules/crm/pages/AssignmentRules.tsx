@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Shield, Plus, Trash2, GripVertical, ToggleLeft, ToggleRight, Play, X, Users, Target, Scale, MapPin, UserCheck } from 'lucide-react';
 
 const API = '/api/crm/assignment-rules';
-const getToken = () => localStorage.getItem('token') || '';
+const getToken = () => localStorage.getItem('authToken') || '';
 const apiFetch = async (path: string, opts?: RequestInit) => {
   const res = await fetch(`${API}${path}`, { ...opts, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}`, ...(opts?.headers || {}) } });
   if (!res.ok) throw new Error(`API ${res.status}`);

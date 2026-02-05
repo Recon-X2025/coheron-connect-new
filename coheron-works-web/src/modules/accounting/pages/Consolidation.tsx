@@ -3,7 +3,7 @@ import {
   Building2, Plus, Play, FileText, Trash2, X, Search, Eye,
 } from 'lucide-react';
 
-const TOKEN = localStorage.getItem('token') || '';
+const TOKEN = localStorage.getItem('authToken') || '';
 const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` };
 
 interface Subsidiary { entity_name: string; entity_id: string; ownership_percentage: number; currency: string; elimination_required: boolean; }

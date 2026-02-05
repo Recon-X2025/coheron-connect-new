@@ -6,7 +6,7 @@ interface Enrollment { _id: string; plan_id: any; employee_id: any; coverage_opt
 interface CostSummary { plan_year: number; plans: any[]; totals: { employee_cost: number; employer_cost: number; total: number }; }
 
 const API = '/api/hr/benefits';
-const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token') || ''}` });
+const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` });
 
 export const BenefitsAdmin = () => {
   const [tab, setTab] = useState<'plans' | 'enrollments' | 'costs'>('plans');

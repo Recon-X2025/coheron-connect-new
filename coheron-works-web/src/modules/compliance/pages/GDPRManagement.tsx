@@ -20,7 +20,7 @@ const API_MAP: Record<Tab, string> = {
 };
 
 const headers = () => ({
-  Authorization: `Bearer ${localStorage.getItem('token')}`,
+  Authorization: `Bearer ${localStorage.getItem('authToken')}`,
   'Content-Type': 'application/json',
 });
 

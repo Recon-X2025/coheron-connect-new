@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { ChefHat, Clock, Flame, CheckCircle, AlertCircle, Monitor } from 'lucide-react';
 
 const API_BASE = '/api/pos/kitchen';
-const getToken = () => localStorage.getItem('token') || '';
+const getToken = () => localStorage.getItem('authToken') || '';
 const apiFetch = async (path: string, options?: RequestInit) => {
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}`, ...(options?.headers || {}) } });
   if (!res.ok) throw new Error(`API error: ${res.status}`);

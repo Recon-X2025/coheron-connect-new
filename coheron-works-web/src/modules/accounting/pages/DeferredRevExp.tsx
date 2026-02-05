@@ -3,7 +3,7 @@ import {
   Clock, Plus, X, Search, CheckCircle, Trash2, Play, BarChart3,
 } from 'lucide-react';
 
-const TOKEN = localStorage.getItem('token') || '';
+const TOKEN = localStorage.getItem('authToken') || '';
 const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` };
 
 interface Period { period: string; amount: number; status: string; recognition_date?: string; }

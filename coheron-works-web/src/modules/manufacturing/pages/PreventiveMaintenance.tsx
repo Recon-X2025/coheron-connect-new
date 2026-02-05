@@ -64,7 +64,7 @@ interface HealthItem {
 }
 
 const API_BASE = '/api/manufacturing/maintenance';
-const getToken = () => localStorage.getItem('token') || '';
+const getToken = () => localStorage.getItem('authToken') || '';
 
 const apiFetch = async (url: string, options: RequestInit = {}) => {
   const res = await fetch(url, {

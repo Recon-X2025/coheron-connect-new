@@ -33,7 +33,7 @@ export default function AuditLogViewer() {
     if (userSearch) params.set('user', userSearch);
 
     fetch(`/api/audit-logs?${params}`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
     })
       .then(r => r.json())
       .then(res => {

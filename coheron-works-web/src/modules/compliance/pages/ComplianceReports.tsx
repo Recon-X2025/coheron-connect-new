@@ -26,7 +26,7 @@ export default function ComplianceReports() {
     setReport(null);
 
     fetch(`/api/security-dashboard/reports/${type}`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
     })
       .then(r => r.json())
       .then(data => setReport({ ...data, type }))

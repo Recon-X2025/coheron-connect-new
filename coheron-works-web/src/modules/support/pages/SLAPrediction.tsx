@@ -3,7 +3,7 @@ import {
   Clock, AlertTriangle, TrendingUp, Users, Settings, Shield,
 } from 'lucide-react';
 
-const TOKEN = localStorage.getItem('token') || '';
+const TOKEN = localStorage.getItem('authToken') || '';
 const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` };
 const apiFetch = (url: string, opts?: any) => fetch(url, { headers, ...opts });
 

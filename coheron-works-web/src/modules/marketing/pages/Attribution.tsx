@@ -6,7 +6,7 @@ interface ChannelPerf { channel: string; touchpoints: number; total_revenue: num
 interface CampaignROI { campaign: string; touchpoints: number; total_revenue: number; unique_contacts: number; }
 
 const API = '/api/marketing/attribution';
-const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token') || ''}` });
+const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` });
 
 export const Attribution = () => {
   const [tab, setTab] = useState<'models' | 'channels' | 'campaigns'>('models');

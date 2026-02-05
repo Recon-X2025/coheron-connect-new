@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { MapPin, Plus, Users, Trash2, Edit, Search } from 'lucide-react';
 
 const API_BASE = '/api/crm/territories';
-const getToken = () => localStorage.getItem('token') || '';
+const getToken = () => localStorage.getItem('authToken') || '';
 const apiFetch = async (path: string, options?: RequestInit) => {
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,

@@ -36,7 +36,7 @@ interface CartItem extends Product {
 
 const API_BASE = '/api/pos/tablet';
 
-const getToken = () => localStorage.getItem('token') || '';
+const getToken = () => localStorage.getItem('authToken') || '';
 
 const apiFetch = async (path: string, options?: RequestInit) => {
   const res = await fetch(`${API_BASE}${path}`, {

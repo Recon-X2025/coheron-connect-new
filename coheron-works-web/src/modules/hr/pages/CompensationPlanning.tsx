@@ -6,7 +6,7 @@ interface Review { _id: string; plan_id: string; employee_id: any; current_salar
 interface BudgetUtil { plan_id: string; name: string; total_budget: number; used_budget: number; remaining: number; utilization_pct: number; }
 
 const API = '/api/hr/compensation';
-const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token') || ''}` });
+const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` });
 
 export const CompensationPlanning = () => {
   const [tab, setTab] = useState<'plans' | 'reviews' | 'budget'>('plans');

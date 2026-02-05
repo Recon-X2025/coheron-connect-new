@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Mail, Plus, Play, Pause, Trash2, Clock, MessageSquare, CheckSquare, Phone, Users, BarChart3, ChevronRight, X } from 'lucide-react';
 
 const API = '/api/crm/nurture-sequences';
-const getToken = () => localStorage.getItem('token') || '';
+const getToken = () => localStorage.getItem('authToken') || '';
 const apiFetch = async (path: string, opts?: RequestInit) => {
   const res = await fetch(`${API}${path}`, { ...opts, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}`, ...(opts?.headers || {}) } });
   if (!res.ok) throw new Error(`API ${res.status}`);

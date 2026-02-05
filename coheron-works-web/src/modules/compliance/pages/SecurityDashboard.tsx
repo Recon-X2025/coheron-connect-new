@@ -19,7 +19,7 @@ export default function SecurityDashboard() {
 
   useEffect(() => {
     fetch('/api/security-dashboard', {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
     })
       .then(r => r.json())
       .then(setData)

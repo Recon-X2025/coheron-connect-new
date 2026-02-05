@@ -3,7 +3,7 @@ import {
   PiggyBank, Plus, CheckCircle, BarChart3, Trash2, X, Eye, Search,
 } from 'lucide-react';
 
-const TOKEN = localStorage.getItem('token') || '';
+const TOKEN = localStorage.getItem('authToken') || '';
 const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` };
 
 interface BudgetLine {

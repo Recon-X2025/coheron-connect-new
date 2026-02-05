@@ -51,7 +51,7 @@ function parseDate(s: string) {
   return new Date(s);
 }
 
-const TOKEN = localStorage.getItem('token') || '';
+const TOKEN = localStorage.getItem('authToken') || '';
 const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` };
 
 // ── Component ───────────────────────────────────────────────────────
