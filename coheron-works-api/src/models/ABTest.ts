@@ -38,4 +38,4 @@ const abTestSchema = new Schema({
 abTestSchema.index({ tenant_id: 1, campaign_id: 1 });
 abTestSchema.index({ tenant_id: 1, status: 1 });
 
-export const ABTest = mongoose.model('ABTest', abTestSchema);
+export const ABTest = mongoose.models.ABTest || mongoose.model('ABTest', abTestSchema);

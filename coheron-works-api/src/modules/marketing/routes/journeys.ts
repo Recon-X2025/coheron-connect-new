@@ -3,11 +3,12 @@ import { MarketingJourney } from "../../../models/MarketingJourney.js";
 import { JourneyEnrollment } from "../../../models/JourneyEnrollment.js";
 import { asyncHandler } from "../../../shared/middleware/asyncHandler.js";
 import { getPaginationParams, paginateQuery } from "../../../shared/utils/pagination.js";
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // List journeys
-router.get("/", asyncHandler(async (req, res) => {
+router.get("/", authenticate, asyncHandler(async (req, res) => {
   const { status, search } = req.query;
   const filter: any = {};
   if (status) filter.status = status;
@@ -18,48 +19,48 @@ router.get("/", asyncHandler(async (req, res) => {
 }));
 
 // Create journey
-router.post("/", asyncHandler(async (req, res) => {
+router.post("/", authenticate, asyncHandler(async (req, res) => {
   const journey = await MarketingJourney.create(req.body);
   res.status(201).json(journey);
 }));
 
 // Get journey by ID
-router.get("/:id", asyncHandler(async (req, res) => {
+router.get("/:id", authenticate, asyncHandler(async (req, res) => {
   const journey = await MarketingJourney.findById(req.params.id).lean();
   if (!journey) return res.status(404).json({ error: "Journey not found" });
   res.json(journey);
 }));
 
 // Update journey
-router.put("/:id", asyncHandler(async (req, res) => {
+router.put("/:id", authenticate, asyncHandler(async (req, res) => {
   const journey = await MarketingJourney.findByIdAndUpdate(req.params.id, req.body, { new: true }).lean();
   if (!journey) return res.status(404).json({ error: "Journey not found" });
   res.json(journey);
 }));
 
 // Activate journey
-router.post("/:id/activate", asyncHandler(async (req, res) => {
+router.post("/:id/activate", authenticate, asyncHandler(async (req, res) => {
   const journey = await MarketingJourney.findByIdAndUpdate(req.params.id, { status: "active", started_at: new Date() }, { new: true });
   if (!journey) return res.status(404).json({ error: "Journey not found" });
   res.json(journey);
 }));
 
 // Pause journey
-router.post("/:id/pause", asyncHandler(async (req, res) => {
+router.post("/:id/pause", authenticate, asyncHandler(async (req, res) => {
   const journey = await MarketingJourney.findByIdAndUpdate(req.params.id, { status: "paused" }, { new: true });
   if (!journey) return res.status(404).json({ error: "Journey not found" });
   res.json(journey);
 }));
 
 // Archive journey
-router.post("/:id/archive", asyncHandler(async (req, res) => {
+router.post("/:id/archive", authenticate, asyncHandler(async (req, res) => {
   const journey = await MarketingJourney.findByIdAndUpdate(req.params.id, { status: "archived", ended_at: new Date() }, { new: true });
   if (!journey) return res.status(404).json({ error: "Journey not found" });
   res.json(journey);
 }));
 
 // Journey analytics
-router.get("/:id/analytics", asyncHandler(async (req, res) => {
+router.get("/:id/analytics", authenticate, asyncHandler(async (req, res) => {
   const journey = await MarketingJourney.findById(req.params.id).lean();
   if (!journey) return res.status(404).json({ error: "Journey not found" });
   const enrollments = await JourneyEnrollment.find({ journey_id: req.params.id }).lean();
@@ -79,7 +80,7 @@ router.get("/:id/analytics", asyncHandler(async (req, res) => {
 }));
 
 // List enrollments
-router.get("/:id/enrollments", asyncHandler(async (req, res) => {
+router.get("/:id/enrollments", authenticate, asyncHandler(async (req, res) => {
   const filter: any = { journey_id: req.params.id };
   if (req.query.status) filter.status = req.query.status;
   const pagination = getPaginationParams(req);
@@ -88,7 +89,7 @@ router.get("/:id/enrollments", asyncHandler(async (req, res) => {
 }));
 
 // Manually enroll contacts
-router.post("/:id/enroll", asyncHandler(async (req, res) => {
+router.post("/:id/enroll", authenticate, asyncHandler(async (req, res) => {
   const journey = await MarketingJourney.findById(req.params.id);
   if (!journey) return res.status(404).json({ error: "Journey not found" });
   const { contacts } = req.body;
@@ -101,7 +102,7 @@ router.post("/:id/enroll", asyncHandler(async (req, res) => {
 }));
 
 // Exit enrollment
-router.post("/:id/enrollments/:enrollmentId/exit", asyncHandler(async (req, res) => {
+router.post("/:id/enrollments/:enrollmentId/exit", authenticate, asyncHandler(async (req, res) => {
   const enrollment = await JourneyEnrollment.findByIdAndUpdate(req.params.enrollmentId, { status: "exited", completed_at: new Date() }, { new: true });
   if (!enrollment) return res.status(404).json({ error: "Enrollment not found" });
   await MarketingJourney.findByIdAndUpdate(req.params.id, { $inc: { active_count: -1 } });

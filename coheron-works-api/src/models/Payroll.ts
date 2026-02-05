@@ -45,5 +45,5 @@ const salaryStructureSchema = new Schema({
 salaryStructureSchema.index({ employee_id: 1 });
 salaryStructureSchema.index({ is_active: 1 });
 
-export const Payslip = mongoose.model('Payslip', payslipSchema);
-export const SalaryStructure = mongoose.model('SalaryStructure', salaryStructureSchema);
+export const Payslip = mongoose.models.Payslip || mongoose.model('Payslip', payslipSchema);
+export const SalaryStructure = mongoose.models.SalaryStructure || mongoose.model('SalaryStructure', salaryStructureSchema);

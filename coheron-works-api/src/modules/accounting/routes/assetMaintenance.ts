@@ -1,11 +1,12 @@
 import express from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { AssetMaintenanceSchedule } from '../models/AssetMaintenanceSchedule.js';
 
 const router = express.Router();
 
 // List all maintenance schedules
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const { status, maintenance_type, asset_id, page = '1', limit = '20' } = req.query;
   const filter: any = {};
@@ -22,7 +23,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Upcoming maintenance (next 30 days by default)
-router.get('/upcoming', asyncHandler(async (req, res) => {
+router.get('/upcoming', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const days = Number(req.query.days) || 30;
   const now = new Date();
@@ -37,7 +38,7 @@ router.get('/upcoming', asyncHandler(async (req, res) => {
 }));
 
 // Overdue maintenance
-router.get('/overdue', asyncHandler(async (req, res) => {
+router.get('/overdue', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const filter: any = { status: 'active', next_maintenance_date: { $lt: new Date() } };
   if (tenant_id) filter.tenant_id = tenant_id;
@@ -46,21 +47,21 @@ router.get('/overdue', asyncHandler(async (req, res) => {
 }));
 
 // Get single
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const item = await AssetMaintenanceSchedule.findById(req.params.id).lean();
   if (!item) return res.status(404).json({ error: 'Schedule not found' });
   res.json(item);
 }));
 
 // Create
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const item = await AssetMaintenanceSchedule.create({ ...req.body, tenant_id });
   res.status(201).json(item);
 }));
 
 // Update
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const { tenant_id, ...update } = req.body;
   const item = await AssetMaintenanceSchedule.findByIdAndUpdate(req.params.id, { $set: update }, { new: true }).lean();
   if (!item) return res.status(404).json({ error: 'Schedule not found' });
@@ -68,14 +69,14 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const item = await AssetMaintenanceSchedule.findByIdAndDelete(req.params.id);
   if (!item) return res.status(404).json({ error: 'Schedule not found' });
   res.json({ message: 'Deleted' });
 }));
 
 // Record maintenance (log a completed maintenance)
-router.post('/:id/record', asyncHandler(async (req, res) => {
+router.post('/:id/record', authenticate, asyncHandler(async (req, res) => {
   const { cost, performed_by, notes } = req.body;
   const schedule = await AssetMaintenanceSchedule.findById(req.params.id);
   if (!schedule) return res.status(404).json({ error: 'Schedule not found' });
@@ -97,7 +98,7 @@ router.post('/:id/record', asyncHandler(async (req, res) => {
 }));
 
 // Cost summary
-router.get('/stats/cost-summary', asyncHandler(async (req, res) => {
+router.get('/stats/cost-summary', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const match: any = {};
   if (tenant_id) match.tenant_id = tenant_id;

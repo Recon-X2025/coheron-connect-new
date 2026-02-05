@@ -1,12 +1,13 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const Lead = mongoose.model('Lead');
 const router = express.Router();
 
 // GET / - scoring config
-router.get('/', asyncHandler(async (_req, res) => {
+router.get('/', authenticate, asyncHandler(async (_req, res) => {
   const config = {
     weights: { demographic: 25, behavioral: 25, engagement: 25, recency: 25 },
     grades: [
@@ -36,7 +37,7 @@ function computeScore(lead: any) {
 }
 
 // POST /score/:leadId - score single lead
-router.post('/score/:leadId', asyncHandler(async (req, res) => {
+router.post('/score/:leadId', authenticate, asyncHandler(async (req, res) => {
   const tenantId = (req as any).user?.tenant_id;
   const lead = await Lead.findOne({ _id: req.params.leadId, ...(tenantId ? { tenant_id: tenantId } : {}) });
   if (!lead) return res.status(404).json({ error: 'Lead not found' });
@@ -49,7 +50,7 @@ router.post('/score/:leadId', asyncHandler(async (req, res) => {
 }));
 
 // POST /score-batch - score multiple leads
-router.post('/score-batch', asyncHandler(async (req, res) => {
+router.post('/score-batch', authenticate, asyncHandler(async (req, res) => {
   const tenantId = (req as any).user?.tenant_id;
   const { lead_ids } = req.body;
   const filter: any = tenantId ? { tenant_id: tenantId } : {};
@@ -68,7 +69,7 @@ router.post('/score-batch', asyncHandler(async (req, res) => {
 }));
 
 // GET /leaderboard - top scored leads
-router.get('/leaderboard', asyncHandler(async (req, res) => {
+router.get('/leaderboard', authenticate, asyncHandler(async (req, res) => {
   const tenantId = (req as any).user?.tenant_id;
   const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
   const filter: any = tenantId ? { tenant_id: tenantId } : {};

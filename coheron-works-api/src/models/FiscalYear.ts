@@ -35,5 +35,5 @@ const fiscalYearSchema = new Schema({
 fiscalYearSchema.index({ tenant_id: 1 });
 fiscalYearSchema.index({ tenant_id: 1, is_active: 1 });
 
-export const FiscalYear = mongoose.model('FiscalYear', fiscalYearSchema);
+export const FiscalYear = mongoose.models.FiscalYear || mongoose.model('FiscalYear', fiscalYearSchema);
 export default FiscalYear;

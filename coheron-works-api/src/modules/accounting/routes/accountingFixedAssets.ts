@@ -5,13 +5,14 @@ import AssetCategory from '../../../models/AssetCategory.js';
 import AssetDepreciation from '../../../models/AssetDepreciation.js';
 import AssetDisposal from '../../../models/AssetDisposal.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
 // ========== ASSET CATEGORIES ==========
 
-router.get('/categories', asyncHandler(async (req, res) => {
+router.get('/categories', authenticate, asyncHandler(async (req, res) => {
   const categories = await AssetCategory.find().sort({ name: 1 }).lean();
   res.json(categories);
 }));
@@ -19,7 +20,7 @@ router.get('/categories', asyncHandler(async (req, res) => {
 // ========== ASSETS ==========
 
 // Get all assets
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { category_id, state, search } = req.query;
   const filter: any = {};
 
@@ -59,7 +60,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get asset by ID with depreciation history
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const asset = await FixedAsset.findById(req.params.id)
     .populate('category_id', 'name')
     .populate('partner_id', 'name')
@@ -95,7 +96,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create asset
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const {
     name,
     code,
@@ -132,7 +133,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Run depreciation for asset
-router.post('/:id/depreciate', async (req, res) => {
+router.post('/:id/depreciate', authenticate, async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
@@ -197,7 +198,7 @@ router.post('/:id/depreciate', async (req, res) => {
 });
 
 // Dispose asset
-router.post('/:id/dispose', async (req, res) => {
+router.post('/:id/dispose', authenticate, async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {

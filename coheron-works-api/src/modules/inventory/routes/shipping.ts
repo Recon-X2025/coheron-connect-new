@@ -2,12 +2,13 @@ import express from 'express';
 import { ShippingCarrier } from '../../../models/ShippingCarrier.js';
 import { Shipment } from '../../../models/Shipment.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
 // GET /carriers - List configured carriers
-router.get('/carriers', asyncHandler(async (req: any, res: any) => {
+router.get('/carriers', authenticate, asyncHandler(async (req: any, res: any) => {
   const { tenant_id, is_active } = req.query;
   const filter: any = {};
   if (tenant_id) filter.tenant_id = tenant_id;
@@ -17,26 +18,26 @@ router.get('/carriers', asyncHandler(async (req: any, res: any) => {
 }));
 
 // POST /carriers - Configure a carrier
-router.post('/carriers', asyncHandler(async (req: any, res: any) => {
+router.post('/carriers', authenticate, asyncHandler(async (req: any, res: any) => {
   const carrier = await ShippingCarrier.create(req.body);
   res.status(201).json(carrier);
 }));
 
 // PUT /carriers/:id - Update carrier config
-router.put('/carriers/:id', asyncHandler(async (req: any, res: any) => {
+router.put('/carriers/:id', authenticate, asyncHandler(async (req: any, res: any) => {
   const carrier = await ShippingCarrier.findByIdAndUpdate(req.params.id, req.body, { new: true });
   if (!carrier) return res.status(404).json({ error: 'Carrier not found' });
   res.json(carrier);
 }));
 
 // POST /shipments - Create shipment
-router.post('/shipments', asyncHandler(async (req: any, res: any) => {
+router.post('/shipments', authenticate, asyncHandler(async (req: any, res: any) => {
   const shipment = await Shipment.create(req.body);
   res.status(201).json(shipment);
 }));
 
 // GET /shipments - List shipments with filters
-router.get('/shipments', asyncHandler(async (req: any, res: any) => {
+router.get('/shipments', authenticate, asyncHandler(async (req: any, res: any) => {
   const { tenant_id, status, carrier_id, sale_order_id } = req.query;
   const filter: any = {};
   if (tenant_id) filter.tenant_id = tenant_id;
@@ -53,14 +54,14 @@ router.get('/shipments', asyncHandler(async (req: any, res: any) => {
 }));
 
 // GET /shipments/:id - Get shipment detail
-router.get('/shipments/:id', asyncHandler(async (req: any, res: any) => {
+router.get('/shipments/:id', authenticate, asyncHandler(async (req: any, res: any) => {
   const shipment = await Shipment.findById(req.params.id).populate('carrier_id').lean();
   if (!shipment) return res.status(404).json({ error: 'Shipment not found' });
   res.json(shipment);
 }));
 
 // PUT /shipments/:id/status - Update shipment status
-router.put('/shipments/:id/status', asyncHandler(async (req: any, res: any) => {
+router.put('/shipments/:id/status', authenticate, asyncHandler(async (req: any, res: any) => {
   const { status, actual_delivery } = req.body;
   const update: any = { status };
   if (status === 'delivered' && !actual_delivery) {
@@ -74,7 +75,7 @@ router.put('/shipments/:id/status', asyncHandler(async (req: any, res: any) => {
 }));
 
 // POST /shipments/:id/track - Get tracking info
-router.post('/shipments/:id/track', asyncHandler(async (req: any, res: any) => {
+router.post('/shipments/:id/track', authenticate, asyncHandler(async (req: any, res: any) => {
   const shipment = await Shipment.findById(req.params.id).populate('carrier_id').lean();
   if (!shipment) return res.status(404).json({ error: 'Shipment not found' });
 
@@ -97,7 +98,7 @@ router.post('/shipments/:id/track', asyncHandler(async (req: any, res: any) => {
 }));
 
 // GET /rates - Get shipping rates from carrier config
-router.get('/rates', asyncHandler(async (req: any, res: any) => {
+router.get('/rates', authenticate, asyncHandler(async (req: any, res: any) => {
   const { tenant_id, carrier_id, weight, destination_country } = req.query;
   const filter: any = { is_active: true };
   if (tenant_id) filter.tenant_id = tenant_id;

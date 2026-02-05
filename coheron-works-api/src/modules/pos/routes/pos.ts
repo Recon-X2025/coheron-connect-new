@@ -4,6 +4,7 @@ import PosSession from '../../../models/PosSession.js';
 import PosTerminal from '../../../models/PosTerminal.js';
 import PosPayment from '../../../models/PosPayment.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 import { createOrder as createRazorpayOrder } from '../../crossmodule/services/paymentService.js';
 
@@ -14,7 +15,7 @@ const router = express.Router();
 // ============================================
 
 // Get all POS orders
-router.get('/orders', asyncHandler(async (req, res) => {
+router.get('/orders', authenticate, asyncHandler(async (req, res) => {
   const { state, store_id, terminal_id, session_id, start_date, end_date } = req.query;
   const filter: any = {};
 
@@ -49,7 +50,7 @@ router.get('/orders', asyncHandler(async (req, res) => {
 }));
 
 // Get POS order by ID
-router.get('/orders/:id', asyncHandler(async (req, res) => {
+router.get('/orders/:id', authenticate, asyncHandler(async (req, res) => {
   const order = await PosOrder.findById(req.params.id)
     .populate('store_id', 'name')
     .populate('terminal_id', 'name')
@@ -76,7 +77,7 @@ router.get('/orders/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create POS order
-router.post('/orders', asyncHandler(async (req, res) => {
+router.post('/orders', authenticate, asyncHandler(async (req, res) => {
   const {
     store_id, terminal_id, session_id, partner_id, customer_name,
     customer_phone, customer_email, order_type, amount_untaxed,
@@ -116,7 +117,7 @@ router.post('/orders', asyncHandler(async (req, res) => {
 }));
 
 // Update POS order
-router.put('/orders/:id', asyncHandler(async (req, res) => {
+router.put('/orders/:id', authenticate, asyncHandler(async (req, res) => {
   const {
     customer_name, customer_phone, customer_email,
     amount_untaxed, amount_tax, amount_total, amount_discount,
@@ -155,13 +156,13 @@ router.put('/orders/:id', asyncHandler(async (req, res) => {
 }));
 
 // Park order
-router.post('/orders/:id/park', asyncHandler(async (req, res) => {
+router.post('/orders/:id/park', authenticate, asyncHandler(async (req, res) => {
   await PosOrder.findByIdAndUpdate(req.params.id, { is_parked: true });
   res.json({ message: 'Order parked successfully' });
 }));
 
 // Void order
-router.post('/orders/:id/void', asyncHandler(async (req, res) => {
+router.post('/orders/:id/void', authenticate, asyncHandler(async (req, res) => {
   const { void_reason, void_user_id } = req.body;
   await PosOrder.findByIdAndUpdate(req.params.id, {
     is_void: true,
@@ -174,7 +175,7 @@ router.post('/orders/:id/void', asyncHandler(async (req, res) => {
 }));
 
 // Process return
-router.post('/orders/:id/return', asyncHandler(async (req, res) => {
+router.post('/orders/:id/return', authenticate, asyncHandler(async (req, res) => {
   const { return_lines, refund_method } = req.body;
 
   const originalOrder = await PosOrder.findById(req.params.id);
@@ -206,7 +207,7 @@ router.post('/orders/:id/return', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get all sessions
-router.get('/sessions', asyncHandler(async (req, res) => {
+router.get('/sessions', authenticate, asyncHandler(async (req, res) => {
   const { state, store_id, terminal_id, start_date, end_date } = req.query;
   const filter: any = {};
 
@@ -238,7 +239,7 @@ router.get('/sessions', asyncHandler(async (req, res) => {
 }));
 
 // Get session by ID
-router.get('/sessions/:id', asyncHandler(async (req, res) => {
+router.get('/sessions/:id', authenticate, asyncHandler(async (req, res) => {
   const session = await PosSession.findById(req.params.id)
     .populate('store_id', 'name')
     .populate('terminal_id', 'name')
@@ -258,7 +259,7 @@ router.get('/sessions/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create session
-router.post('/sessions', asyncHandler(async (req, res) => {
+router.post('/sessions', authenticate, asyncHandler(async (req, res) => {
   const { store_id, terminal_id, user_id, opening_balance } = req.body;
 
   const sessionCount = await PosSession.countDocuments({ session_number: { $regex: /^SESS-/ } });
@@ -276,13 +277,13 @@ router.post('/sessions', asyncHandler(async (req, res) => {
 }));
 
 // Open session
-router.post('/sessions/:id/open', asyncHandler(async (req, res) => {
+router.post('/sessions/:id/open', authenticate, asyncHandler(async (req, res) => {
   await PosSession.findByIdAndUpdate(req.params.id, { state: 'opened', start_at: new Date() });
   res.json({ message: 'Session opened successfully' });
 }));
 
 // Close session
-router.post('/sessions/:id/close', asyncHandler(async (req, res) => {
+router.post('/sessions/:id/close', authenticate, asyncHandler(async (req, res) => {
   const { closing_balance } = req.body;
 
   // Calculate totals from orders
@@ -313,7 +314,7 @@ router.post('/sessions/:id/close', asyncHandler(async (req, res) => {
 }));
 
 // Reconcile cash
-router.post('/sessions/:id/reconcile', asyncHandler(async (req, res) => {
+router.post('/sessions/:id/reconcile', authenticate, asyncHandler(async (req, res) => {
   const { closing_balance, notes } = req.body;
   await PosSession.findByIdAndUpdate(req.params.id, { closing_balance, notes });
   res.json({ message: 'Cash reconciled successfully' });
@@ -324,7 +325,7 @@ router.post('/sessions/:id/reconcile', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get all terminals
-router.get('/terminals', asyncHandler(async (req, res) => {
+router.get('/terminals', authenticate, asyncHandler(async (req, res) => {
   const { store_id, is_active } = req.query;
   const filter: any = {};
 
@@ -349,7 +350,7 @@ router.get('/terminals', asyncHandler(async (req, res) => {
 }));
 
 // Get terminal by ID
-router.get('/terminals/:id', asyncHandler(async (req, res) => {
+router.get('/terminals/:id', authenticate, asyncHandler(async (req, res) => {
   const terminal = await PosTerminal.findById(req.params.id).populate('store_id', 'name').lean();
 
   if (!terminal) {
@@ -363,7 +364,7 @@ router.get('/terminals/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create terminal
-router.post('/terminals', asyncHandler(async (req, res) => {
+router.post('/terminals', authenticate, asyncHandler(async (req, res) => {
   const { name, code, store_id, is_active, printer_id, cash_drawer_enabled, barcode_scanner_enabled, hardware_config } = req.body;
 
   const terminal = await PosTerminal.create({
@@ -379,7 +380,7 @@ router.post('/terminals', asyncHandler(async (req, res) => {
 }));
 
 // Update terminal
-router.put('/terminals/:id', asyncHandler(async (req, res) => {
+router.put('/terminals/:id', authenticate, asyncHandler(async (req, res) => {
   const { name, code, store_id, is_active, printer_id, cash_drawer_enabled, barcode_scanner_enabled, hardware_config } = req.body;
 
   const terminal = await PosTerminal.findByIdAndUpdate(req.params.id, {
@@ -396,7 +397,7 @@ router.put('/terminals/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete terminal
-router.delete('/terminals/:id', asyncHandler(async (req, res) => {
+router.delete('/terminals/:id', authenticate, asyncHandler(async (req, res) => {
   const terminal = await PosTerminal.findByIdAndDelete(req.params.id);
 
   if (!terminal) {
@@ -411,7 +412,7 @@ router.delete('/terminals/:id', asyncHandler(async (req, res) => {
 // ============================================
 
 // Process payment
-router.post('/payments', asyncHandler(async (req, res) => {
+router.post('/payments', authenticate, asyncHandler(async (req, res) => {
   const { order_id, payment_method, amount, currency, gateway_transaction_id, gateway_response } = req.body;
 
   const payment = await PosPayment.create({
@@ -433,7 +434,7 @@ router.post('/payments', asyncHandler(async (req, res) => {
 }));
 
 // Initiate Razorpay payment for POS order
-router.post('/payments/razorpay', asyncHandler(async (req, res) => {
+router.post('/payments/razorpay', authenticate, asyncHandler(async (req, res) => {
   const { order_id } = req.body;
   const order = await PosOrder.findById(order_id).lean();
   if (!order) {
@@ -451,7 +452,7 @@ router.post('/payments/razorpay', asyncHandler(async (req, res) => {
 }));
 
 // Process refund
-router.post('/payments/refund', asyncHandler(async (req, res) => {
+router.post('/payments/refund', authenticate, asyncHandler(async (req, res) => {
   const { payment_id, amount, reason } = req.body;
 
   await PosPayment.findByIdAndUpdate(payment_id, { payment_status: 'refunded' });
@@ -459,7 +460,7 @@ router.post('/payments/refund', asyncHandler(async (req, res) => {
 }));
 
 // Legacy route for backward compatibility
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const pagination = getPaginationParams(req);
   const paginatedResult = await paginateQuery(
     PosOrder.find().sort({ created_at: -1 }).lean(),
@@ -469,7 +470,7 @@ router.get('/', asyncHandler(async (req, res) => {
   res.json(paginatedResult);
 }));
 
-router.post('/', async (req, res) => {
+router.post('/', authenticate, async (req, res) => {
   const originalUrl = req.url;
   req.url = '/orders';
   router(req, res, () => {

@@ -2,6 +2,7 @@ import express from 'express';
 import { BenefitPlan } from '../models/BenefitPlan.js';
 import { BenefitEnrollment } from '../models/BenefitEnrollment.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
@@ -9,7 +10,7 @@ const router = express.Router();
 // BENEFIT PLANS
 // ============================================
 
-router.get('/plans', asyncHandler(async (req, res) => {
+router.get('/plans', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const filter: any = { tenant_id };
   if (req.query.type) filter.type = req.query.type;
@@ -19,44 +20,44 @@ router.get('/plans', asyncHandler(async (req, res) => {
   res.json(plans);
 }));
 
-router.get('/plans/:id', asyncHandler(async (req, res) => {
+router.get('/plans/:id', authenticate, asyncHandler(async (req, res) => {
   const plan = await BenefitPlan.findById(req.params.id).lean();
   if (!plan) return res.status(404).json({ error: 'Plan not found' });
   res.json(plan);
 }));
 
-router.post('/plans', asyncHandler(async (req, res) => {
+router.post('/plans', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const plan = await BenefitPlan.create({ ...req.body, tenant_id });
   res.status(201).json(plan);
 }));
 
-router.put('/plans/:id', asyncHandler(async (req, res) => {
+router.put('/plans/:id', authenticate, asyncHandler(async (req, res) => {
   const plan = await BenefitPlan.findByIdAndUpdate(req.params.id, req.body, { new: true });
   if (!plan) return res.status(404).json({ error: 'Plan not found' });
   res.json(plan);
 }));
 
-router.delete('/plans/:id', asyncHandler(async (req, res) => {
+router.delete('/plans/:id', authenticate, asyncHandler(async (req, res) => {
   const plan = await BenefitPlan.findByIdAndDelete(req.params.id);
   if (!plan) return res.status(404).json({ error: 'Plan not found' });
   res.json({ message: 'Plan deleted successfully' });
 }));
 
 // Plan enrollments
-router.get('/plans/:id/enrollments', asyncHandler(async (req, res) => {
+router.get('/plans/:id/enrollments', authenticate, asyncHandler(async (req, res) => {
   const enrollments = await BenefitEnrollment.find({ plan_id: req.params.id }).populate('employee_id', 'name email').sort({ created_at: -1 }).lean();
   res.json(enrollments);
 }));
 
 // Employee benefits
-router.get('/employees/:employeeId/benefits', asyncHandler(async (req, res) => {
+router.get('/employees/:employeeId/benefits', authenticate, asyncHandler(async (req, res) => {
   const enrollments = await BenefitEnrollment.find({ employee_id: req.params.employeeId, status: { $in: ['pending', 'active'] } }).populate('plan_id').sort({ effective_date: -1 }).lean();
   res.json(enrollments);
 }));
 
 // Cost summary
-router.get('/cost-summary', asyncHandler(async (req, res) => {
+router.get('/cost-summary', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const planYear = parseInt(req.query.plan_year as string) || new Date().getFullYear();
   const plans = await BenefitPlan.find({ tenant_id, plan_year: planYear }).lean();
@@ -75,7 +76,7 @@ router.get('/cost-summary', asyncHandler(async (req, res) => {
 }));
 
 // Open enrollment
-router.post('/open-enrollment', asyncHandler(async (req, res) => {
+router.post('/open-enrollment', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { plan_year } = req.body;
   const plans = await BenefitPlan.find({ tenant_id, plan_year });
@@ -95,7 +96,7 @@ router.post('/open-enrollment', asyncHandler(async (req, res) => {
 // BENEFIT ENROLLMENTS
 // ============================================
 
-router.get('/enrollments', asyncHandler(async (req, res) => {
+router.get('/enrollments', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const filter: any = { tenant_id };
   if (req.query.plan_id) filter.plan_id = req.query.plan_id;
@@ -105,25 +106,25 @@ router.get('/enrollments', asyncHandler(async (req, res) => {
   res.json(enrollments);
 }));
 
-router.get('/enrollments/:id', asyncHandler(async (req, res) => {
+router.get('/enrollments/:id', authenticate, asyncHandler(async (req, res) => {
   const enrollment = await BenefitEnrollment.findById(req.params.id).populate('plan_id').populate('employee_id', 'name email').lean();
   if (!enrollment) return res.status(404).json({ error: 'Enrollment not found' });
   res.json(enrollment);
 }));
 
-router.post('/enrollments', asyncHandler(async (req, res) => {
+router.post('/enrollments', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const enrollment = await BenefitEnrollment.create({ ...req.body, tenant_id });
   res.status(201).json(enrollment);
 }));
 
-router.put('/enrollments/:id', asyncHandler(async (req, res) => {
+router.put('/enrollments/:id', authenticate, asyncHandler(async (req, res) => {
   const enrollment = await BenefitEnrollment.findByIdAndUpdate(req.params.id, req.body, { new: true });
   if (!enrollment) return res.status(404).json({ error: 'Enrollment not found' });
   res.json(enrollment);
 }));
 
-router.delete('/enrollments/:id', asyncHandler(async (req, res) => {
+router.delete('/enrollments/:id', authenticate, asyncHandler(async (req, res) => {
   const enrollment = await BenefitEnrollment.findByIdAndDelete(req.params.id);
   if (!enrollment) return res.status(404).json({ error: 'Enrollment not found' });
   res.json({ message: 'Enrollment deleted successfully' });

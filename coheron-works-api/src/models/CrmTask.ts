@@ -68,6 +68,6 @@ calendarEventSchema.index({ event_type: 1 });
 crmAutomationWorkflowSchema.index({ is_active: 1 });
 crmAutomationWorkflowSchema.index({ trigger_type: 1 });
 
-export const CrmTask = mongoose.model('CrmTask', crmTaskSchema);
-export const CalendarEvent = mongoose.model('CalendarEvent', calendarEventSchema);
-export const CrmAutomationWorkflow = mongoose.model('CrmAutomationWorkflow', crmAutomationWorkflowSchema);
+export const CrmTask = mongoose.models.CrmTask || mongoose.model('CrmTask', crmTaskSchema);
+export const CalendarEvent = mongoose.models.CalendarEvent || mongoose.model('CalendarEvent', calendarEventSchema);
+export const CrmAutomationWorkflow = mongoose.models.CrmAutomationWorkflow || mongoose.model('CrmAutomationWorkflow', crmAutomationWorkflowSchema);

@@ -3,8 +3,10 @@ import { JobPosting } from '../models/JobPosting.js';
 import { JobApplication } from '../models/JobApplication.js';
 import { InterviewSchedule } from '../models/InterviewSchedule.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
+router.use(authenticate);
 
 // ============================================
 // JOB POSTINGS

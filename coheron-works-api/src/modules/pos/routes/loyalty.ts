@@ -3,39 +3,40 @@ import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { LoyaltyProgram } from '../models/LoyaltyProgram.js';
 import { LoyaltyTier } from '../models/LoyaltyTier.js';
 import { LoyaltyTransaction } from '../models/LoyaltyTransaction.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // --- Programs ---
-router.get('/programs', asyncHandler(async (req, res) => {
+router.get('/programs', authenticate, asyncHandler(async (req, res) => {
   const items = await LoyaltyProgram.find({ tenant_id: req.user?.tenant_id }).sort({ created_at: -1 }).lean();
   res.json(items);
 }));
 
-router.get('/programs/:id', asyncHandler(async (req, res) => {
+router.get('/programs/:id', authenticate, asyncHandler(async (req, res) => {
   const item = await LoyaltyProgram.findOne({ _id: req.params.id, tenant_id: req.user?.tenant_id }).lean();
   if (!item) return res.status(404).json({ error: 'Program not found' });
   res.json(item);
 }));
 
-router.post('/programs', asyncHandler(async (req, res) => {
+router.post('/programs', authenticate, asyncHandler(async (req, res) => {
   const item = await LoyaltyProgram.create({ ...req.body, tenant_id: req.user?.tenant_id, created_by: req.user?.userId });
   res.status(201).json(item);
 }));
 
-router.put('/programs/:id', asyncHandler(async (req, res) => {
+router.put('/programs/:id', authenticate, asyncHandler(async (req, res) => {
   const item = await LoyaltyProgram.findOneAndUpdate({ _id: req.params.id, tenant_id: req.user?.tenant_id }, { $set: req.body }, { new: true });
   if (!item) return res.status(404).json({ error: 'Program not found' });
   res.json(item);
 }));
 
-router.delete('/programs/:id', asyncHandler(async (req, res) => {
+router.delete('/programs/:id', authenticate, asyncHandler(async (req, res) => {
   await LoyaltyProgram.deleteOne({ _id: req.params.id, tenant_id: req.user?.tenant_id });
   res.json({ success: true });
 }));
 
 // --- Tiers ---
-router.get('/tiers', asyncHandler(async (req, res) => {
+router.get('/tiers', authenticate, asyncHandler(async (req, res) => {
   const { program_id } = req.query;
   const filter: any = { tenant_id: req.user?.tenant_id };
   if (program_id) filter.program_id = program_id;
@@ -43,24 +44,24 @@ router.get('/tiers', asyncHandler(async (req, res) => {
   res.json(items);
 }));
 
-router.post('/tiers', asyncHandler(async (req, res) => {
+router.post('/tiers', authenticate, asyncHandler(async (req, res) => {
   const item = await LoyaltyTier.create({ ...req.body, tenant_id: req.user?.tenant_id });
   res.status(201).json(item);
 }));
 
-router.put('/tiers/:id', asyncHandler(async (req, res) => {
+router.put('/tiers/:id', authenticate, asyncHandler(async (req, res) => {
   const item = await LoyaltyTier.findOneAndUpdate({ _id: req.params.id, tenant_id: req.user?.tenant_id }, { $set: req.body }, { new: true });
   if (!item) return res.status(404).json({ error: 'Tier not found' });
   res.json(item);
 }));
 
-router.delete('/tiers/:id', asyncHandler(async (req, res) => {
+router.delete('/tiers/:id', authenticate, asyncHandler(async (req, res) => {
   await LoyaltyTier.deleteOne({ _id: req.params.id, tenant_id: req.user?.tenant_id });
   res.json({ success: true });
 }));
 
 // --- Transactions ---
-router.post('/transactions/earn', asyncHandler(async (req, res) => {
+router.post('/transactions/earn', authenticate, asyncHandler(async (req, res) => {
   const { program_id, customer_id, points, reference_type, reference_id, description } = req.body;
   // Get current balance
   const lastTx = await LoyaltyTransaction.findOne({ program_id, customer_id, tenant_id: req.user?.tenant_id }).sort({ created_at: -1 });
@@ -75,7 +76,7 @@ router.post('/transactions/earn', asyncHandler(async (req, res) => {
   res.status(201).json(tx);
 }));
 
-router.post('/transactions/redeem', asyncHandler(async (req, res) => {
+router.post('/transactions/redeem', authenticate, asyncHandler(async (req, res) => {
   const { program_id, customer_id, points, reference_type, reference_id, description } = req.body;
   const lastTx = await LoyaltyTransaction.findOne({ program_id, customer_id, tenant_id: req.user?.tenant_id }).sort({ created_at: -1 });
   const currentBalance = lastTx ? lastTx.balance_after : 0;
@@ -90,12 +91,12 @@ router.post('/transactions/redeem', asyncHandler(async (req, res) => {
   res.status(201).json(tx);
 }));
 
-router.get('/customers/:customerId/balance', asyncHandler(async (req, res) => {
+router.get('/customers/:customerId/balance', authenticate, asyncHandler(async (req, res) => {
   const lastTx = await LoyaltyTransaction.findOne({ customer_id: req.params.customerId, tenant_id: req.user?.tenant_id }).sort({ created_at: -1 });
   res.json({ balance: lastTx ? lastTx.balance_after : 0 });
 }));
 
-router.get('/customers/:customerId/history', asyncHandler(async (req, res) => {
+router.get('/customers/:customerId/history', authenticate, asyncHandler(async (req, res) => {
   const { page = '1', limit = '20' } = req.query;
   const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
   const items = await LoyaltyTransaction.find({ customer_id: req.params.customerId, tenant_id: req.user?.tenant_id })

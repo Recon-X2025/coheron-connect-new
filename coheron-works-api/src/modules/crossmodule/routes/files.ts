@@ -1,5 +1,6 @@
 import express from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { s3Upload, s3UploadMultiple } from '../../../shared/middleware/uploadMiddleware.js';
 import { getPresignedDownloadUrl, deleteFile } from '../services/storageService.js';
 import { FileStorage } from '../../../shared/models/FileStorage.js';
@@ -7,7 +8,7 @@ import { FileStorage } from '../../../shared/models/FileStorage.js';
 const router = express.Router();
 
 // Upload single file
-router.post('/upload', ...s3Upload('file'), asyncHandler(async (req, res) => {
+router.post('/upload', authenticate, ...s3Upload('file'), asyncHandler(async (req, res) => {
   const record = (req as any).fileRecord;
   if (!record) {
     return res.status(400).json({ error: 'No file provided' });
@@ -16,7 +17,7 @@ router.post('/upload', ...s3Upload('file'), asyncHandler(async (req, res) => {
 }));
 
 // Upload multiple files
-router.post('/upload-multiple', ...s3UploadMultiple('files', 10), asyncHandler(async (req, res) => {
+router.post('/upload-multiple', authenticate, ...s3UploadMultiple('files', 10), asyncHandler(async (req, res) => {
   const records = (req as any).fileRecords;
   if (!records || records.length === 0) {
     return res.status(400).json({ error: 'No files provided' });
@@ -25,7 +26,7 @@ router.post('/upload-multiple', ...s3UploadMultiple('files', 10), asyncHandler(a
 }));
 
 // Get presigned download URL
-router.get('/download/:id', asyncHandler(async (req, res) => {
+router.get('/download/:id', authenticate, asyncHandler(async (req, res) => {
   const file = await FileStorage.findById(req.params.id);
   if (!file) {
     return res.status(404).json({ error: 'File not found' });
@@ -35,7 +36,7 @@ router.get('/download/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete file
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const file = await FileStorage.findById(req.params.id);
   if (!file) {
     return res.status(404).json({ error: 'File not found' });

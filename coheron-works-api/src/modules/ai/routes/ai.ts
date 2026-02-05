@@ -14,8 +14,8 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 
 // POST /ai/query - Natural language query
 router.post('/query', asyncHandler(async (req, res) => {
-  const tenantId = (req as any).user?.tenant_id || req.body.tenant_id;
-  const userId = (req as any).user?.userId || req.body.user_id;
+  const tenantId = (req as any).user?.tenant_id;
+  const userId = (req as any).user?.userId;
   const { query, context } = req.body;
 
   if (!query) return res.status(400).json({ error: 'query is required' });
@@ -27,7 +27,7 @@ router.post('/query', asyncHandler(async (req, res) => {
 
 // POST /ai/document-extract - OCR + extraction
 router.post('/document-extract', upload.single('file'), asyncHandler(async (req, res) => {
-  const tenantId = (req as any).user?.tenant_id || req.body.tenant_id;
+  const tenantId = (req as any).user?.tenant_id;
 
   if (!req.file && !req.body.text) {
     return res.status(400).json({ error: 'Upload a file or provide text in body' });
@@ -54,7 +54,7 @@ router.post('/document-extract', upload.single('file'), asyncHandler(async (req,
 
 // GET /ai/insights - Get AI insights for tenant
 router.get('/insights', asyncHandler(async (req, res) => {
-  const tenantId = (req as any).user?.tenant_id || (req.query.tenant_id as string);
+  const tenantId = (req as any).user?.tenant_id;
   if (!tenantId) return res.status(400).json({ error: 'tenant_id is required' });
 
   const { module } = req.query;
@@ -77,7 +77,7 @@ router.get('/insights', asyncHandler(async (req, res) => {
 
 // POST /ai/suggest-automation
 router.post('/suggest-automation', asyncHandler(async (req, res) => {
-  const tenantId = (req as any).user?.tenant_id || req.body.tenant_id;
+  const tenantId = (req as any).user?.tenant_id;
   if (!tenantId) return res.status(400).json({ error: 'tenant_id is required' });
 
   const suggestions = await SmartAutomation.suggestRules(tenantId);

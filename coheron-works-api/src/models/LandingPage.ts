@@ -36,4 +36,4 @@ const landingPageSchema = new Schema({
 landingPageSchema.index({ tenant_id: 1, slug: 1 }, { unique: true });
 landingPageSchema.index({ tenant_id: 1, is_published: 1 });
 
-export const LandingPage = mongoose.model('LandingPage', landingPageSchema);
+export const LandingPage = mongoose.models.LandingPage || mongoose.model('LandingPage', landingPageSchema);

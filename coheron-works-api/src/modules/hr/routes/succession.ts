@@ -2,6 +2,7 @@ import express from 'express';
 import { SuccessionPlan } from '../models/SuccessionPlan.js';
 import { SuccessionCandidate } from '../models/SuccessionCandidate.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
@@ -9,7 +10,7 @@ const router = express.Router();
 // SUCCESSION PLANS
 // ============================================
 
-router.get('/plans', asyncHandler(async (req, res) => {
+router.get('/plans', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const filter: any = { tenant_id };
   if (req.query.status) filter.status = req.query.status;
@@ -19,32 +20,32 @@ router.get('/plans', asyncHandler(async (req, res) => {
   res.json(plans);
 }));
 
-router.get('/plans/:id', asyncHandler(async (req, res) => {
+router.get('/plans/:id', authenticate, asyncHandler(async (req, res) => {
   const plan = await SuccessionPlan.findById(req.params.id).populate('incumbent_id', 'name email').lean();
   if (!plan) return res.status(404).json({ error: 'Plan not found' });
   res.json(plan);
 }));
 
-router.post('/plans', asyncHandler(async (req, res) => {
+router.post('/plans', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const plan = await SuccessionPlan.create({ ...req.body, tenant_id });
   res.status(201).json(plan);
 }));
 
-router.put('/plans/:id', asyncHandler(async (req, res) => {
+router.put('/plans/:id', authenticate, asyncHandler(async (req, res) => {
   const plan = await SuccessionPlan.findByIdAndUpdate(req.params.id, req.body, { new: true });
   if (!plan) return res.status(404).json({ error: 'Plan not found' });
   res.json(plan);
 }));
 
-router.delete('/plans/:id', asyncHandler(async (req, res) => {
+router.delete('/plans/:id', authenticate, asyncHandler(async (req, res) => {
   const plan = await SuccessionPlan.findByIdAndDelete(req.params.id);
   if (!plan) return res.status(404).json({ error: 'Plan not found' });
   res.json({ message: 'Plan deleted successfully' });
 }));
 
 // Pipeline for a plan
-router.get('/plans/:id/pipeline', asyncHandler(async (req, res) => {
+router.get('/plans/:id/pipeline', authenticate, asyncHandler(async (req, res) => {
   const plan = await SuccessionPlan.findById(req.params.id).populate('incumbent_id', 'name email').lean();
   if (!plan) return res.status(404).json({ error: 'Plan not found' });
   const candidates = await SuccessionCandidate.find({ plan_id: req.params.id }).populate('candidate_id', 'name email').populate('mentor_id', 'name').sort({ overall_rating: -1 }).lean();
@@ -54,7 +55,7 @@ router.get('/plans/:id/pipeline', asyncHandler(async (req, res) => {
 }));
 
 // Risk report
-router.get('/risk-report', asyncHandler(async (req, res) => {
+router.get('/risk-report', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const plans = await SuccessionPlan.find({ tenant_id, status: 'active' }).populate('incumbent_id', 'name email').lean();
   const report = [];
@@ -78,7 +79,7 @@ router.get('/risk-report', asyncHandler(async (req, res) => {
 }));
 
 // Bench strength
-router.get('/bench-strength', asyncHandler(async (req, res) => {
+router.get('/bench-strength', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const plans = await SuccessionPlan.find({ tenant_id, status: 'active' }).lean();
   let totalPositions = plans.length;
@@ -103,7 +104,7 @@ router.get('/bench-strength', asyncHandler(async (req, res) => {
 // SUCCESSION CANDIDATES
 // ============================================
 
-router.get('/candidates', asyncHandler(async (req, res) => {
+router.get('/candidates', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const filter: any = { tenant_id };
   if (req.query.plan_id) filter.plan_id = req.query.plan_id;
@@ -112,25 +113,25 @@ router.get('/candidates', asyncHandler(async (req, res) => {
   res.json(candidates);
 }));
 
-router.get('/candidates/:id', asyncHandler(async (req, res) => {
+router.get('/candidates/:id', authenticate, asyncHandler(async (req, res) => {
   const candidate = await SuccessionCandidate.findById(req.params.id).populate('candidate_id', 'name email').populate('mentor_id', 'name').lean();
   if (!candidate) return res.status(404).json({ error: 'Candidate not found' });
   res.json(candidate);
 }));
 
-router.post('/candidates', asyncHandler(async (req, res) => {
+router.post('/candidates', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const candidate = await SuccessionCandidate.create({ ...req.body, tenant_id });
   res.status(201).json(candidate);
 }));
 
-router.put('/candidates/:id', asyncHandler(async (req, res) => {
+router.put('/candidates/:id', authenticate, asyncHandler(async (req, res) => {
   const candidate = await SuccessionCandidate.findByIdAndUpdate(req.params.id, req.body, { new: true });
   if (!candidate) return res.status(404).json({ error: 'Candidate not found' });
   res.json(candidate);
 }));
 
-router.delete('/candidates/:id', asyncHandler(async (req, res) => {
+router.delete('/candidates/:id', authenticate, asyncHandler(async (req, res) => {
   const candidate = await SuccessionCandidate.findByIdAndDelete(req.params.id);
   if (!candidate) return res.status(404).json({ error: 'Candidate not found' });
   res.json({ message: 'Candidate deleted successfully' });

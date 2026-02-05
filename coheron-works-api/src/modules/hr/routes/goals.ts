@@ -1,12 +1,13 @@
 import express from 'express';
 import { Goal } from '../../../models/Goal.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
 // Get goals
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { employee_id, status, goal_type } = req.query;
   const filter: any = {};
 
@@ -38,7 +39,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get goal by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const goal = await Goal.findById(id)
     .populate('employee_id', 'name employee_id');
@@ -58,7 +59,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create goal
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const {
     employee_id,
     title,
@@ -89,7 +90,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update goal
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const {
     title,
@@ -119,7 +120,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete goal
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const goal = await Goal.findByIdAndDelete(id);
 

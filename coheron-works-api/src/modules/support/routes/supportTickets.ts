@@ -2,6 +2,7 @@ import express from 'express';
 import { SupportTicket, TicketNote, TicketAttachment, TicketWatcher, TicketHistory } from '../../../models/SupportTicket.js';
 import { SlaPolicy } from '../../../models/SlaPolicy.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 import { triggerWorkflows } from '../../../shared/middleware/workflowTrigger.js';
 import { getWhatsAppService } from '../../crossmodule/services/whatsappService.js';
@@ -13,7 +14,7 @@ const router = express.Router();
 // ============================================
 
 // Get all tickets
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { status, priority, assigned_agent_id, assigned_team_id, partner_id, ticket_type, search } = req.query;
   const filter: any = {};
 
@@ -88,7 +89,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get ticket by ID with full details
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const ticket = await SupportTicket.findById(req.params.id)
     .populate('partner_id', 'name email')
     .populate({ path: 'assigned_agent_id', populate: { path: 'user_id', select: 'name email' } })
@@ -132,7 +133,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create ticket
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const {
     subject, description, ticket_type, priority, channel_id, category_id,
     partner_id, contact_id, assigned_team_id, source, tags, custom_fields, is_public,
@@ -202,7 +203,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update ticket
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const {
     subject, description, ticket_type, status, priority, channel_id,
     category_id, assigned_agent_id, assigned_team_id, tags, custom_fields,
@@ -256,7 +257,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete ticket
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const result = await SupportTicket.findByIdAndDelete(req.params.id);
   if (!result) {
     return res.status(404).json({ error: 'Ticket not found' });
@@ -269,7 +270,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 // ============================================
 
 // Merge tickets
-router.post('/:id/merge', asyncHandler(async (req, res) => {
+router.post('/:id/merge', authenticate, asyncHandler(async (req, res) => {
   const { merge_into_ticket_id } = req.body;
   if (!merge_into_ticket_id) {
     return res.status(400).json({ error: 'Target ticket ID is required' });
@@ -288,7 +289,7 @@ router.post('/:id/merge', asyncHandler(async (req, res) => {
 }));
 
 // Split ticket
-router.post('/:id/split', asyncHandler(async (req, res) => {
+router.post('/:id/split', authenticate, asyncHandler(async (req, res) => {
   const { subjects, descriptions } = req.body;
   if (!subjects || !descriptions || subjects.length !== descriptions.length) {
     return res.status(400).json({ error: 'Subjects and descriptions arrays must match' });
@@ -327,7 +328,7 @@ router.post('/:id/split', asyncHandler(async (req, res) => {
 }));
 
 // Transfer ticket
-router.post('/:id/transfer', asyncHandler(async (req, res) => {
+router.post('/:id/transfer', authenticate, asyncHandler(async (req, res) => {
   const { assigned_team_id, assigned_agent_id, reason } = req.body;
   const updateData: any = {};
 
@@ -367,7 +368,7 @@ router.post('/:id/transfer', asyncHandler(async (req, res) => {
 // ============================================
 
 // Add note
-router.post('/:id/notes', asyncHandler(async (req, res) => {
+router.post('/:id/notes', authenticate, asyncHandler(async (req, res) => {
   const { note_type, content, created_by, is_pinned } = req.body;
   if (!content) {
     return res.status(400).json({ error: 'Note content is required' });
@@ -389,7 +390,7 @@ router.post('/:id/notes', asyncHandler(async (req, res) => {
 // ============================================
 
 // Add watcher
-router.post('/:id/watchers', asyncHandler(async (req, res) => {
+router.post('/:id/watchers', authenticate, asyncHandler(async (req, res) => {
   const { user_id } = req.body;
 
   const existing = await TicketWatcher.findOne({ ticket_id: req.params.id, user_id }).lean();
@@ -402,7 +403,7 @@ router.post('/:id/watchers', asyncHandler(async (req, res) => {
 }));
 
 // Remove watcher
-router.delete('/:id/watchers/:userId', asyncHandler(async (req, res) => {
+router.delete('/:id/watchers/:userId', authenticate, asyncHandler(async (req, res) => {
   const result = await TicketWatcher.findOneAndDelete({ ticket_id: req.params.id, user_id: req.params.userId });
   if (!result) {
     return res.status(404).json({ error: 'Watcher not found' });
@@ -411,7 +412,7 @@ router.delete('/:id/watchers/:userId', asyncHandler(async (req, res) => {
 }));
 
 // Add conversation
-router.post('/:id/conversations', asyncHandler(async (req, res) => {
+router.post('/:id/conversations', authenticate, asyncHandler(async (req, res) => {
   const ticket = await SupportTicket.findByIdAndUpdate(
     req.params.id,
     { $push: { conversations: req.body } },
@@ -438,7 +439,7 @@ router.post('/:id/conversations', asyncHandler(async (req, res) => {
 }));
 
 // Log time entry
-router.post('/:id/time-entries', asyncHandler(async (req, res) => {
+router.post('/:id/time-entries', authenticate, asyncHandler(async (req, res) => {
   const entry = req.body;
   if (entry.started_at && entry.ended_at) {
     entry.duration_minutes = Math.round((new Date(entry.ended_at).getTime() - new Date(entry.started_at).getTime()) / 60000);
@@ -459,7 +460,7 @@ router.post('/:id/time-entries', asyncHandler(async (req, res) => {
 }));
 
 // Escalate ticket
-router.post('/:id/escalate', asyncHandler(async (req, res) => {
+router.post('/:id/escalate', authenticate, asyncHandler(async (req, res) => {
   const { level, reason, escalated_by } = req.body;
   const ticket = await SupportTicket.findByIdAndUpdate(
     req.params.id,
@@ -489,7 +490,7 @@ router.post('/:id/escalate', asyncHandler(async (req, res) => {
 }));
 
 // Record satisfaction
-router.put('/:id/satisfaction', asyncHandler(async (req, res) => {
+router.put('/:id/satisfaction', authenticate, asyncHandler(async (req, res) => {
   const { rating, feedback } = req.body;
   const ticket = await SupportTicket.findByIdAndUpdate(
     req.params.id,

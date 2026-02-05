@@ -1,11 +1,12 @@
 import express from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { MarketingWorkflow } from '../models/MarketingWorkflow.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // List workflows
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { is_active, trigger_type, search, page = 1, limit = 20 } = req.query;
   const filter: any = { tenant_id };
@@ -18,7 +19,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Stats
-router.get('/stats', asyncHandler(async (req, res) => {
+router.get('/stats', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const total = await MarketingWorkflow.countDocuments({ tenant_id });
   const active = await MarketingWorkflow.countDocuments({ tenant_id, is_active: true });
@@ -34,47 +35,47 @@ router.get('/stats', asyncHandler(async (req, res) => {
 }));
 
 // Get workflow
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const wf = await MarketingWorkflow.findOne({ _id: req.params.id, tenant_id: req.user?.tenant_id }).lean();
   if (!wf) return res.status(404).json({ error: 'Workflow not found' });
   res.json(wf);
 }));
 
 // Create
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const wf = await MarketingWorkflow.create({ ...req.body, tenant_id: req.user?.tenant_id, created_by: req.user?.userId });
   res.status(201).json(wf);
 }));
 
 // Update
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const wf = await MarketingWorkflow.findOneAndUpdate({ _id: req.params.id, tenant_id: req.user?.tenant_id }, req.body, { new: true }).lean();
   if (!wf) return res.status(404).json({ error: 'Workflow not found' });
   res.json(wf);
 }));
 
 // Delete
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   await MarketingWorkflow.findOneAndDelete({ _id: req.params.id, tenant_id: req.user?.tenant_id });
   res.json({ success: true });
 }));
 
 // Activate
-router.post('/:id/activate', asyncHandler(async (req, res) => {
+router.post('/:id/activate', authenticate, asyncHandler(async (req, res) => {
   const wf = await MarketingWorkflow.findOneAndUpdate({ _id: req.params.id, tenant_id: req.user?.tenant_id }, { is_active: true }, { new: true }).lean();
   if (!wf) return res.status(404).json({ error: 'Workflow not found' });
   res.json(wf);
 }));
 
 // Deactivate
-router.post('/:id/deactivate', asyncHandler(async (req, res) => {
+router.post('/:id/deactivate', authenticate, asyncHandler(async (req, res) => {
   const wf = await MarketingWorkflow.findOneAndUpdate({ _id: req.params.id, tenant_id: req.user?.tenant_id }, { is_active: false }, { new: true }).lean();
   if (!wf) return res.status(404).json({ error: 'Workflow not found' });
   res.json(wf);
 }));
 
 // Test workflow
-router.post('/:id/test', asyncHandler(async (req, res) => {
+router.post('/:id/test', authenticate, asyncHandler(async (req, res) => {
   const wf = await MarketingWorkflow.findOne({ _id: req.params.id, tenant_id: req.user?.tenant_id });
   if (!wf) return res.status(404).json({ error: 'Workflow not found' });
   // Simulate execution

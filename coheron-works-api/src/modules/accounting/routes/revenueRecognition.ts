@@ -1,12 +1,13 @@
 import express from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { RevenueContract } from '../models/RevenueContract.js';
 import { RevenueSchedule } from '../models/RevenueSchedule.js';
 
 const router = express.Router();
 
 // List contracts
-router.get('/contracts', asyncHandler(async (req, res) => {
+router.get('/contracts', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const filter: any = {};
   if (tenant_id) filter.tenant_id = tenant_id;
@@ -21,7 +22,7 @@ router.get('/contracts', asyncHandler(async (req, res) => {
 }));
 
 // Waterfall report
-router.get('/waterfall', asyncHandler(async (req, res) => {
+router.get('/waterfall', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const filter: any = {};
   if (tenant_id) filter.tenant_id = tenant_id;
@@ -40,7 +41,7 @@ router.get('/waterfall', asyncHandler(async (req, res) => {
 }));
 
 // Unbilled revenue
-router.get('/unbilled-revenue', asyncHandler(async (req, res) => {
+router.get('/unbilled-revenue', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const filter: any = { status: 'recognized' };
   if (tenant_id) filter.tenant_id = tenant_id;
@@ -50,34 +51,34 @@ router.get('/unbilled-revenue', asyncHandler(async (req, res) => {
 }));
 
 // Get single contract
-router.get('/contracts/:id', asyncHandler(async (req, res) => {
+router.get('/contracts/:id', authenticate, asyncHandler(async (req, res) => {
   const item = await RevenueContract.findById(req.params.id).lean();
   if (!item) return res.status(404).json({ error: 'Contract not found' });
   res.json(item);
 }));
 
 // Get contract schedule
-router.get('/contracts/:id/schedule', asyncHandler(async (req, res) => {
+router.get('/contracts/:id/schedule', authenticate, asyncHandler(async (req, res) => {
   const schedules = await RevenueSchedule.find({ contract_id: req.params.id }).sort({ period: 1 }).lean();
   res.json({ items: schedules });
 }));
 
 // Create contract
-router.post('/contracts', asyncHandler(async (req, res) => {
+router.post('/contracts', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const item = await RevenueContract.create({ ...req.body, tenant_id });
   res.status(201).json(item);
 }));
 
 // Update contract
-router.put('/contracts/:id', asyncHandler(async (req, res) => {
+router.put('/contracts/:id', authenticate, asyncHandler(async (req, res) => {
   const item = await RevenueContract.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true }).lean();
   if (!item) return res.status(404).json({ error: 'Contract not found' });
   res.json(item);
 }));
 
 // Delete contract
-router.delete('/contracts/:id', asyncHandler(async (req, res) => {
+router.delete('/contracts/:id', authenticate, asyncHandler(async (req, res) => {
   const item = await RevenueContract.findByIdAndDelete(req.params.id);
   if (!item) return res.status(404).json({ error: 'Contract not found' });
   await RevenueSchedule.deleteMany({ contract_id: req.params.id });
@@ -85,7 +86,7 @@ router.delete('/contracts/:id', asyncHandler(async (req, res) => {
 }));
 
 // Recognize revenue for period
-router.post('/contracts/:id/recognize', asyncHandler(async (req, res) => {
+router.post('/contracts/:id/recognize', authenticate, asyncHandler(async (req, res) => {
   const { period, obligation_index } = req.body;
   const tenant_id = (req as any).user?.tenant_id;
   const contract = await RevenueContract.findById(req.params.id);

@@ -1,12 +1,13 @@
 import express from 'express';
 import { Applicant } from '../../../models/Applicant.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
 // Get applicants
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { stage_id } = req.query;
   const filter: any = {};
 
@@ -25,7 +26,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Create applicant
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const { partner_name, name, email_from, stage_id, priority } = req.body;
 
   const applicant = await Applicant.create({
@@ -38,7 +39,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update applicant
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { stage_id, priority } = req.body;
 

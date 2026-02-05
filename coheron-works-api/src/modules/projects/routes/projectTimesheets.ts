@@ -3,6 +3,7 @@ import ProjectResource from '../../../models/ProjectResource.js';
 import Timesheet from '../../../models/Timesheet.js';
 import ProjectTask from '../../../models/ProjectTask.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
@@ -12,7 +13,7 @@ const router = express.Router();
 // ============================================
 
 // Get project resources
-router.get('/:projectId/resources', asyncHandler(async (req, res) => {
+router.get('/:projectId/resources', authenticate, asyncHandler(async (req, res) => {
   const resources = await ProjectResource.find({ project_id: req.params.projectId })
     .populate('user_id', 'name email')
     .sort({ created_at: 1 })
@@ -37,7 +38,7 @@ router.get('/:projectId/resources', asyncHandler(async (req, res) => {
 }));
 
 // Add resource to project
-router.post('/:projectId/resources', asyncHandler(async (req, res) => {
+router.post('/:projectId/resources', authenticate, asyncHandler(async (req, res) => {
   const {
     user_id, role, skill_level, allocation_percentage,
     cost_rate, planned_start_date, planned_end_date,
@@ -67,7 +68,7 @@ router.post('/:projectId/resources', asyncHandler(async (req, res) => {
 }));
 
 // Update resource
-router.put('/resources/:id', asyncHandler(async (req, res) => {
+router.put('/resources/:id', authenticate, asyncHandler(async (req, res) => {
   const {
     role, skill_level, allocation_percentage, cost_rate,
     planned_start_date, planned_end_date, actual_start_date, actual_end_date,
@@ -99,7 +100,7 @@ router.put('/resources/:id', asyncHandler(async (req, res) => {
 }));
 
 // Remove resource
-router.delete('/resources/:id', asyncHandler(async (req, res) => {
+router.delete('/resources/:id', authenticate, asyncHandler(async (req, res) => {
   const resource = await ProjectResource.findByIdAndDelete(req.params.id);
 
   if (!resource) {
@@ -114,7 +115,7 @@ router.delete('/resources/:id', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get timesheets
-router.get('/timesheets', asyncHandler(async (req, res) => {
+router.get('/timesheets', authenticate, asyncHandler(async (req, res) => {
   const { project_id, user_id, date_from, date_to, approval_status } = req.query;
   const filter: any = {};
 
@@ -158,7 +159,7 @@ router.get('/timesheets', asyncHandler(async (req, res) => {
 }));
 
 // Get timesheet by ID
-router.get('/timesheets/:id', asyncHandler(async (req, res) => {
+router.get('/timesheets/:id', authenticate, asyncHandler(async (req, res) => {
   const ts = await Timesheet.findById(req.params.id)
     .populate('user_id', 'name email')
     .populate('project_id', 'name code')
@@ -178,7 +179,7 @@ router.get('/timesheets/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create timesheet entry
-router.post('/timesheets', asyncHandler(async (req, res) => {
+router.post('/timesheets', authenticate, asyncHandler(async (req, res) => {
   const {
     project_id, task_id, user_id, date_worked,
     hours_worked, description, is_billable,
@@ -202,7 +203,7 @@ router.post('/timesheets', asyncHandler(async (req, res) => {
 }));
 
 // Update timesheet
-router.put('/timesheets/:id', asyncHandler(async (req, res) => {
+router.put('/timesheets/:id', authenticate, asyncHandler(async (req, res) => {
   const {
     task_id, date_worked, hours_worked,
     description, is_billable, approval_status,
@@ -251,7 +252,7 @@ router.put('/timesheets/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete timesheet
-router.delete('/timesheets/:id', asyncHandler(async (req, res) => {
+router.delete('/timesheets/:id', authenticate, asyncHandler(async (req, res) => {
   const timesheet = await Timesheet.findById(req.params.id);
 
   const result = await Timesheet.findByIdAndDelete(req.params.id);
@@ -277,7 +278,7 @@ router.delete('/timesheets/:id', asyncHandler(async (req, res) => {
 }));
 
 // Submit timesheet for approval
-router.post('/timesheets/:id/submit', asyncHandler(async (req, res) => {
+router.post('/timesheets/:id/submit', authenticate, asyncHandler(async (req, res) => {
   const ts = await Timesheet.findByIdAndUpdate(
     req.params.id,
     { approval_status: 'submitted' },
@@ -292,7 +293,7 @@ router.post('/timesheets/:id/submit', asyncHandler(async (req, res) => {
 }));
 
 // Approve/reject timesheet
-router.post('/timesheets/:id/approve', asyncHandler(async (req, res) => {
+router.post('/timesheets/:id/approve', authenticate, asyncHandler(async (req, res) => {
   const { status, approved_by } = req.body;
 
   if (!['approved', 'rejected'].includes(status)) {
@@ -313,7 +314,7 @@ router.post('/timesheets/:id/approve', asyncHandler(async (req, res) => {
 }));
 
 // Get timesheet summary for a project
-router.get('/:projectId/timesheets/summary', asyncHandler(async (req, res) => {
+router.get('/:projectId/timesheets/summary', authenticate, asyncHandler(async (req, res) => {
   const { date_from, date_to } = req.query;
   const match: any = { project_id: req.params.projectId };
 

@@ -2,11 +2,12 @@ import express from 'express';
 import { Employee } from '../../../models/Employee.js';
 import { Department } from '../../../models/Department.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // GET / - Get full org chart tree
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const tenantId = (req as any).user?.tenant_id;
   const employees = await Employee.find({ tenant_id: tenantId, status: 'active' })
     .select('name employee_id designation department reports_to photo email')
@@ -32,7 +33,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // GET /department/:id - Get org chart for specific department
-router.get('/department/:id', asyncHandler(async (req, res) => {
+router.get('/department/:id', authenticate, asyncHandler(async (req, res) => {
   const tenantId = (req as any).user?.tenant_id;
   const employees = await Employee.find({ tenant_id: tenantId, department: req.params.id, status: 'active' })
     .select('name employee_id designation department reports_to photo email')

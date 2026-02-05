@@ -87,8 +87,8 @@ WebsiteOrderItemSchema.index({ website_product_id: 1 });
 WebsiteOrderStatusHistorySchema.index({ order_id: 1 });
 WebsiteOrderStatusHistorySchema.index({ order_id: 1, created_at: -1 });
 
-export const WebsiteOrder = mongoose.model<IWebsiteOrder>('WebsiteOrder', websiteOrderSchema);
-export const WebsiteOrderItem = mongoose.model('WebsiteOrderItem', WebsiteOrderItemSchema);
-export const WebsiteOrderStatusHistory = mongoose.model('WebsiteOrderStatusHistory', WebsiteOrderStatusHistorySchema);
+export const WebsiteOrder = mongoose.models.WebsiteOrder || mongoose.model<IWebsiteOrder>('WebsiteOrder', websiteOrderSchema);
+export const WebsiteOrderItem = mongoose.models.WebsiteOrderItem || mongoose.model('WebsiteOrderItem', WebsiteOrderItemSchema);
+export const WebsiteOrderStatusHistory = mongoose.models.WebsiteOrderStatusHistory || mongoose.model('WebsiteOrderStatusHistory', WebsiteOrderStatusHistorySchema);
 
 export default WebsiteOrder;

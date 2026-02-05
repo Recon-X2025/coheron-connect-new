@@ -1,6 +1,7 @@
 import express from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { EmailTemplateV2 } from '../models/EmailTemplateV2.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
@@ -57,7 +58,7 @@ const STARTER_TEMPLATES = [
 ];
 
 // List templates
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { category, search, tag, page = 1, limit = 20 } = req.query;
   const filter: any = { tenant_id };
@@ -70,43 +71,43 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Categories
-router.get('/categories', asyncHandler(async (_req, res) => {
+router.get('/categories', authenticate, asyncHandler(async (_req, res) => {
   res.json({ categories: ['newsletter', 'promotional', 'transactional', 'automated', 'event'] });
 }));
 
 // Starter templates
-router.get('/starter-templates', asyncHandler(async (_req, res) => {
+router.get('/starter-templates', authenticate, asyncHandler(async (_req, res) => {
   res.json({ templates: STARTER_TEMPLATES });
 }));
 
 // Get template by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const template = await EmailTemplateV2.findOne({ _id: req.params.id, tenant_id: req.user?.tenant_id }).lean();
   if (!template) return res.status(404).json({ error: 'Template not found' });
   res.json(template);
 }));
 
 // Create template
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const template = await EmailTemplateV2.create({ ...req.body, tenant_id: req.user?.tenant_id, created_by: req.user?.userId });
   res.status(201).json(template);
 }));
 
 // Update template
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const template = await EmailTemplateV2.findOneAndUpdate({ _id: req.params.id, tenant_id: req.user?.tenant_id }, req.body, { new: true }).lean();
   if (!template) return res.status(404).json({ error: 'Template not found' });
   res.json(template);
 }));
 
 // Delete template
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   await EmailTemplateV2.findOneAndDelete({ _id: req.params.id, tenant_id: req.user?.tenant_id });
   res.json({ success: true });
 }));
 
 // Duplicate template
-router.post('/:id/duplicate', asyncHandler(async (req, res) => {
+router.post('/:id/duplicate', authenticate, asyncHandler(async (req, res) => {
   const original = await EmailTemplateV2.findOne({ _id: req.params.id, tenant_id: req.user?.tenant_id }).lean();
   if (!original) return res.status(404).json({ error: 'Template not found' });
   const { _id, id, created_at, updated_at, ...rest } = original as any;
@@ -115,7 +116,7 @@ router.post('/:id/duplicate', asyncHandler(async (req, res) => {
 }));
 
 // Send test email
-router.post('/:id/send-test', asyncHandler(async (req, res) => {
+router.post('/:id/send-test', authenticate, asyncHandler(async (req, res) => {
   const template = await EmailTemplateV2.findOne({ _id: req.params.id, tenant_id: req.user?.tenant_id });
   if (!template) return res.status(404).json({ error: 'Template not found' });
   // In production, integrate with email service

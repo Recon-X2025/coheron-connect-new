@@ -3,6 +3,7 @@ import WorkOrder from '../../../models/WorkOrder.js';
 import ManufacturingOrder from '../../../models/ManufacturingOrder.js';
 import MoOperatorActivity from '../../../models/MoOperatorActivity.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
@@ -12,7 +13,7 @@ const router = express.Router();
 // ============================================
 
 // Get all work orders
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { mo_id, state, workcenter_id, search } = req.query;
   const filter: any = {};
 
@@ -49,7 +50,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get work order by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const wo = await WorkOrder.findById(req.params.id)
     .populate('mo_id', 'name mo_number')
     .populate('workcenter_id', 'name')
@@ -83,7 +84,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Update work order
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const allowedFields = [
     'state', 'date_planned_start', 'date_planned_finished', 'date_start', 'date_finished',
@@ -115,7 +116,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 // ============================================
 
 // Start work order
-router.post('/:id/start', asyncHandler(async (req, res) => {
+router.post('/:id/start', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { operator_id } = req.body;
 
@@ -150,7 +151,7 @@ router.post('/:id/start', asyncHandler(async (req, res) => {
 }));
 
 // Pause work order
-router.post('/:id/pause', asyncHandler(async (req, res) => {
+router.post('/:id/pause', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { operator_id, downtime_reason, downtime_duration } = req.body;
 
@@ -182,7 +183,7 @@ router.post('/:id/pause', asyncHandler(async (req, res) => {
 }));
 
 // Resume work order
-router.post('/:id/resume', asyncHandler(async (req, res) => {
+router.post('/:id/resume', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { operator_id } = req.body;
 
@@ -212,7 +213,7 @@ router.post('/:id/resume', asyncHandler(async (req, res) => {
 }));
 
 // Complete work order
-router.post('/:id/complete', asyncHandler(async (req, res) => {
+router.post('/:id/complete', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { operator_id, qty_produced, qty_scrapped } = req.body;
 
@@ -286,7 +287,7 @@ router.post('/:id/complete', asyncHandler(async (req, res) => {
 }));
 
 // Record scrap
-router.post('/:id/scrap', asyncHandler(async (req, res) => {
+router.post('/:id/scrap', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { operator_id, qty_scrapped, reason } = req.body;
 
@@ -316,7 +317,7 @@ router.post('/:id/scrap', asyncHandler(async (req, res) => {
 }));
 
 // Get shop floor dashboard data
-router.get('/shop-floor/dashboard', asyncHandler(async (req, res) => {
+router.get('/shop-floor/dashboard', authenticate, asyncHandler(async (req, res) => {
   const { workcenter_id } = req.query;
   const matchFilter: any = {};
 

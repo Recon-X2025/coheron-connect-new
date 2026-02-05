@@ -91,9 +91,9 @@ discountApprovalRuleSchema.index({ is_active: 1 });
 promotionalPricingSchema.index({ is_active: 1 });
 promotionalPricingSchema.index({ valid_from: 1, valid_until: 1 });
 
-export const PriceList = mongoose.model('PriceList', priceListSchema);
-export const ProductPrice = mongoose.model('ProductPrice', productPriceSchema);
-export const CustomerPrice = mongoose.model('CustomerPrice', customerPriceSchema);
-export const PricingRule = mongoose.model('PricingRule', pricingRuleSchema);
-export const DiscountApprovalRule = mongoose.model('DiscountApprovalRule', discountApprovalRuleSchema);
-export const PromotionalPricing = mongoose.model('PromotionalPricing', promotionalPricingSchema);
+export const PriceList = mongoose.models.PriceList || mongoose.model('PriceList', priceListSchema);
+export const ProductPrice = mongoose.models.ProductPrice || mongoose.model('ProductPrice', productPriceSchema);
+export const CustomerPrice = mongoose.models.CustomerPrice || mongoose.model('CustomerPrice', customerPriceSchema);
+export const PricingRule = mongoose.models.PricingRule || mongoose.model('PricingRule', pricingRuleSchema);
+export const DiscountApprovalRule = mongoose.models.DiscountApprovalRule || mongoose.model('DiscountApprovalRule', discountApprovalRuleSchema);
+export const PromotionalPricing = mongoose.models.PromotionalPricing || mongoose.model('PromotionalPricing', promotionalPricingSchema);

@@ -2,11 +2,12 @@ import express from 'express';
 import { WebsitePromotion } from '../../../models/WebsitePromotion.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // Get all promotions
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { site_id, is_active, code } = req.query;
   const filter: any = {};
 
@@ -24,7 +25,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get promotion by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const promotion = await WebsitePromotion.findById(req.params.id).lean();
   if (!promotion) {
     return res.status(404).json({ error: 'Promotion not found' });
@@ -33,7 +34,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create promotion
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const { name, code, description, discount_type, discount_value, min_purchase_amount, max_discount_amount, valid_from, valid_until, usage_limit, usage_limit_per_customer, is_active, applicable_products, applicable_categories, site_id } = req.body;
 
   const promotion = await WebsitePromotion.create({
@@ -58,7 +59,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update promotion
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const { name, description, discount_type, discount_value, min_purchase_amount, max_discount_amount, valid_from, valid_until, usage_limit, usage_limit_per_customer, is_active, applicable_products, applicable_categories } = req.body;
 
   const updateData: any = {};
@@ -85,7 +86,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete promotion
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const result = await WebsitePromotion.findByIdAndDelete(req.params.id);
   if (!result) {
     return res.status(404).json({ error: 'Promotion not found' });

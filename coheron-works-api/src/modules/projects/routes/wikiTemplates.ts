@@ -1,9 +1,11 @@
 import express from 'express';
 import WikiTemplate from '../../../models/WikiTemplate.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
+router.use(authenticate);
 
 // ============================================
 // WIKI PAGE TEMPLATES CRUD

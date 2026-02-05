@@ -2,12 +2,13 @@ import express from 'express';
 import Batch from '../../../models/Batch.js';
 import SerialNumber from '../../../models/SerialNumber.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
 // GET /expiring - Get batches expiring within N days (must be before /:id)
-router.get('/expiring', asyncHandler(async (req: any, res) => {
+router.get('/expiring', authenticate, asyncHandler(async (req: any, res) => {
   const tenant_id = req.tenantId || req.headers['x-tenant-id'];
   const days = parseInt(req.query.days as string) || 30;
   const now = new Date();
@@ -27,7 +28,7 @@ router.get('/expiring', asyncHandler(async (req: any, res) => {
 }));
 
 // GET / - List batches with filters
-router.get('/', asyncHandler(async (req: any, res) => {
+router.get('/', authenticate, asyncHandler(async (req: any, res) => {
   const tenant_id = req.tenantId || req.headers['x-tenant-id'];
   const { product_id, status, expiry_before, search } = req.query;
   const filter: any = { tenant_id };
@@ -55,7 +56,7 @@ router.get('/', asyncHandler(async (req: any, res) => {
 }));
 
 // GET /:id - Get batch detail with serial numbers
-router.get('/:id', asyncHandler(async (req: any, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req: any, res) => {
   const batch = await Batch.findById(req.params.id)
     .populate('product_id', 'name sku')
     .populate('warehouse_id', 'name code')
@@ -75,7 +76,7 @@ router.get('/:id', asyncHandler(async (req: any, res) => {
 }));
 
 // POST / - Create batch
-router.post('/', asyncHandler(async (req: any, res) => {
+router.post('/', authenticate, asyncHandler(async (req: any, res) => {
   const tenant_id = req.tenantId || req.headers['x-tenant-id'];
 
   const batch = await Batch.create({
@@ -88,7 +89,7 @@ router.post('/', asyncHandler(async (req: any, res) => {
 }));
 
 // PUT /:id - Update batch
-router.put('/:id', asyncHandler(async (req: any, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req: any, res) => {
   const { quality_status, notes, status, quantity_available, quantity_reserved, quantity_sold } = req.body;
   const update: any = {};
 
@@ -108,7 +109,7 @@ router.put('/:id', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /:id/recall - Mark batch as recalled, update all serial numbers
-router.post('/:id/recall', asyncHandler(async (req: any, res) => {
+router.post('/:id/recall', authenticate, asyncHandler(async (req: any, res) => {
   const batch = await Batch.findByIdAndUpdate(
     req.params.id,
     { status: 'recalled', notes: req.body.reason || 'Batch recalled' },

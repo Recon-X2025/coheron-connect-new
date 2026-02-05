@@ -2,6 +2,7 @@ import express from 'express';
 import { Incident, Problem, Change, ChangeCabMember } from '../../../models/Incident.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
@@ -10,7 +11,7 @@ const router = express.Router();
 // ============================================
 
 // Get all incidents
-router.get('/incidents', asyncHandler(async (req, res) => {
+router.get('/incidents', authenticate, asyncHandler(async (req, res) => {
   const { status, priority, impact } = req.query;
   const filter: any = {};
 
@@ -38,7 +39,7 @@ router.get('/incidents', asyncHandler(async (req, res) => {
 }));
 
 // Create incident
-router.post('/incidents', asyncHandler(async (req, res) => {
+router.post('/incidents', authenticate, asyncHandler(async (req, res) => {
   const { title, description, priority, impact, urgency, affected_users, affected_systems } = req.body;
 
   if (!title || !description || !priority || !impact || !urgency) {
@@ -66,7 +67,7 @@ router.post('/incidents', asyncHandler(async (req, res) => {
 }));
 
 // Update incident
-router.put('/incidents/:id', asyncHandler(async (req, res) => {
+router.put('/incidents/:id', authenticate, asyncHandler(async (req, res) => {
   const { status, assigned_to, resolution, resolved_at } = req.body;
   const updateData: any = {};
 
@@ -95,7 +96,7 @@ router.put('/incidents/:id', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get all problems
-router.get('/problems', asyncHandler(async (req, res) => {
+router.get('/problems', authenticate, asyncHandler(async (req, res) => {
   const { status, priority } = req.query;
   const filter: any = {};
 
@@ -122,7 +123,7 @@ router.get('/problems', asyncHandler(async (req, res) => {
 }));
 
 // Create problem
-router.post('/problems', asyncHandler(async (req, res) => {
+router.post('/problems', authenticate, asyncHandler(async (req, res) => {
   const { title, description, priority, related_incidents } = req.body;
 
   if (!title || !description) {
@@ -145,7 +146,7 @@ router.post('/problems', asyncHandler(async (req, res) => {
 }));
 
 // Update problem
-router.put('/problems/:id', asyncHandler(async (req, res) => {
+router.put('/problems/:id', authenticate, asyncHandler(async (req, res) => {
   const { status, assigned_to, root_cause_analysis, solution, known_error, resolved_at } = req.body;
   const updateData: any = {};
 
@@ -175,7 +176,7 @@ router.put('/problems/:id', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get all change requests
-router.get('/changes', asyncHandler(async (req, res) => {
+router.get('/changes', authenticate, asyncHandler(async (req, res) => {
   const { status, change_type, priority } = req.query;
   const filter: any = {};
 
@@ -206,7 +207,7 @@ router.get('/changes', asyncHandler(async (req, res) => {
 }));
 
 // Create change request
-router.post('/changes', asyncHandler(async (req, res) => {
+router.post('/changes', authenticate, asyncHandler(async (req, res) => {
   const { title, description, change_type, priority, requested_by, risk_level, impact_analysis, rollback_plan, scheduled_start, scheduled_end } = req.body;
 
   if (!title || !description) {
@@ -235,7 +236,7 @@ router.post('/changes', asyncHandler(async (req, res) => {
 }));
 
 // Update change request
-router.put('/changes/:id', asyncHandler(async (req, res) => {
+router.put('/changes/:id', authenticate, asyncHandler(async (req, res) => {
   const { status, approved_by, implemented_by, actual_start, actual_end, risk_level, impact_analysis } = req.body;
   const updateData: any = {};
 
@@ -260,7 +261,7 @@ router.put('/changes/:id', asyncHandler(async (req, res) => {
 }));
 
 // Add CAB member
-router.post('/changes/:id/cab', asyncHandler(async (req, res) => {
+router.post('/changes/:id/cab', authenticate, asyncHandler(async (req, res) => {
   const { user_id, role } = req.body;
   if (!user_id) {
     return res.status(400).json({ error: 'User ID is required' });
@@ -276,7 +277,7 @@ router.post('/changes/:id/cab', asyncHandler(async (req, res) => {
 }));
 
 // Approve/reject change (CAB member)
-router.post('/changes/:id/cab/:memberId/approve', asyncHandler(async (req, res) => {
+router.post('/changes/:id/cab/:memberId/approve', authenticate, asyncHandler(async (req, res) => {
   const { approval_status, comments } = req.body;
   if (!approval_status) {
     return res.status(400).json({ error: 'Approval status is required' });

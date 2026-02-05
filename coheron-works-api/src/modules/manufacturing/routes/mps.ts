@@ -2,12 +2,13 @@ import express from 'express';
 import MasterProductionSchedule from '../../../models/MasterProductionSchedule.js';
 import ManufacturingOrder from '../../../models/ManufacturingOrder.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
 // Get MPS grid
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { product_ids, period_type, start, end } = req.query;
   const filter: any = {};
   if (product_ids) {
@@ -26,7 +27,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Create/update MPS entries
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const entries = Array.isArray(req.body) ? req.body : [req.body];
   const results = [];
   for (const entry of entries) {
@@ -42,7 +43,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Freeze MPS for a period
-router.post('/freeze', asyncHandler(async (req, res) => {
+router.post('/freeze', authenticate, asyncHandler(async (req, res) => {
   const { product_id, period_start, period_end } = req.body;
   const filter: any = { status: 'confirmed' };
   if (product_id) filter.product_id = product_id;
@@ -53,7 +54,7 @@ router.post('/freeze', asyncHandler(async (req, res) => {
 }));
 
 // Generate manufacturing orders from confirmed MPS
-router.post('/generate-mo', asyncHandler(async (req, res) => {
+router.post('/generate-mo', authenticate, asyncHandler(async (req, res) => {
   const { product_id, period_start, period_end } = req.body;
   const filter: any = { status: 'confirmed', planned_production: { $gt: 0 } };
   if (product_id) filter.product_id = product_id;

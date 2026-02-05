@@ -2,6 +2,7 @@ import express from 'express';
 import { SupportAutomation } from '../../../models/SupportAutomation.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
@@ -10,7 +11,7 @@ const router = express.Router();
 // ============================================
 
 // Get all automation rules
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { is_active } = req.query;
   const filter: any = {};
 
@@ -29,7 +30,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get automation rule by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const rule = await SupportAutomation.findById(req.params.id).lean();
   if (!rule) {
     return res.status(404).json({ error: 'Automation rule not found' });
@@ -38,7 +39,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create automation rule
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const { name, description, trigger_event, trigger_conditions, actions, is_active, execution_order } = req.body;
 
   if (!name || !trigger_event || !trigger_conditions || !actions) {
@@ -61,7 +62,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update automation rule
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const { name, description, trigger_event, trigger_conditions, actions, is_active, execution_order } = req.body;
   const updateData: any = {};
 
@@ -86,7 +87,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete automation rule
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const result = await SupportAutomation.findByIdAndDelete(req.params.id);
   if (!result) {
     return res.status(404).json({ error: 'Automation rule not found' });
@@ -95,7 +96,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Test automation rule (dry run)
-router.post('/:id/test', asyncHandler(async (req, res) => {
+router.post('/:id/test', authenticate, asyncHandler(async (req, res) => {
   const rule = await SupportAutomation.findById(req.params.id).lean();
   if (!rule) {
     return res.status(404).json({ error: 'Automation rule not found' });

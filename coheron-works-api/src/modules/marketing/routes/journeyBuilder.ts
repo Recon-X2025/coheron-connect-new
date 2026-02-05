@@ -2,6 +2,7 @@ import express from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { Journey } from '../models/Journey.js';
 import { JourneyEnrollment } from '../models/JourneyEnrollment.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
@@ -44,7 +45,7 @@ const JOURNEY_TEMPLATES = [
 ];
 
 // List journeys
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { status, search, page = 1, limit = 20 } = req.query;
   const filter: any = { tenant_id };
@@ -56,52 +57,52 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get templates
-router.get('/templates', asyncHandler(async (_req, res) => {
+router.get('/templates', authenticate, asyncHandler(async (_req, res) => {
   res.json({ templates: JOURNEY_TEMPLATES });
 }));
 
 // Get journey by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const journey = await Journey.findOne({ _id: req.params.id, tenant_id: req.user?.tenant_id }).lean();
   if (!journey) return res.status(404).json({ error: 'Journey not found' });
   res.json(journey);
 }));
 
 // Create journey
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const journey = await Journey.create({ ...req.body, tenant_id: req.user?.tenant_id, created_by: req.user?.userId });
   res.status(201).json(journey);
 }));
 
 // Update journey
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const journey = await Journey.findOneAndUpdate({ _id: req.params.id, tenant_id: req.user?.tenant_id }, req.body, { new: true }).lean();
   if (!journey) return res.status(404).json({ error: 'Journey not found' });
   res.json(journey);
 }));
 
 // Delete journey
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   await Journey.findOneAndDelete({ _id: req.params.id, tenant_id: req.user?.tenant_id });
   res.json({ success: true });
 }));
 
 // Activate journey
-router.post('/:id/activate', asyncHandler(async (req, res) => {
+router.post('/:id/activate', authenticate, asyncHandler(async (req, res) => {
   const journey = await Journey.findOneAndUpdate({ _id: req.params.id, tenant_id: req.user?.tenant_id }, { status: 'active' }, { new: true }).lean();
   if (!journey) return res.status(404).json({ error: 'Journey not found' });
   res.json(journey);
 }));
 
 // Pause journey
-router.post('/:id/pause', asyncHandler(async (req, res) => {
+router.post('/:id/pause', authenticate, asyncHandler(async (req, res) => {
   const journey = await Journey.findOneAndUpdate({ _id: req.params.id, tenant_id: req.user?.tenant_id }, { status: 'paused' }, { new: true }).lean();
   if (!journey) return res.status(404).json({ error: 'Journey not found' });
   res.json(journey);
 }));
 
 // Enroll contacts
-router.post('/:id/enroll', asyncHandler(async (req, res) => {
+router.post('/:id/enroll', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { contact_ids } = req.body;
   const journey = await Journey.findOne({ _id: req.params.id, tenant_id });
@@ -117,7 +118,7 @@ router.post('/:id/enroll', asyncHandler(async (req, res) => {
 }));
 
 // Get enrollments
-router.get('/:id/enrollments', asyncHandler(async (req, res) => {
+router.get('/:id/enrollments', authenticate, asyncHandler(async (req, res) => {
   const { status, page = 1, limit = 50 } = req.query;
   const filter: any = { tenant_id: req.user?.tenant_id, journey_id: req.params.id };
   if (status) filter.status = status;
@@ -127,7 +128,7 @@ router.get('/:id/enrollments', asyncHandler(async (req, res) => {
 }));
 
 // Analytics
-router.get('/:id/analytics', asyncHandler(async (req, res) => {
+router.get('/:id/analytics', authenticate, asyncHandler(async (req, res) => {
   const journey = await Journey.findOne({ _id: req.params.id, tenant_id: req.user?.tenant_id }).lean();
   if (!journey) return res.status(404).json({ error: 'Journey not found' });
   const statusCounts = await JourneyEnrollment.aggregate([

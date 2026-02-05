@@ -2,12 +2,13 @@ import express from 'express';
 import { MarketingWorkflow } from '../../../models/MarketingWorkflow.js';
 import { CampaignPerformance, CampaignFinancial } from '../../../models/Campaign.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
 // Marketing Workflows
-router.get('/workflows', asyncHandler(async (req, res) => {
+router.get('/workflows', authenticate, asyncHandler(async (req, res) => {
   const { campaign_id } = req.query;
   const filter: any = {};
 
@@ -23,7 +24,7 @@ router.get('/workflows', asyncHandler(async (req, res) => {
   res.json(result);
 }));
 
-router.post('/workflows', asyncHandler(async (req, res) => {
+router.post('/workflows', authenticate, asyncHandler(async (req, res) => {
   const { name, campaign_id, trigger_type, trigger_conditions, steps, is_active } = req.body;
 
   const workflow = await MarketingWorkflow.create({
@@ -38,7 +39,7 @@ router.post('/workflows', asyncHandler(async (req, res) => {
   res.status(201).json(workflow);
 }));
 
-router.put('/workflows/:id', asyncHandler(async (req, res) => {
+router.put('/workflows/:id', authenticate, asyncHandler(async (req, res) => {
   const { name, trigger_type, trigger_conditions, steps, is_active } = req.body;
 
   const updateData: any = {};
@@ -58,13 +59,13 @@ router.put('/workflows/:id', asyncHandler(async (req, res) => {
 }));
 
 // Campaign Performance
-router.get('/campaigns/:id/performance', asyncHandler(async (req, res) => {
+router.get('/campaigns/:id/performance', authenticate, asyncHandler(async (req, res) => {
   const performance = await CampaignPerformance.find({ campaign_id: req.params.id }).sort({ date: -1 }).lean();
   res.json(performance);
 }));
 
 // Campaign Financials
-router.get('/campaigns/:id/financials', asyncHandler(async (req, res) => {
+router.get('/campaigns/:id/financials', authenticate, asyncHandler(async (req, res) => {
   const financials = await CampaignFinancial.find({ campaign_id: req.params.id }).sort({ transaction_date: -1 }).lean();
   res.json(financials);
 }));

@@ -30,5 +30,5 @@ courseEnrollmentSchema.index({ course_id: 1 });
 courseEnrollmentSchema.index({ status: 1 });
 courseEnrollmentSchema.index({ employee_id: 1, course_id: 1 });
 
-export const Course = mongoose.model('Course', courseSchema);
-export const CourseEnrollment = mongoose.model('CourseEnrollment', courseEnrollmentSchema);
+export const Course = mongoose.models.Course || mongoose.model('Course', courseSchema);
+export const CourseEnrollment = mongoose.models.CourseEnrollment || mongoose.model('CourseEnrollment', courseEnrollmentSchema);

@@ -20,4 +20,4 @@ attendanceSchema.index({ status: 1 });
 attendanceSchema.index({ date: -1 });
 attendanceSchema.index({ employee_id: 1, status: 1 });
 
-export const Attendance = mongoose.model('Attendance', attendanceSchema);
+export const Attendance = mongoose.models.Attendance || mongoose.model('Attendance', attendanceSchema);

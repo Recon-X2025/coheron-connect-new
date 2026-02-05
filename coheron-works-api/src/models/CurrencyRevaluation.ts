@@ -31,4 +31,4 @@ const currencyRevaluationSchema = new Schema({
 
 currencyRevaluationSchema.index({ tenant_id: 1, revaluation_date: 1 });
 
-export default mongoose.model('CurrencyRevaluation', currencyRevaluationSchema);
+export default mongoose.models.CurrencyRevaluation || mongoose.model('CurrencyRevaluation', currencyRevaluationSchema);

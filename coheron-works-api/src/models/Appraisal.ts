@@ -20,4 +20,4 @@ appraisalSchema.index({ manager_id: 1 });
 appraisalSchema.index({ state: 1 });
 appraisalSchema.index({ employee_id: 1, state: 1 });
 
-export const Appraisal = mongoose.model('Appraisal', appraisalSchema);
+export const Appraisal = mongoose.models.Appraisal || mongoose.model('Appraisal', appraisalSchema);

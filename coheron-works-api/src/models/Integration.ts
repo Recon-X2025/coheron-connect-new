@@ -38,5 +38,5 @@ integrationSchema.index({ tenant_id: 1 });
 integrationSchema.index({ tenant_id: 1, type: 1 });
 integrationSchema.index({ tenant_id: 1, is_active: 1 });
 
-export const Integration = mongoose.model('Integration', integrationSchema);
+export const Integration = mongoose.models.Integration || mongoose.model('Integration', integrationSchema);
 export default Integration;

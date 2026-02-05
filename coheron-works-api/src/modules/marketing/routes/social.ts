@@ -3,11 +3,12 @@ import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 import { SocialAccount } from '../../../models/SocialAccount.js';
 import { SocialPost } from '../../../models/SocialPost.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // List connected social accounts
-router.get('/accounts', asyncHandler(async (req, res) => {
+router.get('/accounts', authenticate, asyncHandler(async (req, res) => {
   const { platform } = req.query;
   const filter: any = {};
   if (platform) filter.platform = platform;
@@ -16,21 +17,21 @@ router.get('/accounts', asyncHandler(async (req, res) => {
 }));
 
 // Connect social account
-router.post('/accounts', asyncHandler(async (req, res) => {
+router.post('/accounts', authenticate, asyncHandler(async (req, res) => {
   const account = new SocialAccount(req.body);
   await account.save();
   res.status(201).json(account);
 }));
 
 // Disconnect social account
-router.delete('/accounts/:id', asyncHandler(async (req, res) => {
+router.delete('/accounts/:id', authenticate, asyncHandler(async (req, res) => {
   const account = await SocialAccount.findByIdAndDelete(req.params.id);
   if (!account) return res.status(404).json({ message: 'Social account not found' });
   res.json({ message: 'Account disconnected' });
 }));
 
 // List social posts
-router.get('/posts', asyncHandler(async (req, res) => {
+router.get('/posts', authenticate, asyncHandler(async (req, res) => {
   const { status, campaign_id } = req.query;
   const filter: any = {};
   if (status) filter.status = status;
@@ -41,7 +42,7 @@ router.get('/posts', asyncHandler(async (req, res) => {
 }));
 
 // Create/schedule social post
-router.post('/posts', asyncHandler(async (req, res) => {
+router.post('/posts', authenticate, asyncHandler(async (req, res) => {
   const post = new SocialPost({ ...req.body, created_by: (req as any).user?.id });
   if (post.scheduled_at && new Date(post.scheduled_at) > new Date()) {
     post.status = 'scheduled';
@@ -51,14 +52,14 @@ router.post('/posts', asyncHandler(async (req, res) => {
 }));
 
 // Update social post
-router.put('/posts/:id', asyncHandler(async (req, res) => {
+router.put('/posts/:id', authenticate, asyncHandler(async (req, res) => {
   const post = await SocialPost.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
   if (!post) return res.status(404).json({ message: 'Social post not found' });
   res.json(post);
 }));
 
 // Publish post immediately
-router.post('/posts/:id/publish', asyncHandler(async (req, res) => {
+router.post('/posts/:id/publish', authenticate, asyncHandler(async (req, res) => {
   const post = await SocialPost.findById(req.params.id);
   if (!post) return res.status(404).json({ message: 'Social post not found' });
   (post as any).status = 'published';
@@ -72,14 +73,14 @@ router.post('/posts/:id/publish', asyncHandler(async (req, res) => {
 }));
 
 // Get engagement metrics
-router.get('/posts/:id/engagement', asyncHandler(async (req, res) => {
+router.get('/posts/:id/engagement', authenticate, asyncHandler(async (req, res) => {
   const post = await SocialPost.findById(req.params.id).select('engagement platforms content status').lean();
   if (!post) return res.status(404).json({ message: 'Social post not found' });
   res.json(post);
 }));
 
 // Publishing calendar view
-router.get('/calendar', asyncHandler(async (req, res) => {
+router.get('/calendar', authenticate, asyncHandler(async (req, res) => {
   const { start_date, end_date } = req.query;
   const filter: any = { status: { $in: ['scheduled', 'published'] } };
   if (start_date) filter.scheduled_at = { ...filter.scheduled_at, $gte: new Date(start_date as string) };

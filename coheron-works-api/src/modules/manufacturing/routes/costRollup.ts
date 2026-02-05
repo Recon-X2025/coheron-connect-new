@@ -2,11 +2,12 @@ import express from 'express';
 import mongoose from 'mongoose';
 import { CostRollup } from '../models/CostRollup.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // Compute multi-level cost rollup from BOM
-router.post('/rollup/:productId', asyncHandler(async (req, res) => {
+router.post('/rollup/:productId', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { productId } = req.params;
 
@@ -110,7 +111,7 @@ router.post('/rollup/:productId', asyncHandler(async (req, res) => {
 }));
 
 // Get latest rollup
-router.get('/rollup/:productId', asyncHandler(async (req, res) => {
+router.get('/rollup/:productId', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const rollup = await CostRollup.findOne({ tenant_id, product_id: req.params.productId })
     .sort({ version: -1 })
@@ -121,14 +122,14 @@ router.get('/rollup/:productId', asyncHandler(async (req, res) => {
 }));
 
 // Freeze rollup
-router.post('/rollup/:id/freeze', asyncHandler(async (req, res) => {
+router.post('/rollup/:id/freeze', authenticate, asyncHandler(async (req, res) => {
   const doc = await CostRollup.findByIdAndUpdate(req.params.id, { status: 'frozen' }, { new: true }).lean();
   if (!doc) return res.status(404).json({ error: 'Not found' });
   res.json(doc);
 }));
 
 // Variance: standard vs actual
-router.get('/variance/:productId', asyncHandler(async (req, res) => {
+router.get('/variance/:productId', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const standard = await CostRollup.findOne({ tenant_id, product_id: req.params.productId, status: { $in: ['frozen', 'active'] } })
     .sort({ version: -1 }).lean();
@@ -155,7 +156,7 @@ router.get('/variance/:productId', asyncHandler(async (req, res) => {
 }));
 
 // What-if: simulate material price change impact
-router.get('/what-if', asyncHandler(async (req, res) => {
+router.get('/what-if', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { component_id, new_price } = req.query;
   if (!component_id || !new_price) return res.status(400).json({ error: 'component_id and new_price required' });
@@ -187,7 +188,7 @@ router.get('/what-if', asyncHandler(async (req, res) => {
 }));
 
 // Cost comparison across versions
-router.get('/cost-comparison', asyncHandler(async (req, res) => {
+router.get('/cost-comparison', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { product_id } = req.query;
   const filter: any = { tenant_id };

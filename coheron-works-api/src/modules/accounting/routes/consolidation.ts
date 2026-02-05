@@ -1,12 +1,13 @@
 import express from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { ConsolidationGroup } from '../models/ConsolidationGroup.js';
 import { ConsolidationRun } from '../models/ConsolidationRun.js';
 
 const router = express.Router();
 
 // --- Groups ---
-router.get('/groups', asyncHandler(async (req, res) => {
+router.get('/groups', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const filter: any = {};
   if (tenant_id) filter.tenant_id = tenant_id;
@@ -15,32 +16,32 @@ router.get('/groups', asyncHandler(async (req, res) => {
   res.json({ items });
 }));
 
-router.get('/groups/:id', asyncHandler(async (req, res) => {
+router.get('/groups/:id', authenticate, asyncHandler(async (req, res) => {
   const item = await ConsolidationGroup.findById(req.params.id).lean();
   if (!item) return res.status(404).json({ error: 'Group not found' });
   res.json(item);
 }));
 
-router.post('/groups', asyncHandler(async (req, res) => {
+router.post('/groups', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const item = await ConsolidationGroup.create({ ...req.body, tenant_id });
   res.status(201).json(item);
 }));
 
-router.put('/groups/:id', asyncHandler(async (req, res) => {
+router.put('/groups/:id', authenticate, asyncHandler(async (req, res) => {
   const item = await ConsolidationGroup.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true }).lean();
   if (!item) return res.status(404).json({ error: 'Group not found' });
   res.json(item);
 }));
 
-router.delete('/groups/:id', asyncHandler(async (req, res) => {
+router.delete('/groups/:id', authenticate, asyncHandler(async (req, res) => {
   const item = await ConsolidationGroup.findByIdAndDelete(req.params.id);
   if (!item) return res.status(404).json({ error: 'Group not found' });
   res.json({ success: true });
 }));
 
 // --- Runs ---
-router.get('/runs', asyncHandler(async (req, res) => {
+router.get('/runs', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const filter: any = {};
   if (tenant_id) filter.tenant_id = tenant_id;
@@ -50,33 +51,33 @@ router.get('/runs', asyncHandler(async (req, res) => {
   res.json({ items });
 }));
 
-router.get('/runs/:id', asyncHandler(async (req, res) => {
+router.get('/runs/:id', authenticate, asyncHandler(async (req, res) => {
   const item = await ConsolidationRun.findById(req.params.id).populate('group_id').lean();
   if (!item) return res.status(404).json({ error: 'Run not found' });
   res.json(item);
 }));
 
-router.post('/runs', asyncHandler(async (req, res) => {
+router.post('/runs', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const created_by = (req as any).user?._id;
   const item = await ConsolidationRun.create({ ...req.body, tenant_id, created_by });
   res.status(201).json(item);
 }));
 
-router.put('/runs/:id', asyncHandler(async (req, res) => {
+router.put('/runs/:id', authenticate, asyncHandler(async (req, res) => {
   const item = await ConsolidationRun.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true }).lean();
   if (!item) return res.status(404).json({ error: 'Run not found' });
   res.json(item);
 }));
 
-router.delete('/runs/:id', asyncHandler(async (req, res) => {
+router.delete('/runs/:id', authenticate, asyncHandler(async (req, res) => {
   const item = await ConsolidationRun.findByIdAndDelete(req.params.id);
   if (!item) return res.status(404).json({ error: 'Run not found' });
   res.json({ success: true });
 }));
 
 // Execute consolidation run
-router.post('/runs/:id/execute', asyncHandler(async (req, res) => {
+router.post('/runs/:id/execute', authenticate, asyncHandler(async (req, res) => {
   const run = await ConsolidationRun.findById(req.params.id);
   if (!run) return res.status(404).json({ error: 'Run not found' });
   if (run.status !== 'draft') return res.status(400).json({ error: 'Run must be in draft status' });
@@ -97,7 +98,7 @@ router.post('/runs/:id/execute', asyncHandler(async (req, res) => {
 }));
 
 // Consolidation report
-router.get('/runs/:id/report', asyncHandler(async (req, res) => {
+router.get('/runs/:id/report', authenticate, asyncHandler(async (req, res) => {
   const run = await ConsolidationRun.findById(req.params.id).populate('group_id').lean();
   if (!run) return res.status(404).json({ error: 'Run not found' });
   res.json({
@@ -108,7 +109,7 @@ router.get('/runs/:id/report', asyncHandler(async (req, res) => {
 }));
 
 // Intercompany balances
-router.get('/intercompany-balances', asyncHandler(async (req, res) => {
+router.get('/intercompany-balances', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const filter: any = {};
   if (tenant_id) filter.tenant_id = tenant_id;

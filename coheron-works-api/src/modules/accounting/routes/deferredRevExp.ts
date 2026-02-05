@@ -1,11 +1,12 @@
 import express from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { DeferralSchedule } from '../models/DeferralSchedule.js';
 
 const router = express.Router();
 
 // List schedules
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const filter: any = {};
   if (tenant_id) filter.tenant_id = tenant_id;
@@ -21,7 +22,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Summary
-router.get('/summary', asyncHandler(async (req, res) => {
+router.get('/summary', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const filter: any = { status: 'active' };
   if (tenant_id) filter.tenant_id = tenant_id;
@@ -39,21 +40,21 @@ router.get('/summary', asyncHandler(async (req, res) => {
 }));
 
 // Get single schedule
-router.get('/schedules/:id', asyncHandler(async (req, res) => {
+router.get('/schedules/:id', authenticate, asyncHandler(async (req, res) => {
   const item = await DeferralSchedule.findById(req.params.id).lean();
   if (!item) return res.status(404).json({ error: 'Schedule not found' });
   res.json(item);
 }));
 
 // Get schedule periods
-router.get('/schedules/:id/periods', asyncHandler(async (req, res) => {
+router.get('/schedules/:id/periods', authenticate, asyncHandler(async (req, res) => {
   const item = await DeferralSchedule.findById(req.params.id).lean();
   if (!item) return res.status(404).json({ error: 'Schedule not found' });
   res.json({ periods: (item as any).periods || [] });
 }));
 
 // Create schedule
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const created_by = (req as any).user?._id;
   const item = await DeferralSchedule.create({ ...req.body, tenant_id, created_by });
@@ -61,21 +62,21 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update schedule
-router.put('/schedules/:id', asyncHandler(async (req, res) => {
+router.put('/schedules/:id', authenticate, asyncHandler(async (req, res) => {
   const item = await DeferralSchedule.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true }).lean();
   if (!item) return res.status(404).json({ error: 'Schedule not found' });
   res.json(item);
 }));
 
 // Delete schedule
-router.delete('/schedules/:id', asyncHandler(async (req, res) => {
+router.delete('/schedules/:id', authenticate, asyncHandler(async (req, res) => {
   const item = await DeferralSchedule.findByIdAndDelete(req.params.id);
   if (!item) return res.status(404).json({ error: 'Schedule not found' });
   res.json({ success: true });
 }));
 
 // Recognize a single period
-router.post('/recognize-period', asyncHandler(async (req, res) => {
+router.post('/recognize-period', authenticate, asyncHandler(async (req, res) => {
   const { schedule_id, period } = req.body;
   const schedule = await DeferralSchedule.findById(schedule_id);
   if (!schedule) return res.status(404).json({ error: 'Schedule not found' });
@@ -91,7 +92,7 @@ router.post('/recognize-period', asyncHandler(async (req, res) => {
 }));
 
 // Auto-recognize all due periods
-router.post('/auto-recognize', asyncHandler(async (req, res) => {
+router.post('/auto-recognize', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const now = new Date();
   const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;

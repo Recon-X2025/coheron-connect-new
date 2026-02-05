@@ -2,13 +2,14 @@ import express from 'express';
 import { Payslip, SalaryStructure } from '../../../models/Payroll.js';
 import { Employee } from '../../../models/Employee.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 import { calculateOldRegimeTax, calculateNewRegimeTax, TaxInput } from '../../crossmodule/services/taxCalculationService.js';
 
 const router = express.Router();
 
 // Get payslips
-router.get('/payslips', asyncHandler(async (req, res) => {
+router.get('/payslips', authenticate, asyncHandler(async (req, res) => {
   const { employee_id, from_date, to_date } = req.query;
   const filter: any = {};
 
@@ -37,7 +38,7 @@ router.get('/payslips', asyncHandler(async (req, res) => {
 }));
 
 // Get salary structure
-router.get('/salary-structure/:employee_id', asyncHandler(async (req, res) => {
+router.get('/salary-structure/:employee_id', authenticate, asyncHandler(async (req, res) => {
   const { employee_id } = req.params;
   const structures = await SalaryStructure.find({
     employee_id,
@@ -48,7 +49,7 @@ router.get('/salary-structure/:employee_id', asyncHandler(async (req, res) => {
 }));
 
 // Create salary structure
-router.post('/salary-structure', asyncHandler(async (req, res) => {
+router.post('/salary-structure', authenticate, asyncHandler(async (req, res) => {
   const { employee_id, component_type, component_name, amount, calculation_type, percentage } = req.body;
 
   const structure = await SalaryStructure.create({
@@ -59,7 +60,7 @@ router.post('/salary-structure', asyncHandler(async (req, res) => {
 }));
 
 // Update salary structure
-router.put('/salary-structure/:id', asyncHandler(async (req, res) => {
+router.put('/salary-structure/:id', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { amount, calculation_type, percentage, is_active } = req.body;
 
@@ -82,7 +83,7 @@ router.put('/salary-structure/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete salary structure
-router.delete('/salary-structure/:id', asyncHandler(async (req, res) => {
+router.delete('/salary-structure/:id', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const structure = await SalaryStructure.findByIdAndDelete(id);
 
@@ -93,7 +94,7 @@ router.delete('/salary-structure/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create payslip
-router.post('/payslips', asyncHandler(async (req, res) => {
+router.post('/payslips', authenticate, asyncHandler(async (req, res) => {
   const { employee_id, name, date_from, date_to, basic_wage, gross_wage, net_wage } = req.body;
 
   // Compute TDS if employee exists
@@ -142,7 +143,7 @@ router.post('/payslips', asyncHandler(async (req, res) => {
 }));
 
 // Update payslip
-router.put('/payslips/:id', asyncHandler(async (req, res) => {
+router.put('/payslips/:id', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { basic_wage, gross_wage, net_wage, state } = req.body;
 
@@ -165,7 +166,7 @@ router.put('/payslips/:id', asyncHandler(async (req, res) => {
 }));
 
 // Get payroll statistics
-router.get('/stats', asyncHandler(async (req, res) => {
+router.get('/stats', authenticate, asyncHandler(async (req, res) => {
   const employeeCount = await Employee.countDocuments();
 
   const startOfMonth = new Date();

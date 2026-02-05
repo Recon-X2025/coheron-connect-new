@@ -1,12 +1,13 @@
 import express from 'express';
 import { Policy } from '../../../models/Policy.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
 // Get policies
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { category, is_active } = req.query;
   const filter: any = {};
 
@@ -28,7 +29,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Create policy
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const { name, category, body } = req.body;
 
   const policy = await Policy.create({ name, category, body });

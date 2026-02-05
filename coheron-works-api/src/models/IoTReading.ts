@@ -19,4 +19,4 @@ iotReadingSchema.index({ tenant_id: 1, device_id: 1, timestamp: 1 });
 iotReadingSchema.index({ tenant_id: 1, anomaly_detected: 1 });
 iotReadingSchema.index({ created_at: 1 }, { expireAfterSeconds: 7776000 });
 
-export default mongoose.model('IoTReading', iotReadingSchema);
+export default mongoose.models.IoTReading || mongoose.model('IoTReading', iotReadingSchema);

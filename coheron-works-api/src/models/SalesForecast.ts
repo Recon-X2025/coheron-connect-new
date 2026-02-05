@@ -62,5 +62,5 @@ salesTargetSchema.index({ territory_id: 1 });
 salesTargetSchema.index({ product_id: 1 });
 salesTargetSchema.index({ period_start: 1, period_end: 1 });
 
-export const SalesForecast = mongoose.model('SalesForecast', salesForecastSchema);
-export const SalesTarget = mongoose.model('SalesTarget', salesTargetSchema);
+export const SalesForecast = mongoose.models.SalesForecast || mongoose.model('SalesForecast', salesForecastSchema);
+export const SalesTarget = mongoose.models.SalesTarget || mongoose.model('SalesTarget', salesTargetSchema);

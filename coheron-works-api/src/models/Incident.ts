@@ -166,10 +166,10 @@ serviceRequestSchema.index({ status: 1 });
 serviceRequestSchema.index({ requested_by: 1 });
 serviceRequestSchema.index({ assigned_to: 1 });
 
-export const Incident = mongoose.model<IIncident>('Incident', incidentSchema);
-export const Problem = mongoose.model<IProblem>('Problem', problemSchema);
-export const Change = mongoose.model<IChange>('Change', changeSchema);
-export const ChangeCabMember = mongoose.model<IChangeCabMember>('ChangeCabMember', changeCabMemberSchema);
-export const ServiceRequest = mongoose.model('ServiceRequest', serviceRequestSchema);
+export const Incident = mongoose.models.Incident || mongoose.model<IIncident>('Incident', incidentSchema);
+export const Problem = mongoose.models.Problem || mongoose.model<IProblem>('Problem', problemSchema);
+export const Change = mongoose.models.Change || mongoose.model<IChange>('Change', changeSchema);
+export const ChangeCabMember = mongoose.models.ChangeCabMember || mongoose.model<IChangeCabMember>('ChangeCabMember', changeCabMemberSchema);
+export const ServiceRequest = mongoose.models.ServiceRequest || mongoose.model('ServiceRequest', serviceRequestSchema);
 
 export default Incident;

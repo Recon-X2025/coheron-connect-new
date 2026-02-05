@@ -2,12 +2,13 @@ import express from 'express';
 import { Deal } from '../../../models/Deal.js';
 import { Pipeline } from '../../../models/Pipeline.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
 // Get all deals
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { pipeline_id, stage_id, owner_id, forecast_category, is_won, is_lost, search } = req.query;
   const filter: any = {};
 
@@ -39,7 +40,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get deal by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const deal = await Deal.findById(req.params.id)
     .populate('pipeline_id')
     .populate('partner_id', 'name email')
@@ -55,13 +56,13 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create deal
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const deal = await Deal.create(req.body);
   res.status(201).json(deal);
 }));
 
 // Update deal
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const deal = await Deal.findByIdAndUpdate(req.params.id, req.body, { new: true });
   if (!deal) {
     return res.status(404).json({ error: 'Deal not found' });
@@ -70,7 +71,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete deal
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const deal = await Deal.findByIdAndDelete(req.params.id);
   if (!deal) {
     return res.status(404).json({ error: 'Deal not found' });
@@ -79,7 +80,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Stage transition
-router.post('/:id/stage', asyncHandler(async (req, res) => {
+router.post('/:id/stage', authenticate, asyncHandler(async (req, res) => {
   const { stage_id, stage_name } = req.body;
   const deal = await Deal.findById(req.params.id);
   if (!deal) {
@@ -111,7 +112,7 @@ router.post('/:id/stage', asyncHandler(async (req, res) => {
 }));
 
 // Manage line items
-router.post('/:id/line-items', asyncHandler(async (req, res) => {
+router.post('/:id/line-items', authenticate, asyncHandler(async (req, res) => {
   const deal = await Deal.findById(req.params.id);
   if (!deal) {
     return res.status(404).json({ error: 'Deal not found' });
@@ -128,7 +129,7 @@ router.post('/:id/line-items', asyncHandler(async (req, res) => {
   res.json(updated);
 }));
 
-router.delete('/:id/line-items/:itemId', asyncHandler(async (req, res) => {
+router.delete('/:id/line-items/:itemId', authenticate, asyncHandler(async (req, res) => {
   const updated = await Deal.findByIdAndUpdate(
     req.params.id,
     { $pull: { line_items: { _id: req.params.itemId } } },

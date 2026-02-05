@@ -16,4 +16,4 @@ const policySchema = new Schema({
 policySchema.index({ category: 1 });
 policySchema.index({ is_active: 1 });
 
-export const Policy = mongoose.model('Policy', policySchema);
+export const Policy = mongoose.models.Policy || mongoose.model('Policy', policySchema);

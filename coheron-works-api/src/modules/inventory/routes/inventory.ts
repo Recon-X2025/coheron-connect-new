@@ -19,6 +19,7 @@ import CycleCount from '../../../models/CycleCount.js';
 import InventorySettings from '../../../models/InventorySettings.js';
 import Product from '../../../shared/models/Product.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 import { eventBus } from '../../../orchestration/EventBus.js';
 import { STOCK_ADJUSTED } from '../../../orchestration/events.js';
@@ -30,7 +31,7 @@ const router = express.Router();
 // ============================================
 
 // Get all warehouses
-router.get('/warehouses', asyncHandler(async (req, res) => {
+router.get('/warehouses', authenticate, asyncHandler(async (req, res) => {
   const { search, active } = req.query;
   const filter: any = {};
 
@@ -67,7 +68,7 @@ router.get('/warehouses', asyncHandler(async (req, res) => {
 }));
 
 // Get warehouse by ID
-router.get('/warehouses/:id', asyncHandler(async (req, res) => {
+router.get('/warehouses/:id', authenticate, asyncHandler(async (req, res) => {
   const warehouse = await Warehouse.findById(req.params.id)
     .populate('manager_id', 'name')
     .populate('partner_id', 'name')
@@ -85,7 +86,7 @@ router.get('/warehouses/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create warehouse
-router.post('/warehouses', asyncHandler(async (req, res) => {
+router.post('/warehouses', authenticate, asyncHandler(async (req, res) => {
   const {
     code, name, warehouse_type, partner_id, address, city, state, country,
     zip_code, phone, email, manager_id, active, temperature_controlled,
@@ -106,7 +107,7 @@ router.post('/warehouses', asyncHandler(async (req, res) => {
 }));
 
 // Update warehouse
-router.put('/warehouses/:id', asyncHandler(async (req, res) => {
+router.put('/warehouses/:id', authenticate, asyncHandler(async (req, res) => {
   const {
     code, name, warehouse_type, partner_id, address, city, state, country,
     zip_code, phone, email, manager_id, active, temperature_controlled,
@@ -135,7 +136,7 @@ router.put('/warehouses/:id', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get locations by warehouse
-router.get('/warehouses/:warehouseId/locations', asyncHandler(async (req, res) => {
+router.get('/warehouses/:warehouseId/locations', authenticate, asyncHandler(async (req, res) => {
   const locations = await StockLocation.find({ warehouse_id: req.params.warehouseId })
     .sort({ name: 1 })
     .lean();
@@ -143,7 +144,7 @@ router.get('/warehouses/:warehouseId/locations', asyncHandler(async (req, res) =
 }));
 
 // Create location
-router.post('/locations', asyncHandler(async (req, res) => {
+router.post('/locations', authenticate, asyncHandler(async (req, res) => {
   const {
     name, location_id, warehouse_id, usage, active, scrap_location,
     return_location, posx, posy, posz, removal_strategy, barcode, notes,
@@ -177,7 +178,7 @@ router.post('/locations', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get stock quantity by product and location
-router.get('/stock-quant', asyncHandler(async (req, res) => {
+router.get('/stock-quant', authenticate, asyncHandler(async (req, res) => {
   const { product_id, location_id, warehouse_id } = req.query;
   const filter: any = {};
 
@@ -217,7 +218,7 @@ router.get('/stock-quant', asyncHandler(async (req, res) => {
 }));
 
 // Get stock summary by product
-router.get('/stock-summary', asyncHandler(async (req, res) => {
+router.get('/stock-summary', authenticate, asyncHandler(async (req, res) => {
   const { product_id, warehouse_id } = req.query;
 
   const matchStage: any = {};
@@ -287,7 +288,7 @@ router.get('/stock-summary', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get all GRNs
-router.get('/grn', asyncHandler(async (req, res) => {
+router.get('/grn', authenticate, asyncHandler(async (req, res) => {
   const { state, partner_id, warehouse_id, start_date, end_date } = req.query;
   const filter: any = {};
 
@@ -325,7 +326,7 @@ router.get('/grn', asyncHandler(async (req, res) => {
 }));
 
 // Get GRN by ID with lines
-router.get('/grn/:id', asyncHandler(async (req, res) => {
+router.get('/grn/:id', authenticate, asyncHandler(async (req, res) => {
   const grn = await StockGrn.findById(req.params.id)
     .populate('partner_id', 'name')
     .populate('warehouse_id', 'name')
@@ -351,7 +352,7 @@ router.get('/grn/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create GRN
-router.post('/grn', asyncHandler(async (req, res) => {
+router.post('/grn', authenticate, asyncHandler(async (req, res) => {
   // Generate GRN number
   const count = await StockGrn.countDocuments({ grn_number: { $regex: /^GRN-/ } });
   const grnNumber = `GRN-${String(count + 1).padStart(6, '0')}`;
@@ -394,7 +395,7 @@ router.post('/grn', asyncHandler(async (req, res) => {
 }));
 
 // Update GRN
-router.put('/grn/:id', asyncHandler(async (req, res) => {
+router.put('/grn/:id', authenticate, asyncHandler(async (req, res) => {
   const {
     grn_date, expected_date, delivery_challan_number, supplier_invoice_number,
     qc_status, qc_inspector_id, qc_date, qc_remarks, received_by, approved_by,
@@ -444,7 +445,7 @@ router.put('/grn/:id', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get all transfers
-router.get('/transfers', asyncHandler(async (req, res) => {
+router.get('/transfers', authenticate, asyncHandler(async (req, res) => {
   const { state, from_warehouse_id, to_warehouse_id } = req.query;
   const filter: any = {};
 
@@ -478,7 +479,7 @@ router.get('/transfers', asyncHandler(async (req, res) => {
 }));
 
 // Create transfer
-router.post('/transfers', asyncHandler(async (req, res) => {
+router.post('/transfers', authenticate, asyncHandler(async (req, res) => {
   const count = await StockTransfer.countDocuments({ transfer_number: { $regex: /^TRF-/ } });
   const transferNumber = `TRF-${String(count + 1).padStart(6, '0')}`;
 
@@ -513,7 +514,7 @@ router.post('/transfers', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get all adjustments
-router.get('/adjustments', asyncHandler(async (req, res) => {
+router.get('/adjustments', authenticate, asyncHandler(async (req, res) => {
   const { state, warehouse_id, adjustment_type, start_date, end_date } = req.query;
   const filter: any = {};
 
@@ -547,7 +548,7 @@ router.get('/adjustments', asyncHandler(async (req, res) => {
 }));
 
 // Create adjustment
-router.post('/adjustments', asyncHandler(async (req, res) => {
+router.post('/adjustments', authenticate, asyncHandler(async (req, res) => {
   const count = await StockAdjustment.countDocuments({ adjustment_number: { $regex: /^ADJ-/ } });
   const adjustmentNumber = `ADJ-${String(count + 1).padStart(6, '0')}`;
 
@@ -618,7 +619,7 @@ router.post('/adjustments', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get lots by product
-router.get('/lots', asyncHandler(async (req, res) => {
+router.get('/lots', authenticate, asyncHandler(async (req, res) => {
   const { product_id, name } = req.query;
   const filter: any = {};
 
@@ -646,14 +647,14 @@ router.get('/lots', asyncHandler(async (req, res) => {
 }));
 
 // Create lot
-router.post('/lots', asyncHandler(async (req, res) => {
+router.post('/lots', authenticate, asyncHandler(async (req, res) => {
   const { name, product_id, ref, note } = req.body;
   const lot = await StockProductionLot.create({ name, product_id, ref, note });
   res.status(201).json(lot);
 }));
 
 // Update lot
-router.put('/lots/:id', asyncHandler(async (req, res) => {
+router.put('/lots/:id', authenticate, asyncHandler(async (req, res) => {
   const { name, ref, note } = req.body;
   const updateData: any = {};
   if (name !== undefined) updateData.name = name;
@@ -670,7 +671,7 @@ router.put('/lots/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete lot
-router.delete('/lots/:id', asyncHandler(async (req, res) => {
+router.delete('/lots/:id', authenticate, asyncHandler(async (req, res) => {
   const lot = await StockProductionLot.findByIdAndDelete(req.params.id);
   if (!lot) {
     return res.status(404).json({ error: 'Lot not found' });
@@ -679,7 +680,7 @@ router.delete('/lots/:id', asyncHandler(async (req, res) => {
 }));
 
 // Get serials
-router.get('/serials', asyncHandler(async (req, res) => {
+router.get('/serials', authenticate, asyncHandler(async (req, res) => {
   const { product_id, name } = req.query;
   const filter: any = {};
 
@@ -707,7 +708,7 @@ router.get('/serials', asyncHandler(async (req, res) => {
 }));
 
 // Get serial by ID
-router.get('/serials/:id', asyncHandler(async (req, res) => {
+router.get('/serials/:id', authenticate, asyncHandler(async (req, res) => {
   const serial = await StockSerial.findById(req.params.id)
     .populate('product_id', 'name default_code')
     .lean();
@@ -724,14 +725,14 @@ router.get('/serials/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create serial
-router.post('/serials', asyncHandler(async (req, res) => {
+router.post('/serials', authenticate, asyncHandler(async (req, res) => {
   const { name, product_id, lot_id, warranty_start_date, warranty_end_date, notes } = req.body;
   const serial = await StockSerial.create({ name, product_id, lot_id, warranty_start_date, warranty_end_date, notes });
   res.status(201).json(serial);
 }));
 
 // Update serial
-router.put('/serials/:id', asyncHandler(async (req, res) => {
+router.put('/serials/:id', authenticate, asyncHandler(async (req, res) => {
   const { name, lot_id, warranty_start_date, warranty_end_date, notes } = req.body;
   const updateData: any = {};
   if (name !== undefined) updateData.name = name;
@@ -750,7 +751,7 @@ router.put('/serials/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete serial
-router.delete('/serials/:id', asyncHandler(async (req, res) => {
+router.delete('/serials/:id', authenticate, asyncHandler(async (req, res) => {
   const serial = await StockSerial.findByIdAndDelete(req.params.id);
   if (!serial) {
     return res.status(404).json({ error: 'Serial not found' });
@@ -763,7 +764,7 @@ router.delete('/serials/:id', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get reorder suggestions
-router.get('/reorder-suggestions', asyncHandler(async (req, res) => {
+router.get('/reorder-suggestions', authenticate, asyncHandler(async (req, res) => {
   const { warehouse_id, state } = req.query;
   const filter: any = {};
 
@@ -797,7 +798,7 @@ router.get('/reorder-suggestions', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get all stock issues
-router.get('/stock-issues', asyncHandler(async (req, res) => {
+router.get('/stock-issues', authenticate, asyncHandler(async (req, res) => {
   const { state, issue_type, warehouse_id, start_date, end_date } = req.query;
   const filter: any = {};
 
@@ -831,7 +832,7 @@ router.get('/stock-issues', asyncHandler(async (req, res) => {
 }));
 
 // Get stock issue by ID
-router.get('/stock-issues/:id', asyncHandler(async (req, res) => {
+router.get('/stock-issues/:id', authenticate, asyncHandler(async (req, res) => {
   const issue = await StockIssue.findById(req.params.id)
     .populate('from_warehouse_id', 'name')
     .populate('lines.product_id', 'name default_code')
@@ -855,7 +856,7 @@ router.get('/stock-issues/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create stock issue
-router.post('/stock-issues', asyncHandler(async (req, res) => {
+router.post('/stock-issues', authenticate, asyncHandler(async (req, res) => {
   const count = await StockIssue.countDocuments({ issue_number: { $regex: /^ISSUE-/ } });
   const issueNumber = `ISSUE-${String(count + 1).padStart(6, '0')}`;
 
@@ -880,7 +881,7 @@ router.post('/stock-issues', asyncHandler(async (req, res) => {
 }));
 
 // Update stock issue
-router.put('/stock-issues/:id', asyncHandler(async (req, res) => {
+router.put('/stock-issues/:id', authenticate, asyncHandler(async (req, res) => {
   const { issue_date, notes, state, approved_by, lines } = req.body;
 
   const updateData: any = { issue_date, notes, state, approved_by };
@@ -909,14 +910,14 @@ router.put('/stock-issues/:id', asyncHandler(async (req, res) => {
 }));
 
 // Approve stock issue
-router.post('/stock-issues/:id/approve', asyncHandler(async (req, res) => {
+router.post('/stock-issues/:id/approve', authenticate, asyncHandler(async (req, res) => {
   const { approved_by } = req.body;
   await StockIssue.findByIdAndUpdate(req.params.id, { state: 'approved', approved_by });
   res.json({ message: 'Stock issue approved' });
 }));
 
 // Issue stock (execute)
-router.post('/stock-issues/:id/issue', asyncHandler(async (req, res) => {
+router.post('/stock-issues/:id/issue', authenticate, asyncHandler(async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
@@ -968,7 +969,7 @@ router.post('/stock-issues/:id/issue', asyncHandler(async (req, res) => {
 }));
 
 // Delete stock issue
-router.delete('/stock-issues/:id', asyncHandler(async (req, res) => {
+router.delete('/stock-issues/:id', authenticate, asyncHandler(async (req, res) => {
   const issue = await StockIssue.findByIdAndDelete(req.params.id);
   if (!issue) {
     return res.status(404).json({ error: 'Stock issue not found' });
@@ -981,7 +982,7 @@ router.delete('/stock-issues/:id', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get all stock returns
-router.get('/stock-returns', asyncHandler(async (req, res) => {
+router.get('/stock-returns', authenticate, asyncHandler(async (req, res) => {
   const { state, return_type, warehouse_id, start_date, end_date } = req.query;
   const filter: any = {};
 
@@ -1015,7 +1016,7 @@ router.get('/stock-returns', asyncHandler(async (req, res) => {
 }));
 
 // Get stock return by ID
-router.get('/stock-returns/:id', asyncHandler(async (req, res) => {
+router.get('/stock-returns/:id', authenticate, asyncHandler(async (req, res) => {
   const stockReturn = await StockReturn.findById(req.params.id)
     .populate('warehouse_id', 'name')
     .populate('lines.product_id', 'name default_code')
@@ -1039,7 +1040,7 @@ router.get('/stock-returns/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create stock return
-router.post('/stock-returns', asyncHandler(async (req, res) => {
+router.post('/stock-returns', authenticate, asyncHandler(async (req, res) => {
   const count = await StockReturn.countDocuments({ return_number: { $regex: /^RET-/ } });
   const returnNumber = `RET-${String(count + 1).padStart(6, '0')}`;
 
@@ -1065,7 +1066,7 @@ router.post('/stock-returns', asyncHandler(async (req, res) => {
 }));
 
 // Update stock return
-router.put('/stock-returns/:id', asyncHandler(async (req, res) => {
+router.put('/stock-returns/:id', authenticate, asyncHandler(async (req, res) => {
   const { return_date, notes, state, approved_by, qc_status, lines } = req.body;
 
   const updateData: any = { return_date, notes, state, approved_by, qc_status };
@@ -1095,7 +1096,7 @@ router.put('/stock-returns/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete stock return
-router.delete('/stock-returns/:id', asyncHandler(async (req, res) => {
+router.delete('/stock-returns/:id', authenticate, asyncHandler(async (req, res) => {
   const stockReturn = await StockReturn.findByIdAndDelete(req.params.id);
   if (!stockReturn) {
     return res.status(404).json({ error: 'Stock return not found' });
@@ -1108,7 +1109,7 @@ router.delete('/stock-returns/:id', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get putaway tasks
-router.get('/warehouse-operations/putaway', asyncHandler(async (req, res) => {
+router.get('/warehouse-operations/putaway', authenticate, asyncHandler(async (req, res) => {
   const { state, warehouse_id } = req.query;
   const filter: any = {};
 
@@ -1138,7 +1139,7 @@ router.get('/warehouse-operations/putaway', asyncHandler(async (req, res) => {
 }));
 
 // Start putaway task
-router.post('/warehouse-operations/putaway/:id/start', asyncHandler(async (req, res) => {
+router.post('/warehouse-operations/putaway/:id/start', authenticate, asyncHandler(async (req, res) => {
   await PutawayTask.findByIdAndUpdate(req.params.id, {
     state: 'in_progress',
     started_at: new Date(),
@@ -1147,7 +1148,7 @@ router.post('/warehouse-operations/putaway/:id/start', asyncHandler(async (req, 
 }));
 
 // Complete putaway task
-router.post('/warehouse-operations/putaway/:id/complete', asyncHandler(async (req, res) => {
+router.post('/warehouse-operations/putaway/:id/complete', authenticate, asyncHandler(async (req, res) => {
   const { actual_location } = req.body;
   const task = await PutawayTask.findById(req.params.id).lean();
   const startedAt = task?.started_at;
@@ -1165,7 +1166,7 @@ router.post('/warehouse-operations/putaway/:id/complete', asyncHandler(async (re
 }));
 
 // Get picking tasks
-router.get('/warehouse-operations/picking', asyncHandler(async (req, res) => {
+router.get('/warehouse-operations/picking', authenticate, asyncHandler(async (req, res) => {
   const { state, warehouse_id } = req.query;
   const filter: any = {};
 
@@ -1193,7 +1194,7 @@ router.get('/warehouse-operations/picking', asyncHandler(async (req, res) => {
 }));
 
 // Start picking task
-router.post('/warehouse-operations/picking/:id/start', asyncHandler(async (req, res) => {
+router.post('/warehouse-operations/picking/:id/start', authenticate, asyncHandler(async (req, res) => {
   await PickingTask.findByIdAndUpdate(req.params.id, {
     state: 'in_progress',
     started_at: new Date(),
@@ -1202,7 +1203,7 @@ router.post('/warehouse-operations/picking/:id/start', asyncHandler(async (req, 
 }));
 
 // Complete picking task
-router.post('/warehouse-operations/picking/:id/complete', asyncHandler(async (req, res) => {
+router.post('/warehouse-operations/picking/:id/complete', authenticate, asyncHandler(async (req, res) => {
   const { quantity_picked } = req.body;
   const task = await PickingTask.findById(req.params.id).lean();
   const startedAt = task?.started_at;
@@ -1220,7 +1221,7 @@ router.post('/warehouse-operations/picking/:id/complete', asyncHandler(async (re
 }));
 
 // Get packing tasks
-router.get('/warehouse-operations/packing', asyncHandler(async (req, res) => {
+router.get('/warehouse-operations/packing', authenticate, asyncHandler(async (req, res) => {
   const { state } = req.query;
   const filter: any = {};
 
@@ -1238,7 +1239,7 @@ router.get('/warehouse-operations/packing', asyncHandler(async (req, res) => {
 }));
 
 // Get cycle counts
-router.get('/warehouse-operations/cycle-counts', asyncHandler(async (req, res) => {
+router.get('/warehouse-operations/cycle-counts', authenticate, asyncHandler(async (req, res) => {
   const { state, warehouse_id } = req.query;
   const filter: any = {};
 
@@ -1269,7 +1270,7 @@ router.get('/warehouse-operations/cycle-counts', asyncHandler(async (req, res) =
 // ============================================
 
 // Get inventory settings
-router.get('/settings', asyncHandler(async (req, res) => {
+router.get('/settings', authenticate, asyncHandler(async (req, res) => {
   const settings = await InventorySettings.findOne().lean();
   if (!settings) {
     res.json({
@@ -1290,7 +1291,7 @@ router.get('/settings', asyncHandler(async (req, res) => {
 }));
 
 // Update inventory settings
-router.put('/settings', asyncHandler(async (req, res) => {
+router.put('/settings', authenticate, asyncHandler(async (req, res) => {
   const settings = req.body;
   const existing = await InventorySettings.findOne();
 
@@ -1308,7 +1309,7 @@ router.put('/settings', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get stock ledger
-router.get('/stock-ledger', asyncHandler(async (req, res) => {
+router.get('/stock-ledger', authenticate, asyncHandler(async (req, res) => {
   const { product_id, location_id, start_date, end_date } = req.query;
   const filter: any = {};
 

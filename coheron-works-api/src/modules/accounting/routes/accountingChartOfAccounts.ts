@@ -2,6 +2,7 @@ import express from 'express';
 import AccountAccount from '../../../models/AccountAccount.js';
 import AccountMove from '../../../models/AccountMove.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { validate } from '../../../shared/middleware/validate.js';
 import { objectIdParam } from '../../../shared/schemas/common.js';
 import { createAccountSchema, updateAccountSchema } from '../schemas.js';
@@ -9,7 +10,7 @@ import { createAccountSchema, updateAccountSchema } from '../schemas.js';
 const router = express.Router();
 
 // Get all accounts (Chart of Accounts)
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { account_type, parent_id, search, deprecated } = req.query;
   const filter: any = {};
 
@@ -50,7 +51,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get account by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const account = await AccountAccount.findById(req.params.id).lean();
 
   if (!account) {
@@ -61,7 +62,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create account
-router.post('/', validate({ body: createAccountSchema }), asyncHandler(async (req, res) => {
+router.post('/', authenticate, validate({ body: createAccountSchema }), asyncHandler(async (req, res) => {
   const {
     code,
     name,
@@ -100,7 +101,7 @@ router.post('/', validate({ body: createAccountSchema }), asyncHandler(async (re
 }));
 
 // Update account
-router.put('/:id', validate({ params: objectIdParam, body: updateAccountSchema }), asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, validate({ params: objectIdParam, body: updateAccountSchema }), asyncHandler(async (req, res) => {
   const {
     name,
     account_type,
@@ -151,7 +152,7 @@ router.put('/:id', validate({ params: objectIdParam, body: updateAccountSchema }
 }));
 
 // Delete account (soft delete by setting deprecated)
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const account = await AccountAccount.findByIdAndUpdate(
     req.params.id,
     { deprecated: true },
@@ -166,7 +167,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Get account balance
-router.get('/:id/balance', asyncHandler(async (req, res) => {
+router.get('/:id/balance', authenticate, asyncHandler(async (req, res) => {
   const { date_start, date_end } = req.query;
   const accountId = req.params.id;
 

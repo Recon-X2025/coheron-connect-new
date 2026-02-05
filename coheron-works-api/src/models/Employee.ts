@@ -202,4 +202,4 @@ employeeSchema.index({ tenant_id: 1, department_id: 1 });
 employeeSchema.index({ tenant_id: 1, status: 1 });
 employeeSchema.index({ reports_to: 1 });
 
-export const Employee = mongoose.model('Employee', employeeSchema);
+export const Employee = mongoose.models.Employee || mongoose.model('Employee', employeeSchema);

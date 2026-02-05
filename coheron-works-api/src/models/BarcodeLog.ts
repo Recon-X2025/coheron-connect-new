@@ -23,4 +23,4 @@ barcodeLogSchema.index({ tenant_id: 1, scanned_at: -1 });
 barcodeLogSchema.index({ tenant_id: 1, barcode_value: 1 });
 barcodeLogSchema.index({ reference_id: 1 });
 
-export const BarcodeLog = mongoose.model('BarcodeLog', barcodeLogSchema);
+export const BarcodeLog = mongoose.models.BarcodeLog || mongoose.model('BarcodeLog', barcodeLogSchema);

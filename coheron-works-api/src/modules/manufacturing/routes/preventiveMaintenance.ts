@@ -2,13 +2,14 @@ import express from 'express';
 import { MaintenanceSchedule } from '../models/MaintenanceSchedule.js';
 import { MaintenanceLog } from '../models/MaintenanceLog.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // ==================== SCHEDULES ====================
 
 // List maintenance schedules
-router.get('/schedules', asyncHandler(async (req, res) => {
+router.get('/schedules', authenticate, asyncHandler(async (req, res) => {
   const filter: any = {};
   if (req.query.tenant_id) filter.tenant_id = req.query.tenant_id;
   if (req.query.status) filter.status = req.query.status;
@@ -23,13 +24,13 @@ router.get('/schedules', asyncHandler(async (req, res) => {
 }));
 
 // Create schedule
-router.post('/schedules', asyncHandler(async (req, res) => {
+router.post('/schedules', authenticate, asyncHandler(async (req, res) => {
   const schedule = await MaintenanceSchedule.create(req.body);
   res.status(201).json({ data: schedule });
 }));
 
 // Get schedule by ID
-router.get('/schedules/:id', asyncHandler(async (req, res) => {
+router.get('/schedules/:id', authenticate, asyncHandler(async (req, res) => {
   const schedule = await MaintenanceSchedule.findById(req.params.id)
     .populate('assigned_team', 'name email')
     .lean();
@@ -38,21 +39,21 @@ router.get('/schedules/:id', asyncHandler(async (req, res) => {
 }));
 
 // Update schedule
-router.put('/schedules/:id', asyncHandler(async (req, res) => {
+router.put('/schedules/:id', authenticate, asyncHandler(async (req, res) => {
   const schedule = await MaintenanceSchedule.findByIdAndUpdate(req.params.id, req.body, { new: true }).lean();
   if (!schedule) return res.status(404).json({ error: 'Schedule not found' });
   res.json({ data: schedule });
 }));
 
 // Delete schedule
-router.delete('/schedules/:id', asyncHandler(async (req, res) => {
+router.delete('/schedules/:id', authenticate, asyncHandler(async (req, res) => {
   const schedule = await MaintenanceSchedule.findByIdAndDelete(req.params.id);
   if (!schedule) return res.status(404).json({ error: 'Schedule not found' });
   res.json({ message: 'Schedule deleted' });
 }));
 
 // Upcoming maintenance (next 30 days)
-router.get('/upcoming', asyncHandler(async (req, res) => {
+router.get('/upcoming', authenticate, asyncHandler(async (req, res) => {
   const filter: any = { status: 'active' };
   if (req.query.tenant_id) filter.tenant_id = req.query.tenant_id;
 
@@ -78,7 +79,7 @@ router.get('/upcoming', asyncHandler(async (req, res) => {
 // ==================== LOGS ====================
 
 // List maintenance logs
-router.get('/logs', asyncHandler(async (req, res) => {
+router.get('/logs', authenticate, asyncHandler(async (req, res) => {
   const filter: any = {};
   if (req.query.tenant_id) filter.tenant_id = req.query.tenant_id;
   if (req.query.equipment_id) filter.equipment_id = req.query.equipment_id;
@@ -105,7 +106,7 @@ router.get('/logs', asyncHandler(async (req, res) => {
 }));
 
 // Create maintenance log
-router.post('/logs', asyncHandler(async (req, res) => {
+router.post('/logs', authenticate, asyncHandler(async (req, res) => {
   const log = await MaintenanceLog.create(req.body);
 
   // If linked to a schedule, update last_maintenance_date and recalculate next
@@ -142,7 +143,7 @@ router.post('/logs', asyncHandler(async (req, res) => {
 }));
 
 // Get log by ID
-router.get('/logs/:id', asyncHandler(async (req, res) => {
+router.get('/logs/:id', authenticate, asyncHandler(async (req, res) => {
   const log = await MaintenanceLog.findById(req.params.id)
     .populate('performed_by', 'name email')
     .populate('schedule_id', 'schedule_name equipment_name')
@@ -152,7 +153,7 @@ router.get('/logs/:id', asyncHandler(async (req, res) => {
 }));
 
 // Update log
-router.put('/logs/:id', asyncHandler(async (req, res) => {
+router.put('/logs/:id', authenticate, asyncHandler(async (req, res) => {
   const log = await MaintenanceLog.findByIdAndUpdate(req.params.id, req.body, { new: true }).lean();
   if (!log) return res.status(404).json({ error: 'Log not found' });
   res.json({ data: log });
@@ -161,7 +162,7 @@ router.put('/logs/:id', asyncHandler(async (req, res) => {
 // ==================== MTBF / MTTR ====================
 
 // Calculate MTBF and MTTR for equipment
-router.get('/metrics/:equipmentId', asyncHandler(async (req, res) => {
+router.get('/metrics/:equipmentId', authenticate, asyncHandler(async (req, res) => {
   const { equipmentId } = req.params;
   const tenantFilter: any = { equipment_id: equipmentId };
   if (req.query.tenant_id) tenantFilter.tenant_id = req.query.tenant_id;
@@ -224,7 +225,7 @@ router.get('/metrics/:equipmentId', asyncHandler(async (req, res) => {
 }));
 
 // Equipment health dashboard - all equipment metrics
-router.get('/health', asyncHandler(async (req, res) => {
+router.get('/health', authenticate, asyncHandler(async (req, res) => {
   const filter: any = { status: 'active' };
   if (req.query.tenant_id) filter.tenant_id = req.query.tenant_id;
 

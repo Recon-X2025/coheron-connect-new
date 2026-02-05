@@ -2,6 +2,7 @@ import express from 'express';
 import { AutomationFlow } from '../models/AutomationFlow.js';
 import { FlowExecution } from '../models/FlowExecution.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
@@ -33,7 +34,7 @@ const FLOW_TEMPLATES = [
 ];
 
 // GET all flows
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const tenantId = (req as any).user?.tenant_id;
   const filter: any = tenantId ? { tenant_id: tenantId } : {};
   if (req.query.status) filter.status = req.query.status;
@@ -42,19 +43,19 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // GET templates
-router.get('/templates', asyncHandler(async (_req, res) => {
+router.get('/templates', authenticate, asyncHandler(async (_req, res) => {
   res.json(FLOW_TEMPLATES);
 }));
 
 // GET single flow
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const flow = await AutomationFlow.findById(req.params.id).lean();
   if (!flow) return res.status(404).json({ error: 'Flow not found' });
   res.json(flow);
 }));
 
 // CREATE flow
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const tenantId = (req as any).user?.tenant_id;
   const userId = (req as any).user?.userId;
   const flow = await AutomationFlow.create({ ...req.body, tenant_id: tenantId, created_by: userId });
@@ -62,34 +63,34 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // UPDATE flow
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const flow = await AutomationFlow.findByIdAndUpdate(req.params.id, { ...req.body, $inc: { version: 1 } }, { new: true });
   if (!flow) return res.status(404).json({ error: 'Flow not found' });
   res.json(flow);
 }));
 
 // DELETE flow
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   await AutomationFlow.findByIdAndDelete(req.params.id);
   res.json({ success: true });
 }));
 
 // ACTIVATE flow
-router.post('/:id/activate', asyncHandler(async (req, res) => {
+router.post('/:id/activate', authenticate, asyncHandler(async (req, res) => {
   const flow = await AutomationFlow.findByIdAndUpdate(req.params.id, { status: 'active' }, { new: true });
   if (!flow) return res.status(404).json({ error: 'Flow not found' });
   res.json(flow);
 }));
 
 // PAUSE flow
-router.post('/:id/pause', asyncHandler(async (req, res) => {
+router.post('/:id/pause', authenticate, asyncHandler(async (req, res) => {
   const flow = await AutomationFlow.findByIdAndUpdate(req.params.id, { status: 'paused' }, { new: true });
   if (!flow) return res.status(404).json({ error: 'Flow not found' });
   res.json(flow);
 }));
 
 // TEST (dry run) flow with a lead
-router.post('/:id/test', asyncHandler(async (req, res) => {
+router.post('/:id/test', authenticate, asyncHandler(async (req, res) => {
   const flow = await AutomationFlow.findById(req.params.id).lean();
   if (!flow) return res.status(404).json({ error: 'Flow not found' });
   const tenantId = (req as any).user?.tenant_id;
@@ -111,7 +112,7 @@ router.post('/:id/test', asyncHandler(async (req, res) => {
 }));
 
 // GET executions for a flow
-router.get('/:id/executions', asyncHandler(async (req, res) => {
+router.get('/:id/executions', authenticate, asyncHandler(async (req, res) => {
   const executions = await FlowExecution.find({ flow_id: req.params.id }).sort({ started_at: -1 }).limit(100).lean();
   res.json(executions);
 }));

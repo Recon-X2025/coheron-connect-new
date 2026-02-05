@@ -19,7 +19,6 @@ const stockSerialSchema = new Schema<IStockSerial>({
   notes: { type: String },
 }, defaultSchemaOptions);
 
-stockSerialSchema.index({ name: 1 }, { unique: true });
 stockSerialSchema.index({ product_id: 1 });
 stockSerialSchema.index({ lot_id: 1 });
 

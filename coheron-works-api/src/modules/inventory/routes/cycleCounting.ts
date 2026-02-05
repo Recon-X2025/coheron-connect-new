@@ -2,12 +2,13 @@ import express from 'express';
 import { CycleCount } from '../../../models/CycleCount.js';
 import { CycleCountSchedule } from '../../../models/CycleCountSchedule.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
 // List cycle counts
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { status, warehouse_id, count_type } = req.query;
   const filter: any = { tenant_id: (req as any).tenantId };
   if (status) filter.status = status;
@@ -19,21 +20,21 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Create cycle count
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const data = { ...req.body, tenant_id: (req as any).tenantId, created_by: (req as any).userId };
   const count = await CycleCount.create(data);
   res.status(201).json(count);
 }));
 
 // Get detail
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const count = await CycleCount.findById(req.params.id).lean();
   if (!count) return res.status(404).json({ error: 'Cycle count not found' });
   res.json(count);
 }));
 
 // Start counting
-router.post('/:id/start', asyncHandler(async (req, res) => {
+router.post('/:id/start', authenticate, asyncHandler(async (req, res) => {
   const count = await CycleCount.findByIdAndUpdate(req.params.id, {
     status: 'in_progress', started_at: new Date()
   }, { new: true });
@@ -42,7 +43,7 @@ router.post('/:id/start', asyncHandler(async (req, res) => {
 }));
 
 // Record counted quantity for an item
-router.post('/:id/record', asyncHandler(async (req, res) => {
+router.post('/:id/record', authenticate, asyncHandler(async (req, res) => {
   const { item_index, counted_quantity, serial_numbers_found, notes } = req.body;
   const count = await CycleCount.findById(req.params.id);
   if (!count) return res.status(404).json({ error: 'Cycle count not found' });
@@ -62,7 +63,7 @@ router.post('/:id/record', asyncHandler(async (req, res) => {
 }));
 
 // Complete count
-router.post('/:id/complete', asyncHandler(async (req, res) => {
+router.post('/:id/complete', authenticate, asyncHandler(async (req, res) => {
   const count = await CycleCount.findById(req.params.id);
   if (!count) return res.status(404).json({ error: 'Cycle count not found' });
   count.status = 'completed';
@@ -74,7 +75,7 @@ router.post('/:id/complete', asyncHandler(async (req, res) => {
 }));
 
 // Create inventory adjustment
-router.post('/:id/adjust', asyncHandler(async (req, res) => {
+router.post('/:id/adjust', authenticate, asyncHandler(async (req, res) => {
   const count = await CycleCount.findById(req.params.id);
   if (!count) return res.status(404).json({ error: 'Cycle count not found' });
   if (count.status !== 'completed') return res.status(400).json({ error: 'Count not completed' });
@@ -84,7 +85,7 @@ router.post('/:id/adjust', asyncHandler(async (req, res) => {
 }));
 
 // List schedules
-router.get('/schedules', asyncHandler(async (req, res) => {
+router.get('/schedules', authenticate, asyncHandler(async (req, res) => {
   const filter: any = { tenant_id: (req as any).tenantId };
   if (req.query.warehouse_id) filter.warehouse_id = req.query.warehouse_id;
   if (req.query.is_active) filter.is_active = req.query.is_active === 'true';
@@ -93,21 +94,21 @@ router.get('/schedules', asyncHandler(async (req, res) => {
 }));
 
 // Create schedule
-router.post('/schedules', asyncHandler(async (req, res) => {
+router.post('/schedules', authenticate, asyncHandler(async (req, res) => {
   const data = { ...req.body, tenant_id: (req as any).tenantId };
   const schedule = await CycleCountSchedule.create(data);
   res.status(201).json(schedule);
 }));
 
 // Update schedule
-router.put('/schedules/:id', asyncHandler(async (req, res) => {
+router.put('/schedules/:id', authenticate, asyncHandler(async (req, res) => {
   const schedule = await CycleCountSchedule.findByIdAndUpdate(req.params.id, req.body, { new: true });
   if (!schedule) return res.status(404).json({ error: 'Schedule not found' });
   res.json(schedule);
 }));
 
 // Generate counts from active schedules
-router.post('/schedules/generate', asyncHandler(async (req, res) => {
+router.post('/schedules/generate', authenticate, asyncHandler(async (req, res) => {
   const tenantId = (req as any).tenantId;
   const now = new Date();
   const schedules = await CycleCountSchedule.find({

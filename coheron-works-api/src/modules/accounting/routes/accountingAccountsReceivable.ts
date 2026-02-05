@@ -4,6 +4,7 @@ import AccountCustomer from '../../../models/AccountCustomer.js';
 import AccountReceipt from '../../../models/AccountReceipt.js';
 import Invoice from '../../../models/Invoice.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
@@ -11,7 +12,7 @@ const router = express.Router();
 // ========== CUSTOMERS ==========
 
 // Get all customers
-router.get('/customers', asyncHandler(async (req, res) => {
+router.get('/customers', authenticate, asyncHandler(async (req, res) => {
   const { search, is_active, credit_hold } = req.query;
   const filter: any = {};
 
@@ -67,7 +68,7 @@ router.get('/customers', asyncHandler(async (req, res) => {
 }));
 
 // Get customer aging
-router.get('/customers/:id/aging', asyncHandler(async (req, res) => {
+router.get('/customers/:id/aging', authenticate, asyncHandler(async (req, res) => {
   const customer = await AccountCustomer.findById(req.params.id).lean();
 
   if (!customer) {
@@ -112,7 +113,7 @@ router.get('/customers/:id/aging', asyncHandler(async (req, res) => {
 // ========== RECEIPTS ==========
 
 // Get all receipts
-router.get('/receipts', asyncHandler(async (req, res) => {
+router.get('/receipts', authenticate, asyncHandler(async (req, res) => {
   const { customer_id, invoice_id, state, date_from, date_to } = req.query;
   const filter: any = {};
 
@@ -157,7 +158,7 @@ router.get('/receipts', asyncHandler(async (req, res) => {
 }));
 
 // Get receipt by ID
-router.get('/receipts/:id', asyncHandler(async (req, res) => {
+router.get('/receipts/:id', authenticate, asyncHandler(async (req, res) => {
   const receipt = await AccountReceipt.findById(req.params.id)
     .populate({
       path: 'customer_id',
@@ -199,7 +200,7 @@ router.get('/receipts/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create receipt
-router.post('/receipts', asyncHandler(async (req, res) => {
+router.post('/receipts', authenticate, asyncHandler(async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
@@ -273,7 +274,7 @@ router.post('/receipts', asyncHandler(async (req, res) => {
 }));
 
 // Post receipt
-router.post('/receipts/:id/post', asyncHandler(async (req, res) => {
+router.post('/receipts/:id/post', authenticate, asyncHandler(async (req, res) => {
   const receipt = await AccountReceipt.findOneAndUpdate(
     { _id: req.params.id, state: 'draft' },
     { state: 'posted' },
@@ -289,7 +290,7 @@ router.post('/receipts/:id/post', asyncHandler(async (req, res) => {
 
 // ========== AR AGING REPORT ==========
 
-router.get('/aging', asyncHandler(async (req, res) => {
+router.get('/aging', authenticate, asyncHandler(async (req, res) => {
   const { date_as_of } = req.query;
   const asOfDate = date_as_of ? new Date(date_as_of as string) : new Date();
   const d30 = new Date(asOfDate.getTime() - 30 * 24 * 60 * 60 * 1000);

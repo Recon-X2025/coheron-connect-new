@@ -2,8 +2,10 @@ import express from 'express';
 import Sprint from '../../../models/Sprint.js';
 import SprintRetrospective from '../../../models/SprintRetrospective.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
+router.use(authenticate);
 
 // ============================================
 // SPRINT RETROSPECTIVES

@@ -1,11 +1,12 @@
 import express from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { POSDevice } from '../models/POSDevice.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // List devices
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { store_id, device_type, status } = req.query;
   const filter: any = { tenant_id };
@@ -17,14 +18,14 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Create device
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const device = await POSDevice.create({ ...req.body, tenant_id });
   res.status(201).json(device);
 }));
 
 // Update device
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const device = await POSDevice.findOneAndUpdate(
     { _id: req.params.id, tenant_id },
@@ -36,14 +37,14 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete device
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   await POSDevice.findOneAndDelete({ _id: req.params.id, tenant_id });
   res.json({ success: true });
 }));
 
 // Test device connection
-router.post('/:id/test', asyncHandler(async (req, res) => {
+router.post('/:id/test', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const device = await POSDevice.findOne({ _id: req.params.id, tenant_id });
   if (!device) return res.status(404).json({ error: 'Device not found' });
@@ -65,7 +66,7 @@ router.post('/:id/test', asyncHandler(async (req, res) => {
 }));
 
 // Configure device
-router.post('/:id/configure', asyncHandler(async (req, res) => {
+router.post('/:id/configure', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const device = await POSDevice.findOneAndUpdate(
     { _id: req.params.id, tenant_id },
@@ -77,7 +78,7 @@ router.post('/:id/configure', asyncHandler(async (req, res) => {
 }));
 
 // Print receipt
-router.post('/print-receipt', asyncHandler(async (req, res) => {
+router.post('/print-receipt', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { device_id, receipt_data } = req.body;
   const device = await POSDevice.findOne({ _id: device_id, tenant_id, device_type: { $in: ['receipt_printer', 'label_printer'] } });
@@ -88,7 +89,7 @@ router.post('/print-receipt', asyncHandler(async (req, res) => {
 }));
 
 // Open cash drawer
-router.post('/open-cash-drawer', asyncHandler(async (req, res) => {
+router.post('/open-cash-drawer', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { device_id } = req.body;
   const device = await POSDevice.findOne({ _id: device_id, tenant_id, device_type: 'cash_drawer' });
@@ -98,7 +99,7 @@ router.post('/open-cash-drawer', asyncHandler(async (req, res) => {
 }));
 
 // All device statuses
-router.get('/status', asyncHandler(async (req, res) => {
+router.get('/status', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const devices = await POSDevice.find({ tenant_id }).select('name device_type status last_seen_at store_id');
   res.json(devices);

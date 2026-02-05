@@ -1,6 +1,7 @@
 import express from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { WebsiteOrder, WebsiteOrderItem, WebsiteOrderStatusHistory } from '../../../models/WebsiteOrder.js';
 import { WebsiteCart, WebsiteCartItem } from '../../../models/WebsiteCart.js';
 import Product from '../../../shared/models/Product.js';
@@ -10,7 +11,7 @@ import { createOrder as createRazorpayOrder } from '../../crossmodule/services/p
 const router = express.Router();
 
 // Get all orders
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { site_id, customer_id, status, search } = req.query;
   const filter: any = {};
 
@@ -51,7 +52,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get order by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const order = await WebsiteOrder.findById(req.params.id)
     .populate('customer_id', 'name email phone')
     .lean();
@@ -87,7 +88,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create order from cart (checkout)
-router.post('/checkout', asyncHandler(async (req, res) => {
+router.post('/checkout', authenticate, asyncHandler(async (req, res) => {
   const { cart_id, customer_id, session_id, site_id, shipping_address, billing_address, payment_method, payment_reference, shipping_method } = req.body;
 
   const cart = await WebsiteCart.findById(cart_id);
@@ -174,7 +175,7 @@ router.post('/checkout', asyncHandler(async (req, res) => {
 }));
 
 // Update order status
-router.put('/:id/status', asyncHandler(async (req, res) => {
+router.put('/:id/status', authenticate, asyncHandler(async (req, res) => {
   const { status, notes } = req.body;
 
   const order = await WebsiteOrder.findById(req.params.id).lean();
@@ -203,7 +204,7 @@ router.put('/:id/status', asyncHandler(async (req, res) => {
 }));
 
 // Initiate Razorpay payment for order
-router.post('/:id/pay', asyncHandler(async (req, res) => {
+router.post('/:id/pay', authenticate, asyncHandler(async (req, res) => {
   const order = await WebsiteOrder.findById(req.params.id).lean();
   if (!order) {
     return res.status(404).json({ error: 'Order not found' });
@@ -220,7 +221,7 @@ router.post('/:id/pay', asyncHandler(async (req, res) => {
 }));
 
 // Update payment status
-router.put('/:id/payment', asyncHandler(async (req, res) => {
+router.put('/:id/payment', authenticate, asyncHandler(async (req, res) => {
   const { payment_status, payment_reference } = req.body;
 
   const updateData: any = { payment_status };

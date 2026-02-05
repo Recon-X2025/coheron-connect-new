@@ -1,11 +1,12 @@
 import express from 'express';
 import { FMEA } from '../models/FMEA.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // List FMEAs
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { status, process_or_design, product_id, page = '1', limit = '20' } = req.query;
   const filter: any = { tenant_id };
@@ -22,14 +23,14 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get single FMEA
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const doc = await FMEA.findById(req.params.id).populate('product_id', 'name sku').lean();
   if (!doc) return res.status(404).json({ error: 'FMEA not found' });
   res.json(doc);
 }));
 
 // Create FMEA
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   // Compute RPN for each item
   const items = (req.body.items || []).map((item: any) => ({
@@ -41,7 +42,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update FMEA
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   if (req.body.items) {
     req.body.items = req.body.items.map((item: any) => ({
       ...item,
@@ -57,13 +58,13 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete FMEA
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   await FMEA.findByIdAndDelete(req.params.id);
   res.json({ success: true });
 }));
 
 // Add item to FMEA
-router.post('/:id/add-item', asyncHandler(async (req, res) => {
+router.post('/:id/add-item', authenticate, asyncHandler(async (req, res) => {
   const item = {
     ...req.body,
     rpn: (req.body.severity || 1) * (req.body.occurrence || 1) * (req.body.detection || 1),
@@ -78,7 +79,7 @@ router.post('/:id/add-item', asyncHandler(async (req, res) => {
 }));
 
 // Update specific item
-router.put('/:id/items/:itemIndex', asyncHandler(async (req, res) => {
+router.put('/:id/items/:itemIndex', authenticate, asyncHandler(async (req, res) => {
   const idx = parseInt(req.params.itemIndex);
   const updates: any = {};
   for (const [key, val] of Object.entries(req.body)) {
@@ -99,7 +100,7 @@ router.put('/:id/items/:itemIndex', asyncHandler(async (req, res) => {
 }));
 
 // RPN Analysis
-router.get('/:id/rpn-analysis', asyncHandler(async (req, res) => {
+router.get('/:id/rpn-analysis', authenticate, asyncHandler(async (req, res) => {
   const doc = await FMEA.findById(req.params.id).lean();
   if (!doc) return res.status(404).json({ error: 'Not found' });
 
@@ -120,7 +121,7 @@ router.get('/:id/rpn-analysis', asyncHandler(async (req, res) => {
 }));
 
 // Review FMEA
-router.post('/:id/review', asyncHandler(async (req, res) => {
+router.post('/:id/review', authenticate, asyncHandler(async (req, res) => {
   const doc = await FMEA.findByIdAndUpdate(
     req.params.id,
     { status: 'active', reviewed_by: req.user?.userId, reviewed_at: new Date() },

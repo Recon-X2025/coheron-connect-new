@@ -3,6 +3,7 @@ import Routing from '../../../models/Routing.js';
 import RoutingOperation from '../../../models/RoutingOperation.js';
 import Workcenter from '../../../models/Workcenter.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
@@ -12,7 +13,7 @@ const router = express.Router();
 // ============================================
 
 // Get all routings
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { active, search } = req.query;
   const filter: any = {};
 
@@ -35,7 +36,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get routing by ID with operations
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const routing = await Routing.findById(req.params.id).lean();
 
   if (!routing) {
@@ -57,7 +58,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create routing
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const { name, code, active, company_id, location_id, note, operations } = req.body;
 
   const routing = await Routing.create({
@@ -90,7 +91,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update routing
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const allowedFields = ['name', 'code', 'active', 'company_id', 'location_id', 'note'];
 
@@ -115,7 +116,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete routing
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const routing = await Routing.findByIdAndDelete(req.params.id);
   if (!routing) {
     return res.status(404).json({ error: 'Routing not found' });
@@ -129,7 +130,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get routing operations
-router.get('/:routing_id/operations', asyncHandler(async (req, res) => {
+router.get('/:routing_id/operations', authenticate, asyncHandler(async (req, res) => {
   const operations = await RoutingOperation.find({ routing_id: req.params.routing_id })
     .populate('workcenter_id', 'name code')
     .sort({ sequence: 1 })
@@ -145,7 +146,7 @@ router.get('/:routing_id/operations', asyncHandler(async (req, res) => {
 }));
 
 // Add routing operation
-router.post('/:routing_id/operations', asyncHandler(async (req, res) => {
+router.post('/:routing_id/operations', authenticate, asyncHandler(async (req, res) => {
   const { routing_id } = req.params;
   const {
     name, sequence, workcenter_id, time_mode, time_cycle_manual, time_cycle,
@@ -167,7 +168,7 @@ router.post('/:routing_id/operations', asyncHandler(async (req, res) => {
 }));
 
 // Update routing operation
-router.put('/operations/:id', asyncHandler(async (req, res) => {
+router.put('/operations/:id', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const allowedFields = [
     'name', 'sequence', 'workcenter_id', 'time_mode', 'time_cycle_manual',
@@ -196,7 +197,7 @@ router.put('/operations/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete routing operation
-router.delete('/operations/:id', asyncHandler(async (req, res) => {
+router.delete('/operations/:id', authenticate, asyncHandler(async (req, res) => {
   const operation = await RoutingOperation.findByIdAndDelete(req.params.id);
   if (!operation) {
     return res.status(404).json({ error: 'Routing operation not found' });
@@ -209,7 +210,7 @@ router.delete('/operations/:id', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get all work centers
-router.get('/workcenters', asyncHandler(async (req, res) => {
+router.get('/workcenters', authenticate, asyncHandler(async (req, res) => {
   const { active, search } = req.query;
   const filter: any = {};
 
@@ -232,7 +233,7 @@ router.get('/workcenters', asyncHandler(async (req, res) => {
 }));
 
 // Get work center by ID
-router.get('/workcenters/:id', asyncHandler(async (req, res) => {
+router.get('/workcenters/:id', authenticate, asyncHandler(async (req, res) => {
   const wc = await Workcenter.findById(req.params.id).lean();
   if (!wc) {
     return res.status(404).json({ error: 'Work center not found' });
@@ -241,7 +242,7 @@ router.get('/workcenters/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create work center
-router.post('/workcenters', asyncHandler(async (req, res) => {
+router.post('/workcenters', authenticate, asyncHandler(async (req, res) => {
   const {
     name, code, active, workcenter_type, capacity, time_efficiency,
     time_start, time_stop, costs_hour, costs_cycle, oee_target,
@@ -266,7 +267,7 @@ router.post('/workcenters', asyncHandler(async (req, res) => {
 }));
 
 // Update work center
-router.put('/workcenters/:id', asyncHandler(async (req, res) => {
+router.put('/workcenters/:id', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const allowedFields = [
     'name', 'code', 'active', 'workcenter_type', 'capacity', 'time_efficiency',
@@ -295,7 +296,7 @@ router.put('/workcenters/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete work center
-router.delete('/workcenters/:id', asyncHandler(async (req, res) => {
+router.delete('/workcenters/:id', authenticate, asyncHandler(async (req, res) => {
   const wc = await Workcenter.findByIdAndDelete(req.params.id);
   if (!wc) {
     return res.status(404).json({ error: 'Work center not found' });

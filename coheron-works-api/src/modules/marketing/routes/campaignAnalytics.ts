@@ -1,11 +1,12 @@
 import express from "express";
 import { CampaignAnalytics } from "../../../models/CampaignAnalytics.js";
 import { asyncHandler } from "../../../shared/middleware/asyncHandler.js";
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // GET /summary - Aggregate analytics
-router.get("/summary", asyncHandler(async (req, res) => {
+router.get("/summary", authenticate, asyncHandler(async (req, res) => {
   const { start_date, end_date } = req.query;
   const filter: any = { tenant_id: (req as any).tenantId };
   if (start_date || end_date) {
@@ -34,7 +35,7 @@ router.get("/summary", asyncHandler(async (req, res) => {
 }));
 
 // GET /top-performing
-router.get("/top-performing", asyncHandler(async (req, res) => {
+router.get("/top-performing", authenticate, asyncHandler(async (req, res) => {
   const { metric = "emails_opened", limit = "10" } = req.query;
   const filter: any = { tenant_id: (req as any).tenantId };
   const result = await CampaignAnalytics.aggregate([
@@ -48,7 +49,7 @@ router.get("/top-performing", asyncHandler(async (req, res) => {
 }));
 
 // GET /:campaignId
-router.get("/:campaignId", asyncHandler(async (req, res) => {
+router.get("/:campaignId", authenticate, asyncHandler(async (req, res) => {
   const filter = { tenant_id: (req as any).tenantId,
     campaign_id: req.params.campaignId };
   const data = await CampaignAnalytics.find(filter).sort({ date: -1 }).lean();
@@ -56,7 +57,7 @@ router.get("/:campaignId", asyncHandler(async (req, res) => {
 }));
 
 // GET /:campaignId/timeline
-router.get("/:campaignId/timeline", asyncHandler(async (req, res) => {
+router.get("/:campaignId/timeline", authenticate, asyncHandler(async (req, res) => {
   const { start_date, end_date } = req.query;
   const filter: any = { tenant_id: (req as any).tenantId,
     campaign_id: req.params.campaignId };
@@ -70,7 +71,7 @@ router.get("/:campaignId/timeline", asyncHandler(async (req, res) => {
 }));
 
 // POST /:campaignId/record
-router.post("/:campaignId/record", asyncHandler(async (req, res) => {
+router.post("/:campaignId/record", authenticate, asyncHandler(async (req, res) => {
   const { date, ...metrics } = req.body;
   const filter = { tenant_id: (req as any).tenantId,
     campaign_id: req.params.campaignId, date: new Date(date) };

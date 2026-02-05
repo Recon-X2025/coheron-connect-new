@@ -1,12 +1,13 @@
 import express from 'express';
 import Partner from '../../../shared/models/Partner.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
 // Get all partners
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { search, type } = req.query;
   const filter: any = {};
 
@@ -29,21 +30,21 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get partner by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const partner = await Partner.findById(req.params.id).lean();
   if (!partner) return res.status(404).json({ error: 'Partner not found' });
   res.json(partner);
 }));
 
 // Create partner
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const { name, email, phone, company, type, image_url } = req.body;
   const partner = await Partner.create({ name, email, phone, company, type: type || 'contact', image_url });
   res.status(201).json(partner);
 }));
 
 // Update partner
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const { name, email, phone, company, type, image_url } = req.body;
   const partner = await Partner.findByIdAndUpdate(
     req.params.id,
@@ -55,7 +56,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete partner
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const partner = await Partner.findByIdAndDelete(req.params.id);
   if (!partner) return res.status(404).json({ error: 'Partner not found' });
   res.json({ message: 'Partner deleted successfully' });

@@ -1,11 +1,12 @@
 import express from 'express';
 import { LeaveEncashment } from '../models/LeaveEncashment.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // List encashment records
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const filter: any = {};
   if (req.query.tenant_id) filter.tenant_id = req.query.tenant_id;
   if (req.query.employee_id) filter.employee_id = req.query.employee_id;
@@ -23,7 +24,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get single record
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const record = await LeaveEncashment.findById(req.params.id)
     .populate('employee_id', 'name employee_id')
     .populate('approved_by', 'name')
@@ -33,7 +34,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create encashment record
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const { days_available, days_encashed, days_carried_forward, daily_rate } = req.body;
 
   const days_lapsed = (days_available || 0) - (days_encashed || 0) - (days_carried_forward || 0);
@@ -49,7 +50,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update encashment record
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const existing = await LeaveEncashment.findById(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Leave encashment record not found' });
 
@@ -72,7 +73,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete encashment record
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const record = await LeaveEncashment.findById(req.params.id);
   if (!record) return res.status(404).json({ error: 'Leave encashment record not found' });
   if (record.status === 'processed') {
@@ -87,7 +88,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 // ============================================
 
 // Submit for approval
-router.put('/:id/submit', asyncHandler(async (req, res) => {
+router.put('/:id/submit', authenticate, asyncHandler(async (req, res) => {
   const record = await LeaveEncashment.findById(req.params.id);
   if (!record) return res.status(404).json({ error: 'Record not found' });
   if (record.status !== 'draft') return res.status(400).json({ error: 'Only draft records can be submitted' });
@@ -98,7 +99,7 @@ router.put('/:id/submit', asyncHandler(async (req, res) => {
 }));
 
 // Approve / Reject
-router.put('/:id/approve', asyncHandler(async (req, res) => {
+router.put('/:id/approve', authenticate, asyncHandler(async (req, res) => {
   const { status, approved_by } = req.body;
   if (!['approved', 'rejected'].includes(status)) {
     return res.status(400).json({ error: 'Status must be approved or rejected' });
@@ -115,7 +116,7 @@ router.put('/:id/approve', asyncHandler(async (req, res) => {
 }));
 
 // Mark as processed (linked to payroll)
-router.put('/:id/process', asyncHandler(async (req, res) => {
+router.put('/:id/process', authenticate, asyncHandler(async (req, res) => {
   const record = await LeaveEncashment.findById(req.params.id);
   if (!record) return res.status(404).json({ error: 'Record not found' });
   if (record.status !== 'approved') return res.status(400).json({ error: 'Only approved records can be processed' });
@@ -130,7 +131,7 @@ router.put('/:id/process', asyncHandler(async (req, res) => {
 // BULK YEAR-END PROCESSING
 // ============================================
 
-router.post('/bulk-year-end', asyncHandler(async (req, res) => {
+router.post('/bulk-year-end', authenticate, asyncHandler(async (req, res) => {
   const { tenant_id, period_year, employee_ids, default_encashment_type, daily_rates } = req.body;
 
   if (!tenant_id || !period_year) {

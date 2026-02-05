@@ -2,12 +2,13 @@ import express from 'express';
 import { WebsitePage, PaymentGateway, WebsiteSetting, WebsiteAnalytics } from '../../../models/WebsitePage.js';
 import { WebsiteOrder } from '../../../models/WebsiteOrder.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
 // Get all website pages
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { site_id, status, is_published, search } = req.query;
   const filter: any = {};
 
@@ -35,7 +36,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get page by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const page = await WebsitePage.findById(req.params.id).lean();
   if (!page) {
     return res.status(404).json({ error: 'Page not found' });
@@ -44,7 +45,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create page
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const { name, url, slug, site_id, template, is_published, status, content, blocks, meta_title, meta_description, meta_keywords, canonical_url, robots_meta, publish_at, created_by } = req.body;
 
   const pageStatus = status || (is_published ? 'published' : 'draft');
@@ -72,7 +73,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update page
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const { name, url, slug, template, status, is_published, content, blocks, meta_title, meta_description, meta_keywords, canonical_url, robots_meta, publish_at, updated_by } = req.body;
 
   const pageStatus = status || (is_published !== undefined ? (is_published ? 'published' : 'draft') : undefined);
@@ -104,7 +105,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete page
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const result = await WebsitePage.findByIdAndDelete(req.params.id);
   if (!result) {
     return res.status(404).json({ error: 'Page not found' });
@@ -113,7 +114,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Publish page
-router.post('/:id/publish', asyncHandler(async (req, res) => {
+router.post('/:id/publish', authenticate, asyncHandler(async (req, res) => {
   const result = await WebsitePage.findByIdAndUpdate(
     req.params.id,
     { status: 'published', is_published: true, published_at: new Date() },
@@ -132,7 +133,7 @@ router.post('/:id/publish', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get all payment gateways
-router.get('/payment-gateways', asyncHandler(async (req, res) => {
+router.get('/payment-gateways', authenticate, asyncHandler(async (req, res) => {
   const { is_active } = req.query;
   const filter: any = {};
   if (is_active !== undefined) filter.is_active = is_active === 'true';
@@ -142,7 +143,7 @@ router.get('/payment-gateways', asyncHandler(async (req, res) => {
 }));
 
 // Get payment gateway by ID
-router.get('/payment-gateways/:id', asyncHandler(async (req, res) => {
+router.get('/payment-gateways/:id', authenticate, asyncHandler(async (req, res) => {
   const gateway = await PaymentGateway.findById(req.params.id).lean();
   if (!gateway) {
     return res.status(404).json({ error: 'Payment gateway not found' });
@@ -151,7 +152,7 @@ router.get('/payment-gateways/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create payment gateway
-router.post('/payment-gateways', asyncHandler(async (req, res) => {
+router.post('/payment-gateways', authenticate, asyncHandler(async (req, res) => {
   const { name, provider, api_key, api_secret, webhook_secret, is_active, config } = req.body;
 
   const gateway = await PaymentGateway.create({
@@ -168,7 +169,7 @@ router.post('/payment-gateways', asyncHandler(async (req, res) => {
 }));
 
 // Update payment gateway
-router.put('/payment-gateways/:id', asyncHandler(async (req, res) => {
+router.put('/payment-gateways/:id', authenticate, asyncHandler(async (req, res) => {
   const { name, provider, api_key, api_secret, webhook_secret, is_active, config } = req.body;
 
   const result = await PaymentGateway.findByIdAndUpdate(
@@ -185,7 +186,7 @@ router.put('/payment-gateways/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete payment gateway
-router.delete('/payment-gateways/:id', asyncHandler(async (req, res) => {
+router.delete('/payment-gateways/:id', authenticate, asyncHandler(async (req, res) => {
   const result = await PaymentGateway.findByIdAndDelete(req.params.id);
   if (!result) {
     return res.status(404).json({ error: 'Payment gateway not found' });
@@ -194,7 +195,7 @@ router.delete('/payment-gateways/:id', asyncHandler(async (req, res) => {
 }));
 
 // Test payment gateway connection
-router.post('/payment-gateways/:id/test', asyncHandler(async (req, res) => {
+router.post('/payment-gateways/:id/test', authenticate, asyncHandler(async (req, res) => {
   const gateway = await PaymentGateway.findById(req.params.id).lean();
   if (!gateway) {
     return res.status(404).json({ error: 'Payment gateway not found' });
@@ -203,7 +204,7 @@ router.post('/payment-gateways/:id/test', asyncHandler(async (req, res) => {
 }));
 
 // Process payment
-router.post('/payments/process', asyncHandler(async (req, res) => {
+router.post('/payments/process', authenticate, asyncHandler(async (req, res) => {
   const { gateway_id, amount, currency, order_id, customer_data, payment_method } = req.body;
   const transactionId = `TXN-${Date.now()}`;
 
@@ -217,7 +218,7 @@ router.post('/payments/process', asyncHandler(async (req, res) => {
 }));
 
 // Process refund
-router.post('/payments/refund', asyncHandler(async (req, res) => {
+router.post('/payments/refund', authenticate, asyncHandler(async (req, res) => {
   const { gateway_id, transaction_id, amount, reason } = req.body;
 
   res.json({
@@ -233,7 +234,7 @@ router.post('/payments/refund', asyncHandler(async (req, res) => {
 // ============================================
 
 // Generate sitemap
-router.get('/seo/sitemap', asyncHandler(async (req, res) => {
+router.get('/seo/sitemap', authenticate, asyncHandler(async (req, res) => {
   const pages = await WebsitePage.find({ status: 'published' }).select('url updated_at').lean();
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -253,7 +254,7 @@ ${pages
 }));
 
 // Get robots.txt
-router.get('/seo/robots', asyncHandler(async (req, res) => {
+router.get('/seo/robots', authenticate, asyncHandler(async (req, res) => {
   const setting = await WebsiteSetting.findOne({ key: 'robots_txt' }).lean();
 
   const robotsTxt = setting
@@ -267,7 +268,7 @@ Sitemap: /sitemap.xml`;
 }));
 
 // Update robots.txt
-router.put('/seo/robots', asyncHandler(async (req, res) => {
+router.put('/seo/robots', authenticate, asyncHandler(async (req, res) => {
   const { content } = req.body;
 
   await WebsiteSetting.findOneAndUpdate(
@@ -284,7 +285,7 @@ router.put('/seo/robots', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get pageviews
-router.get('/analytics/pageviews', asyncHandler(async (req, res) => {
+router.get('/analytics/pageviews', authenticate, asyncHandler(async (req, res) => {
   const { start_date, end_date, page_id } = req.query;
   const match: any = { event_type: 'pageview' };
 
@@ -316,7 +317,7 @@ router.get('/analytics/pageviews', asyncHandler(async (req, res) => {
 }));
 
 // Get sales data
-router.get('/analytics/sales', asyncHandler(async (req, res) => {
+router.get('/analytics/sales', authenticate, asyncHandler(async (req, res) => {
   const { start_date, end_date } = req.query;
   const match: any = { status: 'completed' };
 
@@ -340,7 +341,7 @@ router.get('/analytics/sales', asyncHandler(async (req, res) => {
 }));
 
 // Track custom event
-router.post('/analytics/events', asyncHandler(async (req, res) => {
+router.post('/analytics/events', authenticate, asyncHandler(async (req, res) => {
   const { event_type, page_id, visitor_id, event_data } = req.body;
 
   await WebsiteAnalytics.create({

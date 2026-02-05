@@ -1,12 +1,13 @@
 import express from 'express';
 import { LandedCost } from '../../../models/LandedCost.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
 // List landed costs
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { status, purchase_order_id } = req.query;
   const filter: any = { tenant_id: (req as any).tenantId };
   if (status) filter.status = status;
@@ -19,21 +20,21 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Create landed cost
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const data = { ...req.body, tenant_id: (req as any).tenantId, created_by: (req as any).userId };
   const lc = await LandedCost.create(data);
   res.status(201).json(lc);
 }));
 
 // Get detail
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const lc = await LandedCost.findById(req.params.id).lean();
   if (!lc) return res.status(404).json({ error: 'Landed cost not found' });
   res.json(lc);
 }));
 
 // Update (draft only)
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const lc = await LandedCost.findById(req.params.id);
   if (!lc) return res.status(404).json({ error: 'Landed cost not found' });
   if (lc.status !== 'draft') return res.status(400).json({ error: 'Can only update draft entries' });
@@ -43,7 +44,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Allocate costs to items
-router.post('/:id/allocate', asyncHandler(async (req, res) => {
+router.post('/:id/allocate', authenticate, asyncHandler(async (req, res) => {
   const lc = await LandedCost.findById(req.params.id);
   if (!lc) return res.status(404).json({ error: 'Landed cost not found' });
   if (lc.status !== 'draft') return res.status(400).json({ error: 'Already allocated' });
@@ -71,7 +72,7 @@ router.post('/:id/allocate', asyncHandler(async (req, res) => {
 }));
 
 // Post allocation
-router.post('/:id/post', asyncHandler(async (req, res) => {
+router.post('/:id/post', authenticate, asyncHandler(async (req, res) => {
   const lc = await LandedCost.findById(req.params.id);
   if (!lc) return res.status(404).json({ error: 'Landed cost not found' });
   if (lc.status !== 'allocated') return res.status(400).json({ error: 'Must allocate before posting' });

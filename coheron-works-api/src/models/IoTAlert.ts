@@ -28,4 +28,4 @@ const iotAlertSchema = new Schema({
 iotAlertSchema.index({ tenant_id: 1, is_acknowledged: 1, created_at: -1 });
 iotAlertSchema.index({ tenant_id: 1, device_id: 1 });
 
-export default mongoose.model('IoTAlert', iotAlertSchema);
+export default mongoose.models.IoTAlert || mongoose.model('IoTAlert', iotAlertSchema);

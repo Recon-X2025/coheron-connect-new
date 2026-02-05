@@ -51,8 +51,7 @@ describe('Auth API', () => {
   describe('Protected routes', () => {
     it('should return 401 without token', async () => {
       const res = await request(app).get('/api/leads');
-      // Leads route has no auth middleware currently, so this tests the route exists
-      expect(res.status).not.toBe(401);
+      expect(res.status).toBe(401);
     });
   });
 });

@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import { CrmTask, CalendarEvent, CrmAutomationWorkflow } from '../../../models/CrmTask.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
@@ -11,7 +12,7 @@ const router = express.Router();
 // ============================================
 
 // Get all tasks
-router.get('/tasks', asyncHandler(async (req, res) => {
+router.get('/tasks', authenticate, asyncHandler(async (req, res) => {
   const { user_id, assigned_to_id, state, task_type, related_model, related_id, start_date, end_date, search } = req.query;
   const filter: any = {};
 
@@ -54,7 +55,7 @@ router.get('/tasks', asyncHandler(async (req, res) => {
 }));
 
 // Get task by ID
-router.get('/tasks/:id', asyncHandler(async (req, res) => {
+router.get('/tasks/:id', authenticate, asyncHandler(async (req, res) => {
   const task = await CrmTask.findById(req.params.id)
     .populate('assigned_to_id', 'name')
     .populate('created_by_id', 'name')
@@ -74,7 +75,7 @@ router.get('/tasks/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create task
-router.post('/tasks', asyncHandler(async (req, res) => {
+router.post('/tasks', authenticate, asyncHandler(async (req, res) => {
   const {
     name, description, task_type, priority, state,
     assigned_to_id, created_by_id, due_date, related_model, related_id, reminder_date,
@@ -98,7 +99,7 @@ router.post('/tasks', asyncHandler(async (req, res) => {
 }));
 
 // Update task
-router.put('/tasks/:id', asyncHandler(async (req, res) => {
+router.put('/tasks/:id', authenticate, asyncHandler(async (req, res) => {
   const { name, description, task_type, priority, state, assigned_to_id, due_date, reminder_date } = req.body;
 
   const updateData: any = {};
@@ -121,7 +122,7 @@ router.put('/tasks/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete task
-router.delete('/tasks/:id', asyncHandler(async (req, res) => {
+router.delete('/tasks/:id', authenticate, asyncHandler(async (req, res) => {
   const task = await CrmTask.findByIdAndDelete(req.params.id);
 
   if (!task) {
@@ -136,7 +137,7 @@ router.delete('/tasks/:id', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get all events
-router.get('/events', asyncHandler(async (req, res) => {
+router.get('/events', authenticate, asyncHandler(async (req, res) => {
   const { user_id, start_date, end_date, event_type, related_model, related_id } = req.query;
   const filter: any = {};
 
@@ -169,7 +170,7 @@ router.get('/events', asyncHandler(async (req, res) => {
 }));
 
 // Get event by ID
-router.get('/events/:id', asyncHandler(async (req, res) => {
+router.get('/events/:id', authenticate, asyncHandler(async (req, res) => {
   const event = await CalendarEvent.findById(req.params.id)
     .populate('created_by_id', 'name')
     .lean();
@@ -187,7 +188,7 @@ router.get('/events/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create event
-router.post('/events', asyncHandler(async (req, res) => {
+router.post('/events', authenticate, asyncHandler(async (req, res) => {
   const {
     title, description, event_type, start_date, start_time, end_date, end_time,
     all_day, location, organizer_id, attendee_ids, related_model, related_id,
@@ -216,7 +217,7 @@ router.post('/events', asyncHandler(async (req, res) => {
 }));
 
 // Update event
-router.put('/events/:id', asyncHandler(async (req, res) => {
+router.put('/events/:id', authenticate, asyncHandler(async (req, res) => {
   const {
     title, description, event_type, start_date, start_time, end_date, end_time,
     all_day, location, organizer_id, attendee_ids, reminder_minutes,
@@ -246,7 +247,7 @@ router.put('/events/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete event
-router.delete('/events/:id', asyncHandler(async (req, res) => {
+router.delete('/events/:id', authenticate, asyncHandler(async (req, res) => {
   const event = await CalendarEvent.findByIdAndDelete(req.params.id);
 
   if (!event) {
@@ -261,7 +262,7 @@ router.delete('/events/:id', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get all workflows
-router.get('/automation/workflows', asyncHandler(async (req, res) => {
+router.get('/automation/workflows', authenticate, asyncHandler(async (req, res) => {
   const { is_active, trigger_type } = req.query;
   const filter: any = {};
 
@@ -279,7 +280,7 @@ router.get('/automation/workflows', asyncHandler(async (req, res) => {
 }));
 
 // Get workflow by ID
-router.get('/automation/workflows/:id', asyncHandler(async (req, res) => {
+router.get('/automation/workflows/:id', authenticate, asyncHandler(async (req, res) => {
   const workflow = await CrmAutomationWorkflow.findById(req.params.id).lean();
 
   if (!workflow) {
@@ -290,7 +291,7 @@ router.get('/automation/workflows/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create workflow
-router.post('/automation/workflows', asyncHandler(async (req, res) => {
+router.post('/automation/workflows', authenticate, asyncHandler(async (req, res) => {
   const { name, description, trigger_type, trigger_config, actions, conditions, is_active } = req.body;
 
   const workflow = await CrmAutomationWorkflow.create({
@@ -307,7 +308,7 @@ router.post('/automation/workflows', asyncHandler(async (req, res) => {
 }));
 
 // Update workflow
-router.put('/automation/workflows/:id', asyncHandler(async (req, res) => {
+router.put('/automation/workflows/:id', authenticate, asyncHandler(async (req, res) => {
   const { name, description, trigger_type, trigger_config, actions, conditions, is_active } = req.body;
 
   const updateData: any = {};
@@ -329,7 +330,7 @@ router.put('/automation/workflows/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete workflow
-router.delete('/automation/workflows/:id', asyncHandler(async (req, res) => {
+router.delete('/automation/workflows/:id', authenticate, asyncHandler(async (req, res) => {
   const workflow = await CrmAutomationWorkflow.findByIdAndDelete(req.params.id);
 
   if (!workflow) {
@@ -340,7 +341,7 @@ router.delete('/automation/workflows/:id', asyncHandler(async (req, res) => {
 }));
 
 // Execute workflow
-router.post('/automation/workflows/:id/execute', asyncHandler(async (req, res) => {
+router.post('/automation/workflows/:id/execute', authenticate, asyncHandler(async (req, res) => {
   const { record_id, record_model } = req.body;
 
   if (!record_id || !record_model) {

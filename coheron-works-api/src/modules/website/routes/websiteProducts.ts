@@ -3,11 +3,12 @@ import { WebsiteProduct, WebsiteProductVariant, WebsiteCategory, WebsiteProductC
 import Product from '../../../shared/models/Product.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // Get all website products
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { site_id, is_published, category_id, search } = req.query;
   const filter: any = {};
 
@@ -47,7 +48,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get product by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const product = await WebsiteProduct.findById(req.params.id)
     .populate('product_id', 'name default_code list_price standard_price qty_available image_url type categ_id')
     .lean();
@@ -82,7 +83,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Sync product from ERP
-router.post('/sync', asyncHandler(async (req, res) => {
+router.post('/sync', authenticate, asyncHandler(async (req, res) => {
   const { product_id, site_id } = req.body;
 
   const product = await Product.findById(product_id).lean();
@@ -111,7 +112,7 @@ router.post('/sync', asyncHandler(async (req, res) => {
 }));
 
 // Update website product
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const { is_published, is_featured, display_order, short_description, long_description, seo_title, seo_description, seo_keywords } = req.body;
 
   const updateData: any = {};

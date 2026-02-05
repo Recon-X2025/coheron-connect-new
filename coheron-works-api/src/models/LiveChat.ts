@@ -32,4 +32,4 @@ const chatWidgetConfigSchema = new Schema({
 
 chatWidgetConfigSchema.index({ tenant_id: 1 });
 
-export const ChatWidgetConfig = mongoose.model('ChatWidgetConfig', chatWidgetConfigSchema);
+export const ChatWidgetConfig = mongoose.models.ChatWidgetConfig || mongoose.model('ChatWidgetConfig', chatWidgetConfigSchema);

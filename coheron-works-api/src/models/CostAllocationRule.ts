@@ -26,4 +26,4 @@ const costAllocationRuleSchema = new Schema({
 
 costAllocationRuleSchema.index({ tenant_id: 1, source_cost_center_id: 1 });
 
-export default mongoose.model('CostAllocationRule', costAllocationRuleSchema);
+export default mongoose.models.CostAllocationRule || mongoose.model('CostAllocationRule', costAllocationRuleSchema);

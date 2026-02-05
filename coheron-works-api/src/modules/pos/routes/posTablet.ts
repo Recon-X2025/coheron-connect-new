@@ -2,11 +2,12 @@ import express from 'express';
 import mongoose from 'mongoose';
 import PosOrder from '../../../models/PosOrder.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // Tablet POS configuration
-router.get('/config', asyncHandler(async (req, res) => {
+router.get('/config', authenticate, asyncHandler(async (req, res) => {
   const tenantId = req.user?.tenant_id;
   res.json({
     tenant_id: tenantId,
@@ -25,7 +26,7 @@ router.get('/config', asyncHandler(async (req, res) => {
 }));
 
 // Lightweight product catalog for tablet
-router.get('/catalog', asyncHandler(async (req, res) => {
+router.get('/catalog', authenticate, asyncHandler(async (req, res) => {
   const tenantId = req.user?.tenant_id;
   const { category, search, page = 1, limit = 50 } = req.query;
 
@@ -47,7 +48,7 @@ router.get('/catalog', asyncHandler(async (req, res) => {
 }));
 
 // Quick sale - minimal payload for fast checkout
-router.post('/quick-sale', asyncHandler(async (req, res) => {
+router.post('/quick-sale', authenticate, asyncHandler(async (req, res) => {
   const tenantId = req.user?.tenant_id;
   const { items, payment_method, payment_amount, customer_id } = req.body;
 
@@ -96,7 +97,7 @@ router.post('/quick-sale', asyncHandler(async (req, res) => {
 }));
 
 // Offline sync - get data needed for offline operation
-router.get('/offline-sync', asyncHandler(async (req, res) => {
+router.get('/offline-sync', authenticate, asyncHandler(async (req, res) => {
   const tenantId = req.user?.tenant_id;
   const { since } = req.query;
 
@@ -116,7 +117,7 @@ router.get('/offline-sync', asyncHandler(async (req, res) => {
 }));
 
 // Push offline transactions
-router.post('/sync', asyncHandler(async (req, res) => {
+router.post('/sync', authenticate, asyncHandler(async (req, res) => {
   const { transactions } = req.body;
   if (!Array.isArray(transactions)) {
     return res.status(400).json({ error: 'transactions must be an array' });

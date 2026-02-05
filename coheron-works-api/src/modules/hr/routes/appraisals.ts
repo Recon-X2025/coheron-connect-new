@@ -1,12 +1,13 @@
 import express from 'express';
 import { Appraisal } from '../../../models/Appraisal.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
 // Get appraisals
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { employee_id, state } = req.query;
   const filter: any = {};
 
@@ -40,7 +41,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Create appraisal
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const { employee_id, manager_id, appraisal_period, date_close } = req.body;
 
   const appraisal = await Appraisal.create({
@@ -51,7 +52,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update appraisal
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { final_assessment, state } = req.body;
 

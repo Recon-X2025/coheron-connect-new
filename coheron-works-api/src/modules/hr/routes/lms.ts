@@ -4,8 +4,10 @@ import { Certification } from '../models/Certification.js';
 import { CertificationRecord } from '../models/CertificationRecord.js';
 import { LearningEnrollment } from '../models/LearningEnrollment.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
+router.use(authenticate);
 
 // ============================================
 // LEARNING PATHS

@@ -1,5 +1,6 @@
 import express from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { Payment } from '../../../shared/models/Payment.js';
 import { createOrder, verifySignature, verifyWebhookSignature, refundPayment } from '../services/paymentService.js';
 import logger from '../../../shared/utils/logger.js';
@@ -7,7 +8,7 @@ import logger from '../../../shared/utils/logger.js';
 const router = express.Router();
 
 // Create Razorpay order
-router.post('/create-order', asyncHandler(async (req, res) => {
+router.post('/create-order', authenticate, asyncHandler(async (req, res) => {
   const { amount, currency, receipt, notes, entity_type, entity_id, tenant_id } = req.body;
 
   if (!amount) {
@@ -32,7 +33,7 @@ router.post('/create-order', asyncHandler(async (req, res) => {
 }));
 
 // Verify payment
-router.post('/verify', asyncHandler(async (req, res) => {
+router.post('/verify', authenticate, asyncHandler(async (req, res) => {
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
   const isValid = verifySignature({
@@ -87,7 +88,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), asyncHandler(
 }));
 
 // Refund
-router.post('/refund', asyncHandler(async (req, res) => {
+router.post('/refund', authenticate, asyncHandler(async (req, res) => {
   const { payment_id, amount } = req.body;
 
   if (!payment_id) {

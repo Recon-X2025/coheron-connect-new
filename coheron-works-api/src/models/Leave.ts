@@ -36,5 +36,5 @@ const leaveBalanceSchema = new Schema({
 
 leaveBalanceSchema.index({ employee_id: 1, year: 1 });
 
-export const LeaveRequest = mongoose.model('LeaveRequest', leaveRequestSchema);
-export const LeaveBalance = mongoose.model('LeaveBalance', leaveBalanceSchema);
+export const LeaveRequest = mongoose.models.LeaveRequest || mongoose.model('LeaveRequest', leaveRequestSchema);
+export const LeaveBalance = mongoose.models.LeaveBalance || mongoose.model('LeaveBalance', leaveBalanceSchema);

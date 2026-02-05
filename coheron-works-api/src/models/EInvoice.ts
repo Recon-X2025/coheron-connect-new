@@ -33,4 +33,4 @@ eInvoiceSchema.index({ invoice_id: 1 }, { unique: true });
 eInvoiceSchema.index({ irn: 1 });
 eInvoiceSchema.index({ tenant_id: 1, created_at: -1 });
 
-export const EInvoice = mongoose.model('EInvoice', eInvoiceSchema);
+export const EInvoice = mongoose.models.EInvoice || mongoose.model('EInvoice', eInvoiceSchema);

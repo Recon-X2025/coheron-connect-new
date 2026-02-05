@@ -34,4 +34,4 @@ const customAutomationSchema = new Schema({
 
 customAutomationSchema.index({ tenant_id: 1, entity_type: 1, trigger_type: 1, is_active: 1 });
 
-export const CustomAutomation = mongoose.model('CustomAutomation', customAutomationSchema);
+export const CustomAutomation = mongoose.models.CustomAutomation || mongoose.model('CustomAutomation', customAutomationSchema);

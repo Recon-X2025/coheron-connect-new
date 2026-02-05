@@ -91,6 +91,6 @@ InvoiceSchema.index({ invoice_number: 1 });
 InvoiceSchema.index({ tenant_id: 1 });
 InvoiceSchema.index({ tenant_id: 1, state: 1 });
 
-const InvoiceModel = mongoose.model('Invoice', InvoiceSchema);
+const InvoiceModel = mongoose.models.Invoice || mongoose.model('Invoice', InvoiceSchema);
 export { InvoiceModel as Invoice };
 export default InvoiceModel;

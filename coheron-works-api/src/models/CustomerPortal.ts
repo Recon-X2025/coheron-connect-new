@@ -61,5 +61,5 @@ const portalSettingsSchema = new Schema({
   privacy_url: { type: String },
 }, schemaOptions);
 
-export const PortalUser = mongoose.model('PortalUser', portalUserSchema);
-export const PortalSettings = mongoose.model('PortalSettings', portalSettingsSchema);
+export const PortalUser = mongoose.models.PortalUser || mongoose.model('PortalUser', portalUserSchema);
+export const PortalSettings = mongoose.models.PortalSettings || mongoose.model('PortalSettings', portalSettingsSchema);

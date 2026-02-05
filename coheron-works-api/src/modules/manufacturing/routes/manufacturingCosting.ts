@@ -1,5 +1,6 @@
 import express from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import MoCosting from '../../../models/MoCosting.js';
 import MoMaterialConsumption from '../../../models/MoMaterialConsumption.js';
 import MoSubcontracting from '../../../models/MoSubcontracting.js';
@@ -16,7 +17,7 @@ const router = express.Router();
 // ============================================
 
 // Get costing for MO
-router.get('/:mo_id', asyncHandler(async (req, res) => {
+router.get('/:mo_id', authenticate, asyncHandler(async (req, res) => {
   const { mo_id } = req.params;
 
   const costs = await MoCosting.find({ mo_id }).sort({ cost_type: 1 }).lean();
@@ -42,7 +43,7 @@ router.get('/:mo_id', asyncHandler(async (req, res) => {
 }));
 
 // Calculate and update costing for MO
-router.post('/:mo_id/calculate', asyncHandler(async (req, res) => {
+router.post('/:mo_id/calculate', authenticate, asyncHandler(async (req, res) => {
   const { mo_id } = req.params;
 
   const mo = await ManufacturingOrder.findById(mo_id).lean();
@@ -136,7 +137,7 @@ router.post('/:mo_id/calculate', asyncHandler(async (req, res) => {
 }));
 
 // Get costing analytics
-router.get('/analytics/summary', asyncHandler(async (req, res) => {
+router.get('/analytics/summary', authenticate, asyncHandler(async (req, res) => {
   const { date_from, date_to, product_id } = req.query;
 
   // Build MO filter for date/product filtering
@@ -220,7 +221,7 @@ router.get('/analytics/summary', asyncHandler(async (req, res) => {
 }));
 
 // Get OEE tracking
-router.get('/oee/tracking', asyncHandler(async (req, res) => {
+router.get('/oee/tracking', authenticate, asyncHandler(async (req, res) => {
   const { workcenter_id, date_from, date_to } = req.query;
   const filter: any = {};
 
@@ -269,7 +270,7 @@ router.get('/oee/tracking', asyncHandler(async (req, res) => {
 }));
 
 // Get KPI summary
-router.get('/kpi/:mo_id', asyncHandler(async (req, res) => {
+router.get('/kpi/:mo_id', authenticate, asyncHandler(async (req, res) => {
   const { mo_id } = req.params;
 
   const result = await MoKpiSummary.find({ mo_id }).sort({ metric_name: 1 }).lean();

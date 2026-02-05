@@ -2,6 +2,7 @@ import express from 'express';
 import { CannedResponse } from '../../../models/CannedResponse.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
@@ -10,7 +11,7 @@ const router = express.Router();
 // ============================================
 
 // Get all canned responses
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { category, is_public, search, created_by } = req.query;
   const filter: any = {};
 
@@ -43,7 +44,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get canned response by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const response = await CannedResponse.findById(req.params.id)
     .populate('created_by', 'name')
     .lean();
@@ -57,7 +58,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create canned response
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const { name, shortcut, content, category, is_public, created_by } = req.body;
 
   if (!name || !content) {
@@ -77,7 +78,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update canned response
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const { name, shortcut, content, category, is_public } = req.body;
   const updateData: any = {};
 
@@ -100,7 +101,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Increment usage count
-router.post('/:id/use', asyncHandler(async (req, res) => {
+router.post('/:id/use', authenticate, asyncHandler(async (req, res) => {
   const result = await CannedResponse.findByIdAndUpdate(
     req.params.id,
     { $inc: { usage_count: 1 } },
@@ -115,7 +116,7 @@ router.post('/:id/use', asyncHandler(async (req, res) => {
 }));
 
 // Delete canned response
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const result = await CannedResponse.findByIdAndDelete(req.params.id);
   if (!result) {
     return res.status(404).json({ error: 'Canned response not found' });

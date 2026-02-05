@@ -2,6 +2,7 @@ import express from 'express';
 import { SupportSurvey, SurveyResponse } from '../../../models/SupportSurvey.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
@@ -10,7 +11,7 @@ const router = express.Router();
 // ============================================
 
 // Get all surveys
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { is_active, survey_type } = req.query;
   const filter: any = {};
 
@@ -27,7 +28,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get survey by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const survey = await SupportSurvey.findById(req.params.id).lean();
   if (!survey) {
     return res.status(404).json({ error: 'Survey not found' });
@@ -39,7 +40,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create survey
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const { name, survey_type, description, questions, trigger_event, is_active } = req.body;
 
   if (!name || !survey_type || !questions) {
@@ -59,7 +60,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update survey
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const { name, description, questions, trigger_event, is_active } = req.body;
   const updateData: any = {};
 
@@ -86,7 +87,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 // ============================================
 
 // Submit survey response
-router.post('/:id/responses', asyncHandler(async (req, res) => {
+router.post('/:id/responses', authenticate, asyncHandler(async (req, res) => {
   const { ticket_id, partner_id, responses, score, feedback } = req.body;
 
   if (!responses) {
@@ -106,7 +107,7 @@ router.post('/:id/responses', asyncHandler(async (req, res) => {
 }));
 
 // Get survey responses
-router.get('/:id/responses', asyncHandler(async (req, res) => {
+router.get('/:id/responses', authenticate, asyncHandler(async (req, res) => {
   const filter = { survey_id: req.params.id };
   const pagination = getPaginationParams(req);
   const paginatedResult = await paginateQuery(
@@ -129,7 +130,7 @@ router.get('/:id/responses', asyncHandler(async (req, res) => {
 }));
 
 // Get survey analytics
-router.get('/:id/analytics', asyncHandler(async (req, res) => {
+router.get('/:id/analytics', authenticate, asyncHandler(async (req, res) => {
   const responses = await SurveyResponse.find({ survey_id: req.params.id }).select('score responses').lean();
 
   const scores = responses.map((r: any) => r.score).filter((s: any): s is number => s !== null && s !== undefined);

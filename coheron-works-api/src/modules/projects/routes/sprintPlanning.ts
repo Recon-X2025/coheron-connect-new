@@ -4,8 +4,10 @@ import SprintIssue from '../../../models/SprintIssue.js';
 import Issue from '../../../models/Issue.js';
 import Backlog from '../../../models/Backlog.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
+router.use(authenticate);
 
 // ============================================
 // SPRINT PLANNING & CAPACITY

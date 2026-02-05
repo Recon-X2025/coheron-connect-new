@@ -2,12 +2,13 @@ import express from 'express';
 import AccountAccount from '../../../models/AccountAccount.js';
 import AccountMove from '../../../models/AccountMove.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // ========== TRIAL BALANCE ==========
 
-router.get('/trial-balance', asyncHandler(async (req, res) => {
+router.get('/trial-balance', authenticate, asyncHandler(async (req, res) => {
   const { date_from, date_to, account_type } = req.query;
   const dateFrom = date_from ? new Date(date_from as string) : new Date(new Date().getFullYear(), 0, 1);
   const dateTo = date_to ? new Date(date_to as string) : new Date();
@@ -68,7 +69,7 @@ router.get('/trial-balance', asyncHandler(async (req, res) => {
 
 // ========== BALANCE SHEET ==========
 
-router.get('/balance-sheet', asyncHandler(async (req, res) => {
+router.get('/balance-sheet', authenticate, asyncHandler(async (req, res) => {
   const { date_as_of } = req.query;
   const dateAsOf = date_as_of ? new Date(date_as_of as string) : new Date();
 
@@ -131,7 +132,7 @@ router.get('/balance-sheet', asyncHandler(async (req, res) => {
 
 // ========== PROFIT & LOSS ==========
 
-router.get('/profit-loss', asyncHandler(async (req, res) => {
+router.get('/profit-loss', authenticate, asyncHandler(async (req, res) => {
   const { date_from, date_to } = req.query;
   const dateFrom = date_from ? new Date(date_from as string) : new Date(new Date().getFullYear(), 0, 1);
   const dateTo = date_to ? new Date(date_to as string) : new Date();
@@ -201,7 +202,7 @@ router.get('/profit-loss', asyncHandler(async (req, res) => {
 
 // ========== CASH FLOW ==========
 
-router.get('/cash-flow', asyncHandler(async (req, res) => {
+router.get('/cash-flow', authenticate, asyncHandler(async (req, res) => {
   const { date_from, date_to } = req.query;
   const dateFrom = date_from ? new Date(date_from as string) : new Date(new Date().getFullYear(), 0, 1);
   const dateTo = date_to ? new Date(date_to as string) : new Date();

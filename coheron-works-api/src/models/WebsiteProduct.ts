@@ -76,9 +76,9 @@ WebsiteProductCategorySchema.index({ website_product_id: 1 });
 WebsiteProductCategorySchema.index({ category_id: 1 });
 WebsiteProductCategorySchema.index({ website_product_id: 1, category_id: 1 });
 
-export const WebsiteProduct = mongoose.model<IWebsiteProduct>('WebsiteProduct', websiteProductSchema);
-export const WebsiteProductVariant = mongoose.model('WebsiteProductVariant', WebsiteProductVariantSchema);
-export const WebsiteCategory = mongoose.model('WebsiteCategory', WebsiteCategorySchema);
-export const WebsiteProductCategory = mongoose.model('WebsiteProductCategory', WebsiteProductCategorySchema);
+export const WebsiteProduct = mongoose.models.WebsiteProduct || mongoose.model<IWebsiteProduct>('WebsiteProduct', websiteProductSchema);
+export const WebsiteProductVariant = mongoose.models.WebsiteProductVariant || mongoose.model('WebsiteProductVariant', WebsiteProductVariantSchema);
+export const WebsiteCategory = mongoose.models.WebsiteCategory || mongoose.model('WebsiteCategory', WebsiteCategorySchema);
+export const WebsiteProductCategory = mongoose.models.WebsiteProductCategory || mongoose.model('WebsiteProductCategory', WebsiteProductCategorySchema);
 
 export default WebsiteProduct;

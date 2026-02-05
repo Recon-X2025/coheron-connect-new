@@ -39,4 +39,4 @@ saleOrderSchema.index({ user_id: 1 });
 saleOrderSchema.index({ opportunity_id: 1 });
 saleOrderSchema.index({ partner_id: 1, date_order: -1 });
 
-export const SaleOrder = mongoose.model('SaleOrder', saleOrderSchema);
+export const SaleOrder = mongoose.models.SaleOrder || mongoose.model('SaleOrder', saleOrderSchema);

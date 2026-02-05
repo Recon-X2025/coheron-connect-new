@@ -2,9 +2,11 @@ import express from 'express';
 import IssueComment from '../../../models/IssueComment.js';
 import Issue from '../../../models/Issue.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
+router.use(authenticate);
 
 // ============================================
 // ISSUE COMMENTS CRUD

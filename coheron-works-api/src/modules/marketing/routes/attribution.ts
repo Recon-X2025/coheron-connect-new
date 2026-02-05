@@ -2,6 +2,7 @@ import express from 'express';
 import { AttributionModel } from '../models/AttributionModel.js';
 import { TouchPoint } from '../models/TouchPoint.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
@@ -9,19 +10,19 @@ const router = express.Router();
 // ATTRIBUTION MODELS
 // ============================================
 
-router.get('/models', asyncHandler(async (req, res) => {
+router.get('/models', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const models = await AttributionModel.find({ tenant_id }).sort({ created_at: -1 }).lean();
   res.json(models);
 }));
 
-router.get('/models/:id', asyncHandler(async (req, res) => {
+router.get('/models/:id', authenticate, asyncHandler(async (req, res) => {
   const model = await AttributionModel.findById(req.params.id).lean();
   if (!model) return res.status(404).json({ error: 'Model not found' });
   res.json(model);
 }));
 
-router.post('/models', asyncHandler(async (req, res) => {
+router.post('/models', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   if (req.body.is_default) {
     await AttributionModel.updateMany({ tenant_id }, { is_default: false });
@@ -30,7 +31,7 @@ router.post('/models', asyncHandler(async (req, res) => {
   res.status(201).json(model);
 }));
 
-router.put('/models/:id', asyncHandler(async (req, res) => {
+router.put('/models/:id', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   if (req.body.is_default) {
     await AttributionModel.updateMany({ tenant_id }, { is_default: false });
@@ -40,7 +41,7 @@ router.put('/models/:id', asyncHandler(async (req, res) => {
   res.json(model);
 }));
 
-router.delete('/models/:id', asyncHandler(async (req, res) => {
+router.delete('/models/:id', authenticate, asyncHandler(async (req, res) => {
   const model = await AttributionModel.findByIdAndDelete(req.params.id);
   if (!model) return res.status(404).json({ error: 'Model not found' });
   res.json({ message: 'Model deleted successfully' });
@@ -50,7 +51,7 @@ router.delete('/models/:id', asyncHandler(async (req, res) => {
 // TOUCHPOINTS
 // ============================================
 
-router.get('/touchpoints', asyncHandler(async (req, res) => {
+router.get('/touchpoints', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const filter: any = { tenant_id };
   if (req.query.contact_id) filter.contact_id = req.query.contact_id;
@@ -67,7 +68,7 @@ router.get('/touchpoints', asyncHandler(async (req, res) => {
 }));
 
 // Channel performance
-router.get('/channel-performance', asyncHandler(async (req, res) => {
+router.get('/channel-performance', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const matchFilter: any = { tenant_id };
   if (req.query.from || req.query.to) {
@@ -85,7 +86,7 @@ router.get('/channel-performance', asyncHandler(async (req, res) => {
 }));
 
 // Campaign ROI
-router.get('/campaign-roi', asyncHandler(async (req, res) => {
+router.get('/campaign-roi', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const results = await TouchPoint.aggregate([
     { $match: { tenant_id, campaign: { $ne: '' } } },
@@ -97,7 +98,7 @@ router.get('/campaign-roi', asyncHandler(async (req, res) => {
 }));
 
 // Calculate attribution
-router.post('/calculate', asyncHandler(async (req, res) => {
+router.post('/calculate', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { model_id } = req.body;
   const model = await AttributionModel.findById(model_id).lean();

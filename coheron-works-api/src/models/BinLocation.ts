@@ -28,4 +28,4 @@ binLocationSchema.index({ tenant_id: 1, warehouse_id: 1, bin_code: 1 }, { unique
 binLocationSchema.index({ tenant_id: 1, barcode: 1 }, { unique: true });
 binLocationSchema.index({ zone_id: 1 });
 
-export const BinLocation = mongoose.model('BinLocation', binLocationSchema);
+export const BinLocation = mongoose.models.BinLocation || mongoose.model('BinLocation', binLocationSchema);

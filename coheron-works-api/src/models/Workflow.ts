@@ -63,5 +63,5 @@ workflowSchema.index({ tenant_id: 1 });
 workflowSchema.index({ tenant_id: 1, module: 1 });
 workflowSchema.index({ tenant_id: 1, is_active: 1 });
 
-export const Workflow = mongoose.model('Workflow', workflowSchema);
+export const Workflow = mongoose.models.Workflow || mongoose.model('Workflow', workflowSchema);
 export default Workflow;

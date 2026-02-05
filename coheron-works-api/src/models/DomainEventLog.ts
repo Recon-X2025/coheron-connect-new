@@ -24,7 +24,7 @@ const DomainEventLogSchema = new Schema<IDomainEventLog>(
     aggregate_id: { type: String, index: true },
     status: { type: String, enum: ['processing', 'completed', 'partial_failure', 'failed'], default: 'processing' },
     handler_results: [{ handler: String, success: Boolean, error: String }],
-    created_at: { type: Date, default: Date.now, index: true },
+    created_at: { type: Date, default: Date.now },
   },
   { timestamps: false },
 );

@@ -2,11 +2,12 @@ import express from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 import { LandingPage } from '../../../models/LandingPage.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // List landing pages
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { is_published, campaign_id } = req.query;
   const filter: any = {};
   if (is_published !== undefined) filter.is_published = is_published === 'true';
@@ -17,42 +18,42 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Create landing page
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const page = new LandingPage({ ...req.body, created_by: (req as any).user?.id });
   await page.save();
   res.status(201).json(page);
 }));
 
 // Get landing page detail
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const page = await LandingPage.findById(req.params.id).lean();
   if (!page) return res.status(404).json({ message: 'Landing page not found' });
   res.json(page);
 }));
 
 // Update landing page
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const page = await LandingPage.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
   if (!page) return res.status(404).json({ message: 'Landing page not found' });
   res.json(page);
 }));
 
 // Publish landing page
-router.post('/:id/publish', asyncHandler(async (req, res) => {
+router.post('/:id/publish', authenticate, asyncHandler(async (req, res) => {
   const page = await LandingPage.findByIdAndUpdate(req.params.id, { is_published: true }, { new: true });
   if (!page) return res.status(404).json({ message: 'Landing page not found' });
   res.json(page);
 }));
 
 // Unpublish landing page
-router.post('/:id/unpublish', asyncHandler(async (req, res) => {
+router.post('/:id/unpublish', authenticate, asyncHandler(async (req, res) => {
   const page = await LandingPage.findByIdAndUpdate(req.params.id, { is_published: false }, { new: true });
   if (!page) return res.status(404).json({ message: 'Landing page not found' });
   res.json(page);
 }));
 
 // Page analytics
-router.get('/:id/analytics', asyncHandler(async (req, res) => {
+router.get('/:id/analytics', authenticate, asyncHandler(async (req, res) => {
   const page = await LandingPage.findById(req.params.id).select('name slug visits submissions conversion_rate is_published').lean();
   if (!page) return res.status(404).json({ message: 'Landing page not found' });
   res.json(page);

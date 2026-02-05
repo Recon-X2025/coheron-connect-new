@@ -4,6 +4,7 @@ import { SupportTicket } from '../../../models/SupportTicket.js';
 import { TicketChannel } from '../../../models/KbArticle.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
@@ -12,7 +13,7 @@ const router = express.Router();
 // ============================================
 
 // Get all chat sessions
-router.get('/sessions', asyncHandler(async (req, res) => {
+router.get('/sessions', authenticate, asyncHandler(async (req, res) => {
   const { status, assigned_agent_id, channel } = req.query;
   const filter: any = {};
 
@@ -50,7 +51,7 @@ router.get('/sessions', asyncHandler(async (req, res) => {
 }));
 
 // Get chat session by ID
-router.get('/sessions/:sessionId', asyncHandler(async (req, res) => {
+router.get('/sessions/:sessionId', authenticate, asyncHandler(async (req, res) => {
   const session = await ChatSession.findOne({ session_id: req.params.sessionId })
     .populate('partner_id', 'name email')
     .populate({ path: 'assigned_agent_id', populate: { path: 'user_id', select: 'name' } })
@@ -77,7 +78,7 @@ router.get('/sessions/:sessionId', asyncHandler(async (req, res) => {
 }));
 
 // Create chat session
-router.post('/sessions', asyncHandler(async (req, res) => {
+router.post('/sessions', authenticate, asyncHandler(async (req, res) => {
   const { visitor_name, visitor_email, visitor_phone, partner_id, channel } = req.body;
   const sessionId = `CHAT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -94,7 +95,7 @@ router.post('/sessions', asyncHandler(async (req, res) => {
 }));
 
 // Send message
-router.post('/sessions/:sessionId/messages', asyncHandler(async (req, res) => {
+router.post('/sessions/:sessionId/messages', authenticate, asyncHandler(async (req, res) => {
   const { content, message_type, sender_id } = req.body;
   if (!content) {
     return res.status(400).json({ error: 'Message content is required' });
@@ -116,7 +117,7 @@ router.post('/sessions/:sessionId/messages', asyncHandler(async (req, res) => {
 }));
 
 // Assign agent to chat
-router.post('/sessions/:sessionId/assign', asyncHandler(async (req, res) => {
+router.post('/sessions/:sessionId/assign', authenticate, asyncHandler(async (req, res) => {
   const { assigned_agent_id } = req.body;
   if (!assigned_agent_id) {
     return res.status(400).json({ error: 'Agent ID is required' });
@@ -136,7 +137,7 @@ router.post('/sessions/:sessionId/assign', asyncHandler(async (req, res) => {
 }));
 
 // End chat session
-router.post('/sessions/:sessionId/end', asyncHandler(async (req, res) => {
+router.post('/sessions/:sessionId/end', authenticate, asyncHandler(async (req, res) => {
   const result = await ChatSession.findOneAndUpdate(
     { session_id: req.params.sessionId },
     { status: 'ended', ended_at: new Date() },
@@ -151,7 +152,7 @@ router.post('/sessions/:sessionId/end', asyncHandler(async (req, res) => {
 }));
 
 // Create ticket from chat
-router.post('/sessions/:sessionId/create-ticket', asyncHandler(async (req, res) => {
+router.post('/sessions/:sessionId/create-ticket', authenticate, asyncHandler(async (req, res) => {
   const session = await ChatSession.findOne({ session_id: req.params.sessionId });
   if (!session) {
     return res.status(404).json({ error: 'Chat session not found' });

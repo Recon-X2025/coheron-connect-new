@@ -1,12 +1,13 @@
 import express from 'express';
 import { WorkInstruction } from '../../../models/WorkInstruction.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
 // GET /
-router.get('/', asyncHandler(async (req: any, res: any) => {
+router.get('/', authenticate, asyncHandler(async (req: any, res: any) => {
   const { tenant_id, product_id, operation_id, status, search } = req.query;
   const filter: any = {};
   if (tenant_id) filter.tenant_id = tenant_id;
@@ -20,7 +21,7 @@ router.get('/', asyncHandler(async (req: any, res: any) => {
 }));
 
 // GET /for-operation
-router.get('/for-operation', asyncHandler(async (req: any, res: any) => {
+router.get('/for-operation', authenticate, asyncHandler(async (req: any, res: any) => {
   const { tenant_id, mo_id, operation } = req.query;
   const filter: any = { status: 'published' };
   if (tenant_id) filter.tenant_id = tenant_id;
@@ -36,7 +37,7 @@ router.get('/for-operation', asyncHandler(async (req: any, res: any) => {
 }));
 
 // POST /
-router.post('/', asyncHandler(async (req: any, res: any) => {
+router.post('/', authenticate, asyncHandler(async (req: any, res: any) => {
   const data = req.body;
   data.created_by = data.created_by || req.user?._id;
   if (data.steps?.length) data.total_duration_minutes = data.steps.reduce((sum: number, s: any) => sum + (s.duration_minutes || 0), 0);
@@ -45,14 +46,14 @@ router.post('/', asyncHandler(async (req: any, res: any) => {
 }));
 
 // GET /:id
-router.get('/:id', asyncHandler(async (req: any, res: any) => {
+router.get('/:id', authenticate, asyncHandler(async (req: any, res: any) => {
   const instruction = await WorkInstruction.findById(req.params.id).lean();
   if (!instruction) return res.status(404).json({ error: 'Work instruction not found' });
   res.json(instruction);
 }));
 
 // PUT /:id
-router.put('/:id', asyncHandler(async (req: any, res: any) => {
+router.put('/:id', authenticate, asyncHandler(async (req: any, res: any) => {
   const data = req.body;
   if (data.steps?.length) data.total_duration_minutes = data.steps.reduce((sum: number, s: any) => sum + (s.duration_minutes || 0), 0);
   const instruction = await WorkInstruction.findByIdAndUpdate(req.params.id, data, { new: true }).lean();
@@ -61,7 +62,7 @@ router.put('/:id', asyncHandler(async (req: any, res: any) => {
 }));
 
 // POST /:id/publish
-router.post('/:id/publish', asyncHandler(async (req: any, res: any) => {
+router.post('/:id/publish', authenticate, asyncHandler(async (req: any, res: any) => {
   const instruction = await WorkInstruction.findById(req.params.id);
   if (!instruction) return res.status(404).json({ error: 'Work instruction not found' });
   instruction.status = 'published'; instruction.approved_by = req.body.approved_by || req.user?._id; instruction.approved_at = new Date();
@@ -69,14 +70,14 @@ router.post('/:id/publish', asyncHandler(async (req: any, res: any) => {
 }));
 
 // POST /:id/archive
-router.post('/:id/archive', asyncHandler(async (req: any, res: any) => {
+router.post('/:id/archive', authenticate, asyncHandler(async (req: any, res: any) => {
   const instruction = await WorkInstruction.findByIdAndUpdate(req.params.id, { status: 'archived' }, { new: true }).lean();
   if (!instruction) return res.status(404).json({ error: 'Work instruction not found' });
   res.json(instruction);
 }));
 
 // POST /:id/duplicate
-router.post('/:id/duplicate', asyncHandler(async (req: any, res: any) => {
+router.post('/:id/duplicate', authenticate, asyncHandler(async (req: any, res: any) => {
   const original = await WorkInstruction.findById(req.params.id).lean();
   if (!original) return res.status(404).json({ error: 'Work instruction not found' });
   const { _id, created_at, updated_at, approved_by, approved_at, ...rest } = original as any;

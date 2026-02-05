@@ -77,4 +77,4 @@ const FinancialReportTemplateSchema = new Schema({
 FinancialReportTemplateSchema.index({ tenant_id: 1, report_type: 1 });
 FinancialReportTemplateSchema.index({ tenant_id: 1, is_active: 1 });
 
-export default mongoose.model('FinancialReportTemplate', FinancialReportTemplateSchema);
+export default mongoose.models.FinancialReportTemplate || mongoose.model('FinancialReportTemplate', FinancialReportTemplateSchema);

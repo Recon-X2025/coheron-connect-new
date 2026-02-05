@@ -2,9 +2,11 @@ import express from 'express';
 import Project from '../../../models/Project.js';
 import ChangeRequest from '../../../models/ChangeRequest.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
+router.use(authenticate);
 
 // ============================================
 // CHANGE REQUESTS (Fixed to match schema)

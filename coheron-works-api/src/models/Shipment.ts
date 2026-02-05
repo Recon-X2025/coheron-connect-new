@@ -64,4 +64,4 @@ shipmentSchema.index({ tenant_id: 1, tracking_number: 1 });
 shipmentSchema.index({ tenant_id: 1, sale_order_id: 1 });
 shipmentSchema.index({ status: 1 });
 
-export const Shipment = mongoose.model('Shipment', shipmentSchema);
+export const Shipment = mongoose.models.Shipment || mongoose.model('Shipment', shipmentSchema);

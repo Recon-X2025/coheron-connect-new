@@ -21,4 +21,4 @@ const costCenterSchema = new Schema({
 costCenterSchema.index({ tenant_id: 1, code: 1 }, { unique: true });
 costCenterSchema.index({ tenant_id: 1, parent_id: 1 });
 
-export default mongoose.model('CostCenter', costCenterSchema);
+export default mongoose.models.CostCenter || mongoose.model('CostCenter', costCenterSchema);

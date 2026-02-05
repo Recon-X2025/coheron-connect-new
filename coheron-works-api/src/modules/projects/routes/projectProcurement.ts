@@ -4,9 +4,11 @@ import ProjectPurchaseRequest from '../../../models/ProjectPurchaseRequest.js';
 import ProjectPurchaseRequestLine from '../../../models/ProjectPurchaseRequestLine.js';
 import ProjectInventoryReservation from '../../../models/ProjectInventoryReservation.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
+router.use(authenticate);
 
 // ============================================
 // PROJECT PROCUREMENT & INVENTORY

@@ -2,18 +2,19 @@ import express from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { PaymentGateway } from '../models/PaymentGateway.js';
 import { PaymentTransaction } from '../models/PaymentTransaction.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // CRUD - List gateways
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const gateways = await PaymentGateway.find({ tenant_id }).sort({ is_default: -1, name: 1 });
   res.json(gateways);
 }));
 
 // Create gateway
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   if (req.body.is_default) {
     await PaymentGateway.updateMany({ tenant_id }, { is_default: false });
@@ -23,7 +24,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update gateway
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   if (req.body.is_default) {
     await PaymentGateway.updateMany({ tenant_id }, { is_default: false });
@@ -38,14 +39,14 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete gateway
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   await PaymentGateway.findOneAndDelete({ _id: req.params.id, tenant_id });
   res.json({ success: true });
 }));
 
 // Process payment
-router.post('/process', asyncHandler(async (req, res) => {
+router.post('/process', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { gateway_id, amount, currency, method, order_id, tip_amount, split_payments, card_last_four, card_brand } = req.body;
 
@@ -78,7 +79,7 @@ router.post('/process', asyncHandler(async (req, res) => {
 }));
 
 // Refund
-router.post('/refund/:transactionId', asyncHandler(async (req, res) => {
+router.post('/refund/:transactionId', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { amount, reason } = req.body;
   const txn = await PaymentTransaction.findOne({ _id: req.params.transactionId, tenant_id });
@@ -95,7 +96,7 @@ router.post('/refund/:transactionId', asyncHandler(async (req, res) => {
 }));
 
 // Void
-router.post('/void/:transactionId', asyncHandler(async (req, res) => {
+router.post('/void/:transactionId', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const txn = await PaymentTransaction.findOne({ _id: req.params.transactionId, tenant_id });
   if (!txn) return res.status(404).json({ error: 'Transaction not found' });
@@ -105,7 +106,7 @@ router.post('/void/:transactionId', asyncHandler(async (req, res) => {
 }));
 
 // List transactions
-router.get('/transactions', asyncHandler(async (req, res) => {
+router.get('/transactions', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { status, method, gateway_id, from, to, page = '1', limit = '50' } = req.query;
   const filter: any = { tenant_id };
@@ -126,7 +127,7 @@ router.get('/transactions', asyncHandler(async (req, res) => {
 }));
 
 // Settlement report
-router.get('/settlement-report', asyncHandler(async (req, res) => {
+router.get('/settlement-report', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { from, to } = req.query;
   const filter: any = { tenant_id, status: 'completed' };
@@ -148,7 +149,7 @@ router.get('/settlement-report', asyncHandler(async (req, res) => {
 }));
 
 // Reconciliation
-router.get('/reconciliation', asyncHandler(async (req, res) => {
+router.get('/reconciliation', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { from, to } = req.query;
   const filter: any = { tenant_id };

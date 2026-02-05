@@ -3,11 +3,12 @@ import { WebsiteCart, WebsiteCartItem } from '../../../models/WebsiteCart.js';
 import { WebsitePromotion } from '../../../models/WebsitePromotion.js';
 import Product from '../../../shared/models/Product.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // Get or create cart
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { session_id, customer_id, site_id } = req.query;
 
   let cart: any = null;
@@ -48,7 +49,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Add item to cart
-router.post('/items', asyncHandler(async (req, res) => {
+router.post('/items', authenticate, asyncHandler(async (req, res) => {
   const { cart_id, product_id, website_product_id, variant_id, quantity } = req.body;
 
   const product = await Product.findById(product_id).lean();
@@ -88,7 +89,7 @@ router.post('/items', asyncHandler(async (req, res) => {
 }));
 
 // Update cart item
-router.put('/items/:id', asyncHandler(async (req, res) => {
+router.put('/items/:id', authenticate, asyncHandler(async (req, res) => {
   const { quantity } = req.body;
 
   const existing = await WebsiteCartItem.findById(req.params.id);
@@ -107,7 +108,7 @@ router.put('/items/:id', asyncHandler(async (req, res) => {
 }));
 
 // Remove item from cart
-router.delete('/items/:id', asyncHandler(async (req, res) => {
+router.delete('/items/:id', authenticate, asyncHandler(async (req, res) => {
   const item = await WebsiteCartItem.findById(req.params.id);
   if (!item) {
     return res.status(404).json({ error: 'Cart item not found' });
@@ -120,7 +121,7 @@ router.delete('/items/:id', asyncHandler(async (req, res) => {
 }));
 
 // Apply promotion code
-router.post('/apply-promotion', asyncHandler(async (req, res) => {
+router.post('/apply-promotion', authenticate, asyncHandler(async (req, res) => {
   const { cart_id, promotion_code } = req.body;
 
   const now = new Date();

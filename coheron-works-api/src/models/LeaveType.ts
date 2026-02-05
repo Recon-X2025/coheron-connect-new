@@ -36,5 +36,5 @@ leaveTypeSchema.index({ tenant_id: 1 });
 leaveTypeSchema.index({ tenant_id: 1, is_active: 1 });
 leaveTypeSchema.index({ code: 1, tenant_id: 1 });
 
-export const LeaveType = mongoose.model('LeaveType', leaveTypeSchema);
+export const LeaveType = mongoose.models.LeaveType || mongoose.model('LeaveType', leaveTypeSchema);
 export default LeaveType;

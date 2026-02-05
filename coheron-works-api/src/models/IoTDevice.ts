@@ -43,4 +43,4 @@ iotDeviceSchema.index({ tenant_id: 1, device_id: 1 }, { unique: true });
 iotDeviceSchema.index({ tenant_id: 1, work_center_id: 1 });
 iotDeviceSchema.index({ tenant_id: 1, status: 1 });
 
-export default mongoose.model('IoTDevice', iotDeviceSchema);
+export default mongoose.models.IoTDevice || mongoose.model('IoTDevice', iotDeviceSchema);

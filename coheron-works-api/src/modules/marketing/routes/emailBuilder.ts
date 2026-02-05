@@ -1,11 +1,12 @@
 import express from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { EmailTemplate } from '../models/EmailTemplate.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // List templates
-router.get('/templates', asyncHandler(async (req, res) => {
+router.get('/templates', authenticate, asyncHandler(async (req, res) => {
   const tenantId = req.user?.tenant_id;
   const { category, search, tag, page = 1, limit = 20 } = req.query;
 
@@ -26,14 +27,14 @@ router.get('/templates', asyncHandler(async (req, res) => {
 }));
 
 // Get template by ID
-router.get('/templates/:id', asyncHandler(async (req, res) => {
+router.get('/templates/:id', authenticate, asyncHandler(async (req, res) => {
   const template = await EmailTemplate.findOne({ _id: req.params.id, tenant_id: req.user?.tenant_id }).lean();
   if (!template) return res.status(404).json({ error: 'Template not found' });
   res.json(template);
 }));
 
 // Create template
-router.post('/templates', asyncHandler(async (req, res) => {
+router.post('/templates', authenticate, asyncHandler(async (req, res) => {
   const { name, subject, category, blocks, html_preview, tags } = req.body;
 
   const template = await EmailTemplate.create({
@@ -51,7 +52,7 @@ router.post('/templates', asyncHandler(async (req, res) => {
 }));
 
 // Update template
-router.put('/templates/:id', asyncHandler(async (req, res) => {
+router.put('/templates/:id', authenticate, asyncHandler(async (req, res) => {
   const template = await EmailTemplate.findOneAndUpdate(
     { _id: req.params.id, tenant_id: req.user?.tenant_id },
     { $set: req.body },
@@ -62,14 +63,14 @@ router.put('/templates/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete template
-router.delete('/templates/:id', asyncHandler(async (req, res) => {
+router.delete('/templates/:id', authenticate, asyncHandler(async (req, res) => {
   const template = await EmailTemplate.findOneAndDelete({ _id: req.params.id, tenant_id: req.user?.tenant_id });
   if (!template) return res.status(404).json({ error: 'Template not found' });
   res.json({ message: 'Template deleted successfully' });
 }));
 
 // Render preview - converts blocks to HTML
-router.post('/templates/:id/preview', asyncHandler(async (req, res) => {
+router.post('/templates/:id/preview', authenticate, asyncHandler(async (req, res) => {
   const template = await EmailTemplate.findOne({ _id: req.params.id, tenant_id: req.user?.tenant_id });
   if (!template) return res.status(404).json({ error: 'Template not found' });
 
@@ -84,7 +85,7 @@ router.post('/templates/:id/preview', asyncHandler(async (req, res) => {
 }));
 
 // Clone template
-router.post('/templates/:id/clone', asyncHandler(async (req, res) => {
+router.post('/templates/:id/clone', authenticate, asyncHandler(async (req, res) => {
   const original = await EmailTemplate.findOne({ _id: req.params.id, tenant_id: req.user?.tenant_id }).lean();
   if (!original) return res.status(404).json({ error: 'Template not found' });
 
@@ -97,7 +98,7 @@ router.post('/templates/:id/clone', asyncHandler(async (req, res) => {
 }));
 
 // Send test email
-router.post('/templates/:id/send-test', asyncHandler(async (req, res) => {
+router.post('/templates/:id/send-test', authenticate, asyncHandler(async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'email is required' });
 

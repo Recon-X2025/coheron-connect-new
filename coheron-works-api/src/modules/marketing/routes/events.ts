@@ -3,13 +3,14 @@ import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { MarketingEvent } from '../models/MarketingEvent.js';
 import { EventRegistration } from '../models/EventRegistration.js';
 import { EventSession } from '../models/EventSession.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // ============ EVENTS ============
 
 // List events
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const tenantId = req.user?.tenant_id;
   const { status, event_type, search, page = 1, limit = 20 } = req.query;
 
@@ -29,14 +30,14 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get event by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const event = await MarketingEvent.findOne({ _id: req.params.id, tenant_id: req.user?.tenant_id }).lean();
   if (!event) return res.status(404).json({ error: 'Event not found' });
   res.json(event);
 }));
 
 // Create event
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const event = await MarketingEvent.create({
     ...req.body,
     tenant_id: req.user?.tenant_id,
@@ -46,7 +47,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update event
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const event = await MarketingEvent.findOneAndUpdate(
     { _id: req.params.id, tenant_id: req.user?.tenant_id },
     { $set: req.body },
@@ -57,7 +58,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete event
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const event = await MarketingEvent.findOneAndDelete({ _id: req.params.id, tenant_id: req.user?.tenant_id });
   if (!event) return res.status(404).json({ error: 'Event not found' });
   // Clean up registrations and sessions
@@ -69,7 +70,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 // ============ SESSIONS ============
 
 // List sessions for an event
-router.get('/:eventId/sessions', asyncHandler(async (req, res) => {
+router.get('/:eventId/sessions', authenticate, asyncHandler(async (req, res) => {
   const sessions = await EventSession.find({
     event_id: req.params.eventId,
     tenant_id: req.user?.tenant_id,
@@ -78,7 +79,7 @@ router.get('/:eventId/sessions', asyncHandler(async (req, res) => {
 }));
 
 // Create session
-router.post('/:eventId/sessions', asyncHandler(async (req, res) => {
+router.post('/:eventId/sessions', authenticate, asyncHandler(async (req, res) => {
   const session = await EventSession.create({
     ...req.body,
     event_id: req.params.eventId,
@@ -88,7 +89,7 @@ router.post('/:eventId/sessions', asyncHandler(async (req, res) => {
 }));
 
 // Update session
-router.put('/sessions/:id', asyncHandler(async (req, res) => {
+router.put('/sessions/:id', authenticate, asyncHandler(async (req, res) => {
   const session = await EventSession.findOneAndUpdate(
     { _id: req.params.id, tenant_id: req.user?.tenant_id },
     { $set: req.body },
@@ -99,7 +100,7 @@ router.put('/sessions/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete session
-router.delete('/sessions/:id', asyncHandler(async (req, res) => {
+router.delete('/sessions/:id', authenticate, asyncHandler(async (req, res) => {
   const session = await EventSession.findOneAndDelete({ _id: req.params.id, tenant_id: req.user?.tenant_id });
   if (!session) return res.status(404).json({ error: 'Session not found' });
   res.json({ message: 'Session deleted successfully' });
@@ -108,7 +109,7 @@ router.delete('/sessions/:id', asyncHandler(async (req, res) => {
 // ============ REGISTRATIONS ============
 
 // List registrations for an event
-router.get('/:eventId/registrations', asyncHandler(async (req, res) => {
+router.get('/:eventId/registrations', authenticate, asyncHandler(async (req, res) => {
   const { check_in_status, payment_status, search, page = 1, limit = 50 } = req.query;
 
   const filter: any = { event_id: req.params.eventId, tenant_id: req.user?.tenant_id };
@@ -132,7 +133,7 @@ router.get('/:eventId/registrations', asyncHandler(async (req, res) => {
 }));
 
 // Create registration
-router.post('/:eventId/registrations', asyncHandler(async (req, res) => {
+router.post('/:eventId/registrations', authenticate, asyncHandler(async (req, res) => {
   const event = await MarketingEvent.findOne({ _id: req.params.eventId, tenant_id: req.user?.tenant_id });
   if (!event) return res.status(404).json({ error: 'Event not found' });
   if (!event.registration_open) return res.status(400).json({ error: 'Registration is closed' });
@@ -155,7 +156,7 @@ router.post('/:eventId/registrations', asyncHandler(async (req, res) => {
 }));
 
 // Check-in endpoint
-router.post('/registrations/:id/check-in', asyncHandler(async (req, res) => {
+router.post('/registrations/:id/check-in', authenticate, asyncHandler(async (req, res) => {
   const registration = await EventRegistration.findOneAndUpdate(
     { _id: req.params.id, tenant_id: req.user?.tenant_id },
     { $set: { check_in_status: 'checked_in', check_in_time: new Date() } },
@@ -168,7 +169,7 @@ router.post('/registrations/:id/check-in', asyncHandler(async (req, res) => {
 // ============ ANALYTICS ============
 
 // Event analytics
-router.get('/:eventId/analytics', asyncHandler(async (req, res) => {
+router.get('/:eventId/analytics', authenticate, asyncHandler(async (req, res) => {
   const eventId = req.params.eventId;
   const tenantId = req.user?.tenant_id;
 

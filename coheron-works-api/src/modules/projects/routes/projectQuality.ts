@@ -4,9 +4,11 @@ import ProjectInspection from '../../../models/ProjectInspection.js';
 import ProjectCompliance from '../../../models/ProjectCompliance.js';
 import ComplianceTemplate from '../../../models/ComplianceTemplate.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
+router.use(authenticate);
 
 // ============================================
 // QUALITY CHECKLISTS

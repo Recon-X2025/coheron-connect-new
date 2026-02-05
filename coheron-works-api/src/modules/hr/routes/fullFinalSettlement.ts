@@ -1,11 +1,12 @@
 import express from 'express';
 import { FullFinalSettlement } from '../models/FullFinalSettlement.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // List settlements
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const filter: any = {};
   if (req.query.tenant_id) filter.tenant_id = req.query.tenant_id;
   if (req.query.employee_id) filter.employee_id = req.query.employee_id;
@@ -22,7 +23,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get single settlement
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const settlement = await FullFinalSettlement.findById(req.params.id)
     .populate('employee_id', 'name employee_id department designation date_of_joining')
     .populate('approved_by', 'name')
@@ -33,7 +34,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create settlement with auto-calculation
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const data = { ...req.body };
 
   // Generate settlement number if not provided
@@ -64,7 +65,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update settlement
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const existing = await FullFinalSettlement.findById(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Settlement not found' });
 
@@ -94,7 +95,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete settlement
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const settlement = await FullFinalSettlement.findById(req.params.id);
   if (!settlement) return res.status(404).json({ error: 'Settlement not found' });
   if (['paid', 'processed'].includes(settlement.status)) {
@@ -109,7 +110,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 // ============================================
 
 // Submit for approval
-router.put('/:id/submit', asyncHandler(async (req, res) => {
+router.put('/:id/submit', authenticate, asyncHandler(async (req, res) => {
   const settlement = await FullFinalSettlement.findById(req.params.id);
   if (!settlement) return res.status(404).json({ error: 'Settlement not found' });
   if (settlement.status !== 'draft') return res.status(400).json({ error: 'Only draft settlements can be submitted' });
@@ -120,7 +121,7 @@ router.put('/:id/submit', asyncHandler(async (req, res) => {
 }));
 
 // Approve
-router.put('/:id/approve', asyncHandler(async (req, res) => {
+router.put('/:id/approve', authenticate, asyncHandler(async (req, res) => {
   const settlement = await FullFinalSettlement.findById(req.params.id);
   if (!settlement) return res.status(404).json({ error: 'Settlement not found' });
   if (settlement.status !== 'pending_approval') return res.status(400).json({ error: 'Only pending settlements can be approved' });
@@ -133,7 +134,7 @@ router.put('/:id/approve', asyncHandler(async (req, res) => {
 }));
 
 // Reject
-router.put('/:id/reject', asyncHandler(async (req, res) => {
+router.put('/:id/reject', authenticate, asyncHandler(async (req, res) => {
   const settlement = await FullFinalSettlement.findById(req.params.id);
   if (!settlement) return res.status(404).json({ error: 'Settlement not found' });
   if (settlement.status !== 'pending_approval') return res.status(400).json({ error: 'Only pending settlements can be rejected' });
@@ -145,7 +146,7 @@ router.put('/:id/reject', asyncHandler(async (req, res) => {
 }));
 
 // Mark as processed
-router.put('/:id/process', asyncHandler(async (req, res) => {
+router.put('/:id/process', authenticate, asyncHandler(async (req, res) => {
   const settlement = await FullFinalSettlement.findById(req.params.id);
   if (!settlement) return res.status(404).json({ error: 'Settlement not found' });
   if (settlement.status !== 'approved') return res.status(400).json({ error: 'Only approved settlements can be processed' });
@@ -156,7 +157,7 @@ router.put('/:id/process', asyncHandler(async (req, res) => {
 }));
 
 // Mark as paid
-router.put('/:id/pay', asyncHandler(async (req, res) => {
+router.put('/:id/pay', authenticate, asyncHandler(async (req, res) => {
   const settlement = await FullFinalSettlement.findById(req.params.id);
   if (!settlement) return res.status(404).json({ error: 'Settlement not found' });
   if (!['approved', 'processed'].includes(settlement.status)) {
@@ -172,7 +173,7 @@ router.put('/:id/pay', asyncHandler(async (req, res) => {
 }));
 
 // Cancel
-router.put('/:id/cancel', asyncHandler(async (req, res) => {
+router.put('/:id/cancel', authenticate, asyncHandler(async (req, res) => {
   const settlement = await FullFinalSettlement.findById(req.params.id);
   if (!settlement) return res.status(404).json({ error: 'Settlement not found' });
   if (settlement.status === 'paid') return res.status(400).json({ error: 'Cannot cancel a paid settlement' });

@@ -35,4 +35,4 @@ tdsEntrySchema.index({ tenant_id: 1, deductee_pan: 1 });
 tdsEntrySchema.index({ tenant_id: 1, status: 1 });
 tdsEntrySchema.index({ tenant_id: 1, section: 1 });
 
-export const TDSEntry = mongoose.model('TDSEntry', tdsEntrySchema);
+export const TDSEntry = mongoose.models.TDSEntry || mongoose.model('TDSEntry', tdsEntrySchema);

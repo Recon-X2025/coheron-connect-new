@@ -32,7 +32,7 @@ const router = express.Router();
  *       200:
  *         description: Paginated list of products
  */
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { search, type } = req.query;
   const filter: any = {};
 
@@ -80,7 +80,7 @@ router.get('/:id', authenticate, checkRecordAccess('products'), asyncHandler(asy
  *       201:
  *         description: Product created
  */
-router.post('/', validate({ body: createProductSchema }), asyncHandler(async (req, res) => {
+router.post('/', authenticate, validate({ body: createProductSchema }), asyncHandler(async (req, res) => {
   const { name, default_code, list_price, standard_price, qty_available, type, categ_id, image_url } = req.body;
   const product = await Product.create({
     name, default_code,
@@ -113,14 +113,14 @@ router.delete('/:id', authenticate, checkRecordAccess('products'), asyncHandler(
 }));
 
 // Get stock by warehouse
-router.get('/:id/stock', asyncHandler(async (req, res) => {
+router.get('/:id/stock', authenticate, asyncHandler(async (req, res) => {
   const product = await Product.findById(req.params.id).select('stock name sku').lean();
   if (!product) return res.status(404).json({ error: 'Product not found' });
   res.json(product);
 }));
 
 // Manage suppliers
-router.post('/:id/suppliers', validate({ params: objectIdParam, body: addSupplierSchema }), asyncHandler(async (req, res) => {
+router.post('/:id/suppliers', authenticate, validate({ params: objectIdParam, body: addSupplierSchema }), asyncHandler(async (req, res) => {
   const product = await Product.findByIdAndUpdate(
     req.params.id,
     { $push: { suppliers: req.body } },
@@ -130,7 +130,7 @@ router.post('/:id/suppliers', validate({ params: objectIdParam, body: addSupplie
   res.json(product);
 }));
 
-router.delete('/:id/suppliers/:supplierId', asyncHandler(async (req, res) => {
+router.delete('/:id/suppliers/:supplierId', authenticate, asyncHandler(async (req, res) => {
   const product = await Product.findByIdAndUpdate(
     req.params.id,
     { $pull: { suppliers: { _id: req.params.supplierId } } },

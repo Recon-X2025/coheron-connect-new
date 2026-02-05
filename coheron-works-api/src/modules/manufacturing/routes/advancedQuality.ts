@@ -3,12 +3,13 @@ import { InspectionPlan } from '../models/InspectionPlan.js';
 import { SPCMeasurement } from '../models/SPCMeasurement.js';
 import { NonConformanceReport } from '../models/NonConformanceReport.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // ─── Inspection Plans ───
 
-router.get('/plans', asyncHandler(async (req, res) => {
+router.get('/plans', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { status, inspection_type, product_id, page = '1', limit = '20' } = req.query;
   const filter: any = { tenant_id };
@@ -24,30 +25,30 @@ router.get('/plans', asyncHandler(async (req, res) => {
   res.json({ data, total, page: parseInt(page as string), limit: parseInt(limit as string) });
 }));
 
-router.get('/plans/:id', asyncHandler(async (req, res) => {
+router.get('/plans/:id', authenticate, asyncHandler(async (req, res) => {
   const doc = await InspectionPlan.findById(req.params.id).populate('product_id', 'name sku').lean();
   if (!doc) return res.status(404).json({ error: 'Inspection plan not found' });
   res.json(doc);
 }));
 
-router.post('/plans', asyncHandler(async (req, res) => {
+router.post('/plans', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const doc = await InspectionPlan.create({ ...req.body, tenant_id, created_by: req.user?.userId });
   res.status(201).json(doc);
 }));
 
-router.put('/plans/:id', asyncHandler(async (req, res) => {
+router.put('/plans/:id', authenticate, asyncHandler(async (req, res) => {
   const doc = await InspectionPlan.findByIdAndUpdate(req.params.id, req.body, { new: true }).lean();
   if (!doc) return res.status(404).json({ error: 'Not found' });
   res.json(doc);
 }));
 
-router.delete('/plans/:id', asyncHandler(async (req, res) => {
+router.delete('/plans/:id', authenticate, asyncHandler(async (req, res) => {
   await InspectionPlan.findByIdAndDelete(req.params.id);
   res.json({ success: true });
 }));
 
-router.post('/plans/:id/approve', asyncHandler(async (req, res) => {
+router.post('/plans/:id/approve', authenticate, asyncHandler(async (req, res) => {
   const doc = await InspectionPlan.findByIdAndUpdate(
     req.params.id,
     { status: 'approved', approved_by: req.user?.userId },
@@ -59,7 +60,7 @@ router.post('/plans/:id/approve', asyncHandler(async (req, res) => {
 
 // ─── SPC Measurements ───
 
-router.post('/measurements', asyncHandler(async (req, res) => {
+router.post('/measurements', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const plan = await InspectionPlan.findById(req.body.inspection_plan_id).lean();
   if (!plan) return res.status(404).json({ error: 'Inspection plan not found' });
@@ -81,7 +82,7 @@ router.post('/measurements', asyncHandler(async (req, res) => {
   res.status(201).json(doc);
 }));
 
-router.get('/measurements/:planId', asyncHandler(async (req, res) => {
+router.get('/measurements/:planId', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { checkpoint_index, page = '1', limit = '100' } = req.query;
   const filter: any = { tenant_id, inspection_plan_id: req.params.planId };
@@ -92,7 +93,7 @@ router.get('/measurements/:planId', asyncHandler(async (req, res) => {
   res.json({ data });
 }));
 
-router.get('/spc-chart/:planId/:checkpointIndex', asyncHandler(async (req, res) => {
+router.get('/spc-chart/:planId/:checkpointIndex', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const measurements = await SPCMeasurement.find({
     tenant_id,
@@ -124,7 +125,7 @@ router.get('/spc-chart/:planId/:checkpointIndex', asyncHandler(async (req, res) 
 
 // ─── Non-Conformance Reports ───
 
-router.get('/ncr', asyncHandler(async (req, res) => {
+router.get('/ncr', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { status, severity, category, page = '1', limit = '20' } = req.query;
   const filter: any = { tenant_id };
@@ -140,13 +141,13 @@ router.get('/ncr', asyncHandler(async (req, res) => {
   res.json({ data, total, page: parseInt(page as string), limit: parseInt(limit as string) });
 }));
 
-router.get('/ncr/:id', asyncHandler(async (req, res) => {
+router.get('/ncr/:id', authenticate, asyncHandler(async (req, res) => {
   const doc = await NonConformanceReport.findById(req.params.id).lean();
   if (!doc) return res.status(404).json({ error: 'NCR not found' });
   res.json(doc);
 }));
 
-router.post('/ncr', asyncHandler(async (req, res) => {
+router.post('/ncr', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const count = await NonConformanceReport.countDocuments({ tenant_id });
   const ncr_number = `NCR-${String(count + 1).padStart(6, '0')}`;
@@ -154,18 +155,18 @@ router.post('/ncr', asyncHandler(async (req, res) => {
   res.status(201).json(doc);
 }));
 
-router.put('/ncr/:id', asyncHandler(async (req, res) => {
+router.put('/ncr/:id', authenticate, asyncHandler(async (req, res) => {
   const doc = await NonConformanceReport.findByIdAndUpdate(req.params.id, req.body, { new: true }).lean();
   if (!doc) return res.status(404).json({ error: 'Not found' });
   res.json(doc);
 }));
 
-router.delete('/ncr/:id', asyncHandler(async (req, res) => {
+router.delete('/ncr/:id', authenticate, asyncHandler(async (req, res) => {
   await NonConformanceReport.findByIdAndDelete(req.params.id);
   res.json({ success: true });
 }));
 
-router.post('/ncr/:id/investigate', asyncHandler(async (req, res) => {
+router.post('/ncr/:id/investigate', authenticate, asyncHandler(async (req, res) => {
   const doc = await NonConformanceReport.findByIdAndUpdate(
     req.params.id,
     { status: 'investigating', root_cause: req.body.root_cause, root_cause_method: req.body.root_cause_method },
@@ -175,7 +176,7 @@ router.post('/ncr/:id/investigate', asyncHandler(async (req, res) => {
   res.json(doc);
 }));
 
-router.post('/ncr/:id/close', asyncHandler(async (req, res) => {
+router.post('/ncr/:id/close', authenticate, asyncHandler(async (req, res) => {
   const doc = await NonConformanceReport.findByIdAndUpdate(
     req.params.id,
     { status: 'closed', closed_at: new Date(), disposition: req.body.disposition },
@@ -187,7 +188,7 @@ router.post('/ncr/:id/close', asyncHandler(async (req, res) => {
 
 // ─── Quality Dashboard ───
 
-router.get('/quality-dashboard', asyncHandler(async (req, res) => {
+router.get('/quality-dashboard', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
 
   const [totalMeasurements, inSpecCount, ncrBySeverity, ncrByCategory] = await Promise.all([
@@ -218,7 +219,7 @@ router.get('/quality-dashboard', asyncHandler(async (req, res) => {
 
 // ─── Cost of Quality ───
 
-router.get('/cost-of-quality', asyncHandler(async (req, res) => {
+router.get('/cost-of-quality', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
 
   const ncrs = await NonConformanceReport.find({ tenant_id }).lean();

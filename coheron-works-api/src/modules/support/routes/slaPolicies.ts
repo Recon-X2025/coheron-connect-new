@@ -2,6 +2,7 @@ import express from 'express';
 import { SlaPolicy } from '../../../models/SlaPolicy.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
@@ -10,7 +11,7 @@ const router = express.Router();
 // ============================================
 
 // Get all SLA policies
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { is_active, priority } = req.query;
   const filter: any = {};
 
@@ -27,7 +28,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get SLA policy by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const policy = await SlaPolicy.findById(req.params.id).lean();
   if (!policy) {
     return res.status(404).json({ error: 'SLA policy not found' });
@@ -36,7 +37,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create SLA policy
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const { name, description, priority, first_response_time_minutes, resolution_time_minutes, business_hours_only, working_hours, timezone } = req.body;
 
   if (!name || !priority || !first_response_time_minutes || !resolution_time_minutes) {
@@ -60,7 +61,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update SLA policy
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const { name, description, priority, first_response_time_minutes, resolution_time_minutes, business_hours_only, working_hours, timezone, is_active } = req.body;
   const updateData: any = {};
 
@@ -87,7 +88,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete SLA policy
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const result = await SlaPolicy.findByIdAndDelete(req.params.id);
   if (!result) {
     return res.status(404).json({ error: 'SLA policy not found' });

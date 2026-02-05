@@ -19,4 +19,4 @@ const customViewSchema = new Schema({
 
 customViewSchema.index({ tenant_id: 1, entity_type: 1, view_type: 1 });
 
-export const CustomView = mongoose.model('CustomView', customViewSchema);
+export const CustomView = mongoose.models.CustomView || mongoose.model('CustomView', customViewSchema);

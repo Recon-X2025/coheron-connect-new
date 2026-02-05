@@ -30,7 +30,7 @@ const WebhookDeliveryLogSchema = new Schema<IWebhookDeliveryLog>(
     duration_ms: { type: Number, default: 0 },
     attempt: { type: Number, default: 1 },
     error: { type: String, default: null },
-    created_at: { type: Date, default: Date.now, index: true },
+    created_at: { type: Date, default: Date.now },
   },
   { timestamps: false },
 );

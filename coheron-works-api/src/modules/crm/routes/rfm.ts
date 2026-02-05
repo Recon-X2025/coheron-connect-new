@@ -1,13 +1,14 @@
 import express from 'express';
 import { CustomerRFM, RFMAnalysisRun } from '../../../models/RFMAnalysis.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 import { runRFMAnalysis, getSegmentDefinitions } from '../../../services/rfmService.js';
 
 const router = express.Router();
 
 // Run new RFM analysis
-router.post('/analyze', asyncHandler(async (req, res) => {
+router.post('/analyze', authenticate, asyncHandler(async (req, res) => {
   const tenantId = (req as any).user?.tenant_id;
   const userId = (req as any).user?.userId;
   const run = await runRFMAnalysis(tenantId || 'default', req.body, userId || 'system');
@@ -15,7 +16,7 @@ router.post('/analyze', asyncHandler(async (req, res) => {
 }));
 
 // Get analysis runs
-router.get('/runs', asyncHandler(async (req, res) => {
+router.get('/runs', authenticate, asyncHandler(async (req, res) => {
   const runs = await RFMAnalysisRun.find()
     .sort({ created_at: -1 })
     .limit(20)
@@ -24,7 +25,7 @@ router.get('/runs', asyncHandler(async (req, res) => {
 }));
 
 // Get customer RFM data
-router.get('/customers', asyncHandler(async (req, res) => {
+router.get('/customers', authenticate, asyncHandler(async (req, res) => {
   const { segment, min_score, max_score, sort } = req.query;
   const filter: any = {};
   if (segment) filter.segment = segment;
@@ -40,14 +41,14 @@ router.get('/customers', asyncHandler(async (req, res) => {
 }));
 
 // Get single customer RFM
-router.get('/customers/:customerId', asyncHandler(async (req, res) => {
+router.get('/customers/:customerId', authenticate, asyncHandler(async (req, res) => {
   const customer = await CustomerRFM.findOne({ customer_id: req.params.customerId }).lean();
   if (!customer) return res.status(404).json({ error: 'Customer RFM not found' });
   res.json(customer);
 }));
 
 // Get segment summary
-router.get('/segments', asyncHandler(async (req, res) => {
+router.get('/segments', authenticate, asyncHandler(async (req, res) => {
   const segments = await CustomerRFM.aggregate([
     { $group: {
       _id: '$segment',
@@ -69,12 +70,12 @@ router.get('/segments', asyncHandler(async (req, res) => {
 }));
 
 // Get segment definitions
-router.get('/segment-definitions', (_req, res) => {
+router.get('/segment-definitions', authenticate, (_req, res) => {
   res.json(getSegmentDefinitions());
 });
 
 // Get churn risk report
-router.get('/churn-risk', asyncHandler(async (req, res) => {
+router.get('/churn-risk', authenticate, asyncHandler(async (req, res) => {
   const atRisk = await CustomerRFM.find({
     'predictions.churn_risk': { $in: ['high', 'medium'] },
   }).sort({ 'predictions.churn_probability': -1 }).limit(100).lean();

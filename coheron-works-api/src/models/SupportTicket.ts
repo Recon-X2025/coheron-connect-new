@@ -204,10 +204,10 @@ export const TicketHistorySchema = new Schema({
 
 TicketHistorySchema.index({ ticket_id: 1 });
 
-export const SupportTicket = mongoose.model<ISupportTicket>('SupportTicket', supportTicketSchema);
-export const TicketNote = mongoose.model('TicketNote', TicketNoteSchema);
-export const TicketAttachment = mongoose.model('TicketAttachment', TicketAttachmentSchema);
-export const TicketWatcher = mongoose.model('TicketWatcher', TicketWatcherSchema);
-export const TicketHistory = mongoose.model('TicketHistory', TicketHistorySchema);
+export const SupportTicket = mongoose.models.SupportTicket || mongoose.model<ISupportTicket>('SupportTicket', supportTicketSchema);
+export const TicketNote = mongoose.models.TicketNote || mongoose.model('TicketNote', TicketNoteSchema);
+export const TicketAttachment = mongoose.models.TicketAttachment || mongoose.model('TicketAttachment', TicketAttachmentSchema);
+export const TicketWatcher = mongoose.models.TicketWatcher || mongoose.model('TicketWatcher', TicketWatcherSchema);
+export const TicketHistory = mongoose.models.TicketHistory || mongoose.model('TicketHistory', TicketHistorySchema);
 
 export default SupportTicket;

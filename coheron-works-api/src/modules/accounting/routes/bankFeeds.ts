@@ -4,31 +4,32 @@ import BankFeed from '../../../models/BankFeed.js';
 import BankFeedTransaction from '../../../models/BankFeedTransaction.js';
 import AccountMove from '../../../models/AccountMove.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const feeds = await BankFeed.find({ tenant_id }).sort({ created_at: -1 });
   res.json(feeds);
 }));
 
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const userId = (req as any).user?._id;
   const feed = await BankFeed.create({ ...req.body, tenant_id, created_by: userId });
   res.status(201).json(feed);
 }));
 
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const feed = await BankFeed.findOneAndUpdate({ _id: req.params.id, tenant_id }, { $set: req.body }, { new: true });
   if (!feed) return res.status(404).json({ error: 'Bank feed not found' });
   res.json(feed);
 }));
 
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const feed = await BankFeed.findOneAndDelete({ _id: req.params.id, tenant_id });
   if (!feed) return res.status(404).json({ error: 'Bank feed not found' });
@@ -36,7 +37,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
   res.json({ message: 'Bank feed and associated transactions deleted' });
 }));
 
-router.post('/:id/sync', asyncHandler(async (req, res) => {
+router.post('/:id/sync', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const feed = await BankFeed.findOne({ _id: req.params.id, tenant_id });
   if (!feed) return res.status(404).json({ error: 'Bank feed not found' });
@@ -45,7 +46,7 @@ router.post('/:id/sync', asyncHandler(async (req, res) => {
   res.json({ message: 'Sync triggered', last_synced_at: feed.last_synced_at });
 }));
 
-router.get('/:id/transactions', asyncHandler(async (req, res) => {
+router.get('/:id/transactions', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const { match_status, start_date, end_date } = req.query;
   const filter: any = { tenant_id, bank_feed_id: req.params.id };
@@ -60,7 +61,7 @@ router.get('/:id/transactions', asyncHandler(async (req, res) => {
   res.json(result);
 }));
 
-router.post('/transactions/:id/match', asyncHandler(async (req, res) => {
+router.post('/transactions/:id/match', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const userId = (req as any).user?._id;
   const { journal_entry_id } = req.body;
@@ -75,7 +76,7 @@ router.post('/transactions/:id/match', asyncHandler(async (req, res) => {
   res.json(txn);
 }));
 
-router.post('/transactions/:id/exclude', asyncHandler(async (req, res) => {
+router.post('/transactions/:id/exclude', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const txn = await BankFeedTransaction.findOne({ _id: req.params.id, tenant_id });
   if (!txn) return res.status(404).json({ error: 'Transaction not found' });
@@ -86,7 +87,7 @@ router.post('/transactions/:id/exclude', asyncHandler(async (req, res) => {
   res.json(txn);
 }));
 
-router.post('/transactions/auto-match', asyncHandler(async (req, res) => {
+router.post('/transactions/auto-match', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const unmatchedTxns = await BankFeedTransaction.find({ tenant_id, match_status: 'unmatched' }).lean();
   let matchedCount = 0;
@@ -116,7 +117,7 @@ router.post('/transactions/auto-match', asyncHandler(async (req, res) => {
   res.json({ message: 'Auto-matching complete', total_unmatched: unmatchedTxns.length, matched: matchedCount, remaining_unmatched: unmatchedTxns.length - matchedCount });
 }));
 
-router.get('/transactions/unmatched', asyncHandler(async (req, res) => {
+router.get('/transactions/unmatched', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const pagination = getPaginationParams(req);
   const result = await paginateQuery(

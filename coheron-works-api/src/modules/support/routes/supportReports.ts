@@ -3,6 +3,7 @@ import { SupportTicket } from '../../../models/SupportTicket.js';
 import { SupportAgent } from '../../../models/SupportTeam.js';
 import { SurveyResponse } from '../../../models/SupportSurvey.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
@@ -11,7 +12,7 @@ const router = express.Router();
 // ============================================
 
 // Dashboard overview
-router.get('/dashboard', asyncHandler(async (req, res) => {
+router.get('/dashboard', authenticate, asyncHandler(async (req, res) => {
   const { start_date, end_date } = req.query;
   const dateFilter: any = {};
   if (start_date && end_date) {
@@ -93,7 +94,7 @@ router.get('/dashboard', asyncHandler(async (req, res) => {
 }));
 
 // Agent performance report
-router.get('/agents/performance', asyncHandler(async (req, res) => {
+router.get('/agents/performance', authenticate, asyncHandler(async (req, res) => {
   const { start_date, end_date, agent_id } = req.query;
 
   const matchStage: any = { is_active: true };
@@ -158,7 +159,7 @@ router.get('/agents/performance', asyncHandler(async (req, res) => {
 }));
 
 // Ticket volume trends
-router.get('/tickets/trends', asyncHandler(async (req, res) => {
+router.get('/tickets/trends', authenticate, asyncHandler(async (req, res) => {
   const { period = 'day', start_date, end_date } = req.query;
   const dateFilter: any = {};
   if (start_date && end_date) {
@@ -192,7 +193,7 @@ router.get('/tickets/trends', asyncHandler(async (req, res) => {
 }));
 
 // Category-wise tickets
-router.get('/tickets/by-category', asyncHandler(async (req, res) => {
+router.get('/tickets/by-category', authenticate, asyncHandler(async (req, res) => {
   const { start_date, end_date } = req.query;
   const dateFilter: any = {};
   if (start_date && end_date) {
@@ -226,7 +227,7 @@ router.get('/tickets/by-category', asyncHandler(async (req, res) => {
 }));
 
 // Backlog aging report
-router.get('/tickets/backlog-aging', asyncHandler(async (req, res) => {
+router.get('/tickets/backlog-aging', authenticate, asyncHandler(async (req, res) => {
   const tickets = await SupportTicket.find({
     status: { $nin: ['resolved', 'closed', 'cancelled'] },
   })
@@ -244,7 +245,7 @@ router.get('/tickets/backlog-aging', asyncHandler(async (req, res) => {
 }));
 
 // Customer satisfaction trends
-router.get('/surveys/satisfaction-trends', asyncHandler(async (req, res) => {
+router.get('/surveys/satisfaction-trends', authenticate, asyncHandler(async (req, res) => {
   const { start_date, end_date } = req.query;
   const dateFilter: any = { score: { $ne: null } };
   if (start_date && end_date) {
@@ -268,7 +269,7 @@ router.get('/surveys/satisfaction-trends', asyncHandler(async (req, res) => {
 }));
 
 // Top recurring issues
-router.get('/tickets/recurring-issues', asyncHandler(async (req, res) => {
+router.get('/tickets/recurring-issues', authenticate, asyncHandler(async (req, res) => {
   const { limit = 10 } = req.query;
 
   const result = await SupportTicket.aggregate([

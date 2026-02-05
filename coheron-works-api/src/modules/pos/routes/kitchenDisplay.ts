@@ -2,33 +2,34 @@ import express from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { KitchenStation } from '../models/KitchenStation.js';
 import { KitchenOrder } from '../models/KitchenOrder.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // --- Stations ---
-router.get('/stations', asyncHandler(async (req, res) => {
+router.get('/stations', authenticate, asyncHandler(async (req, res) => {
   const items = await KitchenStation.find({ tenant_id: req.user?.tenant_id }).sort({ name: 1 }).lean();
   res.json(items);
 }));
 
-router.post('/stations', asyncHandler(async (req, res) => {
+router.post('/stations', authenticate, asyncHandler(async (req, res) => {
   const item = await KitchenStation.create({ ...req.body, tenant_id: req.user?.tenant_id });
   res.status(201).json(item);
 }));
 
-router.put('/stations/:id', asyncHandler(async (req, res) => {
+router.put('/stations/:id', authenticate, asyncHandler(async (req, res) => {
   const item = await KitchenStation.findOneAndUpdate({ _id: req.params.id, tenant_id: req.user?.tenant_id }, { $set: req.body }, { new: true });
   if (!item) return res.status(404).json({ error: 'Station not found' });
   res.json(item);
 }));
 
-router.delete('/stations/:id', asyncHandler(async (req, res) => {
+router.delete('/stations/:id', authenticate, asyncHandler(async (req, res) => {
   await KitchenStation.deleteOne({ _id: req.params.id, tenant_id: req.user?.tenant_id });
   res.json({ success: true });
 }));
 
 // --- Orders ---
-router.get('/orders', asyncHandler(async (req, res) => {
+router.get('/orders', authenticate, asyncHandler(async (req, res) => {
   const { station_id, status } = req.query;
   const filter: any = { tenant_id: req.user?.tenant_id };
   if (station_id) filter.station_id = station_id;
@@ -38,13 +39,13 @@ router.get('/orders', asyncHandler(async (req, res) => {
   res.json(items);
 }));
 
-router.post('/orders', asyncHandler(async (req, res) => {
+router.post('/orders', authenticate, asyncHandler(async (req, res) => {
   const item = await KitchenOrder.create({ ...req.body, tenant_id: req.user?.tenant_id, received_at: new Date() });
   res.status(201).json(item);
 }));
 
 // Update item status
-router.put('/orders/:id/items/:itemIndex/status', asyncHandler(async (req, res) => {
+router.put('/orders/:id/items/:itemIndex/status', authenticate, asyncHandler(async (req, res) => {
   const order = await KitchenOrder.findOne({ _id: req.params.id, tenant_id: req.user?.tenant_id });
   if (!order) return res.status(404).json({ error: 'Order not found' });
 
@@ -73,7 +74,7 @@ router.put('/orders/:id/items/:itemIndex/status', asyncHandler(async (req, res) 
 }));
 
 // Bump order (mark ready)
-router.put('/orders/:id/bump', asyncHandler(async (req, res) => {
+router.put('/orders/:id/bump', authenticate, asyncHandler(async (req, res) => {
   const order = await KitchenOrder.findOne({ _id: req.params.id, tenant_id: req.user?.tenant_id });
   if (!order) return res.status(404).json({ error: 'Order not found' });
 
@@ -89,7 +90,7 @@ router.put('/orders/:id/bump', asyncHandler(async (req, res) => {
 }));
 
 // Stats
-router.get('/stats', asyncHandler(async (req, res) => {
+router.get('/stats', authenticate, asyncHandler(async (req, res) => {
   const tenantId = req.user?.tenant_id;
   const [pending, inProgress, completed] = await Promise.all([
     KitchenOrder.countDocuments({ tenant_id: tenantId, status: 'pending' }),

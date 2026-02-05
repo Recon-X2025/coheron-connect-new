@@ -1,12 +1,13 @@
 import express from 'express';
 import { Course, CourseEnrollment } from '../../../models/Course.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
 // Get courses
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { is_active } = req.query;
   const filter: any = {};
 
@@ -25,7 +26,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Create course
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const { name, description, total_time, category, instructor } = req.body;
 
   const course = await Course.create({
@@ -36,7 +37,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Get enrollments
-router.get('/enrollments', asyncHandler(async (req, res) => {
+router.get('/enrollments', authenticate, asyncHandler(async (req, res) => {
   const { employee_id, course_id } = req.query;
   const filter: any = {};
 

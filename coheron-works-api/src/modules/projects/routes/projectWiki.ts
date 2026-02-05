@@ -7,9 +7,11 @@ import WikiPageComment from '../../../models/WikiPageComment.js';
 import WikiPageAttachment from '../../../models/WikiPageAttachment.js';
 import WikiPagePermission from '../../../models/WikiPagePermission.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
+router.use(authenticate);
 
 // ============================================
 // KNOWLEDGE SPACES

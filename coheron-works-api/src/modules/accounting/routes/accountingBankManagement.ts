@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import BankAccount from '../../../models/BankAccount.js';
 import BankStatement from '../../../models/BankStatement.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
@@ -10,7 +11,7 @@ const router = express.Router();
 // ========== BANK ACCOUNTS ==========
 
 // Get all bank accounts
-router.get('/accounts', asyncHandler(async (req, res) => {
+router.get('/accounts', authenticate, asyncHandler(async (req, res) => {
   const { is_active } = req.query;
   const filter: any = {};
 
@@ -42,7 +43,7 @@ router.get('/accounts', asyncHandler(async (req, res) => {
 }));
 
 // Create bank account
-router.post('/accounts', asyncHandler(async (req, res) => {
+router.post('/accounts', authenticate, asyncHandler(async (req, res) => {
   const {
     name,
     bank_name,
@@ -78,7 +79,7 @@ router.post('/accounts', asyncHandler(async (req, res) => {
 // ========== BANK STATEMENTS ==========
 
 // Get all bank statements
-router.get('/statements', asyncHandler(async (req, res) => {
+router.get('/statements', authenticate, asyncHandler(async (req, res) => {
   const { bank_account_id, state, date_from, date_to } = req.query;
   const filter: any = {};
 
@@ -115,7 +116,7 @@ router.get('/statements', asyncHandler(async (req, res) => {
 }));
 
 // Get statement by ID with lines
-router.get('/statements/:id', asyncHandler(async (req, res) => {
+router.get('/statements/:id', authenticate, asyncHandler(async (req, res) => {
   const statement = await BankStatement.findById(req.params.id)
     .populate('bank_account_id', 'name')
     .populate('lines.partner_id', 'name')
@@ -145,7 +146,7 @@ router.get('/statements/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create bank statement
-router.post('/statements', async (req, res) => {
+router.post('/statements', authenticate, async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
@@ -201,7 +202,7 @@ router.post('/statements', async (req, res) => {
 });
 
 // Reconcile statement line
-router.post('/statements/:statementId/lines/:lineId/reconcile', asyncHandler(async (req, res) => {
+router.post('/statements/:statementId/lines/:lineId/reconcile', authenticate, asyncHandler(async (req, res) => {
   const { move_id, payment_id, receipt_id } = req.body;
 
   const statement = await BankStatement.findOneAndUpdate(
@@ -232,7 +233,7 @@ router.post('/statements/:statementId/lines/:lineId/reconcile', asyncHandler(asy
 }));
 
 // Confirm statement (finalize reconciliation)
-router.post('/statements/:id/confirm', asyncHandler(async (req, res) => {
+router.post('/statements/:id/confirm', authenticate, asyncHandler(async (req, res) => {
   const statement = await BankStatement.findOneAndUpdate(
     { _id: req.params.id, state: 'open' },
     {

@@ -6,9 +6,11 @@ import TaskChecklist from '../../../models/TaskChecklist.js';
 import TaskComment from '../../../models/TaskComment.js';
 import TaskAttachment from '../../../models/TaskAttachment.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
+router.use(authenticate);
 
 // ============================================
 // MILESTONES (WBS)

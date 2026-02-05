@@ -2,11 +2,12 @@ import express from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { POSAnalyticsSnapshot } from '../models/POSAnalyticsSnapshot.js';
 import { PaymentTransaction } from '../models/PaymentTransaction.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // Today's live dashboard stats
-router.get('/dashboard', asyncHandler(async (req, res) => {
+router.get('/dashboard', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { store_id } = req.query;
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
@@ -39,7 +40,7 @@ router.get('/dashboard', asyncHandler(async (req, res) => {
 }));
 
 // Daily snapshot
-router.get('/daily/:date', asyncHandler(async (req, res) => {
+router.get('/daily/:date', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const date = new Date(req.params.date); date.setHours(0, 0, 0, 0);
   const snapshot = await POSAnalyticsSnapshot.findOne({ tenant_id, date });
@@ -48,7 +49,7 @@ router.get('/daily/:date', asyncHandler(async (req, res) => {
 }));
 
 // Date range summary
-router.get('/range', asyncHandler(async (req, res) => {
+router.get('/range', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { from, to, store_id } = req.query;
   const filter: any = { tenant_id };
@@ -72,7 +73,7 @@ router.get('/range', asyncHandler(async (req, res) => {
 }));
 
 // Hourly heatmap
-router.get('/hourly-heatmap', asyncHandler(async (req, res) => {
+router.get('/hourly-heatmap', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { from, to } = req.query;
   const filter: any = { tenant_id };
@@ -93,7 +94,7 @@ router.get('/hourly-heatmap', asyncHandler(async (req, res) => {
 }));
 
 // Product mix
-router.get('/product-mix', asyncHandler(async (req, res) => {
+router.get('/product-mix', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { from, to } = req.query;
   const filter: any = { tenant_id };
@@ -116,7 +117,7 @@ router.get('/product-mix', asyncHandler(async (req, res) => {
 }));
 
 // Cashier performance
-router.get('/cashier-performance', asyncHandler(async (req, res) => {
+router.get('/cashier-performance', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { from, to } = req.query;
   const filter: any = { tenant_id, status: 'completed' };
@@ -134,7 +135,7 @@ router.get('/cashier-performance', asyncHandler(async (req, res) => {
 }));
 
 // Store/period comparison
-router.get('/comparison', asyncHandler(async (req, res) => {
+router.get('/comparison', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { store_ids, from, to } = req.query;
   const filter: any = { tenant_id };

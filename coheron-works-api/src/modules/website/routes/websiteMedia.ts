@@ -2,11 +2,12 @@ import express from 'express';
 import { WebsiteMedia } from '../../../models/WebsiteMedia.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // Get all media
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { site_id, mime_type, search } = req.query;
   const filter: any = {};
 
@@ -29,7 +30,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get media by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const media = await WebsiteMedia.findById(req.params.id).lean();
   if (!media) {
     return res.status(404).json({ error: 'Media not found' });
@@ -38,7 +39,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create media
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const { name, file_url, file_path, mime_type, file_size, width, height, alt_text, description, site_id, uploaded_by } = req.body;
 
   const media = await WebsiteMedia.create({
@@ -49,7 +50,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update media
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const { name, alt_text, description } = req.body;
   const updateData: any = {};
 
@@ -66,7 +67,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete media
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const result = await WebsiteMedia.findByIdAndDelete(req.params.id);
   if (!result) {
     return res.status(404).json({ error: 'Media not found' });

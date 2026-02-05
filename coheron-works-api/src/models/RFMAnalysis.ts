@@ -135,5 +135,5 @@ const rfmAnalysisRunSchema = new Schema({
 
 rfmAnalysisRunSchema.index({ tenant_id: 1 });
 
-export const CustomerRFM = mongoose.model('CustomerRFM', customerRFMSchema);
-export const RFMAnalysisRun = mongoose.model('RFMAnalysisRun', rfmAnalysisRunSchema);
+export const CustomerRFM = mongoose.models.CustomerRFM || mongoose.model('CustomerRFM', customerRFMSchema);
+export const RFMAnalysisRun = mongoose.models.RFMAnalysisRun || mongoose.model('RFMAnalysisRun', rfmAnalysisRunSchema);

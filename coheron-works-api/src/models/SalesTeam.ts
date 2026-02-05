@@ -80,7 +80,7 @@ salesIncentivePaymentSchema.index({ user_id: 1, payment_status: 1 });
 salesActivityKpiSchema.index({ user_id: 1 });
 salesActivityKpiSchema.index({ period_start: 1, period_end: 1 });
 
-export const SalesTeam = mongoose.model('SalesTeam', salesTeamSchema);
-export const SalesIncentive = mongoose.model('SalesIncentive', salesIncentiveSchema);
-export const SalesIncentivePayment = mongoose.model('SalesIncentivePayment', salesIncentivePaymentSchema);
-export const SalesActivityKpi = mongoose.model('SalesActivityKpi', salesActivityKpiSchema);
+export const SalesTeam = mongoose.models.SalesTeam || mongoose.model('SalesTeam', salesTeamSchema);
+export const SalesIncentive = mongoose.models.SalesIncentive || mongoose.model('SalesIncentive', salesIncentiveSchema);
+export const SalesIncentivePayment = mongoose.models.SalesIncentivePayment || mongoose.model('SalesIncentivePayment', salesIncentivePaymentSchema);
+export const SalesActivityKpi = mongoose.models.SalesActivityKpi || mongoose.model('SalesActivityKpi', salesActivityKpiSchema);

@@ -2,19 +2,20 @@ import express from 'express';
 import { ProductionSchedule } from '../../../models/ProductionSchedule.js';
 import { productionSchedulerService } from '../../../services/productionSchedulerService.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
 // POST /generate
-router.post('/generate', asyncHandler(async (req: any, res: any) => {
+router.post('/generate', authenticate, asyncHandler(async (req: any, res: any) => {
   const { tenant_id, period_start, period_end, objective } = req.body;
   const schedule = await productionSchedulerService.generateSchedule(tenant_id, new Date(period_start), new Date(period_end), objective || 'minimize_makespan', req.user?._id);
   res.status(201).json(schedule);
 }));
 
 // GET /
-router.get('/', asyncHandler(async (req: any, res: any) => {
+router.get('/', authenticate, asyncHandler(async (req: any, res: any) => {
   const { tenant_id, status } = req.query;
   const filter: any = {};
   if (tenant_id) filter.tenant_id = tenant_id;
@@ -25,7 +26,7 @@ router.get('/', asyncHandler(async (req: any, res: any) => {
 }));
 
 // GET /bottlenecks
-router.get('/bottlenecks', asyncHandler(async (req: any, res: any) => {
+router.get('/bottlenecks', authenticate, asyncHandler(async (req: any, res: any) => {
   const { tenant_id, period_start, period_end } = req.query;
   if (!tenant_id || !period_start || !period_end) return res.status(400).json({ error: 'tenant_id, period_start, period_end required' });
   const bottlenecks = await productionSchedulerService.getBottlenecks(tenant_id as string, new Date(period_start as string), new Date(period_end as string));
@@ -33,7 +34,7 @@ router.get('/bottlenecks', asyncHandler(async (req: any, res: any) => {
 }));
 
 // GET /:id
-router.get('/:id', asyncHandler(async (req: any, res: any) => {
+router.get('/:id', authenticate, asyncHandler(async (req: any, res: any) => {
   const schedule = await ProductionSchedule.findById(req.params.id).lean();
   if (!schedule) return res.status(404).json({ error: 'Schedule not found' });
   const gantt_data = schedule.jobs.map((job: any, idx: number) => ({
@@ -46,7 +47,7 @@ router.get('/:id', asyncHandler(async (req: any, res: any) => {
 }));
 
 // PUT /:id/publish
-router.put('/:id/publish', asyncHandler(async (req: any, res: any) => {
+router.put('/:id/publish', authenticate, asyncHandler(async (req: any, res: any) => {
   const schedule = await ProductionSchedule.findById(req.params.id);
   if (!schedule) return res.status(404).json({ error: 'Schedule not found' });
   if (schedule.status === 'locked') return res.status(400).json({ error: 'Schedule is locked' });
@@ -54,14 +55,14 @@ router.put('/:id/publish', asyncHandler(async (req: any, res: any) => {
 }));
 
 // PUT /:id/lock
-router.put('/:id/lock', asyncHandler(async (req: any, res: any) => {
+router.put('/:id/lock', authenticate, asyncHandler(async (req: any, res: any) => {
   const schedule = await ProductionSchedule.findById(req.params.id);
   if (!schedule) return res.status(404).json({ error: 'Schedule not found' });
   schedule.status = 'locked'; await schedule.save(); res.json(schedule);
 }));
 
 // POST /:id/reschedule
-router.post('/:id/reschedule', asyncHandler(async (req: any, res: any) => {
+router.post('/:id/reschedule', authenticate, asyncHandler(async (req: any, res: any) => {
   const { changed_jobs } = req.body;
   const schedule = await productionSchedulerService.reschedule(req.params.id, changed_jobs || []);
   res.json(schedule);

@@ -2,8 +2,10 @@ import express from 'express';
 import ProjectResource from '../../../models/ProjectResource.js';
 import Timesheet from '../../../models/Timesheet.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
+router.use(authenticate);
 
 // ============================================
 // RESOURCE PLANNING & CAPACITY MANAGEMENT

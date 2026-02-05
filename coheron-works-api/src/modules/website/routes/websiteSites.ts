@@ -2,11 +2,12 @@ import express from 'express';
 import { WebsiteSite } from '../../../models/WebsiteSite.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // Get all sites
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const pagination = getPaginationParams(req);
   const paginatedResult = await paginateQuery(
     WebsiteSite.find().sort({ is_default: -1, created_at: -1 }).lean(),
@@ -17,7 +18,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get site by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const site = await WebsiteSite.findById(req.params.id).lean();
   if (!site) {
     return res.status(404).json({ error: 'Site not found' });
@@ -26,7 +27,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create site
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const { name, domain, subdomain, locale, theme, settings, is_active, is_default } = req.body;
 
   if (is_default) {
@@ -48,7 +49,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update site
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const { name, domain, subdomain, locale, theme, settings, is_active, is_default } = req.body;
 
   if (is_default) {
@@ -74,7 +75,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete site
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const result = await WebsiteSite.findByIdAndDelete(req.params.id);
   if (!result) {
     return res.status(404).json({ error: 'Site not found' });

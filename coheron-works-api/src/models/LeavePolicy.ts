@@ -29,5 +29,5 @@ const leavePolicySchema = new Schema({
 leavePolicySchema.index({ tenant_id: 1 });
 leavePolicySchema.index({ tenant_id: 1, is_active: 1 });
 
-export const LeavePolicy = mongoose.model('LeavePolicy', leavePolicySchema);
+export const LeavePolicy = mongoose.models.LeavePolicy || mongoose.model('LeavePolicy', leavePolicySchema);
 export default LeavePolicy;

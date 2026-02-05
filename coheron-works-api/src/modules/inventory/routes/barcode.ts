@@ -3,13 +3,14 @@ import express from 'express';
 import { BarcodeLog } from '../../../models/BarcodeLog.js';
 import { BinLocation } from '../../../models/BinLocation.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 import mongoose from 'mongoose';
 
 const router = express.Router();
 
 // POST /scan - Process a barcode scan (lookup barcode, determine type, return entity details)
-router.post('/scan', asyncHandler(async (req: any, res: any) => {
+router.post('/scan', authenticate, asyncHandler(async (req: any, res: any) => {
   const { barcode_value, action, warehouse_id, notes, tenant_id } = req.body;
   const scanned_by = req.body.scanned_by || req.user?._id;
 
@@ -67,7 +68,7 @@ router.post('/scan', asyncHandler(async (req: any, res: any) => {
 }));
 
 // POST /receive - Scan to receive goods
-router.post('/receive', asyncHandler(async (req: any, res: any) => {
+router.post('/receive', authenticate, asyncHandler(async (req: any, res: any) => {
   const { barcode_value, quantity, bin_id, tenant_id, warehouse_id } = req.body;
   const scanned_by = req.body.scanned_by || req.user?._id;
 
@@ -99,7 +100,7 @@ router.post('/receive', asyncHandler(async (req: any, res: any) => {
 }));
 
 // POST /pick - Scan to pick for order
-router.post('/pick', asyncHandler(async (req: any, res: any) => {
+router.post('/pick', authenticate, asyncHandler(async (req: any, res: any) => {
   const { barcode_value, order_id, tenant_id, warehouse_id } = req.body;
   const scanned_by = req.body.scanned_by || req.user?._id;
 
@@ -124,7 +125,7 @@ router.post('/pick', asyncHandler(async (req: any, res: any) => {
 }));
 
 // GET /log - Get scan history with filters
-router.get('/log', asyncHandler(async (req: any, res: any) => {
+router.get('/log', authenticate, asyncHandler(async (req: any, res: any) => {
   const { tenant_id, barcode_value, action, warehouse_id, from, to } = req.query;
   const filter: any = {};
   if (tenant_id) filter.tenant_id = tenant_id;
@@ -147,7 +148,7 @@ router.get('/log', asyncHandler(async (req: any, res: any) => {
 
 
 // POST /parse-gs1 - Parse GS1 barcode
-router.post('/parse-gs1', asyncHandler(async (req: any, res: any) => {
+router.post('/parse-gs1', authenticate, asyncHandler(async (req: any, res: any) => {
   const { barcode_value } = req.body;
   if (!barcode_value) return res.status(400).json({ error: 'barcode_value required' });
   const parsed = parseGS1Barcode(barcode_value);

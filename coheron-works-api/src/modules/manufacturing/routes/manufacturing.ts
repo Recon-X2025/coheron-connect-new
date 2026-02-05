@@ -11,6 +11,7 @@ import BomLine from '../../../models/BomLine.js';
 import RoutingOperation from '../../../models/RoutingOperation.js';
 import Product from '../../../shared/models/Product.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
@@ -20,7 +21,7 @@ const router = express.Router();
 // ============================================
 
 // Get all manufacturing orders with filters
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { state, mo_type, search, product_id, sale_order_id, date_from, date_to } = req.query;
   const filter: any = {};
 
@@ -60,7 +61,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get manufacturing order by ID with full details
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   const mo = await ManufacturingOrder.findById(id)
@@ -97,7 +98,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create manufacturing order
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const {
     name, product_id, product_qty, mo_type, priority, state,
     date_planned_start, date_planned_finished, user_id, bom_id, routing_id,
@@ -128,7 +129,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update manufacturing order
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const {
     state, product_qty, qty_produced, qty_scrapped,
@@ -163,7 +164,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete manufacturing order
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const mo = await ManufacturingOrder.findOneAndDelete({ _id: req.params.id, state: 'draft' });
 
   if (!mo) {
@@ -178,7 +179,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 // ============================================
 
 // Confirm MO
-router.post('/:id/confirm', asyncHandler(async (req, res) => {
+router.post('/:id/confirm', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const mo = await ManufacturingOrder.findById(id);
 
@@ -217,7 +218,7 @@ router.post('/:id/confirm', asyncHandler(async (req, res) => {
 }));
 
 // Start production
-router.post('/:id/start', asyncHandler(async (req, res) => {
+router.post('/:id/start', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const mo = await ManufacturingOrder.findById(id);
 
@@ -249,7 +250,7 @@ router.post('/:id/start', asyncHandler(async (req, res) => {
 }));
 
 // Complete MO
-router.post('/:id/complete', asyncHandler(async (req, res) => {
+router.post('/:id/complete', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { qty_produced } = req.body;
 
@@ -292,7 +293,7 @@ router.post('/:id/complete', asyncHandler(async (req, res) => {
 }));
 
 // Cancel MO
-router.post('/:id/cancel', asyncHandler(async (req, res) => {
+router.post('/:id/cancel', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const mo = await ManufacturingOrder.findById(id);
 
@@ -324,13 +325,13 @@ router.post('/:id/cancel', asyncHandler(async (req, res) => {
 }));
 
 // Check material availability
-router.get('/:id/availability', asyncHandler(async (req, res) => {
+router.get('/:id/availability', authenticate, asyncHandler(async (req, res) => {
   const availability = await checkMaterialAvailability(req.params.id);
   res.json(availability);
 }));
 
 // Split MO
-router.post('/:id/split', asyncHandler(async (req, res) => {
+router.post('/:id/split', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { split_qty, reason } = req.body;
 

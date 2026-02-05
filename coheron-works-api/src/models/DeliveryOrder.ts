@@ -58,6 +58,6 @@ shipmentTrackingSchema.index({ event_date: -1 });
 // FreightCharge indexes
 freightChargeSchema.index({ delivery_order_id: 1 });
 
-export const DeliveryOrder = mongoose.model('DeliveryOrder', deliveryOrderSchema);
-export const ShipmentTracking = mongoose.model('ShipmentTracking', shipmentTrackingSchema);
-export const FreightCharge = mongoose.model('FreightCharge', freightChargeSchema);
+export const DeliveryOrder = mongoose.models.DeliveryOrder || mongoose.model('DeliveryOrder', deliveryOrderSchema);
+export const ShipmentTracking = mongoose.models.ShipmentTracking || mongoose.model('ShipmentTracking', shipmentTrackingSchema);
+export const FreightCharge = mongoose.models.FreightCharge || mongoose.model('FreightCharge', freightChargeSchema);

@@ -30,5 +30,5 @@ const holidayCalendarSchema = new Schema({
 holidayCalendarSchema.index({ tenant_id: 1, year: 1 });
 holidayCalendarSchema.index({ tenant_id: 1, location: 1 });
 
-export const HolidayCalendar = mongoose.model('HolidayCalendar', holidayCalendarSchema);
+export const HolidayCalendar = mongoose.models.HolidayCalendar || mongoose.model('HolidayCalendar', holidayCalendarSchema);
 export default HolidayCalendar;

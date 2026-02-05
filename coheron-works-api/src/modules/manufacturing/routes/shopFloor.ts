@@ -2,12 +2,13 @@ import express from 'express';
 import ShopFloorLog from '../../../models/ShopFloorLog.js';
 import ScrapEntry from '../../../models/ScrapEntry.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
 // Get active operations
-router.get('/active', asyncHandler(async (req, res) => {
+router.get('/active', authenticate, asyncHandler(async (req, res) => {
   const active = await ShopFloorLog.find({
     action: { $in: ['start', 'resume'] },
     ended_at: { $exists: false },
@@ -21,7 +22,7 @@ router.get('/active', asyncHandler(async (req, res) => {
 }));
 
 // Start operation
-router.post('/start', asyncHandler(async (req, res) => {
+router.post('/start', authenticate, asyncHandler(async (req, res) => {
   const log = await ShopFloorLog.create({
     ...req.body,
     action: 'start',
@@ -31,7 +32,7 @@ router.post('/start', asyncHandler(async (req, res) => {
 }));
 
 // Pause operation
-router.post('/pause', asyncHandler(async (req, res) => {
+router.post('/pause', authenticate, asyncHandler(async (req, res) => {
   const { log_id, notes } = req.body;
   const log = await ShopFloorLog.findById(log_id);
   if (!log) return res.status(404).json({ error: 'Log not found' });
@@ -57,7 +58,7 @@ router.post('/pause', asyncHandler(async (req, res) => {
 }));
 
 // Resume operation
-router.post('/resume', asyncHandler(async (req, res) => {
+router.post('/resume', authenticate, asyncHandler(async (req, res) => {
   const log = await ShopFloorLog.create({
     ...req.body,
     action: 'resume',
@@ -67,7 +68,7 @@ router.post('/resume', asyncHandler(async (req, res) => {
 }));
 
 // Complete operation
-router.post('/complete', asyncHandler(async (req, res) => {
+router.post('/complete', authenticate, asyncHandler(async (req, res) => {
   const { log_id, quantity_produced, quantity_rejected, rejection_reason, notes } = req.body;
   const log = await ShopFloorLog.findById(log_id);
   if (!log) return res.status(404).json({ error: 'Log not found' });
@@ -101,7 +102,7 @@ router.post('/complete', asyncHandler(async (req, res) => {
 }));
 
 // Get shop floor logs
-router.get('/logs', asyncHandler(async (req, res) => {
+router.get('/logs', authenticate, asyncHandler(async (req, res) => {
   const { manufacturing_order_id, work_center_id, operator_id, action } = req.query;
   const filter: any = {};
   if (manufacturing_order_id) filter.manufacturing_order_id = manufacturing_order_id;
@@ -122,13 +123,13 @@ router.get('/logs', asyncHandler(async (req, res) => {
 }));
 
 // Record scrap entry
-router.post('/scrap', asyncHandler(async (req, res) => {
+router.post('/scrap', authenticate, asyncHandler(async (req, res) => {
   const scrap = await ScrapEntry.create(req.body);
   res.status(201).json({ data: scrap });
 }));
 
 // List scrap entries
-router.get('/scrap', asyncHandler(async (req, res) => {
+router.get('/scrap', authenticate, asyncHandler(async (req, res) => {
   const { manufacturing_order_id, product_id, scrap_reason, disposal_method } = req.query;
   const filter: any = {};
   if (manufacturing_order_id) filter.manufacturing_order_id = manufacturing_order_id;
@@ -148,7 +149,7 @@ router.get('/scrap', asyncHandler(async (req, res) => {
 }));
 
 // Scrap summary by reason/product
-router.get('/scrap/summary', asyncHandler(async (req, res) => {
+router.get('/scrap/summary', authenticate, asyncHandler(async (req, res) => {
   const { group_by } = req.query;
   const groupField = group_by === 'product' ? '$product_id' : '$scrap_reason';
   const summary = await ScrapEntry.aggregate([

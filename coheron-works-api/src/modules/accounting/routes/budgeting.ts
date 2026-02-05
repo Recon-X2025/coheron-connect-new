@@ -1,11 +1,12 @@
 import express from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import Budget from '../../../models/Budget.js';
 
 const router = express.Router();
 
 // List budgets
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const { status, fiscal_year_id, page = '1', limit = '20' } = req.query;
   const filter: any = {};
@@ -21,7 +22,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Summary across all budgets
-router.get('/summary', asyncHandler(async (req, res) => {
+router.get('/summary', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const filter: any = {};
   if (tenant_id) filter.tenant_id = tenant_id;
@@ -39,42 +40,42 @@ router.get('/summary', asyncHandler(async (req, res) => {
 }));
 
 // Get single budget
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const item = await Budget.findById(req.params.id).lean();
   if (!item) return res.status(404).json({ error: 'Budget not found' });
   res.json(item);
 }));
 
 // Create budget
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = (req as any).user?.tenant_id;
   const item = await Budget.create({ ...req.body, tenant_id });
   res.status(201).json(item);
 }));
 
 // Update budget
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const item = await Budget.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true }).lean();
   if (!item) return res.status(404).json({ error: 'Budget not found' });
   res.json(item);
 }));
 
 // Delete budget
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const item = await Budget.findByIdAndDelete(req.params.id);
   if (!item) return res.status(404).json({ error: 'Budget not found' });
   res.json({ success: true });
 }));
 
 // Approve budget
-router.post('/:id/approve', asyncHandler(async (req, res) => {
+router.post('/:id/approve', authenticate, asyncHandler(async (req, res) => {
   const item = await Budget.findByIdAndUpdate(req.params.id, { status: 'approved' }, { new: true }).lean();
   if (!item) return res.status(404).json({ error: 'Budget not found' });
   res.json(item);
 }));
 
 // Variance report
-router.get('/:id/variance-report', asyncHandler(async (req, res) => {
+router.get('/:id/variance-report', authenticate, asyncHandler(async (req, res) => {
   const budget = await Budget.findById(req.params.id).lean();
   if (!budget) return res.status(404).json({ error: 'Budget not found' });
   // Return lines with variance placeholder (actual amounts would come from journal entries)

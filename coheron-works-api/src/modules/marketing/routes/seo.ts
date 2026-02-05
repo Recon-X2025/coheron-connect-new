@@ -2,6 +2,7 @@ import express from 'express';
 import { SEOAudit } from '../models/SEOAudit.js';
 import { SEOKeyword } from '../models/SEOKeyword.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
@@ -9,7 +10,7 @@ const router = express.Router();
 // SEO AUDITS
 // ============================================
 
-router.get('/audits', asyncHandler(async (req, res) => {
+router.get('/audits', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const filter: any = { tenant_id };
   if (req.query.status) filter.status = req.query.status;
@@ -18,32 +19,32 @@ router.get('/audits', asyncHandler(async (req, res) => {
   res.json(audits);
 }));
 
-router.get('/audits/:id', asyncHandler(async (req, res) => {
+router.get('/audits/:id', authenticate, asyncHandler(async (req, res) => {
   const audit = await SEOAudit.findById(req.params.id).lean();
   if (!audit) return res.status(404).json({ error: 'Audit not found' });
   res.json(audit);
 }));
 
-router.post('/audits', asyncHandler(async (req, res) => {
+router.post('/audits', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const audit = await SEOAudit.create({ ...req.body, tenant_id, created_by: req.user?.userId });
   res.status(201).json(audit);
 }));
 
-router.put('/audits/:id', asyncHandler(async (req, res) => {
+router.put('/audits/:id', authenticate, asyncHandler(async (req, res) => {
   const audit = await SEOAudit.findByIdAndUpdate(req.params.id, req.body, { new: true });
   if (!audit) return res.status(404).json({ error: 'Audit not found' });
   res.json(audit);
 }));
 
-router.delete('/audits/:id', asyncHandler(async (req, res) => {
+router.delete('/audits/:id', authenticate, asyncHandler(async (req, res) => {
   const audit = await SEOAudit.findByIdAndDelete(req.params.id);
   if (!audit) return res.status(404).json({ error: 'Audit not found' });
   res.json({ message: 'Audit deleted successfully' });
 }));
 
 // Run audit (simulated)
-router.post('/audits/:id/run', asyncHandler(async (req, res) => {
+router.post('/audits/:id/run', authenticate, asyncHandler(async (req, res) => {
   const audit = await SEOAudit.findById(req.params.id);
   if (!audit) return res.status(404).json({ error: 'Audit not found' });
 
@@ -70,7 +71,7 @@ router.post('/audits/:id/run', asyncHandler(async (req, res) => {
 // SEO KEYWORDS
 // ============================================
 
-router.get('/keywords', asyncHandler(async (req, res) => {
+router.get('/keywords', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const filter: any = { tenant_id };
   if (req.query.status) filter.status = req.query.status;
@@ -80,46 +81,46 @@ router.get('/keywords', asyncHandler(async (req, res) => {
   res.json(keywords);
 }));
 
-router.get('/keywords/:id', asyncHandler(async (req, res) => {
+router.get('/keywords/:id', authenticate, asyncHandler(async (req, res) => {
   const keyword = await SEOKeyword.findById(req.params.id).lean();
   if (!keyword) return res.status(404).json({ error: 'Keyword not found' });
   res.json(keyword);
 }));
 
-router.post('/keywords', asyncHandler(async (req, res) => {
+router.post('/keywords', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const keyword = await SEOKeyword.create({ ...req.body, tenant_id });
   res.status(201).json(keyword);
 }));
 
-router.put('/keywords/:id', asyncHandler(async (req, res) => {
+router.put('/keywords/:id', authenticate, asyncHandler(async (req, res) => {
   const keyword = await SEOKeyword.findByIdAndUpdate(req.params.id, req.body, { new: true });
   if (!keyword) return res.status(404).json({ error: 'Keyword not found' });
   res.json(keyword);
 }));
 
-router.delete('/keywords/:id', asyncHandler(async (req, res) => {
+router.delete('/keywords/:id', authenticate, asyncHandler(async (req, res) => {
   const keyword = await SEOKeyword.findByIdAndDelete(req.params.id);
   if (!keyword) return res.status(404).json({ error: 'Keyword not found' });
   res.json({ message: 'Keyword deleted successfully' });
 }));
 
 // Rankings
-router.get('/keywords/rankings', asyncHandler(async (req, res) => {
+router.get('/keywords/rankings', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const keywords = await SEOKeyword.find({ tenant_id, status: 'tracking', current_position: { $gt: 0 } }).sort({ current_position: 1 }).lean();
   res.json(keywords);
 }));
 
 // Opportunities (high volume, low difficulty, not ranking yet)
-router.get('/keywords/opportunities', asyncHandler(async (req, res) => {
+router.get('/keywords/opportunities', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const keywords = await SEOKeyword.find({ tenant_id, status: 'tracking', difficulty: { $lt: 50 }, current_position: { $in: [0, null] } }).sort({ search_volume: -1 }).limit(50).lean();
   res.json(keywords);
 }));
 
 // Dashboard
-router.get('/dashboard', asyncHandler(async (req, res) => {
+router.get('/dashboard', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const totalKeywords = await SEOKeyword.countDocuments({ tenant_id, status: 'tracking' });
   const ranking = await SEOKeyword.countDocuments({ tenant_id, status: 'tracking', current_position: { $gt: 0, $lte: 100 } });

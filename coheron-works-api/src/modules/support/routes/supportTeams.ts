@@ -2,6 +2,7 @@ import express from 'express';
 import { SupportTeam, SupportAgent } from '../../../models/SupportTeam.js';
 import { SupportTicket } from '../../../models/SupportTicket.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
@@ -11,7 +12,7 @@ const router = express.Router();
 // ============================================
 
 // Get all teams
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const teams = await SupportTeam.find({ is_active: true }).sort({ name: 1 }).lean();
 
   const teamsWithCounts = await Promise.all(
@@ -28,7 +29,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get team by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const team = await SupportTeam.findById(req.params.id).lean();
   if (!team) {
     return res.status(404).json({ error: 'Team not found' });
@@ -50,7 +51,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create team
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const { name, description, email } = req.body;
   if (!name) {
     return res.status(400).json({ error: 'Team name is required' });
@@ -61,7 +62,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update team
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const { name, description, email, is_active } = req.body;
   const updateData: any = {};
 
@@ -87,7 +88,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get all agents
-router.get('/agents/all', asyncHandler(async (req, res) => {
+router.get('/agents/all', authenticate, asyncHandler(async (req, res) => {
   const filter: any = { is_active: true };
 
   const pagination = getPaginationParams(req);
@@ -114,7 +115,7 @@ router.get('/agents/all', asyncHandler(async (req, res) => {
 }));
 
 // Create agent
-router.post('/agents', asyncHandler(async (req, res) => {
+router.post('/agents', authenticate, asyncHandler(async (req, res) => {
   const { user_id, team_id, agent_type, max_tickets, skills } = req.body;
   if (!user_id) {
     return res.status(400).json({ error: 'User ID is required' });
@@ -132,7 +133,7 @@ router.post('/agents', asyncHandler(async (req, res) => {
 }));
 
 // Update agent
-router.put('/agents/:id', asyncHandler(async (req, res) => {
+router.put('/agents/:id', authenticate, asyncHandler(async (req, res) => {
   const { team_id, agent_type, max_tickets, skills, is_active } = req.body;
   const updateData: any = {};
 

@@ -324,5 +324,5 @@ dealSchema.index({ partner_id: 1 });
 dealSchema.index({ tenant_id: 1, 'forecast.category': 1 });
 dealSchema.index({ tenant_id: 1, 'health.is_stale': 1 });
 
-export const Deal = mongoose.model('Deal', dealSchema);
+export const Deal = mongoose.models.Deal || mongoose.model('Deal', dealSchema);
 export default Deal;

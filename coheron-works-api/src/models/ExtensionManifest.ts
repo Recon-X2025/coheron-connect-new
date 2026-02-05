@@ -37,4 +37,4 @@ const extensionManifestSchema = new Schema({
 extensionManifestSchema.index({ tenant_id: 1, slug: 1 }, { unique: true });
 extensionManifestSchema.index({ tenant_id: 1, category: 1 });
 
-export const ExtensionManifest = mongoose.model('ExtensionManifest', extensionManifestSchema);
+export const ExtensionManifest = mongoose.models.ExtensionManifest || mongoose.model('ExtensionManifest', extensionManifestSchema);

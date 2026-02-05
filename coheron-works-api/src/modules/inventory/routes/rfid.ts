@@ -2,12 +2,13 @@ import express from 'express';
 import { RFIDTag } from '../../../models/RFIDTag.js';
 import { RFIDReader } from '../../../models/RFIDReader.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
 // GET /tags
-router.get('/tags', asyncHandler(async (req: any, res: any) => {
+router.get('/tags', authenticate, asyncHandler(async (req: any, res: any) => {
   const { tenant_id, status, associated_type } = req.query;
   const filter: any = {};
   if (tenant_id) filter.tenant_id = tenant_id;
@@ -19,27 +20,27 @@ router.get('/tags', asyncHandler(async (req: any, res: any) => {
 }));
 
 // POST /tags
-router.post('/tags', asyncHandler(async (req: any, res: any) => {
+router.post('/tags', authenticate, asyncHandler(async (req: any, res: any) => {
   const tag = await RFIDTag.create(req.body);
   res.status(201).json(tag);
 }));
 
 // PUT /tags/:id
-router.put('/tags/:id', asyncHandler(async (req: any, res: any) => {
+router.put('/tags/:id', authenticate, asyncHandler(async (req: any, res: any) => {
   const tag = await RFIDTag.findByIdAndUpdate(req.params.id, req.body, { new: true }).lean();
   if (!tag) return res.status(404).json({ error: 'Tag not found' });
   res.json(tag);
 }));
 
 // POST /tags/:id/deactivate
-router.post('/tags/:id/deactivate', asyncHandler(async (req: any, res: any) => {
+router.post('/tags/:id/deactivate', authenticate, asyncHandler(async (req: any, res: any) => {
   const tag = await RFIDTag.findByIdAndUpdate(req.params.id, { status: 'deactivated' }, { new: true }).lean();
   if (!tag) return res.status(404).json({ error: 'Tag not found' });
   res.json(tag);
 }));
 
 // POST /read
-router.post('/read', asyncHandler(async (req: any, res: any) => {
+router.post('/read', authenticate, asyncHandler(async (req: any, res: any) => {
   const { epc, reader_id, tenant_id, location } = req.body;
   const tag = await RFIDTag.findOne({ tenant_id, epc });
   if (!tag) return res.status(404).json({ error: 'Tag not recognized' });
@@ -57,7 +58,7 @@ router.post('/read', asyncHandler(async (req: any, res: any) => {
 }));
 
 // POST /bulk-read
-router.post('/bulk-read', asyncHandler(async (req: any, res: any) => {
+router.post('/bulk-read', authenticate, asyncHandler(async (req: any, res: any) => {
   const { reads, tenant_id } = req.body;
   const results: any[] = [];
   const notFound: string[] = [];
@@ -77,7 +78,7 @@ router.post('/bulk-read', asyncHandler(async (req: any, res: any) => {
 }));
 
 // GET /readers
-router.get('/readers', asyncHandler(async (req: any, res: any) => {
+router.get('/readers', authenticate, asyncHandler(async (req: any, res: any) => {
   const { tenant_id, is_active, reader_type } = req.query;
   const filter: any = {};
   if (tenant_id) filter.tenant_id = tenant_id;
@@ -89,19 +90,19 @@ router.get('/readers', asyncHandler(async (req: any, res: any) => {
 }));
 
 // POST /readers
-router.post('/readers', asyncHandler(async (req: any, res: any) => {
+router.post('/readers', authenticate, asyncHandler(async (req: any, res: any) => {
   const reader = await RFIDReader.create(req.body); res.status(201).json(reader);
 }));
 
 // PUT /readers/:id
-router.put('/readers/:id', asyncHandler(async (req: any, res: any) => {
+router.put('/readers/:id', authenticate, asyncHandler(async (req: any, res: any) => {
   const reader = await RFIDReader.findByIdAndUpdate(req.params.id, req.body, { new: true }).lean();
   if (!reader) return res.status(404).json({ error: 'Reader not found' });
   res.json(reader);
 }));
 
 // GET /readers/:id/reads
-router.get('/readers/:id/reads', asyncHandler(async (req: any, res: any) => {
+router.get('/readers/:id/reads', authenticate, asyncHandler(async (req: any, res: any) => {
   const reader = await RFIDReader.findById(req.params.id).lean();
   if (!reader) return res.status(404).json({ error: 'Reader not found' });
   const tags = await RFIDTag.find({ tenant_id: reader.tenant_id, last_reader_id: reader._id }).sort({ last_read_at: -1 }).limit(100).lean();

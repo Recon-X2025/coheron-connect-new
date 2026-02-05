@@ -1,12 +1,13 @@
 import express from 'express';
 import { Campaign, CampaignPerformance, CampaignFinancial } from '../../../models/Campaign.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
 // Get all campaigns
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { campaign_type, state, search } = req.query;
   const filter: any = {};
 
@@ -27,7 +28,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get campaign by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const campaign = await Campaign.findById(req.params.id).lean();
 
   if (!campaign) {
@@ -38,7 +39,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create campaign
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const {
     name, campaign_type, objective, state, start_date, end_date,
     budget, budget_limit, expected_revenue, target_kpis,
@@ -65,7 +66,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update campaign
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const {
     name, campaign_type, objective, state, start_date, end_date,
     budget, budget_limit, revenue, expected_revenue, total_cost,
@@ -101,7 +102,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete campaign
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const campaign = await Campaign.findByIdAndDelete(req.params.id);
 
   if (!campaign) {
@@ -112,13 +113,13 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Get campaign performance data
-router.get('/:id/performance', asyncHandler(async (req, res) => {
+router.get('/:id/performance', authenticate, asyncHandler(async (req, res) => {
   const performance = await CampaignPerformance.find({ campaign_id: req.params.id }).sort({ date: -1 }).lean();
   res.json(performance);
 }));
 
 // Get campaign financials
-router.get('/:id/financials', asyncHandler(async (req, res) => {
+router.get('/:id/financials', authenticate, asyncHandler(async (req, res) => {
   const financials = await CampaignFinancial.find({ campaign_id: req.params.id }).sort({ transaction_date: -1 }).lean();
   res.json(financials);
 }));

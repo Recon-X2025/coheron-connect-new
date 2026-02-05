@@ -28,4 +28,4 @@ const commissionEntrySchema = new Schema({
 commissionEntrySchema.index({ tenant_id: 1, sales_person_id: 1, status: 1 });
 commissionEntrySchema.index({ tenant_id: 1, period_start: 1, period_end: 1 });
 
-export const CommissionEntry = mongoose.model('CommissionEntry', commissionEntrySchema);
+export const CommissionEntry = mongoose.models.CommissionEntry || mongoose.model('CommissionEntry', commissionEntrySchema);

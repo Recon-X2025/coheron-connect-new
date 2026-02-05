@@ -1,6 +1,7 @@
 import express from 'express';
 import { Employee } from '../../../models/Employee.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 import { validate } from '../../../shared/middleware/validate.js';
 import { objectIdParam } from '../../../shared/schemas/common.js';
@@ -9,7 +10,7 @@ import { createEmployeeSchema, updateEmployeeSchema, addDocumentSchema } from '.
 const router = express.Router();
 
 // Get all employees
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const filter: any = {};
   const pagination = getPaginationParams(req);
   const result = await paginateQuery(
@@ -22,7 +23,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get employee by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const employee = await Employee.findById(id).lean();
 
@@ -33,7 +34,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create employee
-router.post('/', validate({ body: createEmployeeSchema }), asyncHandler(async (req, res) => {
+router.post('/', authenticate, validate({ body: createEmployeeSchema }), asyncHandler(async (req, res) => {
   const {
     employee_id, name, work_email, work_phone, job_title,
     department_id, manager_id, hire_date, employment_type
@@ -48,7 +49,7 @@ router.post('/', validate({ body: createEmployeeSchema }), asyncHandler(async (r
 }));
 
 // Update employee
-router.put('/:id', validate({ params: objectIdParam, body: updateEmployeeSchema }), asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, validate({ params: objectIdParam, body: updateEmployeeSchema }), asyncHandler(async (req, res) => {
   const { id } = req.params;
   const {
     name, work_email, work_phone, job_title,
@@ -68,7 +69,7 @@ router.put('/:id', validate({ params: objectIdParam, body: updateEmployeeSchema 
 }));
 
 // Delete employee
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const employee = await Employee.findByIdAndDelete(id);
 
@@ -79,7 +80,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Get employee leave balances
-router.get('/:id/leave-balances', asyncHandler(async (req, res) => {
+router.get('/:id/leave-balances', authenticate, asyncHandler(async (req, res) => {
   const employee = await Employee.findById(req.params.id).select('leave_balances name employee_id').lean();
   if (!employee) {
     return res.status(404).json({ error: 'Employee not found' });
@@ -88,7 +89,7 @@ router.get('/:id/leave-balances', asyncHandler(async (req, res) => {
 }));
 
 // Add document to employee
-router.post('/:id/documents', validate({ params: objectIdParam, body: addDocumentSchema }), asyncHandler(async (req, res) => {
+router.post('/:id/documents', authenticate, validate({ params: objectIdParam, body: addDocumentSchema }), asyncHandler(async (req, res) => {
   const employee = await Employee.findByIdAndUpdate(
     req.params.id,
     { $push: { documents: req.body } },

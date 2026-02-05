@@ -1,12 +1,13 @@
 import express from 'express';
 import Subcontract from '../../../models/Subcontract.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
 // Get all subcontracts
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { status, vendor_id, search } = req.query;
   const filter: any = {};
   if (status) filter.status = status;
@@ -26,13 +27,13 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Create subcontract
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const subcontract = await Subcontract.create(req.body);
   res.status(201).json({ data: subcontract });
 }));
 
 // Get subcontract by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const subcontract = await Subcontract.findById(req.params.id)
     .populate('vendor_id', 'name')
     .populate('product_id', 'name')
@@ -43,14 +44,14 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Update subcontract
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const subcontract = await Subcontract.findByIdAndUpdate(req.params.id, req.body, { new: true });
   if (!subcontract) return res.status(404).json({ error: 'Subcontract not found' });
   res.json({ data: subcontract });
 }));
 
 // Send materials
-router.post('/:id/send-materials', asyncHandler(async (req, res) => {
+router.post('/:id/send-materials', authenticate, asyncHandler(async (req, res) => {
   const subcontract = await Subcontract.findById(req.params.id);
   if (!subcontract) return res.status(404).json({ error: 'Subcontract not found' });
   if (subcontract.status !== 'draft') return res.status(400).json({ error: 'Can only send materials from draft status' });
@@ -62,7 +63,7 @@ router.post('/:id/send-materials', asyncHandler(async (req, res) => {
 }));
 
 // Receive goods
-router.post('/:id/receive', asyncHandler(async (req, res) => {
+router.post('/:id/receive', authenticate, asyncHandler(async (req, res) => {
   const subcontract = await Subcontract.findById(req.params.id);
   if (!subcontract) return res.status(404).json({ error: 'Subcontract not found' });
   if (!['materials_sent', 'in_progress'].includes(subcontract.status)) {
@@ -76,7 +77,7 @@ router.post('/:id/receive', asyncHandler(async (req, res) => {
 }));
 
 // Quality check
-router.post('/:id/quality-check', asyncHandler(async (req, res) => {
+router.post('/:id/quality-check', authenticate, asyncHandler(async (req, res) => {
   const subcontract = await Subcontract.findById(req.params.id);
   if (!subcontract) return res.status(404).json({ error: 'Subcontract not found' });
   if (subcontract.status !== 'received') return res.status(400).json({ error: 'Must be in received status' });
@@ -87,7 +88,7 @@ router.post('/:id/quality-check', asyncHandler(async (req, res) => {
 }));
 
 // Complete
-router.post('/:id/complete', asyncHandler(async (req, res) => {
+router.post('/:id/complete', authenticate, asyncHandler(async (req, res) => {
   const subcontract = await Subcontract.findById(req.params.id);
   if (!subcontract) return res.status(404).json({ error: 'Subcontract not found' });
   if (!['received', 'quality_check'].includes(subcontract.status)) {
@@ -100,7 +101,7 @@ router.post('/:id/complete', asyncHandler(async (req, res) => {
 }));
 
 // Cancel
-router.post('/:id/cancel', asyncHandler(async (req, res) => {
+router.post('/:id/cancel', authenticate, asyncHandler(async (req, res) => {
   const subcontract = await Subcontract.findById(req.params.id);
   if (!subcontract) return res.status(404).json({ error: 'Subcontract not found' });
   if (subcontract.status === 'completed') return res.status(400).json({ error: 'Cannot cancel completed subcontract' });

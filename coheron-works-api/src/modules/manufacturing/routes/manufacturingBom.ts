@@ -2,6 +2,7 @@ import express from 'express';
 import Bom from '../../../models/Bom.js';
 import BomLine from '../../../models/BomLine.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
@@ -11,7 +12,7 @@ const router = express.Router();
 // ============================================
 
 // Get all BOMs
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { product_id, active, search } = req.query;
   const filter: any = {};
 
@@ -43,7 +44,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get BOM by ID with lines
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const bom = await Bom.findById(req.params.id)
     .populate('product_id', 'name')
     .lean();
@@ -71,7 +72,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create BOM
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const {
     name, code, product_id, product_qty, product_uom_id, type, active,
     version, date_start, date_stop, sequence, ready_to_produce, user_id, notes, lines,
@@ -111,7 +112,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update BOM
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const allowedFields = [
     'name', 'code', 'product_id', 'product_qty', 'product_uom_id', 'type',
@@ -139,7 +140,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete BOM
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const bom = await Bom.findByIdAndDelete(req.params.id);
   if (!bom) {
     return res.status(404).json({ error: 'BOM not found' });
@@ -154,7 +155,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get BOM lines
-router.get('/:bom_id/lines', asyncHandler(async (req, res) => {
+router.get('/:bom_id/lines', authenticate, asyncHandler(async (req, res) => {
   const lines = await BomLine.find({ bom_id: req.params.bom_id })
     .populate('product_id', 'name default_code')
     .sort({ sequence: 1 })
@@ -170,7 +171,7 @@ router.get('/:bom_id/lines', asyncHandler(async (req, res) => {
 }));
 
 // Add BOM line
-router.post('/:bom_id/lines', asyncHandler(async (req, res) => {
+router.post('/:bom_id/lines', authenticate, asyncHandler(async (req, res) => {
   const { bom_id } = req.params;
   const {
     product_id, product_qty, product_uom_id, sequence,
@@ -190,7 +191,7 @@ router.post('/:bom_id/lines', asyncHandler(async (req, res) => {
 }));
 
 // Update BOM line
-router.put('/lines/:id', asyncHandler(async (req, res) => {
+router.put('/lines/:id', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const allowedFields = [
     'product_id', 'product_qty', 'product_uom_id', 'sequence',
@@ -218,7 +219,7 @@ router.put('/lines/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete BOM line
-router.delete('/lines/:id', asyncHandler(async (req, res) => {
+router.delete('/lines/:id', authenticate, asyncHandler(async (req, res) => {
   const line = await BomLine.findByIdAndDelete(req.params.id);
   if (!line) {
     return res.status(404).json({ error: 'BOM line not found' });

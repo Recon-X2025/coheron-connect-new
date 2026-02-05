@@ -18,4 +18,4 @@ applicantSchema.index({ stage_id: 1 });
 applicantSchema.index({ priority: -1 });
 applicantSchema.index({ created_at: -1 });
 
-export const Applicant = mongoose.model('Applicant', applicantSchema);
+export const Applicant = mongoose.models.Applicant || mongoose.model('Applicant', applicantSchema);

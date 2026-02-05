@@ -1,12 +1,13 @@
 import express from 'express';
 import { Attendance } from '../../../models/Attendance.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
 // Get attendance records
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { employee_id, date, from_date, to_date } = req.query;
   const filter: any = {};
 
@@ -39,7 +40,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Create/Update attendance record
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const { employee_id, date, check_in, check_out, hours_worked, status } = req.body;
 
   const record = await Attendance.findOneAndUpdate(

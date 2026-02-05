@@ -6,9 +6,11 @@ import Release from '../../../models/Release.js';
 import ReleaseItem from '../../../models/ReleaseItem.js';
 import AutomationRule from '../../../models/AutomationRule.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
+router.use(authenticate);
 
 // ============================================
 // SPRINTS

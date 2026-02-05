@@ -37,5 +37,5 @@ workflowRunSchema.index({ workflow_id: 1 });
 workflowRunSchema.index({ tenant_id: 1, status: 1 });
 workflowRunSchema.index({ trigger_record_id: 1 });
 
-export const WorkflowRun = mongoose.model('WorkflowRun', workflowRunSchema);
+export const WorkflowRun = mongoose.models.WorkflowRun || mongoose.model('WorkflowRun', workflowRunSchema);
 export default WorkflowRun;

@@ -7,8 +7,10 @@ import IssueHistory from '../../../models/IssueHistory.js';
 import Backlog from '../../../models/Backlog.js';
 import mongoose from 'mongoose';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
+router.use(authenticate);
 
 // ============================================
 // BUG/DEFECT LIFECYCLE MANAGEMENT

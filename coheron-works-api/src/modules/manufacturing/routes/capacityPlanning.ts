@@ -3,12 +3,13 @@ import WorkCenter from '../../../models/Workcenter.js';
 import CapacityPlan from '../../../models/CapacityPlan.js';
 import ManufacturingOrder from '../../../models/ManufacturingOrder.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
 // List work centers
-router.get('/work-centers', asyncHandler(async (req, res) => {
+router.get('/work-centers', authenticate, asyncHandler(async (req, res) => {
   const { active, department } = req.query;
   const filter: any = {};
   if (active !== undefined) filter.active = active === 'true';
@@ -22,20 +23,20 @@ router.get('/work-centers', asyncHandler(async (req, res) => {
 }));
 
 // Create work center
-router.post('/work-centers', asyncHandler(async (req, res) => {
+router.post('/work-centers', authenticate, asyncHandler(async (req, res) => {
   const wc = await WorkCenter.create(req.body);
   res.status(201).json({ data: wc });
 }));
 
 // Update work center
-router.put('/work-centers/:id', asyncHandler(async (req, res) => {
+router.put('/work-centers/:id', authenticate, asyncHandler(async (req, res) => {
   const wc = await WorkCenter.findByIdAndUpdate(req.params.id, req.body, { new: true });
   if (!wc) return res.status(404).json({ error: 'Work center not found' });
   res.json({ data: wc });
 }));
 
 // Get capacity load view
-router.get('/load', asyncHandler(async (req, res) => {
+router.get('/load', authenticate, asyncHandler(async (req, res) => {
   const { start, end, work_center_id } = req.query;
   const filter: any = {};
   if (work_center_id) filter.work_center_id = work_center_id;
@@ -46,7 +47,7 @@ router.get('/load', asyncHandler(async (req, res) => {
 }));
 
 // Generate capacity plan
-router.post('/plans', asyncHandler(async (req, res) => {
+router.post('/plans', authenticate, asyncHandler(async (req, res) => {
   const { work_center_id, period_start, period_end } = req.body;
   const wc = await WorkCenter.findById(work_center_id).lean();
   if (!wc) return res.status(404).json({ error: 'Work center not found' });
@@ -80,7 +81,7 @@ router.post('/plans', asyncHandler(async (req, res) => {
 }));
 
 // List capacity plans
-router.get('/plans', asyncHandler(async (req, res) => {
+router.get('/plans', authenticate, asyncHandler(async (req, res) => {
   const pagination = getPaginationParams(req);
   const filter: any = {};
   const result = await paginateQuery(
@@ -91,7 +92,7 @@ router.get('/plans', asyncHandler(async (req, res) => {
 }));
 
 // Identify bottlenecks
-router.get('/bottlenecks', asyncHandler(async (req, res) => {
+router.get('/bottlenecks', authenticate, asyncHandler(async (req, res) => {
   const { start, end } = req.query;
   const filter: any = { overload: true };
   if (start) filter.period_start = { $gte: new Date(start as string) };

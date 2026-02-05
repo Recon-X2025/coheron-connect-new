@@ -53,5 +53,5 @@ reportSchema.index({ tenant_id: 1 });
 reportSchema.index({ tenant_id: 1, module: 1 });
 reportSchema.index({ created_by: 1 });
 
-export const Report = mongoose.model('Report', reportSchema);
+export const Report = mongoose.models.Report || mongoose.model('Report', reportSchema);
 export default Report;

@@ -1,11 +1,12 @@
 import express from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { OfflineSyncQueue } from '../models/OfflineSyncQueue.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // Bulk sync offline operations
-router.post('/sync', asyncHandler(async (req, res) => {
+router.post('/sync', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { operations } = req.body; // array of {store_id, terminal_id, operation_type, payload, created_offline_at}
   if (!Array.isArray(operations) || !operations.length) {
@@ -37,7 +38,7 @@ router.post('/sync', asyncHandler(async (req, res) => {
 }));
 
 // Pending sync items for a terminal
-router.get('/pending/:terminalId', asyncHandler(async (req, res) => {
+router.get('/pending/:terminalId', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const items = await OfflineSyncQueue.find({
     tenant_id,
@@ -48,7 +49,7 @@ router.get('/pending/:terminalId', asyncHandler(async (req, res) => {
 }));
 
 // Resolve conflict
-router.post('/resolve-conflict/:id', asyncHandler(async (req, res) => {
+router.post('/resolve-conflict/:id', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { resolution } = req.body; // 'keep_local' | 'keep_server' | 'merge'
   const item = await OfflineSyncQueue.findOne({ _id: req.params.id, tenant_id, status: 'conflict' });
@@ -62,7 +63,7 @@ router.post('/resolve-conflict/:id', asyncHandler(async (req, res) => {
 }));
 
 // Sync status for a store
-router.get('/sync-status/:storeId', asyncHandler(async (req, res) => {
+router.get('/sync-status/:storeId', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const storeId = req.params.storeId;
   const [pending, conflicts, failed, lastSynced] = await Promise.all([
@@ -75,7 +76,7 @@ router.get('/sync-status/:storeId', asyncHandler(async (req, res) => {
 }));
 
 // Download snapshot for offline use
-router.post('/snapshot', asyncHandler(async (req, res) => {
+router.post('/snapshot', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   // In production, gather catalog, prices, customers, tax rates
   res.json({

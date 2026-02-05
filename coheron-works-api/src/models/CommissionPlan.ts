@@ -30,4 +30,4 @@ const commissionPlanSchema = new Schema({
 
 commissionPlanSchema.index({ tenant_id: 1, is_active: 1 });
 
-export const CommissionPlan = mongoose.model('CommissionPlan', commissionPlanSchema);
+export const CommissionPlan = mongoose.models.CommissionPlan || mongoose.model('CommissionPlan', commissionPlanSchema);

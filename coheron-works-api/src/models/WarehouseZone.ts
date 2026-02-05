@@ -20,4 +20,4 @@ const warehouseZoneSchema = new Schema({
 
 warehouseZoneSchema.index({ tenant_id: 1, warehouse_id: 1, code: 1 }, { unique: true });
 
-export const WarehouseZone = mongoose.model('WarehouseZone', warehouseZoneSchema);
+export const WarehouseZone = mongoose.models.WarehouseZone || mongoose.model('WarehouseZone', warehouseZoneSchema);

@@ -50,4 +50,4 @@ const customEntitySchema = new Schema({
 
 customEntitySchema.index({ tenant_id: 1, slug: 1 }, { unique: true });
 
-export const CustomEntity = mongoose.model('CustomEntity', customEntitySchema);
+export const CustomEntity = mongoose.models.CustomEntity || mongoose.model('CustomEntity', customEntitySchema);

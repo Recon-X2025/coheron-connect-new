@@ -3,6 +3,7 @@ import { KbArticle, KbArticleRevision, KbArticleAttachment, TicketChannel, Ticke
 import { SupportTicket } from '../../../models/SupportTicket.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
@@ -11,7 +12,7 @@ const router = express.Router();
 // ============================================
 
 // Get all articles
-router.get('/articles', asyncHandler(async (req, res) => {
+router.get('/articles', authenticate, asyncHandler(async (req, res) => {
   const { status, category_id, is_public, search, article_type } = req.query;
   const filter: any = {};
 
@@ -54,7 +55,7 @@ router.get('/articles', asyncHandler(async (req, res) => {
 }));
 
 // Get article by ID or slug
-router.get('/articles/:identifier', asyncHandler(async (req, res) => {
+router.get('/articles/:identifier', authenticate, asyncHandler(async (req, res) => {
   const { identifier } = req.params;
   const isObjectId = /^[0-9a-fA-F]{24}$/.test(identifier);
 
@@ -91,7 +92,7 @@ router.get('/articles/:identifier', asyncHandler(async (req, res) => {
 }));
 
 // Create article
-router.post('/articles', asyncHandler(async (req, res) => {
+router.post('/articles', authenticate, asyncHandler(async (req, res) => {
   const { title, content, summary, category_id, parent_article_id, article_type, is_public, tags, meta_keywords, meta_description, author_id } = req.body;
 
   if (!title || !content) {
@@ -132,7 +133,7 @@ router.post('/articles', asyncHandler(async (req, res) => {
 }));
 
 // Update article
-router.put('/articles/:id', asyncHandler(async (req, res) => {
+router.put('/articles/:id', authenticate, asyncHandler(async (req, res) => {
   const { title, content, summary, category_id, status, is_public, tags, meta_keywords, meta_description } = req.body;
   const updateData: any = {};
 
@@ -172,7 +173,7 @@ router.put('/articles/:id', asyncHandler(async (req, res) => {
 }));
 
 // Rate article
-router.post('/articles/:id/rate', asyncHandler(async (req, res) => {
+router.post('/articles/:id/rate', authenticate, asyncHandler(async (req, res) => {
   const { is_helpful } = req.body;
 
   if (is_helpful === true) {
@@ -189,13 +190,13 @@ router.post('/articles/:id/rate', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get all channels
-router.get('/channels', asyncHandler(async (req, res) => {
+router.get('/channels', authenticate, asyncHandler(async (req, res) => {
   const channels = await TicketChannel.find({ is_active: true }).sort({ name: 1 }).lean();
   res.json(channels);
 }));
 
 // Create channel
-router.post('/channels', asyncHandler(async (req, res) => {
+router.post('/channels', authenticate, asyncHandler(async (req, res) => {
   const { name, channel_type, config } = req.body;
 
   if (!name || !channel_type) {
@@ -216,7 +217,7 @@ router.post('/channels', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get all categories
-router.get('/categories', asyncHandler(async (req, res) => {
+router.get('/categories', authenticate, asyncHandler(async (req, res) => {
   const categories = await TicketCategory.find({ is_active: true }).lean();
 
   const categoriesWithCounts = await Promise.all(
@@ -234,7 +235,7 @@ router.get('/categories', asyncHandler(async (req, res) => {
 }));
 
 // Create category
-router.post('/categories', asyncHandler(async (req, res) => {
+router.post('/categories', authenticate, asyncHandler(async (req, res) => {
   const { name, parent_id, description } = req.body;
 
   if (!name) {

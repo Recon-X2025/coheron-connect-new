@@ -2,12 +2,13 @@ import express from 'express';
 import SerialNumber from '../../../models/SerialNumber.js';
 import StockMoveLine from '../../../models/StockMoveLine.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
 // GET / - List serial numbers with filters + pagination
-router.get('/', asyncHandler(async (req: any, res) => {
+router.get('/', authenticate, asyncHandler(async (req: any, res) => {
   const tenant_id = req.tenantId || req.headers['x-tenant-id'];
   const { product_id, status, batch_id, warehouse_id, search } = req.query;
   const filter: any = { tenant_id };
@@ -37,7 +38,7 @@ router.get('/', asyncHandler(async (req: any, res) => {
 }));
 
 // GET /:id - Get serial number detail
-router.get('/:id', asyncHandler(async (req: any, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req: any, res) => {
   const serial = await SerialNumber.findById(req.params.id)
     .populate('product_id', 'name sku')
     .populate('batch_id', 'batch_number')
@@ -55,7 +56,7 @@ router.get('/:id', asyncHandler(async (req: any, res) => {
 }));
 
 // POST / - Create serial number(s) - accept count for bulk generation
-router.post('/', asyncHandler(async (req: any, res) => {
+router.post('/', authenticate, asyncHandler(async (req: any, res) => {
   const tenant_id = req.tenantId || req.headers['x-tenant-id'];
   const { count, prefix, start_number, ...baseData } = req.body;
 
@@ -85,7 +86,7 @@ router.post('/', asyncHandler(async (req: any, res) => {
 }));
 
 // PUT /:id - Update serial number
-router.put('/:id', asyncHandler(async (req: any, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req: any, res) => {
   const { status, location_bin, warehouse_id, notes, sale_order_id, warranty_start, warranty_end } = req.body;
   const update: any = {};
 
@@ -106,7 +107,7 @@ router.put('/:id', asyncHandler(async (req: any, res) => {
 }));
 
 // POST /:id/transfer - Transfer to different warehouse/bin
-router.post('/:id/transfer', asyncHandler(async (req: any, res) => {
+router.post('/:id/transfer', authenticate, asyncHandler(async (req: any, res) => {
   const { to_warehouse_id, to_bin } = req.body;
 
   const serial = await SerialNumber.findById(req.params.id);
@@ -137,7 +138,7 @@ router.post('/:id/transfer', asyncHandler(async (req: any, res) => {
 }));
 
 // GET /:id/history - Get movement history for this serial number
-router.get('/:id/history', asyncHandler(async (req: any, res) => {
+router.get('/:id/history', authenticate, asyncHandler(async (req: any, res) => {
   const moves = await StockMoveLine.find({ serial_number_id: req.params.id })
     .populate('from_warehouse_id', 'name code')
     .populate('to_warehouse_id', 'name code')

@@ -17,4 +17,4 @@ const customEntityRecordSchema = new Schema({
 customEntityRecordSchema.index({ tenant_id: 1, entity_slug: 1, created_at: -1 });
 customEntityRecordSchema.index({ tenant_id: 1, entity_slug: 1 });
 
-export const CustomEntityRecord = mongoose.model('CustomEntityRecord', customEntityRecordSchema);
+export const CustomEntityRecord = mongoose.models.CustomEntityRecord || mongoose.model('CustomEntityRecord', customEntityRecordSchema);

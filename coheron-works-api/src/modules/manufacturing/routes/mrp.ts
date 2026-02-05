@@ -1,12 +1,13 @@
 import express from 'express';
 import { MRPRun, MRPDemand, MRPPlannedOrder } from '../../../models/MRP.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
 // Get MRP runs
-router.get('/runs', asyncHandler(async (req, res) => {
+router.get('/runs', authenticate, asyncHandler(async (req, res) => {
   const { status } = req.query;
   const filter: any = {};
   if (status) filter.status = status;
@@ -20,27 +21,27 @@ router.get('/runs', asyncHandler(async (req, res) => {
 }));
 
 // Get single run
-router.get('/runs/:id', asyncHandler(async (req, res) => {
+router.get('/runs/:id', authenticate, asyncHandler(async (req, res) => {
   const run = await MRPRun.findById(req.params.id).lean();
   if (!run) return res.status(404).json({ error: 'MRP run not found' });
   res.json(run);
 }));
 
 // Create MRP run
-router.post('/runs', asyncHandler(async (req, res) => {
+router.post('/runs', authenticate, asyncHandler(async (req, res) => {
   const run = await MRPRun.create(req.body);
   res.status(201).json(run);
 }));
 
 // Update run status
-router.put('/runs/:id', asyncHandler(async (req, res) => {
+router.put('/runs/:id', authenticate, asyncHandler(async (req, res) => {
   const run = await MRPRun.findByIdAndUpdate(req.params.id, req.body, { new: true });
   if (!run) return res.status(404).json({ error: 'MRP run not found' });
   res.json(run);
 }));
 
 // Get demands for a run
-router.get('/runs/:id/demands', asyncHandler(async (req, res) => {
+router.get('/runs/:id/demands', authenticate, asyncHandler(async (req, res) => {
   const { resolved } = req.query;
   const filter: any = { run_id: req.params.id };
   if (resolved !== undefined) filter.resolved = resolved === 'true';
@@ -53,7 +54,7 @@ router.get('/runs/:id/demands', asyncHandler(async (req, res) => {
 }));
 
 // Get planned orders for a run
-router.get('/runs/:id/planned-orders', asyncHandler(async (req, res) => {
+router.get('/runs/:id/planned-orders', authenticate, asyncHandler(async (req, res) => {
   const { status, order_type } = req.query;
   const filter: any = { run_id: req.params.id };
   if (status) filter.status = status;
@@ -67,7 +68,7 @@ router.get('/runs/:id/planned-orders', asyncHandler(async (req, res) => {
 }));
 
 // Confirm planned order
-router.post('/planned-orders/:id/confirm', asyncHandler(async (req, res) => {
+router.post('/planned-orders/:id/confirm', authenticate, asyncHandler(async (req, res) => {
   const order = await MRPPlannedOrder.findByIdAndUpdate(req.params.id, {
     status: 'confirmed',
     confirmed_at: new Date(),
@@ -79,7 +80,7 @@ router.post('/planned-orders/:id/confirm', asyncHandler(async (req, res) => {
 }));
 
 // Cancel planned order
-router.post('/planned-orders/:id/cancel', asyncHandler(async (req, res) => {
+router.post('/planned-orders/:id/cancel', authenticate, asyncHandler(async (req, res) => {
   const order = await MRPPlannedOrder.findByIdAndUpdate(req.params.id, { status: 'cancelled' }, { new: true });
   if (!order) return res.status(404).json({ error: 'Planned order not found' });
   res.json(order);

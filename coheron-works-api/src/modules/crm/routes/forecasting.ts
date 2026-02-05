@@ -2,12 +2,13 @@ import express from 'express';
 import mongoose from 'mongoose';
 import { SalesForecast } from '../../../models/SalesForecast.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const Lead = mongoose.model('Lead');
 const router = express.Router();
 
 // GET / - list forecasts
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const filter: any = {};
   if (req.query.forecast_type) filter.forecast_type = req.query.forecast_type;
   if (req.query.user_id) filter.user_id = req.query.user_id;
@@ -25,13 +26,13 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // POST / - create forecast
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const forecast = await SalesForecast.create(req.body);
   res.status(201).json(forecast);
 }));
 
 // GET /pipeline-analysis
-router.get('/pipeline-analysis', asyncHandler(async (req, res) => {
+router.get('/pipeline-analysis', authenticate, asyncHandler(async (req, res) => {
   const stages = ['new', 'qualified', 'proposition', 'negotiation', 'won', 'lost'];
   const pipeline = await Lead.aggregate([
     { $match: { type: 'opportunity' } },
@@ -53,7 +54,7 @@ router.get('/pipeline-analysis', asyncHandler(async (req, res) => {
 }));
 
 // GET /accuracy
-router.get('/accuracy', asyncHandler(async (req, res) => {
+router.get('/accuracy', authenticate, asyncHandler(async (req, res) => {
   const forecasts = await SalesForecast.find({
     actual_amount: { $exists: true, $ne: null },
     forecasted_amount: { $exists: true, $gt: 0 },

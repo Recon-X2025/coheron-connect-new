@@ -7,8 +7,10 @@ import VelocityData from '../../../models/VelocityData.js';
 import Issue from '../../../models/Issue.js';
 import Release from '../../../models/Release.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
+router.use(authenticate);
 
 // ============================================
 // AGILE ANALYTICS - Burndown, Velocity, Throughput

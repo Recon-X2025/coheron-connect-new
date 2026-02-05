@@ -1,6 +1,7 @@
 import express from 'express';
 import { LeaveRequest, LeaveBalance } from '../../../models/Leave.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 import { LeaveType } from '../../../models/LeaveType.js';
 import { LeavePolicy } from '../../../models/LeavePolicy.js';
@@ -9,7 +10,7 @@ import { HolidayCalendar } from '../../../models/HolidayCalendar.js';
 const router = express.Router();
 
 // Get leave requests
-router.get('/requests', asyncHandler(async (req, res) => {
+router.get('/requests', authenticate, asyncHandler(async (req, res) => {
   const { employee_id, status } = req.query;
   const filter: any = {};
 
@@ -38,7 +39,7 @@ router.get('/requests', asyncHandler(async (req, res) => {
 }));
 
 // Create leave request
-router.post('/requests', asyncHandler(async (req, res) => {
+router.post('/requests', authenticate, asyncHandler(async (req, res) => {
   const { employee_id, leave_type, from_date, to_date, days, reason, contact_during_leave } = req.body;
 
   const request = await LeaveRequest.create({
@@ -49,7 +50,7 @@ router.post('/requests', asyncHandler(async (req, res) => {
 }));
 
 // Approve/Reject leave request
-router.put('/requests/:id/approve', asyncHandler(async (req, res) => {
+router.put('/requests/:id/approve', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { status, approved_by } = req.body;
 
@@ -66,7 +67,7 @@ router.put('/requests/:id/approve', asyncHandler(async (req, res) => {
 }));
 
 // Get leave balance
-router.get('/balance/:employee_id', asyncHandler(async (req, res) => {
+router.get('/balance/:employee_id', authenticate, asyncHandler(async (req, res) => {
   const { employee_id } = req.params;
   const { year } = req.query;
   const currentYear = year || new Date().getFullYear();
@@ -83,23 +84,23 @@ router.get('/balance/:employee_id', asyncHandler(async (req, res) => {
 // LEAVE TYPES
 // ============================================
 
-router.get('/types', asyncHandler(async (req, res) => {
+router.get('/types', authenticate, asyncHandler(async (req, res) => {
   const types = await LeaveType.find(req.query.tenant_id ? { tenant_id: req.query.tenant_id } : {}).lean();
   res.json(types);
 }));
 
-router.post('/types', asyncHandler(async (req, res) => {
+router.post('/types', authenticate, asyncHandler(async (req, res) => {
   const type = await LeaveType.create(req.body);
   res.status(201).json(type);
 }));
 
-router.put('/types/:id', asyncHandler(async (req, res) => {
+router.put('/types/:id', authenticate, asyncHandler(async (req, res) => {
   const type = await LeaveType.findByIdAndUpdate(req.params.id, req.body, { new: true });
   if (!type) return res.status(404).json({ error: 'Leave type not found' });
   res.json(type);
 }));
 
-router.delete('/types/:id', asyncHandler(async (req, res) => {
+router.delete('/types/:id', authenticate, asyncHandler(async (req, res) => {
   const type = await LeaveType.findByIdAndDelete(req.params.id);
   if (!type) return res.status(404).json({ error: 'Leave type not found' });
   res.json({ message: 'Leave type deleted successfully' });
@@ -109,23 +110,23 @@ router.delete('/types/:id', asyncHandler(async (req, res) => {
 // LEAVE POLICIES
 // ============================================
 
-router.get('/policies', asyncHandler(async (req, res) => {
+router.get('/policies', authenticate, asyncHandler(async (req, res) => {
   const policies = await LeavePolicy.find(req.query.tenant_id ? { tenant_id: req.query.tenant_id } : {}).populate('allocations.leave_type_id', 'name code').lean();
   res.json(policies);
 }));
 
-router.post('/policies', asyncHandler(async (req, res) => {
+router.post('/policies', authenticate, asyncHandler(async (req, res) => {
   const policy = await LeavePolicy.create(req.body);
   res.status(201).json(policy);
 }));
 
-router.put('/policies/:id', asyncHandler(async (req, res) => {
+router.put('/policies/:id', authenticate, asyncHandler(async (req, res) => {
   const policy = await LeavePolicy.findByIdAndUpdate(req.params.id, req.body, { new: true });
   if (!policy) return res.status(404).json({ error: 'Leave policy not found' });
   res.json(policy);
 }));
 
-router.delete('/policies/:id', asyncHandler(async (req, res) => {
+router.delete('/policies/:id', authenticate, asyncHandler(async (req, res) => {
   const policy = await LeavePolicy.findByIdAndDelete(req.params.id);
   if (!policy) return res.status(404).json({ error: 'Leave policy not found' });
   res.json({ message: 'Leave policy deleted successfully' });
@@ -135,7 +136,7 @@ router.delete('/policies/:id', asyncHandler(async (req, res) => {
 // HOLIDAY CALENDARS
 // ============================================
 
-router.get('/holidays', asyncHandler(async (req, res) => {
+router.get('/holidays', authenticate, asyncHandler(async (req, res) => {
   const filter: any = {};
   if (req.query.tenant_id) filter.tenant_id = req.query.tenant_id;
   if (req.query.year) filter.year = req.query.year;
@@ -143,18 +144,18 @@ router.get('/holidays', asyncHandler(async (req, res) => {
   res.json(calendars);
 }));
 
-router.post('/holidays', asyncHandler(async (req, res) => {
+router.post('/holidays', authenticate, asyncHandler(async (req, res) => {
   const calendar = await HolidayCalendar.create(req.body);
   res.status(201).json(calendar);
 }));
 
-router.put('/holidays/:id', asyncHandler(async (req, res) => {
+router.put('/holidays/:id', authenticate, asyncHandler(async (req, res) => {
   const calendar = await HolidayCalendar.findByIdAndUpdate(req.params.id, req.body, { new: true });
   if (!calendar) return res.status(404).json({ error: 'Holiday calendar not found' });
   res.json(calendar);
 }));
 
-router.delete('/holidays/:id', asyncHandler(async (req, res) => {
+router.delete('/holidays/:id', authenticate, asyncHandler(async (req, res) => {
   const calendar = await HolidayCalendar.findByIdAndDelete(req.params.id);
   if (!calendar) return res.status(404).json({ error: 'Holiday calendar not found' });
   res.json({ message: 'Holiday calendar deleted successfully' });

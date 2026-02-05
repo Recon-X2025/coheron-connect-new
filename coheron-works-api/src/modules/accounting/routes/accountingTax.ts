@@ -3,13 +3,14 @@ import AccountTax from '../../../models/AccountTax.js';
 import TaxGroup from '../../../models/TaxGroup.js';
 import TaxReturn from '../../../models/TaxReturn.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
 
 // ========== TAX GROUPS ==========
 
-router.get('/groups', asyncHandler(async (req, res) => {
+router.get('/groups', authenticate, asyncHandler(async (req, res) => {
   const groups = await TaxGroup.find({ active: true }).sort({ name: 1 }).lean();
   res.json(groups);
 }));
@@ -17,7 +18,7 @@ router.get('/groups', asyncHandler(async (req, res) => {
 // ========== TAXES ==========
 
 // Get all taxes
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { type_tax_use, country_id, active } = req.query;
   const filter: any = {};
 
@@ -45,7 +46,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get tax by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const tax = await AccountTax.findById(req.params.id)
     .populate('tax_group_id', 'name')
     .lean();
@@ -65,7 +66,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create tax
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const {
     name,
     code,
@@ -102,7 +103,7 @@ router.post('/', asyncHandler(async (req, res) => {
 // ========== TAX RETURNS ==========
 
 // Get all tax returns
-router.get('/returns', asyncHandler(async (req, res) => {
+router.get('/returns', authenticate, asyncHandler(async (req, res) => {
   const { tax_type, state, period_start, period_end } = req.query;
   const filter: any = {};
 
@@ -127,7 +128,7 @@ router.get('/returns', asyncHandler(async (req, res) => {
 }));
 
 // Create tax return
-router.post('/returns', asyncHandler(async (req, res) => {
+router.post('/returns', authenticate, asyncHandler(async (req, res) => {
   const {
     name,
     tax_type,
@@ -151,7 +152,7 @@ router.post('/returns', asyncHandler(async (req, res) => {
 }));
 
 // File tax return
-router.post('/returns/:id/file', asyncHandler(async (req, res) => {
+router.post('/returns/:id/file', authenticate, asyncHandler(async (req, res) => {
   const { export_file_path } = req.body;
 
   const taxReturn = await TaxReturn.findOneAndUpdate(

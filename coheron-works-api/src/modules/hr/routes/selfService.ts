@@ -6,18 +6,19 @@ import { Attendance } from '../../../models/Attendance.js';
 import MobileCheckin from '../../../models/MobileCheckin.js';
 import Geofence from '../../../models/Geofence.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // GET /profile - Get current employee's profile
-router.get('/profile', asyncHandler(async (req, res) => {
+router.get('/profile', authenticate, asyncHandler(async (req, res) => {
   const employee = await Employee.findOne({ user_id: (req as any).user?._id, tenant_id: (req as any).user?.tenant_id });
   if (!employee) return res.status(404).json({ error: 'Employee profile not found' });
   res.json(employee);
 }));
 
 // PUT /profile - Update allowed fields
-router.put('/profile', asyncHandler(async (req, res) => {
+router.put('/profile', authenticate, asyncHandler(async (req, res) => {
   const { phone, emergency_contact, address, photo } = req.body;
   const employee = await Employee.findOneAndUpdate(
     { user_id: (req as any).user?._id, tenant_id: (req as any).user?.tenant_id },
@@ -29,7 +30,7 @@ router.put('/profile', asyncHandler(async (req, res) => {
 }));
 
 // GET /payslips - Get own payslips
-router.get('/payslips', asyncHandler(async (req, res) => {
+router.get('/payslips', authenticate, asyncHandler(async (req, res) => {
   const employee = await Employee.findOne({ user_id: (req as any).user?._id, tenant_id: (req as any).user?.tenant_id });
   if (!employee) return res.status(404).json({ error: 'Employee not found' });
   const payslips = await Payslip.find({ employee_id: employee._id, tenant_id: (req as any).user?.tenant_id }).sort({ pay_period_end: -1 });
@@ -37,14 +38,14 @@ router.get('/payslips', asyncHandler(async (req, res) => {
 }));
 
 // GET /payslips/:id/download - Download payslip PDF
-router.get('/payslips/:id/download', asyncHandler(async (req, res) => {
+router.get('/payslips/:id/download', authenticate, asyncHandler(async (req, res) => {
   const payslip = await Payslip.findById(req.params.id);
   if (!payslip) return res.status(404).json({ error: 'Payslip not found' });
   res.json({ message: 'PDF download endpoint - integrate with PDF service', payslip_id: req.params.id });
 }));
 
 // GET /leaves - Get own leave balance and history
-router.get('/leaves', asyncHandler(async (req, res) => {
+router.get('/leaves', authenticate, asyncHandler(async (req, res) => {
   const employee = await Employee.findOne({ user_id: (req as any).user?._id, tenant_id: (req as any).user?.tenant_id });
   if (!employee) return res.status(404).json({ error: 'Employee not found' });
   const leaves = await LeaveRequest.find({ employee_id: employee._id, tenant_id: (req as any).user?.tenant_id }).sort({ start_date: -1 });
@@ -52,7 +53,7 @@ router.get('/leaves', asyncHandler(async (req, res) => {
 }));
 
 // POST /leaves/apply - Apply for leave
-router.post('/leaves/apply', asyncHandler(async (req, res) => {
+router.post('/leaves/apply', authenticate, asyncHandler(async (req, res) => {
   const employee = await Employee.findOne({ user_id: (req as any).user?._id, tenant_id: (req as any).user?.tenant_id });
   if (!employee) return res.status(404).json({ error: 'Employee not found' });
   const leave = new LeaveRequest({ ...req.body, employee_id: employee._id, tenant_id: (req as any).user?.tenant_id, status: 'pending' });
@@ -61,7 +62,7 @@ router.post('/leaves/apply', asyncHandler(async (req, res) => {
 }));
 
 // POST /leaves/:id/cancel - Cancel own leave request
-router.post('/leaves/:id/cancel', asyncHandler(async (req, res) => {
+router.post('/leaves/:id/cancel', authenticate, asyncHandler(async (req, res) => {
   const leave = await LeaveRequest.findOneAndUpdate(
     { _id: req.params.id, tenant_id: (req as any).user?.tenant_id, status: 'pending' },
     { status: 'cancelled' },
@@ -72,7 +73,7 @@ router.post('/leaves/:id/cancel', asyncHandler(async (req, res) => {
 }));
 
 // GET /attendance - Get own attendance records
-router.get('/attendance', asyncHandler(async (req, res) => {
+router.get('/attendance', authenticate, asyncHandler(async (req, res) => {
   const employee = await Employee.findOne({ user_id: (req as any).user?._id, tenant_id: (req as any).user?.tenant_id });
   if (!employee) return res.status(404).json({ error: 'Employee not found' });
   const { from_date, to_date } = req.query;
@@ -83,7 +84,7 @@ router.get('/attendance', asyncHandler(async (req, res) => {
 }));
 
 // POST /checkin - Mobile check-in with GPS
-router.post('/checkin', asyncHandler(async (req, res) => {
+router.post('/checkin', authenticate, asyncHandler(async (req, res) => {
   const employee = await Employee.findOne({ user_id: (req as any).user?._id, tenant_id: (req as any).user?.tenant_id });
   if (!employee) return res.status(404).json({ error: 'Employee not found' });
   const { latitude, longitude, accuracy_meters, address, device_info, photo_url, notes } = req.body;
@@ -100,7 +101,7 @@ router.post('/checkin', asyncHandler(async (req, res) => {
 }));
 
 // POST /checkout - Mobile check-out
-router.post('/checkout', asyncHandler(async (req, res) => {
+router.post('/checkout', authenticate, asyncHandler(async (req, res) => {
   const employee = await Employee.findOne({ user_id: (req as any).user?._id, tenant_id: (req as any).user?.tenant_id });
   if (!employee) return res.status(404).json({ error: 'Employee not found' });
   const { latitude, longitude, accuracy_meters, address, device_info, photo_url, notes } = req.body;

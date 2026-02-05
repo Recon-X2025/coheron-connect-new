@@ -22,4 +22,4 @@ goalSchema.index({ status: 1 });
 goalSchema.index({ due_date: -1 });
 goalSchema.index({ employee_id: 1, status: 1 });
 
-export const Goal = mongoose.model('Goal', goalSchema);
+export const Goal = mongoose.models.Goal || mongoose.model('Goal', goalSchema);

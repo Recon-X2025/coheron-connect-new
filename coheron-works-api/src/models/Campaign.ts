@@ -64,6 +64,6 @@ campaignFinancialSchema.index({ transaction_date: -1 });
 campaignFinancialSchema.index({ transaction_type: 1 });
 campaignFinancialSchema.index({ campaign_id: 1, transaction_date: -1 });
 
-export const Campaign = mongoose.model('Campaign', campaignSchema);
-export const CampaignPerformance = mongoose.model('CampaignPerformance', campaignPerformanceSchema);
-export const CampaignFinancial = mongoose.model('CampaignFinancial', campaignFinancialSchema);
+export const Campaign = mongoose.models.Campaign || mongoose.model('Campaign', campaignSchema);
+export const CampaignPerformance = mongoose.models.CampaignPerformance || mongoose.model('CampaignPerformance', campaignPerformanceSchema);
+export const CampaignFinancial = mongoose.models.CampaignFinancial || mongoose.model('CampaignFinancial', campaignFinancialSchema);

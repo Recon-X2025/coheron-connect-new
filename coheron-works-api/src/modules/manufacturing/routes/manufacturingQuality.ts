@@ -4,6 +4,7 @@ import MoQualityChecklist from '../../../models/MoQualityChecklist.js';
 import MoNonConformance from '../../../models/MoNonConformance.js';
 import MoReworkOrder from '../../../models/MoReworkOrder.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
@@ -13,7 +14,7 @@ const router = express.Router();
 // ============================================
 
 // Get all quality inspections
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { mo_id, workorder_id, inspection_type, state, search } = req.query;
   const filter: any = {};
 
@@ -55,7 +56,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get inspection by ID with checklist
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const inspection = await MoQualityInspection.findById(req.params.id)
     .populate('mo_id', 'name mo_number')
     .populate('workorder_id', 'name')
@@ -83,7 +84,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create quality inspection
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const {
     mo_id, workorder_id, inspection_type, product_id, qty_to_inspect,
     inspector_id, inspection_date, notes, checklist,
@@ -113,7 +114,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update inspection
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const allowedFields = [
     'inspection_type', 'product_id', 'qty_to_inspect', 'qty_inspected',
@@ -141,7 +142,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Complete inspection
-router.post('/:id/complete', asyncHandler(async (req, res) => {
+router.post('/:id/complete', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { qty_passed, qty_failed, checklist_results } = req.body;
 
@@ -189,7 +190,7 @@ router.post('/:id/complete', asyncHandler(async (req, res) => {
 // ============================================
 
 // Add checklist item
-router.post('/:inspection_id/checklist', asyncHandler(async (req, res) => {
+router.post('/:inspection_id/checklist', authenticate, asyncHandler(async (req, res) => {
   const { inspection_id } = req.params;
   const { checklist_item, specification, tolerance_min, tolerance_max, notes } = req.body;
 
@@ -201,7 +202,7 @@ router.post('/:inspection_id/checklist', asyncHandler(async (req, res) => {
 }));
 
 // Update checklist item
-router.put('/checklist/:id', asyncHandler(async (req, res) => {
+router.put('/checklist/:id', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const allowedFields = [
     'checklist_item', 'specification', 'actual_value', 'tolerance_min',
@@ -233,7 +234,7 @@ router.put('/checklist/:id', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get all NCRs
-router.get('/ncr', asyncHandler(async (req, res) => {
+router.get('/ncr', authenticate, asyncHandler(async (req, res) => {
   const { mo_id, state, severity, search } = req.query;
   const filter: any = {};
 
@@ -272,7 +273,7 @@ router.get('/ncr', asyncHandler(async (req, res) => {
 }));
 
 // Get NCR by ID
-router.get('/ncr/:id', asyncHandler(async (req, res) => {
+router.get('/ncr/:id', authenticate, asyncHandler(async (req, res) => {
   const ncr = await MoNonConformance.findById(req.params.id)
     .populate('mo_id', 'name mo_number')
     .populate('workorder_id', 'name')
@@ -295,7 +296,7 @@ router.get('/ncr/:id', asyncHandler(async (req, res) => {
 }));
 
 // Update NCR
-router.put('/ncr/:id', asyncHandler(async (req, res) => {
+router.put('/ncr/:id', authenticate, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const allowedFields = [
     'qty_non_conforming', 'severity', 'root_cause', 'corrective_action',
@@ -327,7 +328,7 @@ router.put('/ncr/:id', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get rework orders
-router.get('/rework', asyncHandler(async (req, res) => {
+router.get('/rework', authenticate, asyncHandler(async (req, res) => {
   const { mo_id, ncr_id, state } = req.query;
   const filter: any = {};
 
@@ -358,7 +359,7 @@ router.get('/rework', asyncHandler(async (req, res) => {
 }));
 
 // Create rework order from NCR
-router.post('/ncr/:ncr_id/rework', asyncHandler(async (req, res) => {
+router.post('/ncr/:ncr_id/rework', authenticate, asyncHandler(async (req, res) => {
   const { ncr_id } = req.params;
   const { qty_to_rework, workorder_id, date_planned_start, date_planned_finished, notes } = req.body;
 

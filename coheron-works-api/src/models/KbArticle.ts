@@ -101,10 +101,10 @@ TicketChannelSchema.index({ is_active: 1 });
 TicketCategorySchema.index({ parent_id: 1 });
 TicketCategorySchema.index({ is_active: 1 });
 
-export const KbArticle = mongoose.model<IKbArticle>('KbArticle', kbArticleSchema);
-export const KbArticleRevision = mongoose.model('KbArticleRevision', KbArticleRevisionSchema);
-export const KbArticleAttachment = mongoose.model('KbArticleAttachment', KbArticleAttachmentSchema);
+export const KbArticle = mongoose.models.KbArticle || mongoose.model<IKbArticle>('KbArticle', kbArticleSchema);
+export const KbArticleRevision = mongoose.models.KbArticleRevision || mongoose.model('KbArticleRevision', KbArticleRevisionSchema);
+export const KbArticleAttachment = mongoose.models.KbArticleAttachment || mongoose.model('KbArticleAttachment', KbArticleAttachmentSchema);
 export { default as TicketChannel } from './TicketChannel.js';
-export const TicketCategory = mongoose.model('TicketCategory', TicketCategorySchema);
+export const TicketCategory = mongoose.models.TicketCategory || mongoose.model('TicketCategory', TicketCategorySchema);
 
 export default KbArticle;

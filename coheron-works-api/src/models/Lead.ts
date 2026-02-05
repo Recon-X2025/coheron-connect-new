@@ -492,8 +492,8 @@ leadScoringHistorySchema.index({ lead_id: 1 });
 competitorTrackingSchema.index({ opportunity_id: 1 });
 opportunityDocumentSchema.index({ opportunity_id: 1 });
 
-export const Lead = mongoose.model('Lead', leadSchema);
-export const LeadActivity = mongoose.model('LeadActivity', leadActivitySchema);
-export const LeadScoringHistory = mongoose.model('LeadScoringHistory', leadScoringHistorySchema);
-export const CompetitorTracking = mongoose.model('CompetitorTracking', competitorTrackingSchema);
-export const OpportunityDocument = mongoose.model('OpportunityDocument', opportunityDocumentSchema);
+export const Lead = mongoose.models.Lead || mongoose.model('Lead', leadSchema);
+export const LeadActivity = mongoose.models.LeadActivity || mongoose.model('LeadActivity', leadActivitySchema);
+export const LeadScoringHistory = mongoose.models.LeadScoringHistory || mongoose.model('LeadScoringHistory', leadScoringHistorySchema);
+export const CompetitorTracking = mongoose.models.CompetitorTracking || mongoose.model('CompetitorTracking', competitorTrackingSchema);
+export const OpportunityDocument = mongoose.models.OpportunityDocument || mongoose.model('OpportunityDocument', opportunityDocumentSchema);

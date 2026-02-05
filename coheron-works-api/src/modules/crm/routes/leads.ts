@@ -2,6 +2,7 @@ import express from 'express';
 import { Lead, LeadActivity, LeadScoringHistory, CompetitorTracking, OpportunityDocument } from '../../../models/Lead.js';
 import { Deal } from '../../../models/Deal.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
@@ -32,7 +33,7 @@ const router = express.Router();
  *       200:
  *         description: Paginated list of leads
  */
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { type, stage, search } = req.query;
   const filter: any = {};
 
@@ -56,7 +57,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get lead by ID with activities and related data
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const lead = await Lead.findById(req.params.id).lean();
 
   if (!lead) {
@@ -104,7 +105,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
  *       201:
  *         description: Lead created
  */
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const {
     name, partner_id, email, phone, expected_revenue,
     probability, stage, user_id, priority, type,
@@ -127,7 +128,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update lead
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const {
     name, partner_id, email, phone,
     expected_revenue, probability, stage, priority,
@@ -147,7 +148,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete lead
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const lead = await Lead.findByIdAndDelete(req.params.id);
 
   if (!lead) {
@@ -158,7 +159,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Convert lead to opportunity and create a Deal
-router.post('/:id/convert', asyncHandler(async (req, res) => {
+router.post('/:id/convert', authenticate, asyncHandler(async (req, res) => {
   const { partner_id, pipeline_id, stage_id, deal_name, owner_id, tenant_id } = req.body;
 
   const lead = await Lead.findById(req.params.id).lean() as any;
@@ -197,7 +198,7 @@ router.post('/:id/convert', asyncHandler(async (req, res) => {
 }));
 
 // Add activity to lead and update engagement counters
-router.post('/:id/activities', asyncHandler(async (req, res) => {
+router.post('/:id/activities', authenticate, asyncHandler(async (req, res) => {
   const { activity_type, subject, description, activity_date, duration_minutes, user_id } = req.body;
 
   const lead = await Lead.findById(req.params.id);
@@ -226,7 +227,7 @@ router.post('/:id/activities', asyncHandler(async (req, res) => {
 }));
 
 // Update lead score
-router.post('/:id/score', asyncHandler(async (req, res) => {
+router.post('/:id/score', authenticate, asyncHandler(async (req, res) => {
   const { score, scoring_rule_id, reason } = req.body;
 
   await Lead.findByIdAndUpdate(req.params.id, { score });
@@ -243,7 +244,7 @@ router.post('/:id/score', asyncHandler(async (req, res) => {
 }));
 
 // Add competitor tracking
-router.post('/:id/competitors', asyncHandler(async (req, res) => {
+router.post('/:id/competitors', authenticate, asyncHandler(async (req, res) => {
   const { competitor_name, competitor_strength, competitor_weakness, our_competitive_advantage } = req.body;
 
   const competitor = await CompetitorTracking.create({
@@ -258,7 +259,7 @@ router.post('/:id/competitors', asyncHandler(async (req, res) => {
 }));
 
 // Add document to opportunity
-router.post('/:id/documents', asyncHandler(async (req, res) => {
+router.post('/:id/documents', authenticate, asyncHandler(async (req, res) => {
   const { document_type, name, file_url, file_path, version, created_by } = req.body;
 
   const document = await OpportunityDocument.create({
@@ -275,7 +276,7 @@ router.post('/:id/documents', asyncHandler(async (req, res) => {
 }));
 
 // Bulk assign leads to an owner
-router.post('/bulk-assign', asyncHandler(async (req, res) => {
+router.post('/bulk-assign', authenticate, asyncHandler(async (req, res) => {
   const { lead_ids, user_id } = req.body;
 
   if (!lead_ids || !Array.isArray(lead_ids) || lead_ids.length === 0) {
@@ -294,7 +295,7 @@ router.post('/bulk-assign', asyncHandler(async (req, res) => {
 }));
 
 // Analytics: funnel metrics, source breakdown, conversion rates
-router.get('/analytics', asyncHandler(async (req, res) => {
+router.get('/analytics', authenticate, asyncHandler(async (req, res) => {
   const { tenant_id, date_from, date_to } = req.query;
   const match: any = {};
   if (tenant_id) match.tenant_id = tenant_id;

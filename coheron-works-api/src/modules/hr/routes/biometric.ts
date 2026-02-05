@@ -3,6 +3,7 @@ import { BiometricDevice } from '../models/BiometricDevice.js';
 import { BiometricPunch } from '../models/BiometricPunch.js';
 import { Attendance } from '../../../models/Attendance.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
@@ -11,7 +12,7 @@ const router = express.Router();
 // ============================================
 
 // List devices
-router.get('/devices', asyncHandler(async (req, res) => {
+router.get('/devices', authenticate, asyncHandler(async (req, res) => {
   const filter: any = {};
   if (req.query.tenant_id) filter.tenant_id = req.query.tenant_id;
   if (req.query.status) filter.status = req.query.status;
@@ -22,27 +23,27 @@ router.get('/devices', asyncHandler(async (req, res) => {
 }));
 
 // Get single device
-router.get('/devices/:id', asyncHandler(async (req, res) => {
+router.get('/devices/:id', authenticate, asyncHandler(async (req, res) => {
   const device = await BiometricDevice.findById(req.params.id).lean();
   if (!device) return res.status(404).json({ error: 'Device not found' });
   res.json(device);
 }));
 
 // Create device
-router.post('/devices', asyncHandler(async (req, res) => {
+router.post('/devices', authenticate, asyncHandler(async (req, res) => {
   const device = await BiometricDevice.create(req.body);
   res.status(201).json(device);
 }));
 
 // Update device
-router.put('/devices/:id', asyncHandler(async (req, res) => {
+router.put('/devices/:id', authenticate, asyncHandler(async (req, res) => {
   const device = await BiometricDevice.findByIdAndUpdate(req.params.id, req.body, { new: true });
   if (!device) return res.status(404).json({ error: 'Device not found' });
   res.json(device);
 }));
 
 // Delete device
-router.delete('/devices/:id', asyncHandler(async (req, res) => {
+router.delete('/devices/:id', authenticate, asyncHandler(async (req, res) => {
   const device = await BiometricDevice.findByIdAndDelete(req.params.id);
   if (!device) return res.status(404).json({ error: 'Device not found' });
   res.json({ message: 'Device deleted successfully' });
@@ -53,7 +54,7 @@ router.delete('/devices/:id', asyncHandler(async (req, res) => {
 // ============================================
 
 // Trigger sync for a device (simulated — real integration depends on SDK)
-router.post('/devices/:id/sync', asyncHandler(async (req, res) => {
+router.post('/devices/:id/sync', authenticate, asyncHandler(async (req, res) => {
   const device = await BiometricDevice.findById(req.params.id);
   if (!device) return res.status(404).json({ error: 'Device not found' });
 
@@ -67,7 +68,7 @@ router.post('/devices/:id/sync', asyncHandler(async (req, res) => {
 }));
 
 // Bulk sync all auto-sync devices
-router.post('/sync-all', asyncHandler(async (req, res) => {
+router.post('/sync-all', authenticate, asyncHandler(async (req, res) => {
   const filter: any = { auto_sync: true, status: { $in: ['active', 'offline'] } };
   if (req.query.tenant_id) filter.tenant_id = req.query.tenant_id;
 
@@ -93,7 +94,7 @@ router.post('/sync-all', asyncHandler(async (req, res) => {
 // ============================================
 
 // List punches
-router.get('/punches', asyncHandler(async (req, res) => {
+router.get('/punches', authenticate, asyncHandler(async (req, res) => {
   const filter: any = {};
   if (req.query.tenant_id) filter.tenant_id = req.query.tenant_id;
   if (req.query.employee_id) filter.employee_id = req.query.employee_id;
@@ -116,7 +117,7 @@ router.get('/punches', asyncHandler(async (req, res) => {
 }));
 
 // Manual punch entry
-router.post('/punches', asyncHandler(async (req, res) => {
+router.post('/punches', authenticate, asyncHandler(async (req, res) => {
   const punch = await BiometricPunch.create({
     ...req.body,
     synced: true, // manual entries are considered synced
@@ -125,7 +126,7 @@ router.post('/punches', asyncHandler(async (req, res) => {
 }));
 
 // Delete a punch record
-router.delete('/punches/:id', asyncHandler(async (req, res) => {
+router.delete('/punches/:id', authenticate, asyncHandler(async (req, res) => {
   const punch = await BiometricPunch.findByIdAndDelete(req.params.id);
   if (!punch) return res.status(404).json({ error: 'Punch record not found' });
   res.json({ message: 'Punch record deleted successfully' });
@@ -136,7 +137,7 @@ router.delete('/punches/:id', asyncHandler(async (req, res) => {
 // ============================================
 
 // Process unlinked punches and create/update attendance records
-router.post('/link-attendance', asyncHandler(async (req, res) => {
+router.post('/link-attendance', authenticate, asyncHandler(async (req, res) => {
   const filter: any = { attendance_linked: false };
   if (req.query.tenant_id) filter.tenant_id = req.query.tenant_id;
   if (req.query.date) {

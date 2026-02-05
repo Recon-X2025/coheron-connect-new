@@ -2,13 +2,14 @@ import express from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
 import { SocialPost } from '../models/SocialPost.js';
 import { SocialAccount } from '../models/SocialAccount.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // --- Posts ---
 
 // List posts
-router.get('/posts', asyncHandler(async (req, res) => {
+router.get('/posts', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { status, platform, page = 1, limit = 20 } = req.query;
   const filter: any = { tenant_id };
@@ -20,7 +21,7 @@ router.get('/posts', asyncHandler(async (req, res) => {
 }));
 
 // Calendar view
-router.get('/calendar', asyncHandler(async (req, res) => {
+router.get('/calendar', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const { start, end } = req.query;
   const filter: any = { tenant_id };
@@ -34,7 +35,7 @@ router.get('/calendar', asyncHandler(async (req, res) => {
 }));
 
 // Queue
-router.get('/queue', asyncHandler(async (req, res) => {
+router.get('/queue', authenticate, asyncHandler(async (req, res) => {
   const posts = await SocialPost.find({
     tenant_id: req.user?.tenant_id, status: 'scheduled', scheduled_at: { $gte: new Date() },
   }).sort({ scheduled_at: 1 }).limit(50).lean();
@@ -42,33 +43,33 @@ router.get('/queue', asyncHandler(async (req, res) => {
 }));
 
 // Get post
-router.get('/posts/:id', asyncHandler(async (req, res) => {
+router.get('/posts/:id', authenticate, asyncHandler(async (req, res) => {
   const post = await SocialPost.findOne({ _id: req.params.id, tenant_id: req.user?.tenant_id }).lean();
   if (!post) return res.status(404).json({ error: 'Post not found' });
   res.json(post);
 }));
 
 // Create post
-router.post('/posts', asyncHandler(async (req, res) => {
+router.post('/posts', authenticate, asyncHandler(async (req, res) => {
   const post = await SocialPost.create({ ...req.body, tenant_id: req.user?.tenant_id, created_by: req.user?.userId });
   res.status(201).json(post);
 }));
 
 // Update post
-router.put('/posts/:id', asyncHandler(async (req, res) => {
+router.put('/posts/:id', authenticate, asyncHandler(async (req, res) => {
   const post = await SocialPost.findOneAndUpdate({ _id: req.params.id, tenant_id: req.user?.tenant_id }, req.body, { new: true }).lean();
   if (!post) return res.status(404).json({ error: 'Post not found' });
   res.json(post);
 }));
 
 // Delete post
-router.delete('/posts/:id', asyncHandler(async (req, res) => {
+router.delete('/posts/:id', authenticate, asyncHandler(async (req, res) => {
   await SocialPost.findOneAndDelete({ _id: req.params.id, tenant_id: req.user?.tenant_id });
   res.json({ success: true });
 }));
 
 // Publish now
-router.post('/posts/:id/publish', asyncHandler(async (req, res) => {
+router.post('/posts/:id/publish', authenticate, asyncHandler(async (req, res) => {
   const post = await SocialPost.findOneAndUpdate(
     { _id: req.params.id, tenant_id: req.user?.tenant_id },
     { status: 'published', published_at: new Date(), 'platforms.$[].status': 'published', 'platforms.$[].published_at': new Date() },
@@ -81,32 +82,32 @@ router.post('/posts/:id/publish', asyncHandler(async (req, res) => {
 // --- Accounts ---
 
 // List accounts
-router.get('/accounts', asyncHandler(async (req, res) => {
+router.get('/accounts', authenticate, asyncHandler(async (req, res) => {
   const accounts = await SocialAccount.find({ tenant_id: req.user?.tenant_id }).select('-access_token -refresh_token').lean();
   res.json({ accounts });
 }));
 
 // Create account
-router.post('/accounts', asyncHandler(async (req, res) => {
+router.post('/accounts', authenticate, asyncHandler(async (req, res) => {
   const account = await SocialAccount.create({ ...req.body, tenant_id: req.user?.tenant_id });
   res.status(201).json(account);
 }));
 
 // Update account
-router.put('/accounts/:id', asyncHandler(async (req, res) => {
+router.put('/accounts/:id', authenticate, asyncHandler(async (req, res) => {
   const account = await SocialAccount.findOneAndUpdate({ _id: req.params.id, tenant_id: req.user?.tenant_id }, req.body, { new: true }).lean();
   if (!account) return res.status(404).json({ error: 'Account not found' });
   res.json(account);
 }));
 
 // Delete account
-router.delete('/accounts/:id', asyncHandler(async (req, res) => {
+router.delete('/accounts/:id', authenticate, asyncHandler(async (req, res) => {
   await SocialAccount.findOneAndDelete({ _id: req.params.id, tenant_id: req.user?.tenant_id });
   res.json({ success: true });
 }));
 
 // Refresh account token
-router.post('/accounts/:id/refresh', asyncHandler(async (req, res) => {
+router.post('/accounts/:id/refresh', authenticate, asyncHandler(async (req, res) => {
   const account = await SocialAccount.findOne({ _id: req.params.id, tenant_id: req.user?.tenant_id });
   if (!account) return res.status(404).json({ error: 'Account not found' });
   // In production, refresh OAuth token
@@ -116,7 +117,7 @@ router.post('/accounts/:id/refresh', asyncHandler(async (req, res) => {
 }));
 
 // Analytics
-router.get('/analytics', asyncHandler(async (req, res) => {
+router.get('/analytics', authenticate, asyncHandler(async (req, res) => {
   const tenant_id = req.user?.tenant_id;
   const platformStats = await SocialPost.aggregate([
     { $match: { tenant_id, status: 'published' } },

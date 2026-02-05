@@ -2,12 +2,13 @@ import express from 'express';
 import { CPQTemplate } from '../models/CPQTemplate.js';
 import { CPQQuote } from '../models/CPQQuote.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // ===== TEMPLATES =====
 
-router.get('/templates', asyncHandler(async (req, res) => {
+router.get('/templates', authenticate, asyncHandler(async (req, res) => {
   const tenantId = (req as any).user?.tenant_id;
   const filter: any = tenantId ? { tenant_id: tenantId } : {};
   if (req.query.is_active !== undefined) filter.is_active = req.query.is_active === 'true';
@@ -15,33 +16,33 @@ router.get('/templates', asyncHandler(async (req, res) => {
   res.json(templates);
 }));
 
-router.get('/templates/:id', asyncHandler(async (req, res) => {
+router.get('/templates/:id', authenticate, asyncHandler(async (req, res) => {
   const template = await CPQTemplate.findById(req.params.id).lean();
   if (!template) return res.status(404).json({ error: 'Template not found' });
   res.json(template);
 }));
 
-router.post('/templates', asyncHandler(async (req, res) => {
+router.post('/templates', authenticate, asyncHandler(async (req, res) => {
   const tenantId = (req as any).user?.tenant_id;
   const userId = (req as any).user?.userId;
   const template = await CPQTemplate.create({ ...req.body, tenant_id: tenantId, created_by: userId });
   res.status(201).json(template);
 }));
 
-router.put('/templates/:id', asyncHandler(async (req, res) => {
+router.put('/templates/:id', authenticate, asyncHandler(async (req, res) => {
   const template = await CPQTemplate.findByIdAndUpdate(req.params.id, req.body, { new: true });
   if (!template) return res.status(404).json({ error: 'Template not found' });
   res.json(template);
 }));
 
-router.delete('/templates/:id', asyncHandler(async (req, res) => {
+router.delete('/templates/:id', authenticate, asyncHandler(async (req, res) => {
   await CPQTemplate.findByIdAndDelete(req.params.id);
   res.json({ success: true });
 }));
 
 // ===== QUOTES =====
 
-router.get('/quotes', asyncHandler(async (req, res) => {
+router.get('/quotes', authenticate, asyncHandler(async (req, res) => {
   const tenantId = (req as any).user?.tenant_id;
   const filter: any = tenantId ? { tenant_id: tenantId } : {};
   if (req.query.status) filter.status = req.query.status;
@@ -50,13 +51,13 @@ router.get('/quotes', asyncHandler(async (req, res) => {
   res.json(quotes);
 }));
 
-router.get('/quotes/:id', asyncHandler(async (req, res) => {
+router.get('/quotes/:id', authenticate, asyncHandler(async (req, res) => {
   const quote = await CPQQuote.findById(req.params.id).populate('lead_id', 'name email').populate('template_id', 'name').lean();
   if (!quote) return res.status(404).json({ error: 'Quote not found' });
   res.json(quote);
 }));
 
-router.post('/quotes', asyncHandler(async (req, res) => {
+router.post('/quotes', authenticate, asyncHandler(async (req, res) => {
   const tenantId = (req as any).user?.tenant_id;
   const userId = (req as any).user?.userId;
   const quoteNumber = `CPQ-${Date.now().toString(36).toUpperCase()}`;
@@ -76,19 +77,19 @@ router.post('/quotes', asyncHandler(async (req, res) => {
   res.status(201).json(quote);
 }));
 
-router.put('/quotes/:id', asyncHandler(async (req, res) => {
+router.put('/quotes/:id', authenticate, asyncHandler(async (req, res) => {
   const quote = await CPQQuote.findByIdAndUpdate(req.params.id, req.body, { new: true });
   if (!quote) return res.status(404).json({ error: 'Quote not found' });
   res.json(quote);
 }));
 
-router.post('/quotes/:id/send', asyncHandler(async (req, res) => {
+router.post('/quotes/:id/send', authenticate, asyncHandler(async (req, res) => {
   const quote = await CPQQuote.findByIdAndUpdate(req.params.id, { status: 'sent' }, { new: true });
   if (!quote) return res.status(404).json({ error: 'Quote not found' });
   res.json(quote);
 }));
 
-router.post('/quotes/:id/accept', asyncHandler(async (req, res) => {
+router.post('/quotes/:id/accept', authenticate, asyncHandler(async (req, res) => {
   const quote = await CPQQuote.findByIdAndUpdate(req.params.id, { status: 'accepted' }, { new: true });
   if (!quote) return res.status(404).json({ error: 'Quote not found' });
   res.json(quote);

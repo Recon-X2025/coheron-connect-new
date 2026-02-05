@@ -28,4 +28,4 @@ stockReservationSchema.index({ source_type: 1, source_id: 1 });
 stockReservationSchema.index({ tenant_id: 1, warehouse_id: 1, status: 1 });
 stockReservationSchema.index({ expires_at: 1 }, { expireAfterSeconds: 0, partialFilterExpression: { status: 'active' } });
 
-export const StockReservation = mongoose.model('StockReservation', stockReservationSchema);
+export const StockReservation = mongoose.models.StockReservation || mongoose.model('StockReservation', stockReservationSchema);

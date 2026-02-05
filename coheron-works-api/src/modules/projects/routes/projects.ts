@@ -1,5 +1,6 @@
 import express from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 import Project from '../../../models/Project.js';
 import ProjectStakeholder from '../../../models/ProjectStakeholder.js';
@@ -19,7 +20,7 @@ const router = express.Router();
 // ============================================
 
 // Get all projects
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const filter: any = {};
   const params = getPaginationParams(req);
   const result = await paginateQuery(Project.find(filter).sort({ created_at: -1 }).lean(), params, filter, Project);
@@ -27,7 +28,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get project by ID with full details
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const project = await Project.findById(req.params.id).lean();
 
   if (!project) {
@@ -99,7 +100,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create project
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const {
     code,
     key,
@@ -174,7 +175,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update project
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const {
     code,
     key,
@@ -247,7 +248,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete project
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   const project = await Project.findByIdAndDelete(req.params.id).lean();
 
   if (!project) {
@@ -262,7 +263,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get project stakeholders
-router.get('/:id/stakeholders', asyncHandler(async (req, res) => {
+router.get('/:id/stakeholders', authenticate, asyncHandler(async (req, res) => {
   const stakeholders = await ProjectStakeholder.find({ project_id: req.params.id })
     .populate('user_id', 'name email')
     .sort({ created_at: 1 })
@@ -281,7 +282,7 @@ router.get('/:id/stakeholders', asyncHandler(async (req, res) => {
 }));
 
 // Add stakeholder
-router.post('/:id/stakeholders', asyncHandler(async (req, res) => {
+router.post('/:id/stakeholders', authenticate, asyncHandler(async (req, res) => {
   const { user_id, role } = req.body;
 
   if (!user_id) {
@@ -304,7 +305,7 @@ router.post('/:id/stakeholders', asyncHandler(async (req, res) => {
 }));
 
 // Remove stakeholder
-router.delete('/:id/stakeholders/:stakeholderId', asyncHandler(async (req, res) => {
+router.delete('/:id/stakeholders/:stakeholderId', authenticate, asyncHandler(async (req, res) => {
   const result = await ProjectStakeholder.findOneAndDelete({
     _id: req.params.stakeholderId,
     project_id: req.params.id,
@@ -322,7 +323,7 @@ router.delete('/:id/stakeholders/:stakeholderId', asyncHandler(async (req, res) 
 // ============================================
 
 // Get project approvals
-router.get('/:id/approvals', asyncHandler(async (req, res) => {
+router.get('/:id/approvals', authenticate, asyncHandler(async (req, res) => {
   const approvals = await ProjectApproval.find({ project_id: req.params.id })
     .populate('approver_id', 'name')
     .sort({ created_at: -1 })
@@ -340,7 +341,7 @@ router.get('/:id/approvals', asyncHandler(async (req, res) => {
 }));
 
 // Create approval request
-router.post('/:id/approvals', asyncHandler(async (req, res) => {
+router.post('/:id/approvals', authenticate, asyncHandler(async (req, res) => {
   const { approval_type, approver_id, comments } = req.body;
 
   if (!approval_type || !approver_id) {
@@ -359,7 +360,7 @@ router.post('/:id/approvals', asyncHandler(async (req, res) => {
 }));
 
 // Update approval status
-router.put('/:id/approvals/:approvalId', asyncHandler(async (req, res) => {
+router.put('/:id/approvals/:approvalId', authenticate, asyncHandler(async (req, res) => {
   const { status, comments } = req.body;
 
   if (!status || !['approved', 'rejected'].includes(status)) {
@@ -391,7 +392,7 @@ router.put('/:id/approvals/:approvalId', asyncHandler(async (req, res) => {
 // PROJECT DASHBOARD / KPI SUMMARY
 // ============================================
 
-router.get('/:id/dashboard', asyncHandler(async (req, res) => {
+router.get('/:id/dashboard', authenticate, asyncHandler(async (req, res) => {
   const project = await Project.findById(req.params.id).lean();
 
   if (!project) {

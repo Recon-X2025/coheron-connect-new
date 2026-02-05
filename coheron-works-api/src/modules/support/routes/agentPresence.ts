@@ -1,11 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { AgentPresence } from '../models/AgentPresence.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = Router();
 
 // Heartbeat - update presence
-router.post('/heartbeat', asyncHandler(async (req: Request, res: Response) => {
+router.post('/heartbeat', authenticate, asyncHandler(async (req: Request, res: Response) => {
   const tenant_id = (req as any).user?.tenant_id;
   const agent_id = (req as any).user?.userId;
   const { currently_viewing_ticket_id } = req.body;
@@ -18,7 +19,7 @@ router.post('/heartbeat', asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // Who is viewing a ticket
-router.get('/ticket/:ticketId/viewers', asyncHandler(async (req: Request, res: Response) => {
+router.get('/ticket/:ticketId/viewers', authenticate, asyncHandler(async (req: Request, res: Response) => {
   const tenant_id = (req as any).user?.tenant_id;
   const viewers = await AgentPresence.find({
     tenant_id,
@@ -30,14 +31,14 @@ router.get('/ticket/:ticketId/viewers', asyncHandler(async (req: Request, res: R
 }));
 
 // All agent statuses
-router.get('/agents/status', asyncHandler(async (req: Request, res: Response) => {
+router.get('/agents/status', authenticate, asyncHandler(async (req: Request, res: Response) => {
   const tenant_id = (req as any).user?.tenant_id;
   const agents = await AgentPresence.find({ tenant_id }).populate('agent_id', 'name email avatar').sort({ status: 1 });
   res.json({ data: agents });
 }));
 
 // Update own status
-router.put('/status', asyncHandler(async (req: Request, res: Response) => {
+router.put('/status', authenticate, asyncHandler(async (req: Request, res: Response) => {
   const tenant_id = (req as any).user?.tenant_id;
   const agent_id = (req as any).user?.userId;
   const { status } = req.body;
@@ -50,7 +51,7 @@ router.put('/status', asyncHandler(async (req: Request, res: Response) => {
 }));
 
 // Workload distribution
-router.get('/workload', asyncHandler(async (req: Request, res: Response) => {
+router.get('/workload', authenticate, asyncHandler(async (req: Request, res: Response) => {
   const tenant_id = (req as any).user?.tenant_id;
   const agents = await AgentPresence.find({ tenant_id, status: { $ne: 'offline' } })
     .populate('agent_id', 'name email avatar');

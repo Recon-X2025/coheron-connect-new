@@ -66,4 +66,4 @@ gstReturnSchema.index({ tenant_id: 1, return_type: 1, period: 1 });
 gstReturnSchema.index({ tenant_id: 1, status: 1 });
 gstReturnSchema.index({ tenant_id: 1, financial_year: 1 });
 
-export const GSTReturn = mongoose.model('GSTReturn', gstReturnSchema);
+export const GSTReturn = mongoose.models.GSTReturn || mongoose.model('GSTReturn', gstReturnSchema);

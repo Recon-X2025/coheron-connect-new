@@ -26,4 +26,4 @@ const costAllocationEntrySchema = new Schema({
 
 costAllocationEntrySchema.index({ tenant_id: 1, rule_id: 1, period_start: 1 });
 
-export default mongoose.model('CostAllocationEntry', costAllocationEntrySchema);
+export default mongoose.models.CostAllocationEntry || mongoose.model('CostAllocationEntry', costAllocationEntrySchema);

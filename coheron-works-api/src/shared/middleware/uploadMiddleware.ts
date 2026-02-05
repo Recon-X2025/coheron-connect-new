@@ -31,7 +31,7 @@ export function s3Upload(fieldName: string) {
           mime_type: req.file.mimetype,
           size: req.file.size,
           uploaded_by: (req as any).user?.id,
-          tenant_id: (req as any).user?.tenantId,
+          tenant_id: (req as any).user?.tenant_id,
         });
 
         (req as any).fileRecord = record;
@@ -66,7 +66,7 @@ export function s3UploadMultiple(fieldName: string, maxCount: number) {
             mime_type: file.mimetype,
             size: file.size,
             uploaded_by: (req as any).user?.id,
-            tenant_id: (req as any).user?.tenantId,
+            tenant_id: (req as any).user?.tenant_id,
           });
           records.push(record);
         }

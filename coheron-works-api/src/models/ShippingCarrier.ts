@@ -30,4 +30,4 @@ const shippingCarrierSchema = new Schema({
 
 shippingCarrierSchema.index({ tenant_id: 1, code: 1 }, { unique: true });
 
-export const ShippingCarrier = mongoose.model('ShippingCarrier', shippingCarrierSchema);
+export const ShippingCarrier = mongoose.models.ShippingCarrier || mongoose.model('ShippingCarrier', shippingCarrierSchema);

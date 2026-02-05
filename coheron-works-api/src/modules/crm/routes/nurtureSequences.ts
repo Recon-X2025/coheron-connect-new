@@ -2,11 +2,12 @@ import express from 'express';
 import { NurtureSequence } from '../models/NurtureSequence.js';
 import { NurtureEnrollment } from '../models/NurtureEnrollment.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 
 const router = express.Router();
 
 // GET all sequences
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const tenantId = (req as any).user?.tenant_id;
   const filter: any = tenantId ? { tenant_id: tenantId } : {};
   if (req.query.status) filter.status = req.query.status;
@@ -15,14 +16,14 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // GET single
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const seq = await NurtureSequence.findById(req.params.id).lean();
   if (!seq) return res.status(404).json({ error: 'Sequence not found' });
   res.json(seq);
 }));
 
 // CREATE
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const tenantId = (req as any).user?.tenant_id;
   const userId = (req as any).user?.userId;
   const seq = await NurtureSequence.create({ ...req.body, tenant_id: tenantId, created_by: userId });
@@ -30,28 +31,28 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // UPDATE
-router.put('/:id', asyncHandler(async (req, res) => {
+router.put('/:id', authenticate, asyncHandler(async (req, res) => {
   const seq = await NurtureSequence.findByIdAndUpdate(req.params.id, req.body, { new: true });
   if (!seq) return res.status(404).json({ error: 'Sequence not found' });
   res.json(seq);
 }));
 
 // DELETE
-router.delete('/:id', asyncHandler(async (req, res) => {
+router.delete('/:id', authenticate, asyncHandler(async (req, res) => {
   await NurtureSequence.findByIdAndDelete(req.params.id);
   await NurtureEnrollment.deleteMany({ sequence_id: req.params.id });
   res.json({ success: true });
 }));
 
 // ACTIVATE
-router.post('/:id/activate', asyncHandler(async (req, res) => {
+router.post('/:id/activate', authenticate, asyncHandler(async (req, res) => {
   const seq = await NurtureSequence.findByIdAndUpdate(req.params.id, { status: 'active' }, { new: true });
   if (!seq) return res.status(404).json({ error: 'Sequence not found' });
   res.json(seq);
 }));
 
 // ENROLL leads
-router.post('/:id/enroll', asyncHandler(async (req, res) => {
+router.post('/:id/enroll', authenticate, asyncHandler(async (req, res) => {
   const tenantId = (req as any).user?.tenant_id;
   const { lead_ids } = req.body;
   const enrollments = await NurtureEnrollment.insertMany(
@@ -69,13 +70,13 @@ router.post('/:id/enroll', asyncHandler(async (req, res) => {
 }));
 
 // GET enrollments
-router.get('/:id/enrollments', asyncHandler(async (req, res) => {
+router.get('/:id/enrollments', authenticate, asyncHandler(async (req, res) => {
   const enrollments = await NurtureEnrollment.find({ sequence_id: req.params.id }).sort({ enrolled_at: -1 }).limit(200).lean();
   res.json(enrollments);
 }));
 
 // GET analytics (step-by-step funnel)
-router.get('/:id/analytics', asyncHandler(async (req, res) => {
+router.get('/:id/analytics', authenticate, asyncHandler(async (req, res) => {
   const seq = await NurtureSequence.findById(req.params.id).lean();
   if (!seq) return res.status(404).json({ error: 'Sequence not found' });
   const enrollments = await NurtureEnrollment.find({ sequence_id: req.params.id }).lean();
@@ -97,7 +98,7 @@ router.get('/:id/analytics', asyncHandler(async (req, res) => {
 }));
 
 // ADVANCE enrollment
-router.post('/enrollments/:enrollmentId/advance', asyncHandler(async (req, res) => {
+router.post('/enrollments/:enrollmentId/advance', authenticate, asyncHandler(async (req, res) => {
   const enrollment = await NurtureEnrollment.findById(req.params.enrollmentId);
   if (!enrollment) return res.status(404).json({ error: 'Enrollment not found' });
   const seq = await NurtureSequence.findById(enrollment.sequence_id).lean();

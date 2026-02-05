@@ -88,6 +88,6 @@ const mrpPlannedOrderSchema = new Schema({
 
 mrpPlannedOrderSchema.index({ tenant_id: 1, run_id: 1, status: 1 });
 
-export const MRPRun = mongoose.model('MRPRun', mrpRunSchema);
-export const MRPDemand = mongoose.model('MRPDemand', mrpDemandSchema);
-export const MRPPlannedOrder = mongoose.model('MRPPlannedOrder', mrpPlannedOrderSchema);
+export const MRPRun = mongoose.models.MRPRun || mongoose.model('MRPRun', mrpRunSchema);
+export const MRPDemand = mongoose.models.MRPDemand || mongoose.model('MRPDemand', mrpDemandSchema);
+export const MRPPlannedOrder = mongoose.models.MRPPlannedOrder || mongoose.model('MRPPlannedOrder', mrpPlannedOrderSchema);
