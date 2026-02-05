@@ -157,7 +157,7 @@ router.put('/articles/:id', authenticate, asyncHandler(async (req, res) => {
   }
 
   if (content !== undefined || title !== undefined) {
-    const maxRevision = await KbArticleRevision.findOne({ article_id: req.params.id }).sort({ revision_number: -1 }).lean();
+    const maxRevision = await KbArticleRevision.findOne({ article_id: req.params.id }).sort({ revision_number: -1 }).lean() as any;
     const nextRevision = (maxRevision?.revision_number || 0) + 1;
 
     await KbArticleRevision.create({

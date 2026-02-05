@@ -208,9 +208,9 @@ router.post('/targets/:id/calculate-achievements', asyncHandler(async (req, res)
 
   const orders = await SaleOrder.find(orderFilter).lean();
 
-  const total_revenue = orders.reduce((sum, o) => sum + (o.amount_total || 0), 0);
-  const total_quantity = orders.reduce((sum, o) => {
-    return sum + o.order_line.reduce((lineSum, l) => lineSum + (l.product_uom_qty || 0), 0);
+  const total_revenue = orders.reduce((sum: number, o: any) => sum + (o.amount_total || 0), 0);
+  const total_quantity = orders.reduce((sum: number, o: any) => {
+    return sum + o.order_line.reduce((lineSum: number, l: any) => lineSum + (l.product_uom_qty || 0), 0);
   }, 0);
   const total_orders = orders.length;
 

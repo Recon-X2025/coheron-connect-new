@@ -177,7 +177,7 @@ router.get('/products', asyncHandler(async (req, res) => {
     state: { $in: ['sale', 'done'] },
   };
 
-  const orders = await SaleOrder.find(filter).lean();
+  const orders: any[] = await SaleOrder.find(filter).lean();
 
   const productMap: Record<string, any> = {};
   for (const order of orders) {

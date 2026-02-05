@@ -21,7 +21,7 @@ export async function triggerWorkflows(
     };
     if (tenantId) filter.tenant_id = tenantId;
 
-    const workflows = await Workflow.find(filter).select('_id').lean();
+    const workflows = await Workflow.find(filter).select('_id').lean() as any[];
 
     for (const wf of workflows) {
       await workflowQueue.add('trigger', {

@@ -178,7 +178,7 @@ router.post('/checkout', authenticate, asyncHandler(async (req, res) => {
 router.put('/:id/status', authenticate, asyncHandler(async (req, res) => {
   const { status, notes } = req.body;
 
-  const order = await WebsiteOrder.findById(req.params.id).lean();
+  const order = await WebsiteOrder.findById(req.params.id).lean() as any;
   if (!order) {
     return res.status(404).json({ error: 'Order not found' });
   }
@@ -205,7 +205,7 @@ router.put('/:id/status', authenticate, asyncHandler(async (req, res) => {
 
 // Initiate Razorpay payment for order
 router.post('/:id/pay', authenticate, asyncHandler(async (req, res) => {
-  const order = await WebsiteOrder.findById(req.params.id).lean();
+  const order = await WebsiteOrder.findById(req.params.id).lean() as any;
   if (!order) {
     return res.status(404).json({ error: 'Order not found' });
   }

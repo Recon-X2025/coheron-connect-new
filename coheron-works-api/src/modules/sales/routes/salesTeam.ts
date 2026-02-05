@@ -110,7 +110,7 @@ router.post('/incentives', asyncHandler(async (req, res) => {
 router.post('/incentives/calculate', asyncHandler(async (req, res) => {
   const { sale_order_id, user_id } = req.body;
 
-  const order = await SaleOrder.findById(sale_order_id).lean();
+  const order = await SaleOrder.findById(sale_order_id).lean() as any;
   if (!order) {
     return res.status(404).json({ error: 'Sale order not found' });
   }

@@ -59,7 +59,7 @@ router.get('/tasks/:id', authenticate, asyncHandler(async (req, res) => {
   const task = await CrmTask.findById(req.params.id)
     .populate('assigned_to_id', 'name')
     .populate('created_by_id', 'name')
-    .lean();
+    .lean() as any;
 
   if (!task) {
     return res.status(404).json({ error: 'Task not found' });
@@ -173,7 +173,7 @@ router.get('/events', authenticate, asyncHandler(async (req, res) => {
 router.get('/events/:id', authenticate, asyncHandler(async (req, res) => {
   const event = await CalendarEvent.findById(req.params.id)
     .populate('created_by_id', 'name')
-    .lean();
+    .lean() as any;
 
   if (!event) {
     return res.status(404).json({ error: 'Event not found' });

@@ -40,7 +40,7 @@ router.get('/', asyncHandler(async (req, res) => {
 router.get('/:id', asyncHandler(async (req, res) => {
   const delivery = await DeliveryOrder.findById(req.params.id)
     .populate('sale_order_id', 'name partner_id')
-    .lean();
+    .lean() as any;
 
   if (!delivery) {
     return res.status(404).json({ error: 'Delivery order not found' });

@@ -205,7 +205,7 @@ router.post('/calculate-price', asyncHandler(async (req, res) => {
       partner_id,
       product_id,
       $or: [{ valid_until: null }, { valid_until: { $gte: new Date() } }],
-    }).lean();
+    }).lean() as any;
     if (customerPrice) {
       basePrice = customerPrice.price || 0;
     }
@@ -217,7 +217,7 @@ router.post('/calculate-price', asyncHandler(async (req, res) => {
       price_list_id,
       product_id,
       min_quantity: { $lte: quantity || 1 },
-    }).sort({ min_quantity: -1 }).lean();
+    }).sort({ min_quantity: -1 }).lean() as any;
     if (priceListPrice) {
       basePrice = priceListPrice.price || 0;
     }
@@ -287,7 +287,7 @@ router.get('/discount-approval-rules', asyncHandler(async (req, res) => {
 router.post('/check-discount-approval', asyncHandler(async (req, res) => {
   const { discount_percentage, discount_amount, order_total } = req.body;
 
-  const rule = await DiscountApprovalRule.findOne({ is_active: true }).sort({ created_at: -1 }).lean();
+  const rule = await DiscountApprovalRule.findOne({ is_active: true }).sort({ created_at: -1 }).lean() as any;
 
   if (!rule) {
     return res.json({ requires_approval: false });

@@ -140,7 +140,7 @@ router.get('/receipts', authenticate, asyncHandler(async (req, res) => {
     receipts.map(async (r: any) => {
       let invoice_number = null;
       if (r.invoice_id) {
-        const inv = await Invoice.findById(r.invoice_id).select('name').lean();
+        const inv = await Invoice.findById(r.invoice_id).select('name').lean() as any;
         invoice_number = inv?.name || null;
       }
       return {
@@ -176,7 +176,7 @@ router.get('/receipts/:id', authenticate, asyncHandler(async (req, res) => {
     ((receipt as any).invoice_allocations || []).map(async (rel: any) => {
       const inv = await Invoice.findById(rel.invoice_id)
         .select('name amount_total amount_residual')
-        .lean();
+        .lean() as any;
       return {
         invoice_id: rel.invoice_id,
         amount: rel.amount,

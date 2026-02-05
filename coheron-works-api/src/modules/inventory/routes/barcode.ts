@@ -28,7 +28,7 @@ router.post('/scan', authenticate, asyncHandler(async (req: any, res: any) => {
     }
   }
   // Try to find as bin location first
-  const bin = await BinLocation.findOne({ barcode: barcode_value }).lean();
+  const bin = await BinLocation.findOne({ barcode: barcode_value }).lean() as any;
   if (bin) {
     const log = await BarcodeLog.create({
       tenant_id,
