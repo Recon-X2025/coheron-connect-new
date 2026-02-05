@@ -12,26 +12,27 @@ describe('Website API', () => {
     token = await getAuthToken('website-test@coheron.com', 'Test@Pass123!');
   });
 
-  // Note: /api/website/sites routes conflict with /api/website/:id (pages router).
-  // Express matches the /:id pattern first, treating 'sites' as a page ID.
-  // We test site operations via model and focus API tests on the pages router.
-
-  // ── Sites (via model) ────────────────────────────────────────
-  describe('WebsiteSite model', () => {
+  // ── Sites ────────────────────────────────────────────────────
+  describe('POST /api/website/sites', () => {
     it('should create a website site', async () => {
-      const site = await WebsiteSite.create({
-        name: 'Main Store',
-        domain: `store-${Date.now()}.coheron.com`,
-      });
-      expect(site.name).toBe('Main Store');
-      expect(site.is_active).toBe(true);
+      const res = await request(app)
+        .post('/api/website/sites')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ name: 'Main Store', domain: `store-${Date.now()}.coheron.com` });
+      expect(res.status).toBe(201);
+      expect(res.body.name).toBe('Main Store');
     });
+  });
 
-    it('should list sites', async () => {
+  describe('GET /api/website/sites', () => {
+    it('should return paginated sites', async () => {
       await WebsiteSite.create({ name: 'Site A', domain: `a-${Date.now()}.coheron.com` });
       await WebsiteSite.create({ name: 'Site B', domain: `b-${Date.now()}.coheron.com` });
-      const sites = await WebsiteSite.find();
-      expect(sites.length).toBeGreaterThanOrEqual(2);
+
+      const res = await request(app).get('/api/website/sites').set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+      expect(res.body.data).toBeDefined();
+      expect(res.body.pagination).toBeDefined();
     });
   });
 

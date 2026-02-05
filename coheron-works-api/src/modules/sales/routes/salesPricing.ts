@@ -1,5 +1,6 @@
 import express from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 import { PriceList, ProductPrice, CustomerPrice, PricingRule, DiscountApprovalRule, PromotionalPricing } from '../../../models/SalesPricing.js';
 import { Product } from '../../../shared/models/Product.js';
@@ -11,7 +12,7 @@ const router = express.Router();
 // ============================================
 
 // Get all price lists
-router.get('/price-lists', asyncHandler(async (req, res) => {
+router.get('/price-lists', authenticate, asyncHandler(async (req, res) => {
   const { is_active, currency } = req.query;
   const filter: any = {};
 
@@ -24,7 +25,7 @@ router.get('/price-lists', asyncHandler(async (req, res) => {
 }));
 
 // Get price list by ID
-router.get('/price-lists/:id', asyncHandler(async (req, res) => {
+router.get('/price-lists/:id', authenticate, asyncHandler(async (req, res) => {
   const priceList = await PriceList.findById(req.params.id).lean();
 
   if (!priceList) {
@@ -45,7 +46,7 @@ router.get('/price-lists/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create price list
-router.post('/price-lists', asyncHandler(async (req, res) => {
+router.post('/price-lists', authenticate, asyncHandler(async (req, res) => {
   const { name, currency, is_active, valid_from, valid_until, is_default, products } = req.body;
 
   if (is_default) {
@@ -78,7 +79,7 @@ router.post('/price-lists', asyncHandler(async (req, res) => {
 }));
 
 // Update price list
-router.put('/price-lists/:id', asyncHandler(async (req, res) => {
+router.put('/price-lists/:id', authenticate, asyncHandler(async (req, res) => {
   const { name, currency, is_active, valid_from, valid_until, is_default } = req.body;
 
   if (is_default) {
@@ -103,7 +104,7 @@ router.put('/price-lists/:id', asyncHandler(async (req, res) => {
 }));
 
 // Add/Update product price in price list
-router.post('/price-lists/:id/products', asyncHandler(async (req, res) => {
+router.post('/price-lists/:id/products', authenticate, asyncHandler(async (req, res) => {
   const { product_id, price, min_quantity, valid_from, valid_until } = req.body;
 
   const productPrice = await ProductPrice.findOneAndUpdate(
@@ -127,7 +128,7 @@ router.post('/price-lists/:id/products', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get customer prices
-router.get('/customer-prices/:partnerId', asyncHandler(async (req, res) => {
+router.get('/customer-prices/:partnerId', authenticate, asyncHandler(async (req, res) => {
   const prices = await CustomerPrice.find({ partner_id: req.params.partnerId })
     .populate('product_id', 'name')
     .lean();
@@ -141,7 +142,7 @@ router.get('/customer-prices/:partnerId', asyncHandler(async (req, res) => {
 }));
 
 // Set customer price
-router.post('/customer-prices', asyncHandler(async (req, res) => {
+router.post('/customer-prices', authenticate, asyncHandler(async (req, res) => {
   const { partner_id, product_id, price, valid_from, valid_until } = req.body;
 
   const customerPrice = await CustomerPrice.findOneAndUpdate(
@@ -158,7 +159,7 @@ router.post('/customer-prices', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get all pricing rules
-router.get('/pricing-rules', asyncHandler(async (req, res) => {
+router.get('/pricing-rules', authenticate, asyncHandler(async (req, res) => {
   const { is_active, rule_type } = req.query;
   const filter: any = {};
 
@@ -171,7 +172,7 @@ router.get('/pricing-rules', asyncHandler(async (req, res) => {
 }));
 
 // Create pricing rule
-router.post('/pricing-rules', asyncHandler(async (req, res) => {
+router.post('/pricing-rules', authenticate, asyncHandler(async (req, res) => {
   const {
     name, rule_type, conditions, discount_type, discount_value,
     formula, priority, is_active, valid_from, valid_until,
@@ -194,7 +195,7 @@ router.post('/pricing-rules', asyncHandler(async (req, res) => {
 }));
 
 // Calculate price for product (applies all rules)
-router.post('/calculate-price', asyncHandler(async (req, res) => {
+router.post('/calculate-price', authenticate, asyncHandler(async (req, res) => {
   const { product_id, partner_id, quantity, price_list_id } = req.body;
 
   let basePrice = 0;
@@ -275,7 +276,7 @@ router.post('/calculate-price', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get discount approval rules
-router.get('/discount-approval-rules', asyncHandler(async (req, res) => {
+router.get('/discount-approval-rules', authenticate, asyncHandler(async (req, res) => {
   const filter: any = { is_active: true };
 
   const params = getPaginationParams(req);
@@ -284,7 +285,7 @@ router.get('/discount-approval-rules', asyncHandler(async (req, res) => {
 }));
 
 // Check if discount requires approval
-router.post('/check-discount-approval', asyncHandler(async (req, res) => {
+router.post('/check-discount-approval', authenticate, asyncHandler(async (req, res) => {
   const { discount_percentage, discount_amount, order_total } = req.body;
 
   const rule = await DiscountApprovalRule.findOne({ is_active: true }).sort({ created_at: -1 }).lean() as any;
@@ -315,7 +316,7 @@ router.post('/check-discount-approval', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get active promotions
-router.get('/promotions', asyncHandler(async (req, res) => {
+router.get('/promotions', authenticate, asyncHandler(async (req, res) => {
   const { product_id } = req.query;
   const filter: any = {
     is_active: true,
@@ -333,7 +334,7 @@ router.get('/promotions', asyncHandler(async (req, res) => {
 }));
 
 // Create promotion
-router.post('/promotions', asyncHandler(async (req, res) => {
+router.post('/promotions', authenticate, asyncHandler(async (req, res) => {
   const { name, campaign_name, product_ids, discount_type, discount_value, buy_x_get_y_config, valid_from, valid_until } = req.body;
 
   const promotion = await PromotionalPricing.create({

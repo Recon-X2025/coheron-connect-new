@@ -6,6 +6,7 @@ import AccountPayment from '../../../models/AccountPayment.js';
 import AccountMove from '../../../models/AccountMove.js';
 import AccountJournal from '../../../models/AccountJournal.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
@@ -13,7 +14,7 @@ const router = express.Router();
 // ========== VENDORS ==========
 
 // Get all vendors
-router.get('/vendors', asyncHandler(async (req, res) => {
+router.get('/vendors', authenticate, asyncHandler(async (req, res) => {
   const { search, is_active } = req.query;
   const filter: any = {};
 
@@ -47,7 +48,7 @@ router.get('/vendors', asyncHandler(async (req, res) => {
 }));
 
 // Create vendor
-router.post('/vendors', asyncHandler(async (req, res) => {
+router.post('/vendors', authenticate, asyncHandler(async (req, res) => {
   const { partner_id, vendor_code, payment_term_id, credit_limit, tax_id, vendor_type, currency_id } = req.body;
 
   const vendor = await AccountVendor.create({
@@ -66,7 +67,7 @@ router.post('/vendors', asyncHandler(async (req, res) => {
 // ========== BILLS (PURCHASE INVOICES) ==========
 
 // Get all bills
-router.get('/bills', asyncHandler(async (req, res) => {
+router.get('/bills', authenticate, asyncHandler(async (req, res) => {
   const { vendor_id, state, payment_state, date_from, date_to, search } = req.query;
   const filter: any = {};
 
@@ -112,7 +113,7 @@ router.get('/bills', asyncHandler(async (req, res) => {
 }));
 
 // Get bill by ID with lines
-router.get('/bills/:id', asyncHandler(async (req, res) => {
+router.get('/bills/:id', authenticate, asyncHandler(async (req, res) => {
   const bill = await AccountBill.findById(req.params.id)
     .populate({
       path: 'vendor_id',
@@ -146,7 +147,7 @@ router.get('/bills/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create bill
-router.post('/bills', asyncHandler(async (req, res) => {
+router.post('/bills', authenticate, asyncHandler(async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
@@ -236,7 +237,7 @@ router.post('/bills', asyncHandler(async (req, res) => {
 }));
 
 // Post bill (create GL entry)
-router.post('/bills/:id/post', asyncHandler(async (req, res) => {
+router.post('/bills/:id/post', authenticate, asyncHandler(async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
@@ -323,7 +324,7 @@ router.post('/bills/:id/post', asyncHandler(async (req, res) => {
 // ========== PAYMENTS ==========
 
 // Get all payments
-router.get('/payments', asyncHandler(async (req, res) => {
+router.get('/payments', authenticate, asyncHandler(async (req, res) => {
   const { payment_type, partner_id, state, date_from, date_to } = req.query;
   const filter: any = {};
 
@@ -360,7 +361,7 @@ router.get('/payments', asyncHandler(async (req, res) => {
 }));
 
 // Create payment
-router.post('/payments', asyncHandler(async (req, res) => {
+router.post('/payments', authenticate, asyncHandler(async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
@@ -416,7 +417,7 @@ router.post('/payments', asyncHandler(async (req, res) => {
 }));
 
 // Post payment
-router.post('/payments/:id/post', asyncHandler(async (req, res) => {
+router.post('/payments/:id/post', authenticate, asyncHandler(async (req, res) => {
   const payment = await AccountPayment.findOneAndUpdate(
     { _id: req.params.id, state: 'draft' },
     { state: 'posted' },

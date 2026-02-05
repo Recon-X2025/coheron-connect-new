@@ -17,12 +17,12 @@ export const metadata = {
 
 export function register(): ModuleRoute[] {
   return [
-    { path: '/website', router: routes.website, middleware: [requireModule('website')], },
     { path: '/website/products', router: routes.websiteProducts, middleware: [requireModule('website')], },
     { path: '/website/orders', router: routes.websiteOrders, middleware: [requireModule('website')], },
     { path: '/website/cart', router: routes.websiteCart, middleware: [requireModule('website')], },
     { path: '/website/media', router: routes.websiteMedia, middleware: [requireModule('website')], },
     { path: '/website/promotions', router: routes.websitePromotions, middleware: [requireModule('website')], },
     { path: '/website/sites', router: routes.websiteSites, middleware: [requireModule('website')], },
+    { path: '/website', router: routes.website, middleware: [requireModule('website')], },
   ];
 }

@@ -2,7 +2,6 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import request from 'supertest';
 import mongoose from 'mongoose';
 import { app, getAuthToken } from './helpers.js';
-import Bom from '../src/models/Bom.js';
 
 describe('Manufacturing – BOM & Orders API', () => {
   let token: string;
@@ -26,15 +25,15 @@ describe('Manufacturing – BOM & Orders API', () => {
     });
   });
 
-  // Note: GET /api/manufacturing/bom is intercepted by /api/manufacturing/:id (route conflict).
-  // The manufacturing router is mounted before the bom router, so Express treats 'bom' as an :id param.
-  // We verify BOM listing works at the model level instead.
-  describe('BOM listing (via model, route conflict with /:id)', () => {
-    it('should list BOMs via model query', async () => {
-      await Bom.create({ name: 'BOM List A', code: `B-LA-${Date.now()}`, product_id: productId, product_qty: 1, product_uom_id: uomId });
-      await Bom.create({ name: 'BOM List B', code: `B-LB-${Date.now()}`, product_id: productId, product_qty: 2, product_uom_id: uomId });
-      const boms = await Bom.find();
-      expect(boms.length).toBeGreaterThanOrEqual(2);
+  describe('GET /api/manufacturing/bom', () => {
+    it('should return paginated BOMs', async () => {
+      await request(app).post('/api/manufacturing/bom').set('Authorization', `Bearer ${token}`)
+        .send({ name: 'BOM A', code: `B-A-${Date.now()}`, product_id: productId, product_qty: 1, product_uom_id: uomId });
+
+      const res = await request(app).get('/api/manufacturing/bom').set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+      expect(res.body.data).toBeDefined();
+      expect(res.body.pagination).toBeDefined();
     });
   });
 

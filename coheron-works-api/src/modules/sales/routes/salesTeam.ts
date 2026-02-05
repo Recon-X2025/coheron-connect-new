@@ -1,5 +1,6 @@
 import express from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 import { SalesTeam, SalesIncentive, SalesIncentivePayment, SalesActivityKpi } from '../../../models/SalesTeam.js';
 import { SaleOrder } from '../../../models/SaleOrder.js';
@@ -11,7 +12,7 @@ const router = express.Router();
 // ============================================
 
 // Get all sales teams
-router.get('/teams', asyncHandler(async (req, res) => {
+router.get('/teams', authenticate, asyncHandler(async (req, res) => {
   const { is_active } = req.query;
   const filter: any = {};
 
@@ -23,7 +24,7 @@ router.get('/teams', asyncHandler(async (req, res) => {
 }));
 
 // Create sales team
-router.post('/teams', asyncHandler(async (req, res) => {
+router.post('/teams', authenticate, asyncHandler(async (req, res) => {
   const { name, code, manager_id, description, members } = req.body;
 
   const teamMembers = (members || []).map((member: any) => ({
@@ -43,7 +44,7 @@ router.post('/teams', asyncHandler(async (req, res) => {
 }));
 
 // Add member to team
-router.post('/teams/:id/members', asyncHandler(async (req, res) => {
+router.post('/teams/:id/members', authenticate, asyncHandler(async (req, res) => {
   const { user_id, role } = req.body;
 
   const team = await SalesTeam.findById(req.params.id);
@@ -72,7 +73,7 @@ router.post('/teams/:id/members', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get all incentives
-router.get('/incentives', asyncHandler(async (req, res) => {
+router.get('/incentives', authenticate, asyncHandler(async (req, res) => {
   const { is_active } = req.query;
   const filter: any = {};
 
@@ -84,7 +85,7 @@ router.get('/incentives', asyncHandler(async (req, res) => {
 }));
 
 // Create incentive
-router.post('/incentives', asyncHandler(async (req, res) => {
+router.post('/incentives', authenticate, asyncHandler(async (req, res) => {
   const {
     name, incentive_type, calculation_method, calculation_formula,
     conditions, amount_percentage, fixed_amount, tier_rules, valid_from, valid_until,
@@ -107,7 +108,7 @@ router.post('/incentives', asyncHandler(async (req, res) => {
 }));
 
 // Calculate incentive for sale order
-router.post('/incentives/calculate', asyncHandler(async (req, res) => {
+router.post('/incentives/calculate', authenticate, asyncHandler(async (req, res) => {
   const { sale_order_id, user_id } = req.body;
 
   const order = await SaleOrder.findById(sale_order_id).lean() as any;
@@ -178,7 +179,7 @@ router.post('/incentives/calculate', asyncHandler(async (req, res) => {
 }));
 
 // Record incentive payment
-router.post('/incentive-payments', asyncHandler(async (req, res) => {
+router.post('/incentive-payments', authenticate, asyncHandler(async (req, res) => {
   const {
     incentive_id, user_id, sale_order_id, period_start,
     period_end, base_amount, incentive_amount, payment_status,
@@ -203,7 +204,7 @@ router.post('/incentive-payments', asyncHandler(async (req, res) => {
 // ============================================
 
 // Get activity KPIs
-router.get('/activity-kpis', asyncHandler(async (req, res) => {
+router.get('/activity-kpis', authenticate, asyncHandler(async (req, res) => {
   const { user_id, period_start, period_end } = req.query;
 
   if (!user_id || !period_start || !period_end) {
@@ -232,7 +233,7 @@ router.get('/activity-kpis', asyncHandler(async (req, res) => {
 }));
 
 // Update activity KPIs
-router.post('/activity-kpis', asyncHandler(async (req, res) => {
+router.post('/activity-kpis', authenticate, asyncHandler(async (req, res) => {
   const {
     user_id, period_start, period_end, calls_made, emails_sent,
     meetings_held, leads_created, opportunities_created, quotes_sent,

@@ -9,6 +9,7 @@ import EsignField from '../../../models/EsignField.js';
 import EsignAuditTrail from '../../../models/EsignAuditTrail.js';
 import EsignTemplate from '../../../models/EsignTemplate.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 import { redisConnection } from '../../../jobs/connection.js';
 import { uploadFile } from '../../crossmodule/services/storageService.js';
@@ -38,7 +39,7 @@ const upload = multer({
 // ============================================
 
 // Get all documents
-router.get('/documents', asyncHandler(async (req, res) => {
+router.get('/documents', authenticate, asyncHandler(async (req, res) => {
   const { status, document_type, related_record_type, related_record_id } = req.query;
   const filter: any = {};
 
@@ -71,7 +72,7 @@ router.get('/documents', asyncHandler(async (req, res) => {
 }));
 
 // Get document by ID with full details
-router.get('/documents/:id', asyncHandler(async (req, res) => {
+router.get('/documents/:id', authenticate, asyncHandler(async (req, res) => {
   const document = await EsignDocument.findById(req.params.id).lean();
   if (!document) {
     return res.status(404).json({ error: 'Document not found' });
@@ -101,7 +102,7 @@ router.get('/documents/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create document (with file upload)
-router.post('/documents', upload.single('file'), asyncHandler(async (req, res) => {
+router.post('/documents', authenticate, upload.single('file'), asyncHandler(async (req, res) => {
   const {
     document_name, document_type, related_record_type, related_record_id,
     created_by, expires_at, message, reminder_enabled, reminder_frequency,
@@ -182,7 +183,7 @@ router.post('/documents', upload.single('file'), asyncHandler(async (req, res) =
 }));
 
 // Send document for signing
-router.post('/documents/:id/send', asyncHandler(async (req, res) => {
+router.post('/documents/:id/send', authenticate, asyncHandler(async (req, res) => {
   const document = await EsignDocument.findById(req.params.id);
   if (!document) {
     return res.status(404).json({ error: 'Document not found' });
@@ -324,12 +325,12 @@ router.get('/files/:filename', asyncHandler(async (req, res) => {
 // E-SIGNATURE TEMPLATES
 // ============================================
 
-router.get('/templates', asyncHandler(async (req, res) => {
+router.get('/templates', authenticate, asyncHandler(async (req, res) => {
   const templates = await EsignTemplate.find({ is_active: true }).sort({ created_at: -1 }).lean();
   res.json(templates);
 }));
 
-router.post('/templates', upload.single('file'), asyncHandler(async (req, res) => {
+router.post('/templates', authenticate, upload.single('file'), asyncHandler(async (req, res) => {
   const { template_name, description, document_type, default_signers, default_fields, created_by } = req.body;
 
   if (!req.file) {

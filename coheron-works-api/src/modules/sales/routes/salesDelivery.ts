@@ -2,6 +2,7 @@ import express from 'express';
 import { DeliveryOrder, ShipmentTracking, FreightCharge } from '../../../models/DeliveryOrder.js';
 import { SaleOrder } from '../../../models/SaleOrder.js';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 
 const router = express.Router();
@@ -11,7 +12,7 @@ const router = express.Router();
 // ============================================
 
 // Get all delivery orders
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { sale_order_id, status, warehouse_id } = req.query;
   const filter: any = {};
 
@@ -37,7 +38,7 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get delivery order by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', authenticate, asyncHandler(async (req, res) => {
   const delivery = await DeliveryOrder.findById(req.params.id)
     .populate('sale_order_id', 'name partner_id')
     .lean() as any;
@@ -58,7 +59,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create delivery order from sales order
-router.post('/', asyncHandler(async (req, res) => {
+router.post('/', authenticate, asyncHandler(async (req, res) => {
   const { sale_order_id, warehouse_id, delivery_date, delivery_address, delivery_method, delivery_lines } = req.body;
 
   const saleOrder = await SaleOrder.findById(sale_order_id);
@@ -101,7 +102,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 
 // Update delivery order status
-router.put('/:id/status', asyncHandler(async (req, res) => {
+router.put('/:id/status', authenticate, asyncHandler(async (req, res) => {
   const { status, delivered_at, tracking_number, carrier_name } = req.body;
 
   const updateData: any = { status };
@@ -132,7 +133,7 @@ router.put('/:id/status', asyncHandler(async (req, res) => {
 }));
 
 // Update delivery line quantities
-router.put('/:id/lines/:lineId', asyncHandler(async (req, res) => {
+router.put('/:id/lines/:lineId', authenticate, asyncHandler(async (req, res) => {
   const { quantity_delivered } = req.body;
 
   const delivery = await DeliveryOrder.findById(req.params.id);
@@ -156,7 +157,7 @@ router.put('/:id/lines/:lineId', asyncHandler(async (req, res) => {
 // ============================================
 
 // Add tracking event
-router.post('/:id/tracking', asyncHandler(async (req, res) => {
+router.post('/:id/tracking', authenticate, asyncHandler(async (req, res) => {
   const { tracking_event, location, notes } = req.body;
 
   const tracking = await ShipmentTracking.create({
@@ -170,7 +171,7 @@ router.post('/:id/tracking', asyncHandler(async (req, res) => {
 }));
 
 // Get tracking history
-router.get('/:id/tracking', asyncHandler(async (req, res) => {
+router.get('/:id/tracking', authenticate, asyncHandler(async (req, res) => {
   const tracking = await ShipmentTracking.find({ delivery_order_id: req.params.id }).sort({ event_date: -1 }).lean();
   res.json(tracking);
 }));
@@ -180,7 +181,7 @@ router.get('/:id/tracking', asyncHandler(async (req, res) => {
 // ============================================
 
 // Add freight charge
-router.post('/:id/freight', asyncHandler(async (req, res) => {
+router.post('/:id/freight', authenticate, asyncHandler(async (req, res) => {
   const { charge_type, amount, currency, description } = req.body;
 
   const charge = await FreightCharge.create({
@@ -195,7 +196,7 @@ router.post('/:id/freight', asyncHandler(async (req, res) => {
 }));
 
 // Get freight charges
-router.get('/:id/freight', asyncHandler(async (req, res) => {
+router.get('/:id/freight', authenticate, asyncHandler(async (req, res) => {
   const charges = await FreightCharge.find({ delivery_order_id: req.params.id }).lean();
   res.json(charges);
 }));

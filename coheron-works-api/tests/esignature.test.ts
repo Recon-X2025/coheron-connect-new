@@ -42,7 +42,7 @@ describe('E-Signature API', () => {
         status: 'draft',
       });
 
-      const res = await request(app).get('/api/esignature/documents');
+      const res = await request(app).get('/api/esignature/documents').set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(200);
       expect(res.body.data).toBeDefined();
       expect(res.body.pagination).toBeDefined();
@@ -57,7 +57,7 @@ describe('E-Signature API', () => {
         created_by: new mongoose.Types.ObjectId(userId),
         status: 'draft',
       });
-      const res = await request(app).get(`/api/esignature/documents/${doc._id}`);
+      const res = await request(app).get(`/api/esignature/documents/${doc._id}`).set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(200);
     });
   });
@@ -79,6 +79,7 @@ describe('E-Signature API', () => {
       });
       const res = await request(app)
         .post(`/api/esignature/documents/${doc._id}/send`)
+        .set('Authorization', `Bearer ${token}`)
         .send({});
       expect(res.status).toBe(200);
       expect(res.body.message).toBe('Document sent successfully');
@@ -93,6 +94,7 @@ describe('E-Signature API', () => {
       });
       const res = await request(app)
         .post(`/api/esignature/documents/${doc._id}/send`)
+        .set('Authorization', `Bearer ${token}`)
         .send({});
       expect(res.status).toBe(400);
     });
@@ -101,15 +103,15 @@ describe('E-Signature API', () => {
   // ── Templates ────────────────────────────────────────────────
   describe('GET /api/esignature/templates', () => {
     it('should return templates', async () => {
-      const res = await request(app).get('/api/esignature/templates');
+      const res = await request(app).get('/api/esignature/templates').set('Authorization', `Bearer ${token}`);
       expect(res.status).toBe(200);
     });
   });
 
-  describe('Auth note', () => {
-    it('e-signature routes do not require authentication (public signing access)', async () => {
+  describe('Auth guard', () => {
+    it('should return 401 without token on document listing', async () => {
       const res = await request(app).get('/api/esignature/documents');
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(401);
     });
   });
 });

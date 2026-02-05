@@ -127,9 +127,8 @@ describe('Accounting – Accounts Payable API', () => {
   });
 
   describe('Auth guard', () => {
-    it('should return 401 without token on products endpoint', async () => {
-      // AP and journal-entry routes lack authenticate middleware; test a known authenticated endpoint
-      const res = await request(app).get('/api/products');
+    it('should return 401 without token', async () => {
+      const res = await request(app).get('/api/accounting/accounts-payable/vendors');
       expect(res.status).toBe(401);
     });
   });

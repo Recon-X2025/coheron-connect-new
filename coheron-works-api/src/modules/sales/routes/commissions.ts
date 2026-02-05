@@ -1,5 +1,6 @@
 import express from 'express';
 import { asyncHandler } from '../../../shared/middleware/asyncHandler.js';
+import { authenticate } from '../../../shared/middleware/permissions.js';
 import { getPaginationParams, paginateQuery } from '../../../shared/utils/pagination.js';
 import { CommissionPlan } from '../../../models/CommissionPlan.js';
 import { CommissionEntry } from '../../../models/CommissionEntry.js';
@@ -7,7 +8,7 @@ import { Invoice } from '../../../models/Invoice.js';
 
 const router = express.Router();
 
-router.get('/plans', asyncHandler(async (req, res) => {
+router.get('/plans', authenticate, asyncHandler(async (req, res) => {
   const { is_active } = req.query;
   const filter: any = {};
   if (is_active !== undefined) filter.is_active = is_active === 'true';
@@ -16,19 +17,19 @@ router.get('/plans', asyncHandler(async (req, res) => {
   res.json(result);
 }));
 
-router.post('/plans', asyncHandler(async (req, res) => {
+router.post('/plans', authenticate, asyncHandler(async (req, res) => {
   const plan = new CommissionPlan(req.body);
   await plan.save();
   res.status(201).json(plan);
 }));
 
-router.put('/plans/:id', asyncHandler(async (req, res) => {
+router.put('/plans/:id', authenticate, asyncHandler(async (req, res) => {
   const plan = await CommissionPlan.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
   if (!plan) return res.status(404).json({ message: 'Commission plan not found' });
   res.json(plan);
 }));
 
-router.get('/entries', asyncHandler(async (req, res) => {
+router.get('/entries', authenticate, asyncHandler(async (req, res) => {
   const { sales_person_id, status, period_start, period_end } = req.query;
   const filter: any = {};
   if (sales_person_id) filter.sales_person_id = sales_person_id;
@@ -43,7 +44,7 @@ router.get('/entries', asyncHandler(async (req, res) => {
   res.json(result);
 }));
 
-router.post('/calculate', asyncHandler(async (req, res) => {
+router.post('/calculate', authenticate, asyncHandler(async (req, res) => {
   const { period_start, period_end } = req.body;
   if (!period_start || !period_end) return res.status(400).json({ message: 'period_start and period_end are required' });
   const start = new Date(period_start);
@@ -76,27 +77,27 @@ router.post('/calculate', asyncHandler(async (req, res) => {
   res.json({ message: 'Calculated ' + entries.length + ' commission entries', count: entries.length });
 }));
 
-router.post('/entries/:id/approve', asyncHandler(async (req, res) => {
+router.post('/entries/:id/approve', authenticate, asyncHandler(async (req, res) => {
   const entry = await CommissionEntry.findByIdAndUpdate(req.params.id, { status: 'approved', approved_by: (req as any).user?.id, approved_at: new Date() }, { new: true });
   if (!entry) return res.status(404).json({ message: 'Commission entry not found' });
   res.json(entry);
 }));
 
-router.post('/entries/bulk-approve', asyncHandler(async (req, res) => {
+router.post('/entries/bulk-approve', authenticate, asyncHandler(async (req, res) => {
   const { entry_ids } = req.body;
   if (!entry_ids || !entry_ids.length) return res.status(400).json({ message: 'entry_ids required' });
   const result = await CommissionEntry.updateMany({ _id: { $in: entry_ids }, status: 'pending' }, { status: 'approved', approved_by: (req as any).user?.id, approved_at: new Date() });
   res.json({ message: 'Approved ' + result.modifiedCount + ' entries', modified: result.modifiedCount });
 }));
 
-router.post('/entries/:id/pay', asyncHandler(async (req, res) => {
+router.post('/entries/:id/pay', authenticate, asyncHandler(async (req, res) => {
   const { payment_reference } = req.body;
   const entry = await CommissionEntry.findByIdAndUpdate(req.params.id, { status: 'paid', paid_at: new Date(), payment_reference }, { new: true });
   if (!entry) return res.status(404).json({ message: 'Commission entry not found' });
   res.json(entry);
 }));
 
-router.get('/summary', asyncHandler(async (req, res) => {
+router.get('/summary', authenticate, asyncHandler(async (req, res) => {
   const { period_start, period_end } = req.query;
   const match: any = {};
   if (period_start) match.period_start = { $gte: new Date(period_start as string) };

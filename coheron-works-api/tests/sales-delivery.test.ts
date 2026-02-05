@@ -95,9 +95,8 @@ describe('Sales – Delivery Orders API', () => {
   });
 
   describe('Auth guard', () => {
-    it('should return 401 without token on products endpoint', async () => {
-      // Delivery routes lack authenticate middleware; test a related authenticated endpoint
-      const res = await request(app).get('/api/products');
+    it('should return 401 without token', async () => {
+      const res = await request(app).get('/api/sales/delivery');
       expect(res.status).toBe(401);
     });
   });

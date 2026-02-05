@@ -16,7 +16,6 @@ export const metadata = {
 
 export function register(): ModuleRoute[] {
   return [
-    { path: '/manufacturing', router: routes.manufacturing },
     { path: '/manufacturing/bom', router: routes.manufacturingBom },
     { path: '/manufacturing/routing', router: routes.manufacturingRouting },
     { path: '/manufacturing/work-orders', router: routes.manufacturingWorkOrders },
@@ -38,5 +37,6 @@ export function register(): ModuleRoute[] {
     { path: '/manufacturing/advanced-quality', router: routes.advancedQuality },
     { path: '/manufacturing/cost-rollup', router: routes.costRollup },
     { path: '/manufacturing/fmea', router: routes.fmea },
+    { path: '/manufacturing', router: routes.manufacturing },
   ];
 }

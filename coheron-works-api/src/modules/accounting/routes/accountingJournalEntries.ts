@@ -12,7 +12,7 @@ import { createJournalEntrySchema, updateJournalEntrySchema } from '../schemas.j
 const router = express.Router();
 
 // Get all journal entries
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', authenticate, asyncHandler(async (req, res) => {
   const { journal_id, state, date_from, date_to, partner_id, search } = req.query;
   const filter: any = {};
 
@@ -94,7 +94,7 @@ router.get('/:id', authenticate, checkRecordAccess('journal_entries'), asyncHand
 }));
 
 // Create journal entry
-router.post('/', validate({ body: createJournalEntrySchema }), asyncHandler(async (req, res) => {
+router.post('/', authenticate, validate({ body: createJournalEntrySchema }), asyncHandler(async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
@@ -263,7 +263,7 @@ router.put('/:id', validate({ params: objectIdParam, body: updateJournalEntrySch
 }));
 
 // Post journal entry
-router.post('/:id/post', validate({ params: objectIdParam }), asyncHandler(async (req, res) => {
+router.post('/:id/post', authenticate, validate({ params: objectIdParam }), asyncHandler(async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
@@ -311,7 +311,7 @@ router.post('/:id/post', validate({ params: objectIdParam }), asyncHandler(async
 }));
 
 // Cancel journal entry
-router.post('/:id/cancel', validate({ params: objectIdParam }), asyncHandler(async (req, res) => {
+router.post('/:id/cancel', authenticate, validate({ params: objectIdParam }), asyncHandler(async (req, res) => {
   const move = await AccountMove.findOneAndUpdate(
     { _id: req.params.id, state: 'posted' },
     { state: 'cancel' },
