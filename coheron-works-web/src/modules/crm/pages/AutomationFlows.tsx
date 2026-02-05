@@ -3,9 +3,14 @@ import { Zap, Plus, Play, Pause, TestTube, Trash2, ArrowRight, Clock, GitBranch,
 
 const API = '/api/crm/automation-flows';
 const getToken = () => localStorage.getItem('authToken') || '';
-const apiFetch = async (path: string, opts?: RequestInit) => {
-  const res = await fetch(`${API}${path}`, { ...opts, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}`, ...(opts?.headers || {}) } });
-  if (!res.ok) throw new Error(`API ${res.status}`);
+let _csrf: string | null = null;
+const getCsrf = async () => { if (_csrf) return _csrf; try { const r = await fetch('/api/csrf-token', { credentials: 'include' }); if (r.ok) { _csrf = (await r.json()).token; } } catch {} return _csrf; };
+const apiFetch = async (path: string, options?: RequestInit) => {
+  const method = (options?.method || 'GET').toUpperCase();
+  const hdrs: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}`, ...((options?.headers as any) || {}) };
+  if (!['GET','HEAD','OPTIONS'].includes(method)) { const c = await getCsrf(); if (c) hdrs['x-csrf-token'] = c; }
+  const res = await fetch(`${API}${path}`, { ...options, headers: hdrs, credentials: 'include' });
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();
 };
 

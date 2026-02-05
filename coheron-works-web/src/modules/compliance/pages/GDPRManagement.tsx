@@ -19,6 +19,9 @@ const API_MAP: Record<Tab, string> = {
   retention: '/api/gdpr/retention-policies',
 };
 
+let _csrf: string | null = null;
+const getCsrf = async () => { if (_csrf) return _csrf; try { const r = await fetch('/api/csrf-token', { credentials: 'include' }); if (r.ok) { _csrf = (await r.json()).token; } } catch {} return _csrf; };
+
 const headers = () => ({
   Authorization: `Bearer ${localStorage.getItem('authToken')}`,
   'Content-Type': 'application/json',
@@ -89,9 +92,9 @@ function TabForm({ tab, onDone }: { tab: Tab; onDone: () => void }) {
   const [form, setForm] = useState<Record<string, string>>({});
   const set = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
-    fetch(API_MAP[tab], { method: 'POST', headers: headers(), body: JSON.stringify(form) })
+    fetch(API_MAP[tab], { method: 'POST', headers: { ...headers(), 'x-csrf-token': await getCsrf() || '' }, body: JSON.stringify(form) })
       .then(() => onDone())
       .catch(() => {});
   };
@@ -146,10 +149,10 @@ function TabForm({ tab, onDone }: { tab: Tab; onDone: () => void }) {
 }
 
 function TabTable({ tab, data, onRefresh }: { tab: Tab; data: any[]; onRefresh: () => void }) {
-  const updateStatus = (id: string, status: string) => {
+  const updateStatus = async (id: string, status: string) => {
     fetch(`${API_MAP[tab]}/${id}`, {
       method: 'PATCH',
-      headers: headers(),
+      headers: { ...headers(), 'x-csrf-token': await getCsrf() || '' },
       body: JSON.stringify({ status }),
     }).then(() => onRefresh());
   };

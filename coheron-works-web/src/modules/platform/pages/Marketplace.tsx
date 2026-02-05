@@ -3,9 +3,15 @@ import {
   Store, Search, Download, Trash2, Star, CheckCircle, 
 } from 'lucide-react';
 
-const TOKEN = localStorage.getItem('authToken') || '';
-const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` };
-const apiFetch = (url: string, opts?: any) => fetch(url, { headers, ...opts });
+const getToken = () => localStorage.getItem('authToken') || '';
+let _csrf: string | null = null;
+const getCsrf = async () => { if (_csrf) return _csrf; try { const r = await fetch('/api/csrf-token', { credentials: 'include' }); if (r.ok) { _csrf = (await r.json()).token; } } catch {} return _csrf; };
+const apiFetch = async (url: string, opts?: RequestInit) => {
+  const method = (opts?.method || 'GET').toUpperCase();
+  const hdrs: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}`, ...((opts?.headers as any) || {}) };
+  if (!['GET','HEAD','OPTIONS'].includes(method)) { const c = await getCsrf(); if (c) hdrs['x-csrf-token'] = c; }
+  return fetch(url, { ...opts, headers: hdrs, credentials: 'include' });
+};
 
 interface App { _id: string; name: string; slug: string; description: string; long_description: string; category: string; developer_name: string; version: string; icon_url: string; pricing_type: string; price: number; currency: string; features: string[]; install_count: number; rating: number; rating_count: number; status: string; is_verified: boolean; }
 interface Installation { _id: string; app_id: any; installed_by: any; status: string; config: any; installed_at: string; version_installed: string; }

@@ -41,8 +41,14 @@ interface NodeDef {
 
 // ── Constants ───────────────────────────────────────────────────────
 
-const TOKEN = localStorage.getItem('authToken') || '';
-const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` };
+const getHeaders = async (method = 'GET') => {
+  const token = localStorage.getItem('authToken') || '';
+  const h: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+  if (!['GET','HEAD','OPTIONS'].includes(method.toUpperCase())) {
+    try { const r = await fetch('/api/csrf-token', { credentials: 'include' }); if (r.ok) { h['x-csrf-token'] = (await r.json()).token; } } catch {}
+  }
+  return h;
+};
 
 const NODE_W = 200;
 const NODE_H = 64;
@@ -79,7 +85,7 @@ export const WorkflowDesigner: React.FC = () => {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/api/workflow-designer', { headers });
+        const res = await fetch('/api/workflow-designer', { headers: await getHeaders() });
         const data = await res.json();
         setWorkflows(data.workflows || []);
       } catch { /* empty */ }
@@ -99,7 +105,7 @@ export const WorkflowDesigner: React.FC = () => {
   };
 
   const loadWorkflow = async (id: string) => {
-    const res = await fetch(`/api/workflow-designer/${id}`, { headers });
+    const res = await fetch(`/api/workflow-designer/${id}`, { headers: await getHeaders() });
     const data = await res.json();
     setCurrent(data);
     setSelectedNode(null);
@@ -112,14 +118,14 @@ export const WorkflowDesigner: React.FC = () => {
     try {
       if (current._id) {
         const res = await fetch(`/api/workflow-designer/${current._id}`, {
-          method: 'PUT', headers,
+          method: 'PUT', headers: await getHeaders('PUT'),
           body: JSON.stringify({ name: current.name, description: current.description, nodes: current.nodes, edges: current.edges }),
         });
         const data = await res.json();
         setCurrent(data);
       } else {
         const res = await fetch('/api/workflow-designer', {
-          method: 'POST', headers,
+          method: 'POST', headers: await getHeaders('POST'),
           body: JSON.stringify(current),
         });
         const data = await res.json();
@@ -133,7 +139,7 @@ export const WorkflowDesigner: React.FC = () => {
   const publishWorkflow = async () => {
     if (!current?._id) return;
     try {
-      const res = await fetch(`/api/workflow-designer/${current._id}/publish`, { method: 'POST', headers });
+      const res = await fetch(`/api/workflow-designer/${current._id}/publish`, { method: 'POST', headers: await getHeaders('POST') });
       if (!res.ok) { const e = await res.json(); alert(e.error); return; }
       const data = await res.json();
       setCurrent(data);
@@ -144,7 +150,7 @@ export const WorkflowDesigner: React.FC = () => {
     if (!current?._id) return;
     try {
       const res = await fetch(`/api/workflow-designer/${current._id}/test`, {
-        method: 'POST', headers, body: JSON.stringify({ test_data: { sample: true } }),
+        method: 'POST', headers: await getHeaders('POST'), body: JSON.stringify({ test_data: { sample: true } }),
       });
       const data = await res.json();
       setTestResult(data);

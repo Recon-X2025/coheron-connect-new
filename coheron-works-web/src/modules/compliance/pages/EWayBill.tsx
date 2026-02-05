@@ -10,6 +10,9 @@ const s = {
   btn: { background: '#00C971', color: '#000', border: 'none', borderRadius: 8, padding: '10px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 14, display: 'inline-flex', alignItems: 'center', gap: 6 } as React.CSSProperties,
 };
 
+let _csrf: string | null = null;
+const getCsrf = async () => { if (_csrf) return _csrf; try { const r = await fetch('/api/csrf-token', { credentials: 'include' }); if (r.ok) { _csrf = (await r.json()).token; } } catch {} return _csrf; };
+
 export const EWayBill: React.FC = () => {
   const [deliveryId, setDeliveryId] = useState('');
   const [result, setResult] = useState<any>(null);
@@ -23,7 +26,7 @@ export const EWayBill: React.FC = () => {
     try {
       const res = await fetch(`${API_BASE}/api/compliance/eway-bill/generate/${deliveryId}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, 'x-csrf-token': await getCsrf() || '' },
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed');

@@ -4,8 +4,14 @@ import {
   X, Search,
 } from 'lucide-react';
 
-const TOKEN = localStorage.getItem('authToken') || '';
-const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` };
+const getHeaders = async (method = 'GET') => {
+  const token = localStorage.getItem('authToken') || '';
+  const h: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+  if (!['GET','HEAD','OPTIONS'].includes(method.toUpperCase())) {
+    try { const r = await fetch('/api/csrf-token', { credentials: 'include' }); if (r.ok) { h['x-csrf-token'] = (await r.json()).token; } } catch {}
+  }
+  return h;
+};
 
 interface MaintenanceSchedule {
   _id: string;
@@ -39,10 +45,10 @@ export const AssetMaintenance: React.FC = () => {
     setLoading(true);
     try {
       const [allRes, upRes, odRes, costRes] = await Promise.all([
-        fetch('/api/accounting/asset-maintenance', { headers }),
-        fetch('/api/accounting/asset-maintenance/upcoming?days=30', { headers }),
-        fetch('/api/accounting/asset-maintenance/overdue', { headers }),
-        fetch('/api/accounting/asset-maintenance/stats/cost-summary', { headers }),
+        fetch('/api/accounting/asset-maintenance', { headers: await getHeaders() }),
+        fetch('/api/accounting/asset-maintenance/upcoming?days=30', { headers: await getHeaders() }),
+        fetch('/api/accounting/asset-maintenance/overdue', { headers: await getHeaders() }),
+        fetch('/api/accounting/asset-maintenance/stats/cost-summary', { headers: await getHeaders() }),
       ]);
       if (allRes.ok) { const d = await allRes.json(); setSchedules(d.items || []); }
       if (upRes.ok) setUpcoming(await upRes.json());
@@ -57,7 +63,7 @@ export const AssetMaintenance: React.FC = () => {
   const create = async () => {
     try {
       const res = await fetch('/api/accounting/asset-maintenance', {
-        method: 'POST', headers, body: JSON.stringify(form),
+        method: 'POST', headers: await getHeaders('POST'), body: JSON.stringify(form),
       });
       if (res.ok) { setShowCreate(false); fetchAll(); }
     } catch { /* empty */ }
@@ -67,7 +73,7 @@ export const AssetMaintenance: React.FC = () => {
     if (!showRecord) return;
     try {
       const res = await fetch(`/api/accounting/asset-maintenance/${showRecord}/record`, {
-        method: 'POST', headers, body: JSON.stringify(recordForm),
+        method: 'POST', headers: await getHeaders('POST'), body: JSON.stringify(recordForm),
       });
       if (res.ok) { setShowRecord(null); setRecordForm({ cost: 0, performed_by: '', notes: '' }); fetchAll(); }
     } catch { /* empty */ }

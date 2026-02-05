@@ -4,21 +4,32 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/a
 
 class ApiService {
   private axiosInstance: AxiosInstance;
+  private csrfToken: string | null = null;
 
   constructor() {
     this.axiosInstance = axios.create({
       baseURL: API_BASE_URL,
       timeout: 30000,
+      withCredentials: true,
       headers: {
         'Content-Type': 'application/json',
       },
     });
 
-    // Add auth token to requests
-    this.axiosInstance.interceptors.request.use((config) => {
+    // Add auth token and CSRF token to requests
+    this.axiosInstance.interceptors.request.use(async (config) => {
       const token = localStorage.getItem('authToken');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
+      }
+      // Attach CSRF token for mutating requests
+      if (config.method && !['get', 'head', 'options'].includes(config.method)) {
+        if (!this.csrfToken) {
+          await this.fetchCsrfToken();
+        }
+        if (this.csrfToken) {
+          config.headers['x-csrf-token'] = this.csrfToken;
+        }
       }
       return config;
     });
@@ -58,6 +69,10 @@ class ApiService {
           } else if (status === 400) {
             error.userMessage = data?.error || data?.message || 'Invalid request. Please check your input.';
           } else if (status === 403) {
+            // CSRF token may have expired - clear it so it's re-fetched on next request
+            if (error.response?.data?.error?.includes('CSRF')) {
+              this.csrfToken = null;
+            }
             error.userMessage = 'You do not have permission to perform this action.';
           } else if (status === 500) {
             error.userMessage = data?.error || data?.message || 'Internal server error. Please try again later or contact support.';
@@ -72,6 +87,16 @@ class ApiService {
         return Promise.reject(error);
       }
     );
+  }
+
+  private async fetchCsrfToken() {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/csrf-token`, { withCredentials: true });
+      this.csrfToken = response.data.token;
+    } catch {
+      // CSRF endpoint may not exist in development
+      this.csrfToken = null;
+    }
   }
 
   // Generic CRUD methods

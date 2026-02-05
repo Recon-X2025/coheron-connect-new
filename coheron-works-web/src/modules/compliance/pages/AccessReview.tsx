@@ -21,6 +21,9 @@ interface UserPermission {
   is_active: boolean;
 }
 
+let _csrf: string | null = null;
+const getCsrf = async () => { if (_csrf) return _csrf; try { const r = await fetch('/api/csrf-token', { credentials: 'include' }); if (r.ok) { _csrf = (await r.json()).token; } } catch {} return _csrf; };
+
 const authHeaders = () => ({
   Authorization: `Bearer ${localStorage.getItem('authToken')}`,
   'Content-Type': 'application/json',
@@ -55,11 +58,11 @@ export default function AccessReview() {
     fetchUsers();
   }, []);
 
-  const terminateSession = (sessionId: string) => {
+  const terminateSession = async (sessionId: string) => {
     if (!confirm('Terminate this session?')) return;
     fetch(`/api/security-dashboard/sessions/${sessionId}`, {
       method: 'DELETE',
-      headers: authHeaders(),
+      headers: { ...authHeaders(), 'x-csrf-token': await getCsrf() || '' },
     }).then(() => fetchSessions());
   };
 

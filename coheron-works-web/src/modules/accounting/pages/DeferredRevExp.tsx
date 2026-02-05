@@ -3,8 +3,14 @@ import {
   Clock, Plus, X, Search, CheckCircle, Trash2, Play, BarChart3,
 } from 'lucide-react';
 
-const TOKEN = localStorage.getItem('authToken') || '';
-const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` };
+const getHeaders = async (method = 'GET') => {
+  const token = localStorage.getItem('authToken') || '';
+  const h: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+  if (!['GET','HEAD','OPTIONS'].includes(method.toUpperCase())) {
+    try { const r = await fetch('/api/csrf-token', { credentials: 'include' }); if (r.ok) { h['x-csrf-token'] = (await r.json()).token; } } catch {}
+  }
+  return h;
+};
 
 interface Period { period: string; amount: number; status: string; recognition_date?: string; }
 interface Schedule { _id: string; type: string; source_document_type: string; description: string; total_amount: number; start_date: string; end_date: string; periods: Period[]; method: string; status: string; }
@@ -27,8 +33,8 @@ export const DeferredRevExp: React.FC = () => {
     setLoading(true);
     try {
       const [lRes, sRes] = await Promise.all([
-        fetch('/api/accounting/deferred', { headers }),
-        fetch('/api/accounting/deferred/summary', { headers }),
+        fetch('/api/accounting/deferred', { headers: await getHeaders() }),
+        fetch('/api/accounting/deferred/summary', { headers: await getHeaders() }),
       ]);
       if (lRes.ok) { const d = await lRes.json(); setSchedules(d.items || []); }
       if (sRes.ok) setSummary(await sRes.json());
@@ -39,26 +45,26 @@ export const DeferredRevExp: React.FC = () => {
   useEffect(() => { fetchAll(); }, []);
 
   const create = async () => {
-    const res = await fetch('/api/accounting/deferred', { method: 'POST', headers, body: JSON.stringify(form) });
+    const res = await fetch('/api/accounting/deferred', { method: 'POST', headers: await getHeaders('POST'), body: JSON.stringify(form) });
     if (res.ok) { setShowCreate(false); fetchAll(); }
   };
 
   const remove = async (id: string) => {
-    await fetch(`/api/accounting/deferred/schedules/${id}`, { method: 'DELETE', headers });
+    await fetch(`/api/accounting/deferred/schedules/${id}`, { method: 'DELETE', headers: await getHeaders('DELETE') });
     fetchAll();
   };
 
   const recognizePeriod = async (scheduleId: string, period: string) => {
-    await fetch('/api/accounting/deferred/recognize-period', { method: 'POST', headers, body: JSON.stringify({ schedule_id: scheduleId, period }) });
+    await fetch('/api/accounting/deferred/recognize-period', { method: 'POST', headers: await getHeaders('POST'), body: JSON.stringify({ schedule_id: scheduleId, period }) });
     if (selectedSchedule) {
-      const res = await fetch(`/api/accounting/deferred/schedules/${scheduleId}`, { headers });
+      const res = await fetch(`/api/accounting/deferred/schedules/${scheduleId}`, { headers: await getHeaders() });
       if (res.ok) setSelectedSchedule(await res.json());
     }
     fetchAll();
   };
 
   const autoRecognize = async () => {
-    const res = await fetch('/api/accounting/deferred/auto-recognize', { method: 'POST', headers });
+    const res = await fetch('/api/accounting/deferred/auto-recognize', { method: 'POST', headers: await getHeaders('POST') });
     if (res.ok) { const d = await res.json(); alert(`Recognized ${d.recognized_periods} periods`); fetchAll(); }
   };
 

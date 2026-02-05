@@ -3,8 +3,13 @@ import { Shield, Plus, Trash2, GripVertical, ToggleLeft, ToggleRight, Play, X, U
 
 const API = '/api/crm/assignment-rules';
 const getToken = () => localStorage.getItem('authToken') || '';
+let _csrf: string | null = null;
+const getCsrf = async () => { if (_csrf) return _csrf; try { const r = await fetch('/api/csrf-token', { credentials: 'include' }); if (r.ok) { _csrf = (await r.json()).token; } } catch {} return _csrf; };
 const apiFetch = async (path: string, opts?: RequestInit) => {
-  const res = await fetch(`${API}${path}`, { ...opts, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}`, ...(opts?.headers || {}) } });
+  const method = (opts?.method || 'GET').toUpperCase();
+  const hdrs: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}`, ...((opts?.headers as any) || {}) };
+  if (!['GET','HEAD','OPTIONS'].includes(method)) { const c = await getCsrf(); if (c) hdrs['x-csrf-token'] = c; }
+  const res = await fetch(`${API}${path}`, { ...opts, headers: hdrs, credentials: 'include' });
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
 };

@@ -51,8 +51,14 @@ function parseDate(s: string) {
   return new Date(s);
 }
 
-const TOKEN = localStorage.getItem('authToken') || '';
-const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` };
+const getHeaders = async (method = 'GET') => {
+  const token = localStorage.getItem('authToken') || '';
+  const h: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+  if (!['GET','HEAD','OPTIONS'].includes(method.toUpperCase())) {
+    try { const r = await fetch('/api/csrf-token', { credentials: 'include' }); if (r.ok) { h['x-csrf-token'] = (await r.json()).token; } } catch {}
+  }
+  return h;
+};
 
 // ── Component ───────────────────────────────────────────────────────
 
@@ -77,7 +83,7 @@ export const InteractiveGantt: React.FC<{ projectId?: string }> = ({ projectId }
     if (!pid) { setError('No project ID'); setLoading(false); return; }
     try {
       setLoading(true);
-      const res = await fetch(`/api/projects/gantt/${pid}`, { headers });
+      const res = await fetch(`/api/projects/gantt/${pid}`, { headers: await getHeaders() });
       if (!res.ok) throw new Error('Failed to load gantt data');
       const data = await res.json();
       setTasks(data.tasks || []);
@@ -202,7 +208,7 @@ export const InteractiveGantt: React.FC<{ projectId?: string }> = ({ projectId }
     if (task) {
       try {
         await fetch(`/api/projects/gantt/${pid}/tasks/${task.id}`, {
-          method: 'PUT', headers, body: JSON.stringify({ start: task.start, end: task.end }),
+          method: 'PUT', headers: await getHeaders('PUT'), body: JSON.stringify({ start: task.start, end: task.end }),
         });
       } catch { /* silent */ }
     }
@@ -233,7 +239,7 @@ export const InteractiveGantt: React.FC<{ projectId?: string }> = ({ projectId }
     // Persist via API (best effort)
     try {
       await fetch(`/api/projects/tasks`, {
-        method: 'POST', headers,
+        method: 'POST', headers: await getHeaders('POST'),
         body: JSON.stringify({ project_id: pid, name: newTaskName, planned_start_date: start, planned_end_date: end }),
       });
       fetchData();

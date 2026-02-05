@@ -3,8 +3,13 @@ import { ChefHat, Clock, Flame, CheckCircle, AlertCircle, Monitor } from 'lucide
 
 const API_BASE = '/api/pos/kitchen';
 const getToken = () => localStorage.getItem('authToken') || '';
+let _csrf: string | null = null;
+const getCsrf = async () => { if (_csrf) return _csrf; try { const r = await fetch('/api/csrf-token', { credentials: 'include' }); if (r.ok) { _csrf = (await r.json()).token; } } catch {} return _csrf; };
 const apiFetch = async (path: string, options?: RequestInit) => {
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}`, ...(options?.headers || {}) } });
+  const method = (options?.method || 'GET').toUpperCase();
+  const hdrs: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}`, ...((options?.headers as any) || {}) };
+  if (!['GET','HEAD','OPTIONS'].includes(method)) { const c = await getCsrf(); if (c) hdrs['x-csrf-token'] = c; }
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers: hdrs, credentials: 'include' });
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();
 };

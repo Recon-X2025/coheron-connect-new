@@ -3,8 +3,14 @@ import {
   Bot, ToggleLeft, ToggleRight, Sliders, MessageSquare, Send, AlertCircle, CheckCircle,
 } from 'lucide-react';
 
-const TOKEN = localStorage.getItem('authToken') || '';
-const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` };
+const getHeaders = async (method = 'GET') => {
+  const token = localStorage.getItem('authToken') || '';
+  const h: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+  if (!['GET','HEAD','OPTIONS'].includes(method.toUpperCase())) {
+    try { const r = await fetch('/api/csrf-token', { credentials: 'include' }); if (r.ok) { h['x-csrf-token'] = (await r.json()).token; } } catch {}
+  }
+  return h;
+};
 
 interface Config {
   enabled: boolean;
@@ -41,8 +47,8 @@ export const AIAutoResponseSettings: React.FC = () => {
     (async () => {
       try {
         const [cfgRes, statsRes] = await Promise.all([
-          fetch('/api/support/ai-auto-response/config', { headers }),
-          fetch('/api/support/ai-auto-response/stats', { headers }),
+          fetch('/api/support/ai-auto-response/config', { headers: await getHeaders() }),
+          fetch('/api/support/ai-auto-response/stats', { headers: await getHeaders() }),
         ]);
         if (cfgRes.ok) { const d = await cfgRes.json(); setConfig(d); }
         if (statsRes.ok) { const d = await statsRes.json(); setStats(d); }
@@ -55,7 +61,7 @@ export const AIAutoResponseSettings: React.FC = () => {
     setSaving(true);
     try {
       const res = await fetch('/api/support/ai-auto-response/config', {
-        method: 'PUT', headers, body: JSON.stringify(config),
+        method: 'PUT', headers: await getHeaders('PUT'), body: JSON.stringify(config),
       });
       if (res.ok) { const d = await res.json(); setConfig(d); }
     } catch { /* empty */ }
@@ -68,7 +74,7 @@ export const AIAutoResponseSettings: React.FC = () => {
     setTestResult(null);
     try {
       const res = await fetch('/api/support/ai-auto-response/suggest', {
-        method: 'POST', headers,
+        method: 'POST', headers: await getHeaders('POST'),
         body: JSON.stringify({ subject: testSubject, description: testDescription }),
       });
       if (res.ok) setTestResult(await res.json());

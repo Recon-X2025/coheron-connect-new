@@ -3,8 +3,14 @@ import {
   Building2, Plus, Play, FileText, Trash2, X, Search, Eye,
 } from 'lucide-react';
 
-const TOKEN = localStorage.getItem('authToken') || '';
-const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` };
+const getHeaders = async (method = 'GET') => {
+  const token = localStorage.getItem('authToken') || '';
+  const h: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+  if (!['GET','HEAD','OPTIONS'].includes(method.toUpperCase())) {
+    try { const r = await fetch('/api/csrf-token', { credentials: 'include' }); if (r.ok) { h['x-csrf-token'] = (await r.json()).token; } } catch {}
+  }
+  return h;
+};
 
 interface Subsidiary { entity_name: string; entity_id: string; ownership_percentage: number; currency: string; elimination_required: boolean; }
 interface Group { _id: string; name: string; parent_entity: string; subsidiaries: Subsidiary[]; consolidation_currency: string; is_active: boolean; }
@@ -26,8 +32,8 @@ export const Consolidation: React.FC = () => {
     setLoading(true);
     try {
       const [gRes, rRes] = await Promise.all([
-        fetch('/api/accounting/consolidation/groups', { headers }),
-        fetch('/api/accounting/consolidation/runs', { headers }),
+        fetch('/api/accounting/consolidation/groups', { headers: await getHeaders() }),
+        fetch('/api/accounting/consolidation/runs', { headers: await getHeaders() }),
       ]);
       if (gRes.ok) { const d = await gRes.json(); setGroups(d.items || []); }
       if (rRes.ok) { const d = await rRes.json(); setRuns(d.items || []); }
@@ -38,27 +44,27 @@ export const Consolidation: React.FC = () => {
   useEffect(() => { fetchAll(); }, []);
 
   const createGroup = async () => {
-    const res = await fetch('/api/accounting/consolidation/groups', { method: 'POST', headers, body: JSON.stringify(groupForm) });
+    const res = await fetch('/api/accounting/consolidation/groups', { method: 'POST', headers: await getHeaders('POST'), body: JSON.stringify(groupForm) });
     if (res.ok) { setShowCreateGroup(false); fetchAll(); }
   };
 
   const createRun = async () => {
-    const res = await fetch('/api/accounting/consolidation/runs', { method: 'POST', headers, body: JSON.stringify(runForm) });
+    const res = await fetch('/api/accounting/consolidation/runs', { method: 'POST', headers: await getHeaders('POST'), body: JSON.stringify(runForm) });
     if (res.ok) { setShowCreateRun(false); fetchAll(); }
   };
 
   const executeRun = async (id: string) => {
-    await fetch(`/api/accounting/consolidation/runs/${id}/execute`, { method: 'POST', headers });
+    await fetch(`/api/accounting/consolidation/runs/${id}/execute`, { method: 'POST', headers: await getHeaders('POST') });
     fetchAll();
   };
 
   const viewReport = async (id: string) => {
-    const res = await fetch(`/api/accounting/consolidation/runs/${id}/report`, { headers });
+    const res = await fetch(`/api/accounting/consolidation/runs/${id}/report`, { headers: await getHeaders() });
     if (res.ok) setSelectedRun(await res.json());
   };
 
-  const deleteGroup = async (id: string) => { await fetch(`/api/accounting/consolidation/groups/${id}`, { method: 'DELETE', headers }); fetchAll(); };
-  const deleteRun = async (id: string) => { await fetch(`/api/accounting/consolidation/runs/${id}`, { method: 'DELETE', headers }); fetchAll(); };
+  const deleteGroup = async (id: string) => { await fetch(`/api/accounting/consolidation/groups/${id}`, { method: 'DELETE', headers: await getHeaders('DELETE') }); fetchAll(); };
+  const deleteRun = async (id: string) => { await fetch(`/api/accounting/consolidation/runs/${id}`, { method: 'DELETE', headers: await getHeaders('DELETE') }); fetchAll(); };
 
   const statusColor = (s: string) => s === 'completed' ? '#00C971' : s === 'in_progress' ? '#3b82f6' : s === 'failed' ? '#ef4444' : '#f59e0b';
 

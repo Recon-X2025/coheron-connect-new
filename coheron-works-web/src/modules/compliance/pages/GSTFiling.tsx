@@ -12,6 +12,9 @@ const s = {
   tab: (active: boolean) => ({ padding: '10px 20px', cursor: 'pointer', borderBottom: active ? '2px solid #00C971' : '2px solid transparent', color: active ? '#00C971' : '#888', fontWeight: active ? 600 : 400, background: 'none', border: 'none' }) as React.CSSProperties,
 };
 
+let _csrf: string | null = null;
+const getCsrf = async () => { if (_csrf) return _csrf; try { const r = await fetch('/api/csrf-token', { credentials: 'include' }); if (r.ok) { _csrf = (await r.json()).token; } } catch {} return _csrf; };
+
 export const GSTFiling: React.FC = () => {
   const [tab, setTab] = useState<'gstr1' | 'gstr3b'>('gstr1');
   const [period, setPeriod] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; });
@@ -25,7 +28,7 @@ export const GSTFiling: React.FC = () => {
       const endpoint = tab === 'gstr1' ? '/api/compliance/gst/gstr1/generate' : '/api/compliance/gst/gstr3b/generate';
       const res = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, 'x-csrf-token': await getCsrf() || '' },
         body: JSON.stringify({ period }),
       });
       setData(await res.json());

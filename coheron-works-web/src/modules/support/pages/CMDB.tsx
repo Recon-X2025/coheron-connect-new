@@ -3,9 +3,17 @@ import {
   Server, Plus, Search, AlertTriangle, X, GitBranch, 
 } from 'lucide-react';
 
-const TOKEN = localStorage.getItem('authToken') || '';
-const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` };
-const apiFetch = (url: string, opts?: any) => fetch(url, { headers, ...opts });
+const getToken = () => localStorage.getItem('authToken') || '';
+let _csrf: string | null = null;
+const getCsrf = async () => { if (_csrf) return _csrf; try { const r = await fetch('/api/csrf-token', { credentials: 'include' }); if (r.ok) { _csrf = (await r.json()).token; } } catch {} return _csrf; };
+const apiFetch = async (url: string, options?: RequestInit) => {
+  const method = (options?.method || 'GET').toUpperCase();
+  const hdrs: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}`, ...((options?.headers as any) || {}) };
+  if (!['GET','HEAD','OPTIONS'].includes(method)) { const c = await getCsrf(); if (c) hdrs['x-csrf-token'] = c; }
+  const res = await fetch(url, { ...options, headers: hdrs, credentials: 'include' });
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json();
+};
 
 interface CI { _id: string; name: string; ci_type: string; status: string; environment: string; owner_id?: any; department: string; location: string; ip_address: string; serial_number: string; manufacturer: string; model: string; purchase_date?: string; warranty_expiry?: string; criticality: string; tags: string[]; attributes: any; }
 interface Relationship { _id: string; source_ci_id: any; target_ci_id: any; relationship_type: string; description: string; is_active: boolean; }

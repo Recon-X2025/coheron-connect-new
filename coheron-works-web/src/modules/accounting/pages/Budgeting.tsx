@@ -3,8 +3,14 @@ import {
   PiggyBank, Plus, CheckCircle, BarChart3, Trash2, X, Eye, Search,
 } from 'lucide-react';
 
-const TOKEN = localStorage.getItem('authToken') || '';
-const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` };
+const getHeaders = async (method = 'GET') => {
+  const token = localStorage.getItem('authToken') || '';
+  const h: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+  if (!['GET','HEAD','OPTIONS'].includes(method.toUpperCase())) {
+    try { const r = await fetch('/api/csrf-token', { credentials: 'include' }); if (r.ok) { h['x-csrf-token'] = (await r.json()).token; } } catch {}
+  }
+  return h;
+};
 
 interface BudgetLine {
   account_id: string;
@@ -46,8 +52,8 @@ export const Budgeting: React.FC = () => {
     setLoading(true);
     try {
       const [listRes, summaryRes] = await Promise.all([
-        fetch('/api/accounting/budgeting', { headers }),
-        fetch('/api/accounting/budgeting/summary', { headers }),
+        fetch('/api/accounting/budgeting', { headers: await getHeaders() }),
+        fetch('/api/accounting/budgeting/summary', { headers: await getHeaders() }),
       ]);
       if (listRes.ok) { const d = await listRes.json(); setBudgets(d.items || []); }
       if (summaryRes.ok) setSummary(await summaryRes.json());
@@ -59,23 +65,23 @@ export const Budgeting: React.FC = () => {
 
   const create = async () => {
     try {
-      const res = await fetch('/api/accounting/budgeting', { method: 'POST', headers, body: JSON.stringify(form) });
+      const res = await fetch('/api/accounting/budgeting', { method: 'POST', headers: await getHeaders('POST'), body: JSON.stringify(form) });
       if (res.ok) { setShowCreate(false); setForm({ name: '', fiscal_year_id: '', lines: [{ account_id: '', cost_center_id: '', period: '', budgeted_amount: 0 }] }); fetchAll(); }
     } catch { /* empty */ }
   };
 
   const approve = async (id: string) => {
-    await fetch(`/api/accounting/budgeting/${id}/approve`, { method: 'POST', headers });
+    await fetch(`/api/accounting/budgeting/${id}/approve`, { method: 'POST', headers: await getHeaders('POST') });
     fetchAll();
   };
 
   const remove = async (id: string) => {
-    await fetch(`/api/accounting/budgeting/${id}`, { method: 'DELETE', headers });
+    await fetch(`/api/accounting/budgeting/${id}`, { method: 'DELETE', headers: await getHeaders('DELETE') });
     fetchAll();
   };
 
   const loadVariance = async (id: string) => {
-    const res = await fetch(`/api/accounting/budgeting/${id}/variance-report`, { headers });
+    const res = await fetch(`/api/accounting/budgeting/${id}/variance-report`, { headers: await getHeaders() });
     if (res.ok) { const d = await res.json(); setVarianceReport(d.lines); }
   };
 

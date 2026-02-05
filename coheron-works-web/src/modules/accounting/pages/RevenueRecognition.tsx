@@ -3,8 +3,14 @@ import {
   TrendingUp, Plus, X, Search, Calendar, FileText, CheckCircle, Trash2,
 } from 'lucide-react';
 
-const TOKEN = localStorage.getItem('authToken') || '';
-const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` };
+const getHeaders = async (method = 'GET') => {
+  const token = localStorage.getItem('authToken') || '';
+  const h: Record<string, string> = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+  if (!['GET','HEAD','OPTIONS'].includes(method.toUpperCase())) {
+    try { const r = await fetch('/api/csrf-token', { credentials: 'include' }); if (r.ok) { h['x-csrf-token'] = (await r.json()).token; } } catch {}
+  }
+  return h;
+};
 
 interface Obligation { description: string; standalone_price: number; allocated_price: number; recognition_method: string; progress_measure: string; is_satisfied: boolean; }
 interface Contract { _id: string; contract_number: string; customer_id: string; start_date: string; end_date: string; total_value: number; performance_obligations: Obligation[]; status: string; }
@@ -30,9 +36,9 @@ export const RevenueRecognition: React.FC = () => {
     setLoading(true);
     try {
       const [cRes, wRes, uRes] = await Promise.all([
-        fetch('/api/accounting/revenue-recognition/contracts', { headers }),
-        fetch('/api/accounting/revenue-recognition/waterfall', { headers }),
-        fetch('/api/accounting/revenue-recognition/unbilled-revenue', { headers }),
+        fetch('/api/accounting/revenue-recognition/contracts', { headers: await getHeaders() }),
+        fetch('/api/accounting/revenue-recognition/waterfall', { headers: await getHeaders() }),
+        fetch('/api/accounting/revenue-recognition/unbilled-revenue', { headers: await getHeaders() }),
       ]);
       if (cRes.ok) { const d = await cRes.json(); setContracts(d.items || []); }
       if (wRes.ok) { const d = await wRes.json(); setWaterfall(d.periods || []); }
@@ -44,23 +50,23 @@ export const RevenueRecognition: React.FC = () => {
   useEffect(() => { fetchAll(); }, []);
 
   const create = async () => {
-    const res = await fetch('/api/accounting/revenue-recognition/contracts', { method: 'POST', headers, body: JSON.stringify(form) });
+    const res = await fetch('/api/accounting/revenue-recognition/contracts', { method: 'POST', headers: await getHeaders('POST'), body: JSON.stringify(form) });
     if (res.ok) { setShowCreate(false); fetchAll(); }
   };
 
   const remove = async (id: string) => {
-    await fetch(`/api/accounting/revenue-recognition/contracts/${id}`, { method: 'DELETE', headers });
+    await fetch(`/api/accounting/revenue-recognition/contracts/${id}`, { method: 'DELETE', headers: await getHeaders('DELETE') });
     fetchAll();
   };
 
   const loadSchedule = async (c: Contract) => {
     setSelectedContract(c);
-    const res = await fetch(`/api/accounting/revenue-recognition/contracts/${c._id}/schedule`, { headers });
+    const res = await fetch(`/api/accounting/revenue-recognition/contracts/${c._id}/schedule`, { headers: await getHeaders() });
     if (res.ok) { const d = await res.json(); setSchedule(d.items || []); }
   };
 
   const recognize = async (contractId: string, period: string) => {
-    await fetch(`/api/accounting/revenue-recognition/contracts/${contractId}/recognize`, { method: 'POST', headers, body: JSON.stringify({ period }) });
+    await fetch(`/api/accounting/revenue-recognition/contracts/${contractId}/recognize`, { method: 'POST', headers: await getHeaders('POST'), body: JSON.stringify({ period }) });
     if (selectedContract) loadSchedule(selectedContract);
     fetchAll();
   };

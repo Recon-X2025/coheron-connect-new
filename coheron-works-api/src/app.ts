@@ -111,8 +111,16 @@ if (process.env.NODE_ENV === 'production') {
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
       return next();
     }
+    // Skip CSRF for auth routes (no session yet, protected by rate limiter)
+    if (req.path.startsWith('/api/auth/')) {
+      return next();
+    }
     // Skip CSRF for public portal endpoints (uses its own JWT auth)
     if (req.path.startsWith('/api/support/portal/')) {
+      return next();
+    }
+    // Skip CSRF for public e-signature signing/decline routes
+    if (req.path.match(/\/api\/esignature\/documents\/[^/]+\/(sign|decline)\//)) {
       return next();
     }
     try {

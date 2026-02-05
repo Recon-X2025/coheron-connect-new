@@ -11,6 +11,9 @@ const s = {
   btnDanger: { background: '#1e1e1e', border: '1px solid #ef4444', color: '#ef4444', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6 } as React.CSSProperties,
 };
 
+let _csrf: string | null = null;
+const getCsrf = async () => { if (_csrf) return _csrf; try { const r = await fetch('/api/csrf-token', { credentials: 'include' }); if (r.ok) { _csrf = (await r.json()).token; } } catch {} return _csrf; };
+
 export const EInvoicing: React.FC = () => {
   const [invoiceId, setInvoiceId] = useState('');
   const [result, setResult] = useState<any>(null);
@@ -24,7 +27,7 @@ export const EInvoicing: React.FC = () => {
     try {
       const res = await fetch(`${API_BASE}/api/compliance/einvoice/generate/${invoiceId}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, 'x-csrf-token': await getCsrf() || '' },
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed');
@@ -41,7 +44,7 @@ export const EInvoicing: React.FC = () => {
     try {
       const res = await fetch(`${API_BASE}/api/compliance/einvoice/cancel/${invoiceId}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, 'x-csrf-token': await getCsrf() || '' },
         body: JSON.stringify({ reason: 'Cancelled by user' }),
       });
       const data = await res.json();
