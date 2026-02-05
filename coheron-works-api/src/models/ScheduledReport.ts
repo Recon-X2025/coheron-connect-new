@@ -38,4 +38,4 @@ const schema = new Schema<IScheduledReport>({
 
 schema.index({ tenant_id: 1, is_active: 1, next_run: 1 });
 
-export default mongoose.model<IScheduledReport>('ScheduledReport', schema);
+export default mongoose.models.ScheduledReport as mongoose.Model<IScheduledReport> || mongoose.model<IScheduledReport>('ScheduledReport', schema);

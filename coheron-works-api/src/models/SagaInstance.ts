@@ -39,4 +39,4 @@ const SagaInstanceSchema = new Schema<ISagaInstance>(
 
 SagaInstanceSchema.index({ status: 1, timeout_at: 1 });
 
-export default mongoose.model<ISagaInstance>('SagaInstance', SagaInstanceSchema);
+export default mongoose.models.SagaInstance as mongoose.Model<ISagaInstance> || mongoose.model<ISagaInstance>('SagaInstance', SagaInstanceSchema);

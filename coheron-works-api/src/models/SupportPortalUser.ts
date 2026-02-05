@@ -27,4 +27,4 @@ const SupportPortalUserSchema = new Schema<ISupportPortalUser>(
 
 SupportPortalUserSchema.index({ tenant_id: 1, email: 1 }, { unique: true });
 
-export default mongoose.model<ISupportPortalUser>('SupportPortalUser', SupportPortalUserSchema);
+export default mongoose.models.SupportPortalUser as mongoose.Model<ISupportPortalUser> || mongoose.model<ISupportPortalUser>('SupportPortalUser', SupportPortalUserSchema);

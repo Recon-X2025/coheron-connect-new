@@ -19,4 +19,4 @@ packingTaskSchema.index({ state: 1 });
 packingTaskSchema.index({ order_id: 1 });
 packingTaskSchema.index({ created_at: -1 });
 
-export default mongoose.model<IPackingTask>('PackingTask', packingTaskSchema);
+export default mongoose.models.PackingTask as mongoose.Model<IPackingTask> || mongoose.model<IPackingTask>('PackingTask', packingTaskSchema);

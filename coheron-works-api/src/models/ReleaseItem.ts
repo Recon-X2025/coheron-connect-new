@@ -18,4 +18,4 @@ releaseItemSchema.index({ release_id: 1, backlog_item_id: 1 }, { unique: true })
 // Indexes (compound unique index above already covers release_id + backlog_item_id)
 releaseItemSchema.index({ backlog_item_id: 1 });
 
-export default mongoose.model<IReleaseItem>('ReleaseItem', releaseItemSchema);
+export default mongoose.models.ReleaseItem as mongoose.Model<IReleaseItem> || mongoose.model<IReleaseItem>('ReleaseItem', releaseItemSchema);

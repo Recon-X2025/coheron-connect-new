@@ -30,4 +30,4 @@ projectRevenueRecognitionSchema.index({ project_id: 1, recognition_date: -1 });
 projectRevenueRecognitionSchema.index({ accounting_period: 1 });
 projectRevenueRecognitionSchema.index({ created_at: -1 });
 
-export default mongoose.model<IProjectRevenueRecognition>('ProjectRevenueRecognition', projectRevenueRecognitionSchema);
+export default mongoose.models.ProjectRevenueRecognition as mongoose.Model<IProjectRevenueRecognition> || mongoose.model<IProjectRevenueRecognition>('ProjectRevenueRecognition', projectRevenueRecognitionSchema);

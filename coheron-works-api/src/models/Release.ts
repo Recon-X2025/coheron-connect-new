@@ -27,4 +27,4 @@ releaseSchema.index({ status: 1 });
 releaseSchema.index({ release_date: -1 });
 releaseSchema.index({ project_id: 1, status: 1 });
 
-export default mongoose.model<IRelease>('Release', releaseSchema);
+export default mongoose.models.Release as mongoose.Model<IRelease> || mongoose.model<IRelease>('Release', releaseSchema);

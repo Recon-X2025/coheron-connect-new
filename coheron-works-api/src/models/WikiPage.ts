@@ -39,4 +39,4 @@ wikiPageSchema.index({ is_published: 1 });
 wikiPageSchema.index({ created_at: -1 });
 wikiPageSchema.index({ space_id: 1, is_published: 1 });
 
-export default mongoose.model<IWikiPage>('WikiPage', wikiPageSchema);
+export default mongoose.models.WikiPage as mongoose.Model<IWikiPage> || mongoose.model<IWikiPage>('WikiPage', wikiPageSchema);

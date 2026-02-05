@@ -26,4 +26,4 @@ stockReorderSuggestionSchema.index({ warehouse_id: 1 });
 stockReorderSuggestionSchema.index({ state: 1 });
 stockReorderSuggestionSchema.index({ state: 1, created_at: -1 });
 
-export default mongoose.model<IStockReorderSuggestion>('StockReorderSuggestion', stockReorderSuggestionSchema);
+export default mongoose.models.StockReorderSuggestion as mongoose.Model<IStockReorderSuggestion> || mongoose.model<IStockReorderSuggestion>('StockReorderSuggestion', stockReorderSuggestionSchema);

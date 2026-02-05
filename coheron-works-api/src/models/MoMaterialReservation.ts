@@ -25,4 +25,4 @@ schema.index({ bom_line_id: 1 });
 schema.index({ state: 1 });
 schema.index({ mo_id: 1, state: 1 });
 
-export default mongoose.model<IMoMaterialReservation>('MoMaterialReservation', schema);
+export default mongoose.models.MoMaterialReservation as mongoose.Model<IMoMaterialReservation> || mongoose.model<IMoMaterialReservation>('MoMaterialReservation', schema);

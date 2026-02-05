@@ -74,4 +74,4 @@ workcenterSchema.index({ active: 1 });
 workcenterSchema.index({ company_id: 1 });
 workcenterSchema.index({ workcenter_type: 1 });
 
-export default mongoose.model<IWorkcenter>('Workcenter', workcenterSchema);
+export default mongoose.models.Workcenter as mongoose.Model<IWorkcenter> || mongoose.model<IWorkcenter>('Workcenter', workcenterSchema);

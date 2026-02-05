@@ -29,4 +29,4 @@ projectApprovalSchema.index({ project_id: 1, status: 1 });
 projectApprovalSchema.index({ approval_type: 1 });
 projectApprovalSchema.index({ created_at: -1 });
 
-export default mongoose.model<IProjectApproval>('ProjectApproval', projectApprovalSchema);
+export default mongoose.models.ProjectApproval as mongoose.Model<IProjectApproval> || mongoose.model<IProjectApproval>('ProjectApproval', projectApprovalSchema);

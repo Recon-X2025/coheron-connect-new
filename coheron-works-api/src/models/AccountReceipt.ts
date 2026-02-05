@@ -52,4 +52,4 @@ AccountReceiptSchema.index({ state: 1 });
 AccountReceiptSchema.index({ payment_date: -1 });
 AccountReceiptSchema.index({ state: 1, payment_date: -1 });
 
-export default mongoose.model<IAccountReceipt>('AccountReceipt', AccountReceiptSchema);
+export default mongoose.models.AccountReceipt as mongoose.Model<IAccountReceipt> || mongoose.model<IAccountReceipt>('AccountReceipt', AccountReceiptSchema);

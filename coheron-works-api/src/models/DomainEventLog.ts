@@ -32,4 +32,4 @@ const DomainEventLogSchema = new Schema<IDomainEventLog>(
 // TTL index: auto-delete after 90 days
 DomainEventLogSchema.index({ created_at: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });
 
-export default mongoose.model<IDomainEventLog>('DomainEventLog', DomainEventLogSchema);
+export default mongoose.models.DomainEventLog as mongoose.Model<IDomainEventLog> || mongoose.model<IDomainEventLog>('DomainEventLog', DomainEventLogSchema);

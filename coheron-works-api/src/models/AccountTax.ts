@@ -43,4 +43,4 @@ AccountTaxSchema.index({ refund_account_id: 1 });
 AccountTaxSchema.index({ type_tax_use: 1 });
 AccountTaxSchema.index({ active: 1 });
 
-export default mongoose.model<IAccountTax>('AccountTax', AccountTaxSchema);
+export default mongoose.models.AccountTax as mongoose.Model<IAccountTax> || mongoose.model<IAccountTax>('AccountTax', AccountTaxSchema);

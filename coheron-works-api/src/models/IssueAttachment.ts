@@ -23,4 +23,4 @@ const issueAttachmentSchema = new Schema<IIssueAttachment>({
 issueAttachmentSchema.index({ issue_id: 1 });
 issueAttachmentSchema.index({ uploaded_by: 1 });
 
-export default mongoose.model<IIssueAttachment>('IssueAttachment', issueAttachmentSchema);
+export default mongoose.models.IssueAttachment as mongoose.Model<IIssueAttachment> || mongoose.model<IIssueAttachment>('IssueAttachment', issueAttachmentSchema);

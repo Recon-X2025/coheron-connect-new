@@ -57,11 +57,10 @@ const stockAdjustmentSchema = new Schema<IStockAdjustment>({
   lines: [stockAdjustmentLineSchema],
 }, defaultSchemaOptions);
 
-stockAdjustmentSchema.index({ adjustment_number: 1 }, { unique: true });
 stockAdjustmentSchema.index({ state: 1 });
 stockAdjustmentSchema.index({ adjustment_date: -1 });
 stockAdjustmentSchema.index({ warehouse_id: 1 });
 stockAdjustmentSchema.index({ location_id: 1 });
 stockAdjustmentSchema.index({ state: 1, adjustment_date: -1 });
 
-export default mongoose.model<IStockAdjustment>('StockAdjustment', stockAdjustmentSchema);
+export default mongoose.models.StockAdjustment as mongoose.Model<IStockAdjustment> || mongoose.model<IStockAdjustment>('StockAdjustment', stockAdjustmentSchema);

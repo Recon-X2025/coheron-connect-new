@@ -36,4 +36,4 @@ const routingOperationSchema = new Schema<IRoutingOperation>({
 routingOperationSchema.index({ routing_id: 1, sequence: 1 });
 routingOperationSchema.index({ workcenter_id: 1 });
 
-export default mongoose.model<IRoutingOperation>('RoutingOperation', routingOperationSchema);
+export default mongoose.models.RoutingOperation as mongoose.Model<IRoutingOperation> || mongoose.model<IRoutingOperation>('RoutingOperation', routingOperationSchema);

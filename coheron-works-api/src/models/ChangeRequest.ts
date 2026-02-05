@@ -52,4 +52,4 @@ changeRequestSchema.index({ requested_by: 1 });
 changeRequestSchema.index({ approved_by: 1 });
 changeRequestSchema.index({ created_at: -1 });
 
-export default mongoose.model<IChangeRequest>('ChangeRequest', changeRequestSchema);
+export default mongoose.models.ChangeRequest as mongoose.Model<IChangeRequest> || mongoose.model<IChangeRequest>('ChangeRequest', changeRequestSchema);

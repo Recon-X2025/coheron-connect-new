@@ -52,4 +52,4 @@ AccountPaymentSchema.index({ payment_date: -1 });
 AccountPaymentSchema.index({ state: 1, payment_date: -1 });
 AccountPaymentSchema.index({ payment_type: 1 });
 
-export default mongoose.model<IAccountPayment>('AccountPayment', AccountPaymentSchema);
+export default mongoose.models.AccountPayment as mongoose.Model<IAccountPayment> || mongoose.model<IAccountPayment>('AccountPayment', AccountPaymentSchema);

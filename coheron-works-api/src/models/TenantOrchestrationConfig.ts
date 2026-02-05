@@ -25,4 +25,4 @@ const TenantOrchestrationConfigSchema = new Schema<ITenantOrchestrationConfig>(
   { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } },
 );
 
-export default mongoose.model<ITenantOrchestrationConfig>('TenantOrchestrationConfig', TenantOrchestrationConfigSchema);
+export default mongoose.models.TenantOrchestrationConfig as mongoose.Model<ITenantOrchestrationConfig> || mongoose.model<ITenantOrchestrationConfig>('TenantOrchestrationConfig', TenantOrchestrationConfigSchema);

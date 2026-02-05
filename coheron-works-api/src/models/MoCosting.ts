@@ -22,4 +22,4 @@ const schema = new Schema<IMoCosting>({
 schema.index({ mo_id: 1, cost_type: 1 }, { unique: true });
 schema.index({ cost_type: 1 });
 
-export default mongoose.model<IMoCosting>('MoCosting', schema);
+export default mongoose.models.MoCosting as mongoose.Model<IMoCosting> || mongoose.model<IMoCosting>('MoCosting', schema);

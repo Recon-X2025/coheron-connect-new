@@ -39,4 +39,4 @@ AccountAccountSchema.index({ parent_id: 1 });
 AccountAccountSchema.index({ account_type: 1 });
 AccountAccountSchema.index({ created_at: -1 });
 
-export default mongoose.model<IAccountAccount>('AccountAccount', AccountAccountSchema);
+export default mongoose.models.AccountAccount as mongoose.Model<IAccountAccount> || mongoose.model<IAccountAccount>('AccountAccount', AccountAccountSchema);

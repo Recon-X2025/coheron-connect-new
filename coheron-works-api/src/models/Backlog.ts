@@ -20,4 +20,4 @@ backlogSchema.index({ project_id: 1, issue_id: 1 }, { unique: true });
 backlogSchema.index({ issue_id: 1 });
 backlogSchema.index({ project_id: 1, rank: 1 });
 
-export default mongoose.model<IBacklog>('Backlog', backlogSchema);
+export default mongoose.models.Backlog as mongoose.Model<IBacklog> || mongoose.model<IBacklog>('Backlog', backlogSchema);

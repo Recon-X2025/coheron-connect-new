@@ -44,4 +44,4 @@ const BankFeedSchema = new Schema<IBankFeed>({
 
 BankFeedSchema.index({ tenant_id: 1, provider: 1, provider_account_id: 1 }, { unique: true });
 
-export default mongoose.model<IBankFeed>('BankFeed', BankFeedSchema);
+export default mongoose.models.BankFeed as mongoose.Model<IBankFeed> || mongoose.model<IBankFeed>('BankFeed', BankFeedSchema);

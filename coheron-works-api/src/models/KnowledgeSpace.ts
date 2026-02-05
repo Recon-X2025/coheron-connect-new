@@ -26,4 +26,4 @@ knowledgeSpaceSchema.index({ project_id: 1 });
 knowledgeSpaceSchema.index({ created_by: 1 });
 knowledgeSpaceSchema.index({ is_public: 1 });
 
-export default mongoose.model<IKnowledgeSpace>('KnowledgeSpace', knowledgeSpaceSchema);
+export default mongoose.models.KnowledgeSpace as mongoose.Model<IKnowledgeSpace> || mongoose.model<IKnowledgeSpace>('KnowledgeSpace', knowledgeSpaceSchema);

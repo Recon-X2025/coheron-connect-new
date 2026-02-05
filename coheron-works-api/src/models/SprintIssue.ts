@@ -17,4 +17,4 @@ sprintIssueSchema.index({ sprint_id: 1, issue_id: 1 }, { unique: true });
 // Additional single-field index for querying by issue
 sprintIssueSchema.index({ issue_id: 1 });
 
-export default mongoose.model<ISprintIssue>('SprintIssue', sprintIssueSchema);
+export default mongoose.models.SprintIssue as mongoose.Model<ISprintIssue> || mongoose.model<ISprintIssue>('SprintIssue', sprintIssueSchema);

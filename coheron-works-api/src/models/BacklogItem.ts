@@ -41,4 +41,4 @@ backlogItemSchema.index({ item_type: 1 });
 backlogItemSchema.index({ project_id: 1, status: 1 });
 backlogItemSchema.index({ project_id: 1, sprint_id: 1 });
 
-export default mongoose.model<IBacklogItem>('BacklogItem', backlogItemSchema);
+export default mongoose.models.BacklogItem as mongoose.Model<IBacklogItem> || mongoose.model<IBacklogItem>('BacklogItem', backlogItemSchema);

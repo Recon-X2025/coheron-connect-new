@@ -28,4 +28,4 @@ const AccountCustomerSchema = new Schema<IAccountCustomer>({
 AccountCustomerSchema.index({ payment_term_id: 1 });
 AccountCustomerSchema.index({ is_active: 1 });
 
-export default mongoose.model<IAccountCustomer>('AccountCustomer', AccountCustomerSchema);
+export default mongoose.models.AccountCustomer as mongoose.Model<IAccountCustomer> || mongoose.model<IAccountCustomer>('AccountCustomer', AccountCustomerSchema);

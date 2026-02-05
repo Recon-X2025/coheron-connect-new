@@ -31,4 +31,4 @@ const MNLSchema = new Schema<IMessagingNotificationLog>({
 MNLSchema.index({ tenant_id: 1, platform: 1, sent_at: -1 });
 MNLSchema.index({ tenant_id: 1, entity_type: 1, entity_id: 1 });
 
-export default mongoose.model<IMessagingNotificationLog>('MessagingNotificationLog', MNLSchema);
+export default mongoose.models.MessagingNotificationLog as mongoose.Model<IMessagingNotificationLog> || mongoose.model<IMessagingNotificationLog>('MessagingNotificationLog', MNLSchema);

@@ -30,4 +30,4 @@ schema.index({ operator_id: 1 });
 schema.index({ activity_type: 1 });
 schema.index({ timestamp: -1 });
 
-export default mongoose.model<IMoOperatorActivity>('MoOperatorActivity', schema);
+export default mongoose.models.MoOperatorActivity as mongoose.Model<IMoOperatorActivity> || mongoose.model<IMoOperatorActivity>('MoOperatorActivity', schema);

@@ -45,7 +45,6 @@ const stockReturnSchema = new Schema<IStockReturn>({
   lines: [stockReturnLineSchema],
 }, defaultSchemaOptions);
 
-stockReturnSchema.index({ return_number: 1 }, { unique: true });
 stockReturnSchema.index({ state: 1 });
 stockReturnSchema.index({ return_date: -1 });
 stockReturnSchema.index({ warehouse_id: 1 });
@@ -54,4 +53,4 @@ stockReturnSchema.index({ return_type: 1 });
 stockReturnSchema.index({ qc_status: 1 });
 stockReturnSchema.index({ state: 1, return_date: -1 });
 
-export default mongoose.model<IStockReturn>('StockReturn', stockReturnSchema);
+export default mongoose.models.StockReturn as mongoose.Model<IStockReturn> || mongoose.model<IStockReturn>('StockReturn', stockReturnSchema);

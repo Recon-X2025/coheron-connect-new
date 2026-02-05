@@ -40,4 +40,4 @@ TaxReturnSchema.index({ due_date: 1 });
 TaxReturnSchema.index({ period_start: 1, period_end: 1 });
 TaxReturnSchema.index({ tax_type: 1, state: 1 });
 
-export default mongoose.model<ITaxReturn>('TaxReturn', TaxReturnSchema);
+export default mongoose.models.TaxReturn as mongoose.Model<ITaxReturn> || mongoose.model<ITaxReturn>('TaxReturn', TaxReturnSchema);

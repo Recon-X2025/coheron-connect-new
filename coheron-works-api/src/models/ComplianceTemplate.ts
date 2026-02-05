@@ -19,4 +19,4 @@ const complianceTemplateSchema = new Schema<IComplianceTemplate>({
 complianceTemplateSchema.index({ compliance_standard: 1 });
 complianceTemplateSchema.index({ is_active: 1 });
 
-export default mongoose.model<IComplianceTemplate>('ComplianceTemplate', complianceTemplateSchema);
+export default mongoose.models.ComplianceTemplate as mongoose.Model<IComplianceTemplate> || mongoose.model<IComplianceTemplate>('ComplianceTemplate', complianceTemplateSchema);

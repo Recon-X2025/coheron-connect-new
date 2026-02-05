@@ -33,4 +33,4 @@ qualityChecklistSchema.index({ completed_by: 1 });
 qualityChecklistSchema.index({ project_id: 1, status: 1 });
 qualityChecklistSchema.index({ created_at: -1 });
 
-export default mongoose.model<IQualityChecklist>('QualityChecklist', qualityChecklistSchema);
+export default mongoose.models.QualityChecklist as mongoose.Model<IQualityChecklist> || mongoose.model<IQualityChecklist>('QualityChecklist', qualityChecklistSchema);

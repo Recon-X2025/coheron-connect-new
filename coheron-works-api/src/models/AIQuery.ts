@@ -39,4 +39,4 @@ const aiQuerySchema = new Schema<IAIQuery>({
 aiQuerySchema.index({ tenant_id: 1, user_id: 1, created_at: -1 });
 aiQuerySchema.index({ tenant_id: 1, query_type: 1 });
 
-export default mongoose.model<IAIQuery>('AIQuery', aiQuerySchema);
+export default mongoose.models.AIQuery as mongoose.Model<IAIQuery> || mongoose.model<IAIQuery>('AIQuery', aiQuerySchema);

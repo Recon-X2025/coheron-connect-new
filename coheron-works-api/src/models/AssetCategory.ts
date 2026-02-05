@@ -30,4 +30,4 @@ AssetCategorySchema.index({ account_asset_id: 1 });
 AssetCategorySchema.index({ account_depreciation_id: 1 });
 AssetCategorySchema.index({ account_expense_id: 1 });
 
-export default mongoose.model<IAssetCategory>('AssetCategory', AssetCategorySchema);
+export default mongoose.models.AssetCategory as mongoose.Model<IAssetCategory> || mongoose.model<IAssetCategory>('AssetCategory', AssetCategorySchema);

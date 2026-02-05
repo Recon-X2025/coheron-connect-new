@@ -46,4 +46,4 @@ esignDocumentSchema.index({ created_at: -1 });
 esignDocumentSchema.index({ status: 1, created_at: -1 });
 esignDocumentSchema.index({ expires_at: 1 });
 
-export default mongoose.model<IEsignDocument>('EsignDocument', esignDocumentSchema);
+export default mongoose.models.EsignDocument as mongoose.Model<IEsignDocument> || mongoose.model<IEsignDocument>('EsignDocument', esignDocumentSchema);

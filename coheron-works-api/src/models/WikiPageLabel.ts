@@ -16,4 +16,4 @@ const wikiPageLabelSchema = new Schema<IWikiPageLabel>({
 wikiPageLabelSchema.index({ page_id: 1, label: 1 }, { unique: true });
 wikiPageLabelSchema.index({ label: 1 });
 
-export default mongoose.model<IWikiPageLabel>('WikiPageLabel', wikiPageLabelSchema);
+export default mongoose.models.WikiPageLabel as mongoose.Model<IWikiPageLabel> || mongoose.model<IWikiPageLabel>('WikiPageLabel', wikiPageLabelSchema);

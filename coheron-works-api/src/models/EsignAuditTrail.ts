@@ -27,4 +27,4 @@ esignAuditTrailSchema.index({ signer_id: 1 });
 esignAuditTrailSchema.index({ action: 1 });
 esignAuditTrailSchema.index({ document_id: 1, created_at: -1 });
 
-export default mongoose.model<IEsignAuditTrail>('EsignAuditTrail', esignAuditTrailSchema);
+export default mongoose.models.EsignAuditTrail as mongoose.Model<IEsignAuditTrail> || mongoose.model<IEsignAuditTrail>('EsignAuditTrail', esignAuditTrailSchema);

@@ -55,4 +55,4 @@ projectTaskSchema.index({ due_date: -1 });
 projectTaskSchema.index({ project_id: 1, status: 1 });
 projectTaskSchema.index({ assignee_id: 1, status: 1 });
 
-export default mongoose.model<IProjectTask>('ProjectTask', projectTaskSchema);
+export default mongoose.models.ProjectTask as mongoose.Model<IProjectTask> || mongoose.model<IProjectTask>('ProjectTask', projectTaskSchema);

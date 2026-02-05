@@ -21,4 +21,4 @@ const discountThresholdSchema = new Schema<IDiscountThreshold>({
 discountThresholdSchema.index({ is_active: 1 });
 discountThresholdSchema.index({ approval_role: 1 });
 
-export default mongoose.model<IDiscountThreshold>('DiscountThreshold', discountThresholdSchema);
+export default mongoose.models.DiscountThreshold as mongoose.Model<IDiscountThreshold> || mongoose.model<IDiscountThreshold>('DiscountThreshold', discountThresholdSchema);

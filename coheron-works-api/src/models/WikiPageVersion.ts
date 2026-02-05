@@ -25,4 +25,4 @@ wikiPageVersionSchema.index({ created_by: 1 });
 wikiPageVersionSchema.index({ page_id: 1, version: -1 });
 wikiPageVersionSchema.index({ created_at: -1 });
 
-export default mongoose.model<IWikiPageVersion>('WikiPageVersion', wikiPageVersionSchema);
+export default mongoose.models.WikiPageVersion as mongoose.Model<IWikiPageVersion> || mongoose.model<IWikiPageVersion>('WikiPageVersion', wikiPageVersionSchema);

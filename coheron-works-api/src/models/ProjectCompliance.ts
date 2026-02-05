@@ -29,4 +29,4 @@ projectComplianceSchema.index({ project_id: 1, compliance_status: 1 });
 projectComplianceSchema.index({ next_audit_date: 1 });
 projectComplianceSchema.index({ created_at: -1 });
 
-export default mongoose.model<IProjectCompliance>('ProjectCompliance', projectComplianceSchema);
+export default mongoose.models.ProjectCompliance as mongoose.Model<IProjectCompliance> || mongoose.model<IProjectCompliance>('ProjectCompliance', projectComplianceSchema);

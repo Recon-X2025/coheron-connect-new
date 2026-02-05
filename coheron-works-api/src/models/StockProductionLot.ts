@@ -18,4 +18,4 @@ const stockProductionLotSchema = new Schema<IStockProductionLot>({
 stockProductionLotSchema.index({ name: 1, product_id: 1 }, { unique: true });
 stockProductionLotSchema.index({ product_id: 1 });
 
-export default mongoose.model<IStockProductionLot>('StockProductionLot', stockProductionLotSchema);
+export default mongoose.models.StockProductionLot as mongoose.Model<IStockProductionLot> || mongoose.model<IStockProductionLot>('StockProductionLot', stockProductionLotSchema);

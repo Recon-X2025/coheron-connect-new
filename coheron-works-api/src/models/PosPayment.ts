@@ -27,4 +27,4 @@ posPaymentSchema.index({ payment_status: 1 });
 posPaymentSchema.index({ payment_method: 1 });
 posPaymentSchema.index({ created_at: -1 });
 
-export default mongoose.model<IPosPayment>('PosPayment', posPaymentSchema);
+export default mongoose.models.PosPayment as mongoose.Model<IPosPayment> || mongoose.model<IPosPayment>('PosPayment', posPaymentSchema);

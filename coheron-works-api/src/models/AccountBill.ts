@@ -77,4 +77,4 @@ AccountBillSchema.index({ due_date: 1 });
 AccountBillSchema.index({ state: 1, invoice_date: -1 });
 AccountBillSchema.index({ vendor_id: 1, state: 1 });
 
-export default mongoose.model<IAccountBill>('AccountBill', AccountBillSchema);
+export default mongoose.models.AccountBill as mongoose.Model<IAccountBill> || mongoose.model<IAccountBill>('AccountBill', AccountBillSchema);

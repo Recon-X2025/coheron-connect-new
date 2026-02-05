@@ -92,4 +92,4 @@ workOrderSchema.index({ date_planned_start: -1 });
 workOrderSchema.index({ workcenter_id: 1, state: 1 });
 workOrderSchema.index({ mo_id: 1, state: 1 });
 
-export default mongoose.model<IWorkOrder>('WorkOrder', workOrderSchema);
+export default mongoose.models.WorkOrder as mongoose.Model<IWorkOrder> || mongoose.model<IWorkOrder>('WorkOrder', workOrderSchema);

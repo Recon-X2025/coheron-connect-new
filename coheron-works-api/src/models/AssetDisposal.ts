@@ -29,4 +29,4 @@ AssetDisposalSchema.index({ asset_id: 1 });
 AssetDisposalSchema.index({ disposal_date: -1 });
 AssetDisposalSchema.index({ disposal_type: 1 });
 
-export default mongoose.model<IAssetDisposal>('AssetDisposal', AssetDisposalSchema);
+export default mongoose.models.AssetDisposal as mongoose.Model<IAssetDisposal> || mongoose.model<IAssetDisposal>('AssetDisposal', AssetDisposalSchema);

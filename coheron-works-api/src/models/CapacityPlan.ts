@@ -49,4 +49,4 @@ const capacityPlanSchema = new Schema<ICapacityPlan>({
 
 capacityPlanSchema.index({ tenant_id: 1, work_center_id: 1, period_start: 1 });
 
-export default mongoose.model<ICapacityPlan>('CapacityPlan', capacityPlanSchema);
+export default mongoose.models.CapacityPlan as mongoose.Model<ICapacityPlan> || mongoose.model<ICapacityPlan>('CapacityPlan', capacityPlanSchema);

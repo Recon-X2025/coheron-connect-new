@@ -29,4 +29,4 @@ sprintSchema.index({ state: 1 });
 sprintSchema.index({ start_date: -1 });
 sprintSchema.index({ project_id: 1, state: 1 });
 
-export default mongoose.model<ISprint>('Sprint', sprintSchema);
+export default mongoose.models.Sprint as mongoose.Model<ISprint> || mongoose.model<ISprint>('Sprint', sprintSchema);

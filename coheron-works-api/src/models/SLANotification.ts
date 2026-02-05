@@ -31,4 +31,4 @@ const SLANotificationSchema = new Schema<ISLANotification>(
 SLANotificationSchema.index({ tenant_id: 1, ticket_id: 1 });
 SLANotificationSchema.index({ sent_at: 1 });
 
-export default mongoose.model<ISLANotification>('SLANotification', SLANotificationSchema);
+export default mongoose.models.SLANotification as mongoose.Model<ISLANotification> || mongoose.model<ISLANotification>('SLANotification', SLANotificationSchema);

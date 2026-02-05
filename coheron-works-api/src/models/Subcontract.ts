@@ -67,4 +67,4 @@ subcontractSchema.index({ tenant_id: 1, subcontract_number: 1 }, { unique: true 
 subcontractSchema.index({ tenant_id: 1, vendor_id: 1 });
 subcontractSchema.index({ tenant_id: 1, status: 1 });
 
-export default mongoose.model<ISubcontract>('Subcontract', subcontractSchema);
+export default mongoose.models.Subcontract as mongoose.Model<ISubcontract> || mongoose.model<ISubcontract>('Subcontract', subcontractSchema);

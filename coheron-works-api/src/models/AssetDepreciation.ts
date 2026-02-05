@@ -33,4 +33,4 @@ AssetDepreciationSchema.index({ period_start: 1 });
 AssetDepreciationSchema.index({ period_end: 1 });
 AssetDepreciationSchema.index({ asset_id: 1, state: 1 });
 
-export default mongoose.model<IAssetDepreciation>('AssetDepreciation', AssetDepreciationSchema);
+export default mongoose.models.AssetDepreciation as mongoose.Model<IAssetDepreciation> || mongoose.model<IAssetDepreciation>('AssetDepreciation', AssetDepreciationSchema);

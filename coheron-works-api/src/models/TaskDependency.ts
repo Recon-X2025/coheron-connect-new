@@ -22,4 +22,4 @@ taskDependencySchema.index({ depends_on_task_id: 1 });
 taskDependencySchema.index({ dependency_type: 1 });
 taskDependencySchema.index({ created_at: -1 });
 
-export default mongoose.model<ITaskDependency>('TaskDependency', taskDependencySchema);
+export default mongoose.models.TaskDependency as mongoose.Model<ITaskDependency> || mongoose.model<ITaskDependency>('TaskDependency', taskDependencySchema);

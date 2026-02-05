@@ -49,4 +49,4 @@ BankFeedTransactionSchema.index({ tenant_id: 1, bank_feed_id: 1, date: 1 });
 BankFeedTransactionSchema.index({ tenant_id: 1, match_status: 1 });
 BankFeedTransactionSchema.index({ provider_transaction_id: 1 });
 
-export default mongoose.model<IBankFeedTransaction>('BankFeedTransaction', BankFeedTransactionSchema);
+export default mongoose.models.BankFeedTransaction as mongoose.Model<IBankFeedTransaction> || mongoose.model<IBankFeedTransaction>('BankFeedTransaction', BankFeedTransactionSchema);

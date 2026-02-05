@@ -59,4 +59,4 @@ scrapEntrySchema.index({ tenant_id: 1, scrap_number: 1 }, { unique: true });
 scrapEntrySchema.index({ tenant_id: 1, manufacturing_order_id: 1 });
 scrapEntrySchema.index({ tenant_id: 1, product_id: 1 });
 
-export default mongoose.model<IScrapEntry>('ScrapEntry', scrapEntrySchema);
+export default mongoose.models.ScrapEntry as mongoose.Model<IScrapEntry> || mongoose.model<IScrapEntry>('ScrapEntry', scrapEntrySchema);

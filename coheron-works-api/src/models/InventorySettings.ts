@@ -27,4 +27,4 @@ const inventorySettingsSchema = new Schema<IInventorySettings>({
   cycle_count_frequency_days: { type: Number, default: 30 },
 }, defaultSchemaOptions);
 
-export default mongoose.model<IInventorySettings>('InventorySettings', inventorySettingsSchema);
+export default mongoose.models.InventorySettings as mongoose.Model<IInventorySettings> || mongoose.model<IInventorySettings>('InventorySettings', inventorySettingsSchema);

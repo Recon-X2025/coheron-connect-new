@@ -24,4 +24,4 @@ taskCommentSchema.index({ parent_comment_id: 1 });
 taskCommentSchema.index({ task_id: 1, created_at: -1 });
 taskCommentSchema.index({ created_at: -1 });
 
-export default mongoose.model<ITaskComment>('TaskComment', taskCommentSchema);
+export default mongoose.models.TaskComment as mongoose.Model<ITaskComment> || mongoose.model<ITaskComment>('TaskComment', taskCommentSchema);

@@ -34,4 +34,4 @@ projectInventoryReservationSchema.index({ project_id: 1, status: 1 });
 projectInventoryReservationSchema.index({ reserved_date: -1 });
 projectInventoryReservationSchema.index({ created_at: -1 });
 
-export default mongoose.model<IProjectInventoryReservation>('ProjectInventoryReservation', projectInventoryReservationSchema);
+export default mongoose.models.ProjectInventoryReservation as mongoose.Model<IProjectInventoryReservation> || mongoose.model<IProjectInventoryReservation>('ProjectInventoryReservation', projectInventoryReservationSchema);

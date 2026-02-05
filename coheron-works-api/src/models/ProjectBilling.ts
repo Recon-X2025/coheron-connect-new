@@ -36,4 +36,4 @@ projectBillingSchema.index({ project_id: 1, status: 1 });
 projectBillingSchema.index({ billing_date: -1 });
 projectBillingSchema.index({ created_at: -1 });
 
-export default mongoose.model<IProjectBilling>('ProjectBilling', projectBillingSchema);
+export default mongoose.models.ProjectBilling as mongoose.Model<IProjectBilling> || mongoose.model<IProjectBilling>('ProjectBilling', projectBillingSchema);

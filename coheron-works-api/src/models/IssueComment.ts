@@ -18,4 +18,4 @@ issueCommentSchema.index({ issue_id: 1 });
 issueCommentSchema.index({ user_id: 1 });
 issueCommentSchema.index({ issue_id: 1, created_at: -1 });
 
-export default mongoose.model<IIssueComment>('IssueComment', issueCommentSchema);
+export default mongoose.models.IssueComment as mongoose.Model<IIssueComment> || mongoose.model<IIssueComment>('IssueComment', issueCommentSchema);

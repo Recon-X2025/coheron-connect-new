@@ -44,4 +44,4 @@ BankAccountSchema.index({ account_id: 1 });
 BankAccountSchema.index({ is_active: 1 });
 BankAccountSchema.index({ account_type: 1 });
 
-export default mongoose.model<IBankAccount>('BankAccount', BankAccountSchema);
+export default mongoose.models.BankAccount as mongoose.Model<IBankAccount> || mongoose.model<IBankAccount>('BankAccount', BankAccountSchema);

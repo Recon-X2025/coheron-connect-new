@@ -19,4 +19,4 @@ const TaxGroupSchema = new Schema<ITaxGroup>({
 // Indexes
 TaxGroupSchema.index({ active: 1 });
 
-export default mongoose.model<ITaxGroup>('TaxGroup', TaxGroupSchema);
+export default mongoose.models.TaxGroup as mongoose.Model<ITaxGroup> || mongoose.model<ITaxGroup>('TaxGroup', TaxGroupSchema);

@@ -27,4 +27,4 @@ wikiTemplateSchema.index({ created_by: 1 });
 wikiTemplateSchema.index({ template_type: 1 });
 wikiTemplateSchema.index({ is_system: 1 });
 
-export default mongoose.model<IWikiTemplate>('WikiTemplate', wikiTemplateSchema);
+export default mongoose.models.WikiTemplate as mongoose.Model<IWikiTemplate> || mongoose.model<IWikiTemplate>('WikiTemplate', wikiTemplateSchema);

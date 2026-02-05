@@ -48,4 +48,4 @@ const schema = new Schema<IMarketplaceApp>({
   is_featured: { type: Boolean, default: false },
 }, { timestamps: true });
 
-export default mongoose.model<IMarketplaceApp>('MarketplaceApp', schema);
+export default mongoose.models.MarketplaceApp as mongoose.Model<IMarketplaceApp> || mongoose.model<IMarketplaceApp>('MarketplaceApp', schema);

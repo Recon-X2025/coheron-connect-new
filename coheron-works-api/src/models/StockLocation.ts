@@ -42,4 +42,4 @@ stockLocationSchema.index({ usage: 1 });
 stockLocationSchema.index({ active: 1 });
 stockLocationSchema.index({ warehouse_id: 1, usage: 1 });
 
-export default mongoose.model<IStockLocation>('StockLocation', stockLocationSchema);
+export default mongoose.models.StockLocation as mongoose.Model<IStockLocation> || mongoose.model<IStockLocation>('StockLocation', stockLocationSchema);

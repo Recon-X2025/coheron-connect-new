@@ -41,7 +41,6 @@ const stockIssueSchema = new Schema<IStockIssue>({
   lines: [stockIssueLineSchema],
 }, defaultSchemaOptions);
 
-stockIssueSchema.index({ issue_number: 1 }, { unique: true });
 stockIssueSchema.index({ state: 1 });
 stockIssueSchema.index({ issue_date: -1 });
 stockIssueSchema.index({ from_warehouse_id: 1 });
@@ -49,4 +48,4 @@ stockIssueSchema.index({ to_entity_id: 1 });
 stockIssueSchema.index({ issue_type: 1 });
 stockIssueSchema.index({ state: 1, issue_date: -1 });
 
-export default mongoose.model<IStockIssue>('StockIssue', stockIssueSchema);
+export default mongoose.models.StockIssue as mongoose.Model<IStockIssue> || mongoose.model<IStockIssue>('StockIssue', stockIssueSchema);

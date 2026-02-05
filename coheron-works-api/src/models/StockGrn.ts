@@ -69,7 +69,6 @@ const stockGrnSchema = new Schema<IStockGrn>({
   lines: [stockGrnLineSchema],
 }, defaultSchemaOptions);
 
-stockGrnSchema.index({ grn_number: 1 }, { unique: true });
 stockGrnSchema.index({ state: 1 });
 stockGrnSchema.index({ grn_date: -1 });
 stockGrnSchema.index({ partner_id: 1 });
@@ -78,4 +77,4 @@ stockGrnSchema.index({ purchase_order_id: 1 });
 stockGrnSchema.index({ qc_status: 1 });
 stockGrnSchema.index({ state: 1, grn_date: -1 });
 
-export default mongoose.model<IStockGrn>('StockGrn', stockGrnSchema);
+export default mongoose.models.StockGrn as mongoose.Model<IStockGrn> || mongoose.model<IStockGrn>('StockGrn', stockGrnSchema);

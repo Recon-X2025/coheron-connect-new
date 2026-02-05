@@ -23,4 +23,4 @@ routingSchema.index({ name: 1 });
 routingSchema.index({ active: 1 });
 routingSchema.index({ company_id: 1 });
 
-export default mongoose.model<IRouting>('Routing', routingSchema);
+export default mongoose.models.Routing as mongoose.Model<IRouting> || mongoose.model<IRouting>('Routing', routingSchema);

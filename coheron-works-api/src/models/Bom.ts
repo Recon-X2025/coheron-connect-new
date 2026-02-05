@@ -55,4 +55,4 @@ bomSchema.index({ type: 1 });
 bomSchema.index({ product_id: 1, active: 1 });
 bomSchema.index({ tenant_id: 1 });
 
-export default mongoose.model<IBom>('Bom', bomSchema);
+export default mongoose.models.Bom as mongoose.Model<IBom> || mongoose.model<IBom>('Bom', bomSchema);

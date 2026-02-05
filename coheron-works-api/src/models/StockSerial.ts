@@ -23,4 +23,4 @@ stockSerialSchema.index({ name: 1 }, { unique: true });
 stockSerialSchema.index({ product_id: 1 });
 stockSerialSchema.index({ lot_id: 1 });
 
-export default mongoose.model<IStockSerial>('StockSerial', stockSerialSchema);
+export default mongoose.models.StockSerial as mongoose.Model<IStockSerial> || mongoose.model<IStockSerial>('StockSerial', stockSerialSchema);

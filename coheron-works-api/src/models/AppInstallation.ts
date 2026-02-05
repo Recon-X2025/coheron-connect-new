@@ -22,4 +22,4 @@ const schema = new Schema<IAppInstallation>({
 
 schema.index({ tenant_id: 1, app_id: 1 }, { unique: true });
 
-export default mongoose.model<IAppInstallation>('AppInstallation', schema);
+export default mongoose.models.AppInstallation as mongoose.Model<IAppInstallation> || mongoose.model<IAppInstallation>('AppInstallation', schema);

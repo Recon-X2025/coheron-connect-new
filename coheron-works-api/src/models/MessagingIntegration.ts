@@ -71,4 +71,4 @@ const MessagingIntegrationSchema = new Schema<IMessagingIntegration>({
 
 MessagingIntegrationSchema.index({ tenant_id: 1, platform: 1 }, { unique: true });
 
-export default mongoose.model<IMessagingIntegration>('MessagingIntegration', MessagingIntegrationSchema);
+export default mongoose.models.MessagingIntegration as mongoose.Model<IMessagingIntegration> || mongoose.model<IMessagingIntegration>('MessagingIntegration', MessagingIntegrationSchema);

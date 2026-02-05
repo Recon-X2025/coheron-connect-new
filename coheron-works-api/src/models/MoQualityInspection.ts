@@ -39,4 +39,4 @@ schema.index({ inspector_id: 1 });
 schema.index({ inspection_date: -1 });
 schema.index({ mo_id: 1, state: 1 });
 
-export default mongoose.model<IMoQualityInspection>('MoQualityInspection', schema);
+export default mongoose.models.MoQualityInspection as mongoose.Model<IMoQualityInspection> || mongoose.model<IMoQualityInspection>('MoQualityInspection', schema);

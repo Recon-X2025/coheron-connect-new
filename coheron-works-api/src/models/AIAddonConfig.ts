@@ -68,4 +68,4 @@ const aiAddonConfigSchema = new Schema<IAIAddonConfig>({
 
 aiAddonConfigSchema.index({ tenant_id: 1 }, { unique: true });
 
-export default mongoose.model<IAIAddonConfig>('AIAddonConfig', aiAddonConfigSchema);
+export default mongoose.models.AIAddonConfig as mongoose.Model<IAIAddonConfig> || mongoose.model<IAIAddonConfig>('AIAddonConfig', aiAddonConfigSchema);

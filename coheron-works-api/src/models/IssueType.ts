@@ -18,4 +18,4 @@ const issueTypeSchema = new Schema<IIssueType>({
 // Indexes
 issueTypeSchema.index({ is_active: 1 });
 
-export default mongoose.model<IIssueType>('IssueType', issueTypeSchema);
+export default mongoose.models.IssueType as mongoose.Model<IIssueType> || mongoose.model<IIssueType>('IssueType', issueTypeSchema);

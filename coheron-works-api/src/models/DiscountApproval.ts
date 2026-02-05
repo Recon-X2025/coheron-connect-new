@@ -34,4 +34,4 @@ discountApprovalSchema.index({ approved_by: 1 });
 discountApprovalSchema.index({ status: 1 });
 discountApprovalSchema.index({ status: 1, created_at: -1 });
 
-export default mongoose.model<IDiscountApproval>('DiscountApproval', discountApprovalSchema);
+export default mongoose.models.DiscountApproval as mongoose.Model<IDiscountApproval> || mongoose.model<IDiscountApproval>('DiscountApproval', discountApprovalSchema);

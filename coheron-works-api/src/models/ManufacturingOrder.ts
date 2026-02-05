@@ -51,7 +51,6 @@ const manufacturingOrderSchema = new Schema<IManufacturingOrder>({
   notes: { type: String },
 }, defaultSchemaOptions);
 
-manufacturingOrderSchema.index({ mo_number: 1 }, { unique: true });
 manufacturingOrderSchema.index({ state: 1 });
 manufacturingOrderSchema.index({ product_id: 1 });
 manufacturingOrderSchema.index({ user_id: 1 });
@@ -64,4 +63,4 @@ manufacturingOrderSchema.index({ date_planned_start: -1 });
 manufacturingOrderSchema.index({ state: 1, date_planned_start: -1 });
 manufacturingOrderSchema.index({ product_id: 1, state: 1 });
 
-export default mongoose.model<IManufacturingOrder>('ManufacturingOrder', manufacturingOrderSchema);
+export default mongoose.models.ManufacturingOrder as mongoose.Model<IManufacturingOrder> || mongoose.model<IManufacturingOrder>('ManufacturingOrder', manufacturingOrderSchema);

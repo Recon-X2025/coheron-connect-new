@@ -31,4 +31,4 @@ pickingTaskSchema.index({ product_id: 1 });
 pickingTaskSchema.index({ created_at: -1 });
 pickingTaskSchema.index({ warehouse_id: 1, state: 1 });
 
-export default mongoose.model<IPickingTask>('PickingTask', pickingTaskSchema);
+export default mongoose.models.PickingTask as mongoose.Model<IPickingTask> || mongoose.model<IPickingTask>('PickingTask', pickingTaskSchema);

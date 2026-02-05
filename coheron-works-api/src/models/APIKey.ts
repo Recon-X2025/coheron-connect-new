@@ -28,7 +28,7 @@ const schema = new Schema<IAPIKey>({
   created_by: { type: Schema.Types.ObjectId },
 }, { timestamps: true });
 
-schema.index({ key_hash: 1 });
 schema.index({ tenant_id: 1, is_active: 1 });
 
-export default mongoose.model<IAPIKey>('APIKey', schema);
+// Use conditional export to prevent model overwrite errors during hot reload/tests
+export default mongoose.models.APIKey as mongoose.Model<IAPIKey> || mongoose.model<IAPIKey>('APIKey', schema);

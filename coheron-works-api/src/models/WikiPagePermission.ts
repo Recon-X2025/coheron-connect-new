@@ -18,4 +18,4 @@ const wikiPagePermissionSchema = new Schema<IWikiPagePermission>({
 wikiPagePermissionSchema.index({ page_id: 1, user_id: 1 }, { unique: true });
 wikiPagePermissionSchema.index({ permission_type: 1 });
 
-export default mongoose.model<IWikiPagePermission>('WikiPagePermission', wikiPagePermissionSchema);
+export default mongoose.models.WikiPagePermission as mongoose.Model<IWikiPagePermission> || mongoose.model<IWikiPagePermission>('WikiPagePermission', wikiPagePermissionSchema);

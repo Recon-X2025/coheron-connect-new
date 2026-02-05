@@ -18,4 +18,4 @@ const schema = new Schema<IMoSplit>({
 schema.index({ parent_mo_id: 1 });
 schema.index({ child_mo_id: 1 });
 
-export default mongoose.model<IMoSplit>('MoSplit', schema);
+export default mongoose.models.MoSplit as mongoose.Model<IMoSplit> || mongoose.model<IMoSplit>('MoSplit', schema);

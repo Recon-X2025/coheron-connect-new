@@ -32,4 +32,4 @@ const WebhookEndpointSchema = new Schema<IWebhookEndpoint>(
 WebhookEndpointSchema.index({ tenant_id: 1, active: 1 });
 WebhookEndpointSchema.index({ events: 1 });
 
-export default mongoose.model<IWebhookEndpoint>('WebhookEndpoint', WebhookEndpointSchema);
+export default mongoose.models.WebhookEndpoint as mongoose.Model<IWebhookEndpoint> || mongoose.model<IWebhookEndpoint>('WebhookEndpoint', WebhookEndpointSchema);

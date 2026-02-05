@@ -22,4 +22,4 @@ territoryRuleSchema.index({ territory_id: 1 });
 territoryRuleSchema.index({ is_active: 1 });
 territoryRuleSchema.index({ territory_id: 1, is_active: 1 });
 
-export default mongoose.model<ITerritoryRule>('TerritoryRule', territoryRuleSchema);
+export default mongoose.models.TerritoryRule as mongoose.Model<ITerritoryRule> || mongoose.model<ITerritoryRule>('TerritoryRule', territoryRuleSchema);

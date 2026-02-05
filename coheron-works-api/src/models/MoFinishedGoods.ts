@@ -22,4 +22,4 @@ schema.index({ state: 1 });
 schema.index({ product_id: 1 });
 schema.index({ mo_id: 1, state: 1 });
 
-export default mongoose.model<IMoFinishedGoods>('MoFinishedGoods', schema);
+export default mongoose.models.MoFinishedGoods as mongoose.Model<IMoFinishedGoods> || mongoose.model<IMoFinishedGoods>('MoFinishedGoods', schema);

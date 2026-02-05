@@ -20,4 +20,4 @@ const schema = new Schema<IMoKpiSummary>({
 schema.index({ mo_id: 1, metric_name: 1 });
 schema.index({ metric_name: 1 });
 
-export default mongoose.model<IMoKpiSummary>('MoKpiSummary', schema);
+export default mongoose.models.MoKpiSummary as mongoose.Model<IMoKpiSummary> || mongoose.model<IMoKpiSummary>('MoKpiSummary', schema);

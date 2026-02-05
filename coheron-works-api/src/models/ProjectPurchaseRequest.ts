@@ -36,4 +36,4 @@ projectPurchaseRequestSchema.index({ requested_by: 1 });
 projectPurchaseRequestSchema.index({ approved_by: 1 });
 projectPurchaseRequestSchema.index({ created_at: -1 });
 
-export default mongoose.model<IProjectPurchaseRequest>('ProjectPurchaseRequest', projectPurchaseRequestSchema);
+export default mongoose.models.ProjectPurchaseRequest as mongoose.Model<IProjectPurchaseRequest> || mongoose.model<IProjectPurchaseRequest>('ProjectPurchaseRequest', projectPurchaseRequestSchema);

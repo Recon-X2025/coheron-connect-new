@@ -42,4 +42,4 @@ shopFloorLogSchema.index({ tenant_id: 1, manufacturing_order_id: 1 });
 shopFloorLogSchema.index({ tenant_id: 1, operator_id: 1, started_at: 1 });
 shopFloorLogSchema.index({ tenant_id: 1, work_center_id: 1 });
 
-export default mongoose.model<IShopFloorLog>('ShopFloorLog', shopFloorLogSchema);
+export default mongoose.models.ShopFloorLog as mongoose.Model<IShopFloorLog> || mongoose.model<IShopFloorLog>('ShopFloorLog', shopFloorLogSchema);

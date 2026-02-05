@@ -39,4 +39,4 @@ const MobileCheckinSchema = new Schema<IMobileCheckin>(
 MobileCheckinSchema.index({ tenant_id: 1, employee_id: 1, timestamp: 1 });
 MobileCheckinSchema.index({ tenant_id: 1, timestamp: 1 });
 
-export default mongoose.model<IMobileCheckin>('MobileCheckin', MobileCheckinSchema);
+export default mongoose.models.MobileCheckin as mongoose.Model<IMobileCheckin> || mongoose.model<IMobileCheckin>('MobileCheckin', MobileCheckinSchema);

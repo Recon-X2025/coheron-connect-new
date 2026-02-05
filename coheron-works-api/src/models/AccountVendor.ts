@@ -33,4 +33,4 @@ AccountVendorSchema.index({ payment_term_id: 1 });
 AccountVendorSchema.index({ vendor_type: 1 });
 AccountVendorSchema.index({ is_active: 1 });
 
-export default mongoose.model<IAccountVendor>('AccountVendor', AccountVendorSchema);
+export default mongoose.models.AccountVendor as mongoose.Model<IAccountVendor> || mongoose.model<IAccountVendor>('AccountVendor', AccountVendorSchema);

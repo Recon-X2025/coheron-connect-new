@@ -95,4 +95,4 @@ posOrderSchema.index({ state: 1, created_at: -1 });
 posOrderSchema.index({ store_id: 1, state: 1 });
 posOrderSchema.index({ session_id: 1, state: 1 });
 
-export default mongoose.model<IPosOrder>('PosOrder', posOrderSchema);
+export default mongoose.models.PosOrder as mongoose.Model<IPosOrder> || mongoose.model<IPosOrder>('PosOrder', posOrderSchema);

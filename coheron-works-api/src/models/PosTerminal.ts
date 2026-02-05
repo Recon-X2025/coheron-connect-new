@@ -27,4 +27,4 @@ const posTerminalSchema = new Schema<IPosTerminal>({
 posTerminalSchema.index({ store_id: 1 });
 posTerminalSchema.index({ is_active: 1 });
 
-export default mongoose.model<IPosTerminal>('PosTerminal', posTerminalSchema);
+export default mongoose.models.PosTerminal as mongoose.Model<IPosTerminal> || mongoose.model<IPosTerminal>('PosTerminal', posTerminalSchema);

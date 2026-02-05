@@ -45,4 +45,4 @@ projectRiskSchema.pre('save', function () {
   this.risk_score = this.probability * this.impact;
 });
 
-export default mongoose.model<IProjectRisk>('ProjectRisk', projectRiskSchema);
+export default mongoose.models.ProjectRisk as mongoose.Model<IProjectRisk> || mongoose.model<IProjectRisk>('ProjectRisk', projectRiskSchema);

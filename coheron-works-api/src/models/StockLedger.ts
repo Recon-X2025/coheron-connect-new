@@ -36,4 +36,4 @@ stockLedgerSchema.index({ transaction_date: -1 });
 stockLedgerSchema.index({ location_id: 1, transaction_date: -1 });
 stockLedgerSchema.index({ product_id: 1, location_id: 1 });
 
-export default mongoose.model<IStockLedger>('StockLedger', stockLedgerSchema);
+export default mongoose.models.StockLedger as mongoose.Model<IStockLedger> || mongoose.model<IStockLedger>('StockLedger', stockLedgerSchema);

@@ -52,4 +52,4 @@ const masterProductionScheduleSchema = new Schema<IMasterProductionSchedule>({
 masterProductionScheduleSchema.index({ tenant_id: 1, product_id: 1, period_start: 1 });
 masterProductionScheduleSchema.index({ tenant_id: 1, status: 1 });
 
-export default mongoose.model<IMasterProductionSchedule>('MasterProductionSchedule', masterProductionScheduleSchema);
+export default mongoose.models.MasterProductionSchedule as mongoose.Model<IMasterProductionSchedule> || mongoose.model<IMasterProductionSchedule>('MasterProductionSchedule', masterProductionScheduleSchema);

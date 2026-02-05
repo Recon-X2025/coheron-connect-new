@@ -39,4 +39,4 @@ projectResourceSchema.index({ skill_level: 1 });
 projectResourceSchema.index({ shift_type: 1 });
 projectResourceSchema.index({ created_at: -1 });
 
-export default mongoose.model<IProjectResource>('ProjectResource', projectResourceSchema);
+export default mongoose.models.ProjectResource as mongoose.Model<IProjectResource> || mongoose.model<IProjectResource>('ProjectResource', projectResourceSchema);

@@ -41,4 +41,4 @@ serialNumberSchema.index({ tenant_id: 1, serial_number: 1 }, { unique: true });
 serialNumberSchema.index({ tenant_id: 1, product_id: 1, status: 1 });
 serialNumberSchema.index({ tenant_id: 1, batch_id: 1 });
 
-export default mongoose.model<ISerialNumber>('SerialNumber', serialNumberSchema);
+export default mongoose.models.SerialNumber as mongoose.Model<ISerialNumber> || mongoose.model<ISerialNumber>('SerialNumber', serialNumberSchema);

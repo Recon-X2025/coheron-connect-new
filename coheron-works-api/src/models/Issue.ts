@@ -58,4 +58,4 @@ issueSchema.index({ project_id: 1, status: 1 });
 issueSchema.index({ project_id: 1, assignee_id: 1 });
 issueSchema.index({ due_date: 1 });
 
-export default mongoose.model<IIssue>('Issue', issueSchema);
+export default mongoose.models.Issue as mongoose.Model<IIssue> || mongoose.model<IIssue>('Issue', issueSchema);

@@ -41,4 +41,4 @@ const EmailPipeRuleSchema = new Schema<IEmailPipeRule>(
 
 EmailPipeRuleSchema.index({ tenant_id: 1, email_address: 1 }, { unique: true });
 
-export default mongoose.model<IEmailPipeRule>('EmailPipeRule', EmailPipeRuleSchema);
+export default mongoose.models.EmailPipeRule as mongoose.Model<IEmailPipeRule> || mongoose.model<IEmailPipeRule>('EmailPipeRule', EmailPipeRuleSchema);

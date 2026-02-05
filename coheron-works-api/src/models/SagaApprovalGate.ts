@@ -57,4 +57,4 @@ const SagaApprovalGateSchema = new Schema<ISagaApprovalGate>(
 SagaApprovalGateSchema.index({ tenant_id: 1, status: 1 });
 SagaApprovalGateSchema.index({ status: 1, timeout_at: 1 });
 
-export default mongoose.model<ISagaApprovalGate>('SagaApprovalGate', SagaApprovalGateSchema);
+export default mongoose.models.SagaApprovalGate as mongoose.Model<ISagaApprovalGate> || mongoose.model<ISagaApprovalGate>('SagaApprovalGate', SagaApprovalGateSchema);

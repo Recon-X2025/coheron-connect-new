@@ -25,4 +25,4 @@ schema.index({ workcenter_id: 1, date_tracked: -1 });
 schema.index({ workorder_id: 1 });
 schema.index({ date_tracked: -1 });
 
-export default mongoose.model<IMoOeeTracking>('MoOeeTracking', schema);
+export default mongoose.models.MoOeeTracking as mongoose.Model<IMoOeeTracking> || mongoose.model<IMoOeeTracking>('MoOeeTracking', schema);

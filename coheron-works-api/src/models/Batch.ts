@@ -43,4 +43,4 @@ batchSchema.index({ tenant_id: 1, batch_number: 1 }, { unique: true });
 batchSchema.index({ tenant_id: 1, product_id: 1 });
 batchSchema.index({ tenant_id: 1, expiry_date: 1 });
 
-export default mongoose.model<IBatch>('Batch', batchSchema);
+export default mongoose.models.Batch as mongoose.Model<IBatch> || mongoose.model<IBatch>('Batch', batchSchema);

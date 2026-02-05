@@ -37,4 +37,4 @@ esignFieldSchema.index({ signer_id: 1 });
 esignFieldSchema.index({ document_id: 1, signer_id: 1 });
 esignFieldSchema.index({ document_id: 1, page_number: 1 });
 
-export default mongoose.model<IEsignField>('EsignField', esignFieldSchema);
+export default mongoose.models.EsignField as mongoose.Model<IEsignField> || mongoose.model<IEsignField>('EsignField', esignFieldSchema);

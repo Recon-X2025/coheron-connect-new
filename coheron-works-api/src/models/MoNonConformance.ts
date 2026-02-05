@@ -35,7 +35,6 @@ const schema = new Schema<IMoNonConformance>({
 
 schema.index({ mo_id: 1 });
 schema.index({ state: 1 });
-schema.index({ ncr_number: 1 }, { unique: true });
 schema.index({ workorder_id: 1 });
 schema.index({ inspection_id: 1 });
 schema.index({ product_id: 1 });
@@ -43,4 +42,4 @@ schema.index({ assigned_to: 1 });
 schema.index({ severity: 1 });
 schema.index({ mo_id: 1, state: 1 });
 
-export default mongoose.model<IMoNonConformance>('MoNonConformance', schema);
+export default mongoose.models.MoNonConformance as mongoose.Model<IMoNonConformance> || mongoose.model<IMoNonConformance>('MoNonConformance', schema);

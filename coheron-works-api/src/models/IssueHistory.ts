@@ -22,4 +22,4 @@ issueHistorySchema.index({ issue_id: 1 });
 issueHistorySchema.index({ changed_by: 1 });
 issueHistorySchema.index({ issue_id: 1, created_at: -1 });
 
-export default mongoose.model<IIssueHistory>('IssueHistory', issueHistorySchema);
+export default mongoose.models.IssueHistory as mongoose.Model<IIssueHistory> || mongoose.model<IIssueHistory>('IssueHistory', issueHistorySchema);

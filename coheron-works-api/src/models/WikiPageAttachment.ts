@@ -26,4 +26,4 @@ wikiPageAttachmentSchema.index({ page_id: 1 });
 wikiPageAttachmentSchema.index({ uploaded_by: 1 });
 wikiPageAttachmentSchema.index({ created_at: -1 });
 
-export default mongoose.model<IWikiPageAttachment>('WikiPageAttachment', wikiPageAttachmentSchema);
+export default mongoose.models.WikiPageAttachment as mongoose.Model<IWikiPageAttachment> || mongoose.model<IWikiPageAttachment>('WikiPageAttachment', wikiPageAttachmentSchema);

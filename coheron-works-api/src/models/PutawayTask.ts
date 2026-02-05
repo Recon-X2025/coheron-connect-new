@@ -34,4 +34,4 @@ putawayTaskSchema.index({ product_id: 1 });
 putawayTaskSchema.index({ created_at: -1 });
 putawayTaskSchema.index({ warehouse_id: 1, state: 1 });
 
-export default mongoose.model<IPutawayTask>('PutawayTask', putawayTaskSchema);
+export default mongoose.models.PutawayTask as mongoose.Model<IPutawayTask> || mongoose.model<IPutawayTask>('PutawayTask', putawayTaskSchema);

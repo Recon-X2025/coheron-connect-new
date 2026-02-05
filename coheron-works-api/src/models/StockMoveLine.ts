@@ -32,4 +32,4 @@ stockMoveLineSchema.index({ tenant_id: 1, stock_move_id: 1 });
 stockMoveLineSchema.index({ serial_number_id: 1 });
 stockMoveLineSchema.index({ batch_id: 1 });
 
-export default mongoose.model<IStockMoveLine>('StockMoveLine', stockMoveLineSchema);
+export default mongoose.models.StockMoveLine as mongoose.Model<IStockMoveLine> || mongoose.model<IStockMoveLine>('StockMoveLine', stockMoveLineSchema);

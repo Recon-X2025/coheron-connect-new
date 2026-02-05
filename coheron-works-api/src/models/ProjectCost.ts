@@ -37,4 +37,4 @@ projectCostSchema.index({ invoice_id: 1 });
 projectCostSchema.index({ purchase_order_id: 1 });
 projectCostSchema.index({ created_at: -1 });
 
-export default mongoose.model<IProjectCost>('ProjectCost', projectCostSchema);
+export default mongoose.models.ProjectCost as mongoose.Model<IProjectCost> || mongoose.model<IProjectCost>('ProjectCost', projectCostSchema);

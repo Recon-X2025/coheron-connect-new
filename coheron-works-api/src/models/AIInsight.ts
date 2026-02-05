@@ -43,4 +43,4 @@ const aiInsightSchema = new Schema<IAIInsight>({
 aiInsightSchema.index({ tenant_id: 1, module: 1, is_dismissed: 1, created_at: -1 });
 aiInsightSchema.index({ tenant_id: 1, insight_type: 1 });
 
-export default mongoose.model<IAIInsight>('AIInsight', aiInsightSchema);
+export default mongoose.models.AIInsight as mongoose.Model<IAIInsight> || mongoose.model<IAIInsight>('AIInsight', aiInsightSchema);

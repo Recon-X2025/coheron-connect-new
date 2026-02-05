@@ -29,4 +29,4 @@ projectPurchaseRequestLineSchema.index({ product_id: 1 });
 projectPurchaseRequestLineSchema.index({ vendor_id: 1 });
 projectPurchaseRequestLineSchema.index({ created_at: -1 });
 
-export default mongoose.model<IProjectPurchaseRequestLine>('ProjectPurchaseRequestLine', projectPurchaseRequestLineSchema);
+export default mongoose.models.ProjectPurchaseRequestLine as mongoose.Model<IProjectPurchaseRequestLine> || mongoose.model<IProjectPurchaseRequestLine>('ProjectPurchaseRequestLine', projectPurchaseRequestLineSchema);

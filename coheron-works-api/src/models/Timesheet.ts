@@ -39,4 +39,4 @@ timesheetSchema.index({ date_worked: -1 });
 timesheetSchema.index({ project_id: 1, user_id: 1 });
 timesheetSchema.index({ user_id: 1, date_worked: -1 });
 
-export default mongoose.model<ITimesheet>('Timesheet', timesheetSchema);
+export default mongoose.models.Timesheet as mongoose.Model<ITimesheet> || mongoose.model<ITimesheet>('Timesheet', timesheetSchema);

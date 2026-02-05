@@ -38,4 +38,4 @@ const ShiftAssignmentSchema = new Schema<IShiftAssignment>(
 ShiftAssignmentSchema.index({ tenant_id: 1, employee_id: 1, start_date: 1 });
 ShiftAssignmentSchema.index({ tenant_id: 1, shift_id: 1 });
 
-export default mongoose.model<IShiftAssignment>('ShiftAssignment', ShiftAssignmentSchema);
+export default mongoose.models.ShiftAssignment as mongoose.Model<IShiftAssignment> || mongoose.model<IShiftAssignment>('ShiftAssignment', ShiftAssignmentSchema);

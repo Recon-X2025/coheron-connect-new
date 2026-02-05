@@ -65,4 +65,4 @@ BankStatementSchema.index({ state: 1 });
 BankStatementSchema.index({ date_start: -1 });
 BankStatementSchema.index({ bank_account_id: 1, state: 1 });
 
-export default mongoose.model<IBankStatement>('BankStatement', BankStatementSchema);
+export default mongoose.models.BankStatement as mongoose.Model<IBankStatement> || mongoose.model<IBankStatement>('BankStatement', BankStatementSchema);

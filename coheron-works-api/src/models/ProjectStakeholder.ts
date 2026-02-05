@@ -22,4 +22,4 @@ projectStakeholderSchema.index({ user_id: 1 });
 projectStakeholderSchema.index({ role: 1 });
 projectStakeholderSchema.index({ created_at: -1 });
 
-export default mongoose.model<IProjectStakeholder>('ProjectStakeholder', projectStakeholderSchema);
+export default mongoose.models.ProjectStakeholder as mongoose.Model<IProjectStakeholder> || mongoose.model<IProjectStakeholder>('ProjectStakeholder', projectStakeholderSchema);

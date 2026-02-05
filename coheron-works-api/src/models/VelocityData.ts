@@ -22,4 +22,4 @@ const velocityDataSchema = new Schema<IVelocityData>({
 // VelocityData indexes (sprint_id already has unique: true)
 velocityDataSchema.index({ project_id: 1 });
 
-export default mongoose.model<IVelocityData>('VelocityData', velocityDataSchema);
+export default mongoose.models.VelocityData as mongoose.Model<IVelocityData> || mongoose.model<IVelocityData>('VelocityData', velocityDataSchema);

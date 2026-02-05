@@ -34,4 +34,4 @@ schema.index({ workorder_id: 1 });
 schema.index({ state: 1 });
 schema.index({ mo_id: 1, state: 1 });
 
-export default mongoose.model<IMoReworkOrder>('MoReworkOrder', schema);
+export default mongoose.models.MoReworkOrder as mongoose.Model<IMoReworkOrder> || mongoose.model<IMoReworkOrder>('MoReworkOrder', schema);

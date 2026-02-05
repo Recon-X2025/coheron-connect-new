@@ -48,4 +48,4 @@ FixedAssetSchema.index({ state: 1 });
 FixedAssetSchema.index({ purchase_date: -1 });
 FixedAssetSchema.index({ category_id: 1, state: 1 });
 
-export default mongoose.model<IFixedAsset>('FixedAsset', FixedAssetSchema);
+export default mongoose.models.FixedAsset as mongoose.Model<IFixedAsset> || mongoose.model<IFixedAsset>('FixedAsset', FixedAssetSchema);

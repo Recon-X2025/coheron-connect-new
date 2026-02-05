@@ -49,7 +49,6 @@ const stockTransferSchema = new Schema<IStockTransfer>({
   lines: [stockTransferLineSchema],
 }, defaultSchemaOptions);
 
-stockTransferSchema.index({ transfer_number: 1 }, { unique: true });
 stockTransferSchema.index({ state: 1 });
 stockTransferSchema.index({ transfer_date: -1 });
 stockTransferSchema.index({ from_warehouse_id: 1 });
@@ -58,4 +57,4 @@ stockTransferSchema.index({ from_location_id: 1 });
 stockTransferSchema.index({ to_location_id: 1 });
 stockTransferSchema.index({ state: 1, transfer_date: -1 });
 
-export default mongoose.model<IStockTransfer>('StockTransfer', stockTransferSchema);
+export default mongoose.models.StockTransfer as mongoose.Model<IStockTransfer> || mongoose.model<IStockTransfer>('StockTransfer', stockTransferSchema);

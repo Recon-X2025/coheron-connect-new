@@ -26,4 +26,4 @@ const schema = new Schema<IMoQualityChecklist>({
 schema.index({ inspection_id: 1 });
 schema.index({ result: 1 });
 
-export default mongoose.model<IMoQualityChecklist>('MoQualityChecklist', schema);
+export default mongoose.models.MoQualityChecklist as mongoose.Model<IMoQualityChecklist> || mongoose.model<IMoQualityChecklist>('MoQualityChecklist', schema);

@@ -45,11 +45,10 @@ const warehouseSchema = new Schema<IWarehouse>({
   notes: { type: String },
 }, defaultSchemaOptions);
 
-warehouseSchema.index({ code: 1 }, { unique: true });
 warehouseSchema.index({ name: 1 });
 warehouseSchema.index({ partner_id: 1 });
 warehouseSchema.index({ manager_id: 1 });
 warehouseSchema.index({ warehouse_type: 1 });
 warehouseSchema.index({ active: 1 });
 
-export default mongoose.model<IWarehouse>('Warehouse', warehouseSchema);
+export default mongoose.models.Warehouse as mongoose.Model<IWarehouse> || mongoose.model<IWarehouse>('Warehouse', warehouseSchema);

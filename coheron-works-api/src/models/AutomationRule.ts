@@ -26,4 +26,4 @@ automationRuleSchema.index({ project_id: 1 });
 automationRuleSchema.index({ is_active: 1 });
 automationRuleSchema.index({ project_id: 1, is_active: 1 });
 
-export default mongoose.model<IAutomationRule>('AutomationRule', automationRuleSchema);
+export default mongoose.models.AutomationRule as mongoose.Model<IAutomationRule> || mongoose.model<IAutomationRule>('AutomationRule', automationRuleSchema);

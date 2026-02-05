@@ -44,4 +44,4 @@ projectSchema.index({ partner_id: 1 });
 projectSchema.index({ state: 1 });
 projectSchema.index({ state: 1, created_at: -1 });
 
-export default mongoose.model<IProject>('Project', projectSchema);
+export default mongoose.models.Project as mongoose.Model<IProject> || mongoose.model<IProject>('Project', projectSchema);

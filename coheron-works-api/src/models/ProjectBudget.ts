@@ -37,4 +37,4 @@ projectBudgetSchema.index({ approved_by: 1 });
 projectBudgetSchema.index({ budget_type: 1 });
 projectBudgetSchema.index({ created_at: -1 });
 
-export default mongoose.model<IProjectBudget>('ProjectBudget', projectBudgetSchema);
+export default mongoose.models.ProjectBudget as mongoose.Model<IProjectBudget> || mongoose.model<IProjectBudget>('ProjectBudget', projectBudgetSchema);

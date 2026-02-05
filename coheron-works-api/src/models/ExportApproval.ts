@@ -26,4 +26,4 @@ exportApprovalSchema.index({ resource_type: 1 });
 exportApprovalSchema.index({ created_at: -1 });
 exportApprovalSchema.index({ requested_by: 1, status: 1 });
 
-export default mongoose.model<IExportApproval>('ExportApproval', exportApprovalSchema);
+export default mongoose.models.ExportApproval as mongoose.Model<IExportApproval> || mongoose.model<IExportApproval>('ExportApproval', exportApprovalSchema);

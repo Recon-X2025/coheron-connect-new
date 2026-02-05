@@ -25,4 +25,4 @@ sprintBurndownSchema.index({ sprint_id: 1, date: 1 }, { unique: true });
 // Additional index for date-based queries
 sprintBurndownSchema.index({ date: -1 });
 
-export default mongoose.model<ISprintBurndown>('SprintBurndown', sprintBurndownSchema);
+export default mongoose.models.SprintBurndown as mongoose.Model<ISprintBurndown> || mongoose.model<ISprintBurndown>('SprintBurndown', sprintBurndownSchema);

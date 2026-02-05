@@ -74,4 +74,4 @@ AccountMoveSchema.index({ date: -1 });
 AccountMoveSchema.index({ state: 1, date: -1 });
 AccountMoveSchema.index({ move_type: 1 });
 
-export default mongoose.model<IAccountMove>('AccountMove', AccountMoveSchema);
+export default mongoose.models.AccountMove as mongoose.Model<IAccountMove> || mongoose.model<IAccountMove>('AccountMove', AccountMoveSchema);

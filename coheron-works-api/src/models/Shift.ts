@@ -35,4 +35,4 @@ const ShiftSchema = new Schema<IShift>(
 
 ShiftSchema.index({ tenant_id: 1, code: 1 }, { unique: true });
 
-export default mongoose.model<IShift>('Shift', ShiftSchema);
+export default mongoose.models.Shift as mongoose.Model<IShift> || mongoose.model<IShift>('Shift', ShiftSchema);

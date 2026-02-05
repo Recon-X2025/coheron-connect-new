@@ -39,4 +39,4 @@ bomLineSchema.index({ bom_id: 1, sequence: 1 });
 bomLineSchema.index({ product_id: 1 });
 bomLineSchema.index({ operation_id: 1 });
 
-export default mongoose.model<IBomLine>('BomLine', bomLineSchema);
+export default mongoose.models.BomLine as mongoose.Model<IBomLine> || mongoose.model<IBomLine>('BomLine', bomLineSchema);

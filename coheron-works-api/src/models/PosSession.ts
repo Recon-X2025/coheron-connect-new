@@ -53,4 +53,4 @@ posSessionSchema.index({ state: 1 });
 posSessionSchema.index({ start_at: -1 });
 posSessionSchema.index({ store_id: 1, state: 1 });
 
-export default mongoose.model<IPosSession>('PosSession', posSessionSchema);
+export default mongoose.models.PosSession as mongoose.Model<IPosSession> || mongoose.model<IPosSession>('PosSession', posSessionSchema);

@@ -45,4 +45,4 @@ projectInspectionSchema.index({ inspection_date: -1 });
 projectInspectionSchema.index({ signed_off_by: 1 });
 projectInspectionSchema.index({ created_at: -1 });
 
-export default mongoose.model<IProjectInspection>('ProjectInspection', projectInspectionSchema);
+export default mongoose.models.ProjectInspection as mongoose.Model<IProjectInspection> || mongoose.model<IProjectInspection>('ProjectInspection', projectInspectionSchema);

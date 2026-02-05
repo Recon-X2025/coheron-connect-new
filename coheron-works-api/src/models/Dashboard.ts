@@ -38,4 +38,4 @@ const schema = new Schema<IDashboard>({
 
 schema.index({ tenant_id: 1, user_id: 1 });
 
-export default mongoose.model<IDashboard>('Dashboard', schema);
+export default mongoose.models.Dashboard as mongoose.Model<IDashboard> || mongoose.model<IDashboard>('Dashboard', schema);

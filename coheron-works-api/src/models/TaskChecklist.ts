@@ -26,4 +26,4 @@ taskChecklistSchema.index({ task_id: 1, is_completed: 1 });
 taskChecklistSchema.index({ completed_by: 1 });
 taskChecklistSchema.index({ created_at: -1 });
 
-export default mongoose.model<ITaskChecklist>('TaskChecklist', taskChecklistSchema);
+export default mongoose.models.TaskChecklist as mongoose.Model<ITaskChecklist> || mongoose.model<ITaskChecklist>('TaskChecklist', taskChecklistSchema);

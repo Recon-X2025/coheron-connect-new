@@ -30,4 +30,4 @@ esignTemplateSchema.index({ created_by: 1 });
 esignTemplateSchema.index({ is_active: 1 });
 esignTemplateSchema.index({ document_type: 1 });
 
-export default mongoose.model<IEsignTemplate>('EsignTemplate', esignTemplateSchema);
+export default mongoose.models.EsignTemplate as mongoose.Model<IEsignTemplate> || mongoose.model<IEsignTemplate>('EsignTemplate', esignTemplateSchema);

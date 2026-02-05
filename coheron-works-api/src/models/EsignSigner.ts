@@ -46,4 +46,4 @@ esignSignerSchema.index({ signer_email: 1 });
 esignSignerSchema.index({ document_id: 1, signer_order: 1 });
 esignSignerSchema.index({ document_id: 1, status: 1 });
 
-export default mongoose.model<IEsignSigner>('EsignSigner', esignSignerSchema);
+export default mongoose.models.EsignSigner as mongoose.Model<IEsignSigner> || mongoose.model<IEsignSigner>('EsignSigner', esignSignerSchema);

@@ -22,4 +22,4 @@ stockQuantSchema.index({ product_id: 1 });
 stockQuantSchema.index({ location_id: 1 });
 stockQuantSchema.index({ lot_id: 1 });
 
-export default mongoose.model<IStockQuant>('StockQuant', stockQuantSchema);
+export default mongoose.models.StockQuant as mongoose.Model<IStockQuant> || mongoose.model<IStockQuant>('StockQuant', stockQuantSchema);

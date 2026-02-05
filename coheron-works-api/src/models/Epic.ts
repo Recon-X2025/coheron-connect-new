@@ -20,4 +20,4 @@ epicSchema.index({ project_id: 1 });
 epicSchema.index({ status: 1 });
 epicSchema.index({ project_id: 1, status: 1 });
 
-export default mongoose.model<IEpic>('Epic', epicSchema);
+export default mongoose.models.Epic as mongoose.Model<IEpic> || mongoose.model<IEpic>('Epic', epicSchema);

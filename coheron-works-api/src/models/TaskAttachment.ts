@@ -26,4 +26,4 @@ taskAttachmentSchema.index({ task_id: 1 });
 taskAttachmentSchema.index({ uploaded_by: 1 });
 taskAttachmentSchema.index({ created_at: -1 });
 
-export default mongoose.model<ITaskAttachment>('TaskAttachment', taskAttachmentSchema);
+export default mongoose.models.TaskAttachment as mongoose.Model<ITaskAttachment> || mongoose.model<ITaskAttachment>('TaskAttachment', taskAttachmentSchema);

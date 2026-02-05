@@ -27,4 +27,4 @@ const GeofenceSchema = new Schema<IGeofence>(
 
 GeofenceSchema.index({ tenant_id: 1, is_active: 1 });
 
-export default mongoose.model<IGeofence>('Geofence', GeofenceSchema);
+export default mongoose.models.Geofence as mongoose.Model<IGeofence> || mongoose.model<IGeofence>('Geofence', GeofenceSchema);

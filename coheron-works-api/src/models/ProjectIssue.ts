@@ -49,4 +49,4 @@ projectIssueSchema.index({ priority: 1 });
 projectIssueSchema.index({ resolved_by: 1 });
 projectIssueSchema.index({ created_at: -1 });
 
-export default mongoose.model<IProjectIssue>('ProjectIssue', projectIssueSchema);
+export default mongoose.models.ProjectIssue as mongoose.Model<IProjectIssue> || mongoose.model<IProjectIssue>('ProjectIssue', projectIssueSchema);

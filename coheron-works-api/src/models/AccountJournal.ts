@@ -28,4 +28,4 @@ const AccountJournalSchema = new Schema<IAccountJournal>({
 AccountJournalSchema.index({ default_account_id: 1 });
 AccountJournalSchema.index({ type: 1 });
 
-export default mongoose.model<IAccountJournal>('AccountJournal', AccountJournalSchema);
+export default mongoose.models.AccountJournal as mongoose.Model<IAccountJournal> || mongoose.model<IAccountJournal>('AccountJournal', AccountJournalSchema);

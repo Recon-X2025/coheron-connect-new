@@ -37,4 +37,4 @@ const sprintRetrospectiveSchema = new Schema<ISprintRetrospective>({
 sprintRetrospectiveSchema.index({ facilitator_id: 1 });
 sprintRetrospectiveSchema.index({ status: 1 });
 
-export default mongoose.model<ISprintRetrospective>('SprintRetrospective', sprintRetrospectiveSchema);
+export default mongoose.models.SprintRetrospective as mongoose.Model<ISprintRetrospective> || mongoose.model<ISprintRetrospective>('SprintRetrospective', sprintRetrospectiveSchema);

@@ -38,4 +38,4 @@ const WebhookDeliveryLogSchema = new Schema<IWebhookDeliveryLog>(
 // TTL: auto-delete after 30 days
 WebhookDeliveryLogSchema.index({ created_at: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 });
 
-export default mongoose.model<IWebhookDeliveryLog>('WebhookDeliveryLog', WebhookDeliveryLogSchema);
+export default mongoose.models.WebhookDeliveryLog as mongoose.Model<IWebhookDeliveryLog> || mongoose.model<IWebhookDeliveryLog>('WebhookDeliveryLog', WebhookDeliveryLogSchema);

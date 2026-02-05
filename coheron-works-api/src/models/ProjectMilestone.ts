@@ -34,4 +34,4 @@ projectMilestoneSchema.index({ project_id: 1, status: 1 });
 projectMilestoneSchema.index({ planned_end_date: 1 });
 projectMilestoneSchema.index({ created_at: -1 });
 
-export default mongoose.model<IProjectMilestone>('ProjectMilestone', projectMilestoneSchema);
+export default mongoose.models.ProjectMilestone as mongoose.Model<IProjectMilestone> || mongoose.model<IProjectMilestone>('ProjectMilestone', projectMilestoneSchema);
